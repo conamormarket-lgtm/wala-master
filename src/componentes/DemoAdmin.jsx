@@ -33,6 +33,7 @@ import { FESTIVAS_DEFAULT, normalizarFestiva, hoyLocal } from '../utils/fechasFe
 import { normalizarPopup, POPUP_ENCUESTA_DEFAULT } from '../services/popupsLogic.mjs';
 import { normalizarPremio, normalizarConfig } from '../utils/ruletaModel';
 import MARCAS_TIENDA from './demo/marcas.json';
+import { CargandoPanel } from './kit/piezas/admin/CargandoPanel';
 import cs from './ComponentesPage.module.css';
 import s from './DemoAdmin.module.css';
 
@@ -66,6 +67,7 @@ const ESTADOS = [
   ['error', 'Error al cargar'],
   ['vacio', 'Sin datos'],
   ['falla', 'Guardar y subir fallan'],
+  ['abriendo', 'Abriendo el panel'],
 ];
 
 /* Las páginas que ya están, para los chips de "Ir a". */
@@ -2034,6 +2036,8 @@ function PanelDePrueba() {
       </div>
       <div ref={marco} className={[s.lienzo, tamano === 'celular' && s.lienzoCelular].filter(Boolean).join(' ')}>
         <ProveedorEnlaces componente={EnlaceAdmin}>
+          {/* Mientras se confirma quién entra (AdminRoute) o baja el marco. */}
+          {con('abriendo') ? <CargandoPanel fijo={false} /> : (
           <MarcoAdmin
             grupos={grupos}
             activo={marcaDeRuta ? '/admin/marcas' : rutaSola}
@@ -2043,6 +2047,7 @@ function PanelDePrueba() {
           >
             {pagina}
           </MarcoAdmin>
+          )}
         </ProveedorEnlaces>
       </div>
     </>

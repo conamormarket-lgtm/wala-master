@@ -1,0 +1,132 @@
+/* ── El panel mientras carga (CargandoPanel, EsqueletoPaginaAdmin) ── */
+/* Las mismas medidas que el marco (Marco.module.css): 272 px de menú desde
+   960 px, la cabecera de 56 px en el celular, el contenido hasta 1280 px. */
+.marco {
+  container: admin-carga / inline-size;
+  min-height: 100dvh;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--color-text);
+}
+
+/* Encima de la cabecera y el pie de la tienda, que siguen puestos mientras tanto. */
+.fijo {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  overflow: hidden;
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.lateral {
+  display: none;
+}
+
+.columna {
+  min-width: 0;
+}
+
+.contenido {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem var(--page-padding-movil, 1rem) 1.5rem;
+  box-sizing: border-box;
+}
+
+.cabeceraMovil {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 56px;
+  padding: 0.45rem 1rem;
+  padding-top: max(0.45rem, var(--safe-top, 0px));
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.15rem 0.4rem 0.35rem;
+}
+
+.marcaTextos {
+  display: grid;
+  line-height: 1;
+}
+
+.marcaTextos strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.marcaTextos span {
+  margin-top: 0.15rem;
+  color: var(--primary-color);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.4rem;
+}
+
+@container admin-carga (min-width: 960px) {
+  .rejilla {
+    grid-template-columns: 272px minmax(0, 1fr);
+  }
+
+  .lateral {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    height: 100dvh;
+    padding: 1rem 0.85rem 0.85rem;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-sizing: border-box;
+  }
+
+  .cabeceraMovil {
+    display: none;
+  }
+
+  .contenido {
+    padding: 1.6rem 2rem 2.5rem;
+  }
+}
+
+/* La página */
+.pagina {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.cabeza > :last-child {
+  flex: 1;
+}
+
+.filas {
+  display: grid;
+  gap: 0.6rem;
+}

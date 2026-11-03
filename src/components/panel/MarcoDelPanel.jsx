@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { Suspense, useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { logout } from '../../services/firebase/auth';
 import { MarcoAdmin, SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
+import { EsqueletoPaginaAdmin } from '../../componentes/kit/piezas/admin/CargandoPanel';
 import {
   MENU_ADMIN, PERMISOS_ADMIN, menuAdminPara, accesosAdminPara, opcionActiva, textoPermisos,
 } from '../../componentes/kit/adaptadoresAdmin';
@@ -71,7 +72,8 @@ export default function MarcoDelPanel() {
       onCerrarSesion={async () => { navigate('/'); await logout(); }}
       onNavegar={() => window.scrollTo(0, 0)}
     >
-      {sinPermiso ? <SinPermiso permiso={permisoQueFalta} /> : <Outlet />}
+      {/* Mientras baja el código de una página, su esqueleto dentro del marco (sin esto, el de la tienda tapaba todo). */}
+      {sinPermiso ? <SinPermiso permiso={permisoQueFalta} /> : <Suspense fallback={<EsqueletoPaginaAdmin />}><Outlet /></Suspense>}
     </MarcoAdmin>
   );
 }
