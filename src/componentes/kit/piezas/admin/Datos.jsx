@@ -9,7 +9,7 @@ import { EsqueletoFila } from '../../Esqueletos';
 import { Visto } from '../../Marca';
 import { MenuContextual } from '../MenuContextual';
 import { FotoProducto } from '../FotoProducto';
-import { useMarcoAdmin } from './Marco';
+import { useEsconderPrincipal } from './Marco';
 import { normalizarBusqueda } from '../../adaptadoresAdmin';
 import s from './Datos.module.css';
 
@@ -355,15 +355,8 @@ export function BarraFiltros({ busqueda = '', onBusqueda, placeholder = 'Buscar�
  *  - unidad: ['elegida', 'elegidas'] ("3 elegidos" para productos)
  */
 export function AccionesLote({ cantidad = 0, acciones = [], onLimpiar, unidad = ['elegida', 'elegidas'] }) {
-  const marco = useMarcoAdmin();
-  const hay = cantidad > 0;
-  // Mientras hay algo elegido, el botón de la página (sobre la barra del
-  // celular) se esconde: irían uno encima del otro.
-  useEffect(() => {
-    if (!marco) return undefined;
-    marco.setConLote(hay);
-    return () => marco.setConLote(false);
-  }, [marco, hay]);
+  // Mientras hay algo elegido, el botón de la página se esconde (irían uno encima del otro).
+  useEsconderPrincipal(cantidad > 0);
   if (!cantidad) return null;
   return (
     <div className={s.lote} role="region" aria-label="Lo elegido" data-componente="AccionesLote">

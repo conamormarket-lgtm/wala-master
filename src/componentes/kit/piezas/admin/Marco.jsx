@@ -31,6 +31,20 @@ const MarcoCtx = createContext(null);
 export const useMarcoAdmin = () => useContext(MarcoCtx);
 
 /**
+ * Mientras `si`, el botón de la página (el que va sobre la barra del celular)
+ * se esconde: una barra pegada abajo (elegidos, cambios sin guardar, un orden
+ * nuevo) iría encima de él. Fuera del marco no hace nada.
+ */
+export function useEsconderPrincipal(si) {
+  const marco = useContext(MarcoCtx);
+  useEffect(() => {
+    if (!marco) return undefined;
+    marco.setConLote(Boolean(si));
+    return () => marco.setConLote(false);
+  }, [marco, si]);
+}
+
+/**
  * El marco de toda página de /admin.
  *  - grupos: [{ id, titulo, icono, tono, suelto, items: [{ to, texto, icono, exacto, cuenta, fuera }] }]
  *    (`suelto`: sus opciones van sin el título del grupo, como Inicio)

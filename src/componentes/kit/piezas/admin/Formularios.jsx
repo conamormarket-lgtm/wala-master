@@ -9,6 +9,7 @@ import { Chip } from '../../Etiquetas';
 import { conOpcion } from '../../adaptadoresAdmin';
 import { useBloquearScroll, useCerrarConAtras } from '../../Efectos';
 import { RecortarFoto } from '../RecortarFoto';
+import { useEsconderPrincipal } from './Marco';
 import campo from '../../Formulario.module.css';
 import s from './Formularios.module.css';
 
@@ -428,6 +429,7 @@ export function ElegirUno({ opciones = [], valor, sugerido, onElegir, etiqueta, 
  *    onGuardar · guardando · puedeGuardar (false: Guardar apagado; `texto` dice por qué)
  */
 export function BarraGuardar({ visible, texto = 'Tienes cambios sin guardar.', onDescartar, onGuardar, guardando = false, puedeGuardar = true, textoGuardar = 'Guardar cambios' }) {
+  useEsconderPrincipal(visible);
   if (!visible) return null;
   return (
     <div className={s.barraGuardar} role="region" aria-label="Cambios sin guardar" data-componente="BarraGuardar">

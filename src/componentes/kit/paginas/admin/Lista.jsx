@@ -2,7 +2,7 @@ import React, { useEffect, useId, useMemo, useState } from 'react';
 import { Check, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, useToast } from '../../Feedback';
-import { CabezaAdmin } from '../../piezas/admin/Marco';
+import { CabezaAdmin, useEsconderPrincipal } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, CargarMas, ListaOrdenable } from '../../piezas/admin/Datos';
 import { HojaEdicion } from '../../piezas/admin/Formularios';
 import { normalizarBusqueda, ordenConParte } from '../../adaptadoresAdmin';
@@ -88,6 +88,8 @@ export function PaginaListaAdmin({
   const porId = useMemo(() => new Map(registros.map((r) => [r.id, r])), [registros]);
   const enLista = manual ? manual.map((id) => porId.get(id)).filter(Boolean) : filas;
   const ordenCambiado = Boolean(manual) && manual.join() !== filas.map((r) => r.id).join();
+  // Con el orden sin guardar, su barra va donde estaba el botón de la página.
+  useEsconderPrincipal(ordenCambiado);
   const guardarOrden = async () => {
     const comparar = ordenInicial && ordenes[ordenInicial.por];
     const todos = (comparar ? [...registros].sort(comparar) : registros).map((r) => r.id);
