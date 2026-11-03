@@ -1013,18 +1013,19 @@ Adaptadores (con pruebas): `PERIODOS_PAGOS`, `rangoDePeriodo`,
 
 ### D3c: Cuentas desde pedidos y Libro de reclamaciones (en el kit desde el 2026-11-02)
 
-> **Cuentas desde pedidos salió del admin el 2026-11-03** (sin menú ni ruta;
-> lo que queda, en [ELIMINAR.md](ELIMINAR.md)): "Mis pedidos" ya encuentra
-> los pedidos del ERP solo, y crear cuentas desde el navegador cambiaba la
-> sesión del admin por la del cliente.
+> **Cuentas desde pedidos se borró el 2026-11-03** (menú, ruta, páginas,
+> conector, `PaginaCuentasDePedidos`, `filasMigracion` y
+> `services/accountFromOrder.js`): "Mis pedidos" ya encuentra los pedidos del
+> ERP solo, y crear cuentas desde el navegador cambiaba la sesión del admin
+> por la del cliente. Lo de abajo sobre esa página es historia.
 
-| Libro de reclamaciones (computadora) | Cuentas desde pedidos (celular) |
-|---|---|
-| ![Un reclamo respondido abierto al costado: el consumidor, el producto, el reclamo y la respuesta en verde con su fecha](admin-reclamos-escritorio.webp) | ![El paso 2 terminado a medias: creadas, ya existían, errores y la lista de errores abierta](admin-cuentas-celular.webp) |
+| Libro de reclamaciones (computadora) |
+|---|
+| ![Un reclamo respondido abierto al costado: el consumidor, el producto, el reclamo y la respuesta en verde con su fecha](admin-reclamos-escritorio.webp) |
 
 | Parte | Componente | Archivo | Qué tiene |
 |---|---|---|---|
-| Cuentas desde pedidos | `PaginaCuentasDePedidos` | `paginas/admin/Cuentas.jsx` | Cuatro `PasoAdmin`, **uno a la vez**: 1 cargar pedidos (cuántos y cuántos con correo; "Cargar 100 más" si hay), 2 crear las cuentas que faltan (pregunta antes; cómo va, "Creando cuentas… 45 de 129"; creadas, ya existían, errores y "Ver los errores"), 3 simular la migración (sin cambios) y 4 migrar de verdad (pregunta). La simulación y la de verdad quedan las dos a la vista para compararlas |
+| Cuentas desde pedidos (borrada el 2026-11-03) | `PaginaCuentasDePedidos` | `paginas/admin/Cuentas.jsx` | Cuatro `PasoAdmin`, **uno a la vez**: 1 cargar pedidos (cuántos y cuántos con correo; "Cargar 100 más" si hay), 2 crear las cuentas que faltan (pregunta antes; cómo va, "Creando cuentas… 45 de 129"; creadas, ya existían, errores y "Ver los errores"), 3 simular la migración (sin cambios) y 4 migrar de verdad (pregunta). La simulación y la de verdad quedan las dos a la vista para compararlas |
 | Libro de reclamaciones | `PaginaReclamos` | `paginas/admin/Reclamos.jsx` | Las cifras que filtran (pendientes, **urgentes**: 3 días hábiles o menos o fuera de plazo, respondidos, total); un aviso si alguno pasó el plazo; buscar por código, nombre, documento, correo o pedido; estado y tipo (reclamo o queja); la lista con el **plazo de cada pendiente** ("Quedan 9 días hábiles", "Pasó el plazo hace 2 días hábiles"), los que menos plazo tienen arriba. Tocar uno abre la hoja con todo (consumidor, menor de edad y apoderado, el producto o servicio, el detalle, lo que pide) y la respuesta; uno respondido se abre solo para mirar |
 | Un paso | `PasoAdmin` (D2d) | `piezas/admin/Pasos.jsx` | Ahora también termina **a medias**: `{ texto, aviso: true }` sale en ámbar y el sello no se pone verde (el paso 2 cuando hubo errores) |
 | La hoja | `HojaEdicion` (D0) | `piezas/admin/Formularios.jsx` | Sin `onGuardar` es solo para mirar: el pie dice "Cerrar" |
@@ -2544,7 +2545,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D3b · Gestión de pagos ✓ | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (`SeccionHistorial`, `SeccionGenerar`, `SeccionConfig`; `GlassCard`, `GlassInput`, `Badge`) | `PaginaPagos` | `PagosDelPanel.jsx` |
 | D3b · Gráfico por día ✓ | `components/dashboard/charts/TrendChart` (recharts; aquí) | `GraficoTendencia` (`forma='barras'`) | la página |
 | D3b · Las cifras ✓ | `KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
-| D3c · Cuentas desde pedidos ✓ | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | `PaginaCuentasDePedidos` (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
+| D3c · Cuentas desde pedidos (borrada el 2026-11-03) | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | `PaginaCuentasDePedidos` (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
 | D3c · Libro de reclamaciones ✓ | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | `PaginaReclamos` (`TablaAdmin`, `HojaEdicion`) | `ReclamosDelPanel.jsx` |
 
 ### D4 · Resultados
@@ -2672,7 +2673,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
-| 2026-11-03 | **Cuentas desde pedidos fuera del admin**: sin menú ni ruta (no hace falta: Mis pedidos encuentra los pedidos solo; crear cuentas cambiaba la sesión del admin); lo demás, listo para borrar en ELIMINAR.md | `adaptadoresAdmin.js`, `App.jsx`, `DemoAdmin.jsx` |
+| 2026-11-03 | **Cuentas desde pedidos borrada**: sin menú ni ruta, y borrados sus páginas, el conector, `PaginaCuentasDePedidos`, `filasMigracion`, `services/accountFromOrder.js` y `updateOrderInERP` (no hace falta: Mis pedidos encuentra los pedidos solo; crear cuentas cambiaba la sesión del admin) | `adaptadoresAdmin.js`, `App.jsx`, `DemoAdmin.jsx` |
 | 2026-11-03 | **El admin mientras carga, con el kit**: `CargandoPanel` en vez de "Verificando acceso…" y la grilla de productos de la tienda; `EsqueletoPaginaAdmin` dentro del marco mientras baja cada página | `kit/piezas/admin/CargandoPanel.jsx`, `AdminRoute`, `CargandoRuta`, `MarcoDelPanel`, `DemoAdmin.jsx` |
 | 2026-11-03 | **D8 unido al admin, y con él todo el admin**: Configuración, WhatsApp e Historial (`ConfiguracionDelPanel`, `AjustesDelPanel`, interruptor `adminAjustesViejo`); `BarraGuardar` sobre la barra inferior del celular; Restaurar pone la copia en la tienda de verdad | `components/panel/`, `pages/admin/`, `kit/piezas/admin/Formularios.module.css`, `kit/paginas/admin/Ajustes.jsx` |
 | 2026-11-03 | **D7 unido al admin**: Kapi, La Palabra del día, Las Bolitas y la Ruleta (`JuegosDelPanel`, `RuletaDelPanel`, interruptor `adminJuegosViejo`); en las Bolitas, Mundos y Premios esperan a sus datos | `components/panel/`, `pages/admin/`, `kit/paginas/admin/Juegos.jsx` |

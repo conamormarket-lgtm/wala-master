@@ -331,8 +331,6 @@ test('reclamos: el documento, responder, el plazo en días hábiles y la migraci
   assert.equal(m2.plazoDeReclamo(r, 15, new Date(2026, 10, 17, 9).getTime()).estado, 'por_vencer');
   assert.equal(m2.plazoDeReclamo(r, 15, new Date(2026, 10, 23, 9).getTime()).estado, 'vencido');
   assert.equal(m2.plazoDeReclamo({ ...r, estado: 'respondido' }), null);
-  assert.deepEqual(m2.filasMigracion({ dryRun: true, candidateUserIds: 4, wouldMigrate: 3, alreadyInTarget: 1 }).map((f) => f.texto), ['Candidatos', 'Se migrarían', 'Ya estaban en la colección nueva']);
-  assert.deepEqual(m2.filasMigracion({ dryRun: false, migrated: 2 }).map((f) => [f.texto, f.valor]), [['Migrados', 2]]);
 });
 
 test('resultados: cambios, cifras del resumen, comparativa y otros cobros', () => {

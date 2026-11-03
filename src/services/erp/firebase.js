@@ -270,30 +270,6 @@ export async function getOrderByIdAnyCollection(orderId) {
 }
 
 /**
- * Actualizar un pedido en el Firestore del ERP
- * @param {string} orderId
- * @param {Object} updates
- * @returns {Promise<{ error: string | null }>}
- */
-export async function updateOrderInERP(orderId, updates) {
-  if (!isErpFirestoreAvailable()) {
-    return { error: 'Firestore del ERP no está disponible' };
-  }
-
-  try {
-    const docRef = doc(erpDb, 'pedidos', orderId);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
-    return { error: null };
-  } catch (error) {
-    console.error('Error al actualizar pedido en ERP:', error);
-    return { error: error.message };
-  }
-}
-
-/**
  * Lista pedidos del ERP con paginación para sincronización de cuentas.
  * Orden: más recientes primero. Se filtra en memoria por "tiene email válido".
  * @param {number} [limitCount=100] - Máximo de documentos a traer

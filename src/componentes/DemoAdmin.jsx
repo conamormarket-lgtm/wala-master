@@ -6,7 +6,7 @@ import {
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
-  PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
+  PaginaPagos, configPagosDesde, PaginaReclamos, reclamoDesdeFirestore,
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
@@ -775,7 +775,6 @@ function PanelDePrueba() {
   const [enlaces, setEnlaces] = useState(ENLACES_DEMO);
   const [configPagos, setConfigPagos] = useState(CONFIG_PAGOS_DEMO);
   const [reclamos, setReclamos] = useState(RECLAMOS_DEMO);
-  const [pedidosCuentas, setPedidosCuentas] = useState({ cargados: 0, unicos: 0 });
   const [resPeriodo, setResPeriodo] = useState('30');
   const [resFechas, setResFechas] = useState({ desde: diaKey(13), hasta: diaKey(0) });
   const [resComparar, setResComparar] = useState(true);
@@ -1896,33 +1895,6 @@ function PanelDePrueba() {
           await espera(700);
           fallar();
           setReclamos((l) => l.map((x) => (x.id === id ? { ...x, estado: 'respondido', respuesta: datos.respuestaProveedor, respondidoMs: Date.parse(datos.respondidoEn) } : x)));
-        }}
-      />
-    );
-  } else if (ruta === '/admin/crear-cuentas-pedidos') {
-    pagina = (
-      <PaginaCuentasDePedidos
-        cargados={pedidosCuentas.cargados}
-        unicos={pedidosCuentas.unicos}
-        hayMas={pedidosCuentas.cargados > 0 && pedidosCuentas.cargados < 300}
-        onCargar={async ({ mas }) => {
-          await espera(800);
-          fallar('El ERP no respondió (es una prueba).');
-          setPedidosCuentas((p) => (mas ? { cargados: p.cargados + 100, unicos: p.unicos + 61 } : { cargados: 100, unicos: 68 }));
-        }}
-        onCrearCuentas={async (avisar) => {
-          const total = pedidosCuentas.unicos;
-          for (let i = 15; i < total + 15; i += 15) { avisar(`Creando cuentas… ${Math.min(i, total)} de ${total}`); await espera(350); }
-          fallar('Firebase cortó la conexión (es una prueba).');
-          const errores = 2;
-          return { creadas: Math.round(total * 0.4), existian: total - Math.round(total * 0.4) - errores, errores, detalles: ['rosa.h@correo.pe: el DNI no tiene 8 dígitos', '#PED-44120: el correo ya está en uso por otra cuenta'] };
-        }}
-        onMigrar={async ({ simulacion }) => {
-          await espera(1100);
-          fallar();
-          return simulacion
-            ? { candidateUserIds: 37, wouldMigrate: 29, alreadyInTarget: 6, wouldDeleteFromLegacy: 29, wouldDeleteAlreadyMigrated: 6, notFoundInLegacy: 2 }
-            : { candidateUserIds: 37, migrated: 29, alreadyInTarget: 6, deletedFromLegacy: 29, deletedAlreadyMigrated: 6, notFoundInLegacy: 2 };
         }}
       />
     );

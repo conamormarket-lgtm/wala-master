@@ -19,7 +19,7 @@
  *    recompensas y los cliparts; landing pages y temas piden además
  *    manage_landing_pages
  *  - inventario (manage_inventory) · clientes (manage_clients): reclamos,
- *    referidos, cuentas de pedidos, encuesta, popups, fechas, retos, misiones
+ *    referidos, encuesta, popups, fechas, retos, misiones
  *  - Resultados: diseño o clientes; Clientes y Opiniones, solo clientes
  *  - Configuración: solo superadmin
  * Diferencia a propósito: "Inicio" lo ve cualquier admin (antes el enlace
@@ -1077,20 +1077,6 @@ export function plazoDeReclamo(r, plazo = 15, ahora = Date.now()) {
 
 /** Lo que se busca en un reclamo: código, nombre, documento, correo y pedido. */
 export const textoDeReclamo = (r) => [r.codigo, r.consumidor?.nombre, r.consumidor?.documento, r.consumidor?.email, r.pedido].filter(Boolean).join(' ');
-
-/*
- * Crear cuentas desde pedidos (D3c): lo que devuelve
- * migrateLegacyAutoCreatedUsers, en filas con su nombre. En la simulación
- * salen los "se harían"; en la de verdad, los hechos.
- */
-export function filasMigracion(d = {}) {
-  const fila = (texto, valor) => (valor == null ? null : { texto, valor: Number(valor) || 0 });
-  const comunes = [fila('Candidatos', d.candidateUserIds), fila('Ya estaban en la colección nueva', d.alreadyInTarget), fila('No estaban en la colección vieja', d.notFoundInLegacy)];
-  const propias = d.dryRun
-    ? [fila('Se migrarían', d.wouldMigrate), fila('Se borrarían de la vieja', d.wouldDeleteFromLegacy), fila('Se borrarían (ya migrados antes)', d.wouldDeleteAlreadyMigrated)]
-    : [fila('Migrados', d.migrated), fila('Borrados de la vieja', d.deletedFromLegacy), fila('Borrados (ya migrados antes)', d.deletedAlreadyMigrated)];
-  return [...comunes.slice(0, 1), ...propias, ...comunes.slice(1)].filter(Boolean);
-}
 
 /* ── Resultados (D4) ───────────────────────────────────── */
 

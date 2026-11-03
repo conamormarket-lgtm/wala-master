@@ -74,7 +74,6 @@ const routes = [
   "/admin/zonas",
   "/admin/cliparts",
   "/admin/mascota",
-  "/admin/crear-cuentas-pedidos",
   "/admin/publico-productos",
   "/admin/wordle",
   "/admin/notificaciones",

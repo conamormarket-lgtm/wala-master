@@ -339,12 +339,6 @@ const AdminLayoutViejo = () => {
               >
                 Gestión de Referidos
               </NavLink>
-              <NavLink
-                to="/admin/crear-cuentas-pedidos"
-                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
-              >
-                Crear cuentas de pedidos
-              </NavLink>
               {/* Las respuestas de las encuestas están en Resultados › Opiniones;
                   aquí queda editar la encuesta de suscripción. */}
               <NavLink
