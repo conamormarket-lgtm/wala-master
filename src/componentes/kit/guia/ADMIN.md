@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0, D1 y D2 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D3 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -229,7 +229,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | hecho (2026-11-03) |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | hecho (2026-11-03) |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | hecho (2026-11-03) |
-| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
+| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | hecho (2026-11-03) |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
@@ -1075,6 +1075,30 @@ Adaptadores (con pruebas): `reclamoDesdeFirestore`, `respuestaDeReclamo`
   el aviso al consumidor sale de esa escritura, no de la pantalla.
 - Las rutas siguen siendo `/admin/crear-cuentas-pedidos` y
   `/admin/libro-reclamaciones`.
+
+### D3 unido al admin (2026-11-03)
+
+Las cuatro pantallas a la vez con `adminPedidosViejo`
+(`useLoViejo('adminPedidos')`), cada conector en
+`components/panel/PedidosDelPanel.jsx`: `RecepcionDelPanel` (por
+`DashRecepcion.jsx`), `PagosDelPanel` (por `AdminGestionPagos.jsx`),
+`CuentasDePedidosDelPanel` (por `AdminCrearCuentasPedidos.jsx`) y
+`ReclamosDelPanel` (por `AdminLibroReclamaciones.jsx`). Las de antes, en
+`…Viejo.jsx`. Responder un reclamo también refresca la cuenta del inicio.
+"Ver detalle" de un pedido sigue abriendo la ficha del cliente
+(`/cuenta/pedidos/:id`), como antes.
+
+**Qué se probó** (localhost con los emuladores): las cuatro abren sin
+errores; un reclamo sembrado → "Marcar como respondido" → el documento con
+`estado: 'respondido'`, `respuestaProveedor` y `respondidoEn` (texto ISO),
+como antes; nuevo enlace de S/ 25.50 → el documento en `enlaces_pago` con
+`concepto`, `moneda`, `monto`, `montoPEN` y `estado: 'pendiente'`, y sale en
+el historial; Ajustes → `messages/yape_number` y las demás claves de antes;
+con `adminPedidosViejo` vuelve el libro de antes. En el emulador no hay
+pedidos del ERP: Recepción y Cuentas desde pedidos se vieron vacías (crear
+cuentas y migrar no se probaron). **Ojo**: el monto del enlace es un campo
+numérico; escrito con coma ("25,5") el navegador lo deja vacío y no se
+genera (ya pasaba con la página de antes).
 
 ## D4 · Resultados (en el kit desde el 2026-11-02: los cuatro tramos)
 
@@ -2306,14 +2330,14 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 
 | Parte | Hoy en el admin | Pasa a (kit) | Conector |
 |---|---|---|---|
-| D3a · Recepción | `pages/admin/dashboard/DashRecepcion.jsx` (la página con `DashHeader`) + `RecepcionPedidos.jsx` + `.module.css` | `PaginaRecepcion` | `RecepcionDelPanel.jsx` (`useAdminWalaOrders`) |
-| D3a · Las cifras | `components/dashboard/KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
-| D3a · Un pedido | `TarjetaPedido` y `TarjetaSkeleton` (dentro de RecepcionPedidos) | `TarjetaEnvio`, `EsqueletoEnvio` | la página |
-| D3b · Gestión de pagos | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (`SeccionHistorial`, `SeccionGenerar`, `SeccionConfig`; `GlassCard`, `GlassInput`, `Badge`) | `PaginaPagos` | `PagosDelPanel.jsx` |
-| D3b · Gráfico por día | `components/dashboard/charts/TrendChart` (recharts; aquí) | `GraficoTendencia` (`forma='barras'`) | la página |
-| D3b · Las cifras | `KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
-| D3c · Cuentas desde pedidos | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | `PaginaCuentasDePedidos` (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
-| D3c · Libro de reclamaciones | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | `PaginaReclamos` (`TablaAdmin`, `HojaEdicion`) | `ReclamosDelPanel.jsx` |
+| D3a · Recepción ✓ | `pages/admin/dashboard/DashRecepcion.jsx` (la página con `DashHeader`) + `RecepcionPedidos.jsx` + `.module.css` | `PaginaRecepcion` | `RecepcionDelPanel.jsx` (`useAdminWalaOrders`) |
+| D3a · Las cifras ✓ | `components/dashboard/KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
+| D3a · Un pedido ✓ | `TarjetaPedido` y `TarjetaSkeleton` (dentro de RecepcionPedidos) | `TarjetaEnvio`, `EsqueletoEnvio` | la página |
+| D3b · Gestión de pagos ✓ | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (`SeccionHistorial`, `SeccionGenerar`, `SeccionConfig`; `GlassCard`, `GlassInput`, `Badge`) | `PaginaPagos` | `PagosDelPanel.jsx` |
+| D3b · Gráfico por día ✓ | `components/dashboard/charts/TrendChart` (recharts; aquí) | `GraficoTendencia` (`forma='barras'`) | la página |
+| D3b · Las cifras ✓ | `KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
+| D3c · Cuentas desde pedidos ✓ | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | `PaginaCuentasDePedidos` (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
+| D3c · Libro de reclamaciones ✓ | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | `PaginaReclamos` (`TablaAdmin`, `HojaEdicion`) | `ReclamosDelPanel.jsx` |
 
 ### D4 · Resultados
 
@@ -2437,6 +2461,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D3 unido al admin**: recepción, gestión de pagos, cuentas desde pedidos y libro de reclamaciones (`components/panel/PedidosDelPanel.jsx`, interruptor `adminPedidosViejo`) | `components/panel/`, `pages/admin/` |
 | 2026-11-03 | **D2 unido al admin**: lista, inventario, datos para recomendar, la ficha (producto, combo y personalizable), personalizables, packs, blueprints y plantillas de cuadros (`components/panel/`, interruptor `adminProductosViejo`); `pasosYoryo.js` sale de la pantalla; `PlantillasPrenda` con `estadoEnlace` y `fotoConPlantilla` con las vistas; "Pasarla a Crear" queda pendiente | `components/panel/`, `pages/Tienda/admin/`, `pages/admin/`, `kit/piezas/admin/Crear.jsx` |
 | 2026-11-03 | **D0 y D1 unidos al admin**: el marco, sin permiso y el inicio (`MarcoDelPanel`, `InicioDelPanel`, interruptor `adminViejo`) y las ocho páginas del catálogo base (`components/panel/`, interruptor `adminCatalogoViejo`, la ruta `/admin/marcas/:id/productos`); la barra «Modo administrador» ya no sale en el panel; "Quitar páginas repetidas" pregunta; admins de prueba por permiso en el sembrado del emulador | `components/panel/`, `components/AdminLayout/`, `pages/AdminDashboard.jsx`, `pages/admin/`, `components/marco/BarraDeAdmin.jsx`, `App.jsx`, `scripts/seed-emulator.js` |
 | 2026-11-03 | Revisión antes de unir: lo que guardaría el kit frente a la tienda, `functions/` y la app. Corregido en el kit: la ficha conserva `featuredOrder`; los sorteos conservan «+1 chance desde la app» (`chanceExtra`, ahora una opción más); "Mi cuenta" vacío en WhatsApp se guarda con el número de la tienda; un `/l/…` de enlaces ya no se corta a 60 (`slugDeEnlace`); las monedas `null` de la encuesta de entregas son 0, como el servidor; un pack sin tocar su categoría conserva todas. Lo que depende de cada conector, en «Lo que cada conector tiene que cuidar» | `adaptadoresAdmin.js`, `paginas/admin/Enlaces.jsx`, `guia/ADMIN.md` |

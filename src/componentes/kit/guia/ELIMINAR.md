@@ -386,7 +386,7 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 | `AdminCustomizationViewsEditor` y la tarjeta "Producto personalizable" de la ficha de productos | `customizable` / `customizationViews` | Prendas de Crear (`/admin/prendas-crear`) | `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
 | `services/personalizacionVieja.js` y el aviso "Quitar la personalización vieja" de Productos | pasar los datos viejos a normales | — | `AdminProductos.jsx` | cuando en producción ya no quede ninguno (el aviso desaparece solo) |
 
-## Panel administrativo (D0, D1 y D2 unidos el 2026-11-03; lo demás todavía no)
+## Panel administrativo (D0 a D3 unidos el 2026-11-03; lo demás todavía no)
 
 El admin se arma primero en el kit ([ADMIN.md](ADMIN.md)) y después se une
 por apartado. Esta lista anota desde ya lo que va a quedar sin uso y **quién
@@ -413,10 +413,10 @@ su apartado se una y su interruptor se retire.
 | `pages/admin/prendasCrear/PersonalizacionPrenda.jsx`, `ZonaEditor.jsx`, `PlantillasDeLaFicha.jsx` + sus `.module.css` | AdminProductoFormV2 | `DisenoPrenda`, `ColoresPrenda`, `EditorZonas`, `PlantillasPrenda` (D2c) | entre ellos; **`prendaBaseParaGuardar` ya vive en `utils/prendaBase.js`** (PersonalizacionPrenda solo la reexporta) | con la ficha |
 | `pages/admin/AdminBlueprintsViejo.jsx` + `AdminBlueprints.module.css` | `AdminBlueprints.jsx`, solo con `adminProductosViejo` | `PaginaBlueprints` (D2d) | nadie más | al retirar `adminProductosViejo` |
 | `pages/admin/plantillasYoryo/ImportarPlantillasYoryoViejo.jsx` + `.module.css` (**solo la pantalla**) | `ImportarPlantillasYoryo.jsx`, solo con `adminProductosViejo` | `PaginaPlantillasYoryo` (D2d) | — | al retirar `adminProductosViejo` (`plantillasDe`, `importar` y `limpiar` ya viven en `pasosYoryo.js`, desde el 2026-11-03); **los pasos no**: `crearProductosYoryo`, `grabadosYoryo`, `comodasDaida`, `presets*`, `recursos*` y `plantillasACapas` los sigue usando el conector |
-| `pages/admin/dashboard/DashRecepcion.jsx`, `RecepcionPedidos.jsx` + `RecepcionPedidos.module.css` | `App.jsx` (DashRecepcion la envuelve) | `PaginaRecepcion` (D3a) | nadie más (el comentario de `utils/whatsappLink` la nombra) | al retirar `adminPedidosViejo` |
-| `pages/admin/AdminGestionPagos.jsx` + `.module.css` | `App.jsx` | `PaginaPagos` (D3b) | nadie más; **`services/enlacesPago.js` no**: lo usa el conector | al retirar `adminPedidosViejo` |
-| `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` | `App.jsx` | `PaginaCuentasDePedidos` (D3c) | nadie más; **`services/accountFromOrder.js` no**: lo usa el conector (y el alta de cuentas) | al retirar `adminPedidosViejo` |
-| `pages/admin/AdminLibroReclamaciones.jsx` | `App.jsx` | `PaginaReclamos` (D3c) | nadie más | al retirar `adminPedidosViejo` |
+| `pages/admin/dashboard/DashRecepcionViejo.jsx`, `RecepcionPedidos.jsx` + `RecepcionPedidos.module.css` (`DashRecepcion.jsx` ya solo elige) | `DashRecepcion.jsx`, solo con `adminPedidosViejo` (DashRecepcionViejo la envuelve) | `PaginaRecepcion` (D3a) | nadie más (el comentario de `utils/whatsappLink` la nombra) | al retirar `adminPedidosViejo` |
+| `pages/admin/AdminGestionPagosViejo.jsx` + `AdminGestionPagos.module.css` | `AdminGestionPagos.jsx`, solo con `adminPedidosViejo` | `PaginaPagos` (D3b) | nadie más; **`services/enlacesPago.js` no**: lo usa el conector | al retirar `adminPedidosViejo` |
+| `pages/admin/AdminCrearCuentasPedidosViejo.jsx` + `AdminCrearCuentasPedidos.module.css` | `AdminCrearCuentasPedidos.jsx`, solo con `adminPedidosViejo` | `PaginaCuentasDePedidos` (D3c) | nadie más; **`services/accountFromOrder.js` no**: lo usa el conector (y el alta de cuentas) | al retirar `adminPedidosViejo` |
+| `pages/admin/AdminLibroReclamacionesViejo.jsx` | `AdminLibroReclamaciones.jsx`, solo con `adminPedidosViejo` | `PaginaReclamos` (D3c) | nadie más | al retirar `adminPedidosViejo` |
 | `components/dashboard/charts/TrendChart` | AdminGestionPagos, `resultados/Resumen`, `DashPaginas` | `GraficoTendencia` (D3b, D4a, D4d) | nadie más | cuando estén unidos D3 y D4 |
 | `components/dashboard/charts/CompareBars`, `Donut`, `components/dashboard/RankingConMiniaturas` | DashUso, DashOrigen, DashPaginas | `ListaBarras` (D4d) | nadie más | al unir D4 |
 | `pages/admin/resultados/DetalleTecnico.jsx`, `dashboard/BackfillAnaliticaButton.jsx` + sus `.module.css` | `App.jsx`; el botón, desde DetalleTecnico | `PaginaDetalleTecnico` (D4d) | nadie más | al retirar `adminResultadosViejo` |
