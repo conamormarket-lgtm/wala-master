@@ -554,7 +554,7 @@ function ZonasBicolor({ prenda, vistas, colores, onPrenda, setVista }) {
 }
 
 /* La foto de tienda de un color: subirla o hacerla con una plantilla. */
-function FotoDeTienda({ color, foto, vistas, plantillas, onFoto, subir, subiendo, fotoConPlantilla }) {
+function FotoDeTienda({ color, foto, vistas, laser = false, plantillas, onFoto, subir, subiendo, fotoConPlantilla }) {
   const toast = useToast();
   const [eligiendo, setEligiendo] = useState(false);
   const [haciendo, setHaciendo] = useState(false);
@@ -562,7 +562,7 @@ function FotoDeTienda({ color, foto, vistas, plantillas, onFoto, subir, subiendo
   const conPlantilla = async (p) => {
     setEligiendo(false);
     setHaciendo(true);
-    try { onFoto(await fotoConPlantilla(color, p)); } catch (err) { toast({ tipo: 'error', titulo: 'No se pudo hacer la foto', texto: err?.message }); } finally { setHaciendo(false); }
+    try { onFoto(await fotoConPlantilla(color, p, { vistas, laser })); } catch (err) { toast({ tipo: 'error', titulo: 'No se pudo hacer la foto', texto: err?.message }); } finally { setHaciendo(false); }
   };
   return (
     <div className={s.tienda}>
@@ -594,7 +594,7 @@ function FotoDeTienda({ color, foto, vistas, plantillas, onFoto, subir, subiendo
  * colores de la ficha): bicolor (segundo tono y patrón), su versión
  * invertida, la foto de tienda y la foto propia de cada vista.
  *  - prenda · onPrenda · variantes · onAgregarVariantes([{ id, nombre, color, tallas }]) · onFotoTienda(id, url)
- *  - subirImagen · fotoConPlantilla(color, plantilla) → promesa con la url (fotoDeTiendaConPlantilla)
+ *  - subirImagen · fotoConPlantilla(color, plantilla, { vistas, laser }) → promesa con la url (fotoDeTiendaConPlantilla)
  */
 export function ColoresPrenda({ prenda, onPrenda, variantes = [], onAgregarVariantes, onFotoTienda, subirImagen, fotoConPlantilla }) {
   const toast = useToast();
@@ -655,7 +655,7 @@ export function ColoresPrenda({ prenda, onPrenda, variantes = [], onAgregarVaria
                 )}
                 {!listo && <p className={s.falta}><AlertTriangle aria-hidden="true" /> Le falta su foto en alguna vista: no sale en Crear hasta tenerla.</p>}
                 {onFotoTienda && !c.espejo && (
-                  <FotoDeTienda color={c} foto={v?.foto} vistas={vistas} plantillas={plantillas} onFoto={(url) => onFotoTienda(c.id, url)} subir={(a) => subirTienda(a, c.id)} subiendo={subiendoTienda === c.id} fotoConPlantilla={fotoConPlantilla} />
+                  <FotoDeTienda color={c} foto={v?.foto} vistas={vistas} laser={leerTecnica(prenda?.tecnica) === 'laser'} plantillas={plantillas} onFoto={(url) => onFotoTienda(c.id, url)} subir={(a) => subirTienda(a, c.id)} subiendo={subiendoTienda === c.id} fotoConPlantilla={fotoConPlantilla} />
                 )}
                 {vistas.length > 0 && (
                   <div className={s.porVista}>
@@ -686,10 +686,11 @@ const GRUPOS_BASE = ['Parejas', 'Equipos'];
  * "Guardar"), igual que en el estudio, para que no se pisen.
  *  - plantillas (leerPlantillas) · guardado (sin él, no se puede: primero guarda el producto)
  *  - onRenombrar(id, nombre) · onGrupo(id, grupo) · onQuitar(id) → promesas
- *  - urlNueva · urlEditar(id) (el estudio) · otras: [{ id, nombre, plantillas }] (para traer)
+ *  - urlNueva · urlEditar(id) (el estudio) · estadoEnlace (el `state` de esos enlaces: en el admin,
+ *    { desde } para que el estudio vuelva a esta pestaña) · otras: [{ id, nombre, plantillas }] (para traer)
  *  - onTraer(origenId, ids) → promesa
  */
-export function PlantillasPrenda({ plantillas = [], guardado = true, onRenombrar, onGrupo, onQuitar, urlNueva, urlEditar, otras = [], onTraer }) {
+export function PlantillasPrenda({ plantillas = [], guardado = true, onRenombrar, onGrupo, onQuitar, urlNueva, urlEditar, estadoEnlace, otras = [], onTraer }) {
   const toast = useToast();
   const [grupo, setGrupo] = useState('');
   const [ocupado, setOcupado] = useState(null);
@@ -709,7 +710,7 @@ export function PlantillasPrenda({ plantillas = [], guardado = true, onRenombrar
         <h3 className={s.titulo}>Plantillas · {plantillas.length}</h3>
         <span className={s.botones}>
           {onTraer && otras.length > 0 && <Boton tamano="sm" variante="secundario" onClick={() => setTrayendo({ origenId: '', elegidas: [] })}>Traer de otro</Boton>}
-          {urlNueva && <Boton tamano="sm" icono={<Plus aria-hidden="true" />} to={urlNueva}>Nueva plantilla</Boton>}
+          {urlNueva && <Boton tamano="sm" icono={<Plus aria-hidden="true" />} to={urlNueva} state={estadoEnlace}>Nueva plantilla</Boton>}
         </span>
       </div>
       <p className={s.ayuda}>Los diseños para empezar que el cliente ve en el estudio («Empieza con un diseño»), por grupo. Lo que cambias aquí se guarda al momento.</p>
@@ -727,7 +728,7 @@ export function PlantillasPrenda({ plantillas = [], guardado = true, onRenombrar
               <input className={s.texto} defaultValue={p.nombre} aria-label="Nombre de la plantilla" onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== p.nombre) hacer(p.id, () => onRenombrar(p.id, n), 'Nombre guardado'); }} disabled={ocupado === p.id} />
               <Campo etiqueta="Grupo" opciones={[{ valor: '', texto: 'Sin grupo' }, ...grupos.map((g) => ({ valor: g, texto: g }))]} creable value={p.grupo} onChange={(e) => hacer(p.id, () => onGrupo(p.id, e.target.value), 'Grupo guardado')} />
               <span className={s.botones}>
-                {urlEditar && <Boton tamano="sm" variante="secundario" icono={<Pencil aria-hidden="true" />} to={urlEditar(p.id)}>Editar</Boton>}
+                {urlEditar && <Boton tamano="sm" variante="secundario" icono={<Pencil aria-hidden="true" />} to={urlEditar(p.id)} state={estadoEnlace}>Editar</Boton>}
                 <Boton soloIcono tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} aria-label={`Quitar ${p.nombre}`} onClick={() => setQuitar(p)} />
               </span>
             </li>

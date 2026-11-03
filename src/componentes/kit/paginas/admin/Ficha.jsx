@@ -50,7 +50,7 @@ function Bloque({ children, hidden = false }) {
  *  - pestanaInicial ('general' | 'colores' | 'diseno' | 'plantillas' | 'donde') · onPestana (en el admin, ?pestana=)
  * Un personalizable de Crear (datos.esPrenda, D2c) suma Diseño (vistas y
  * zonas) y Plantillas, y sus colores llevan fotos para diseñar y de tienda:
- *  - fotoConPlantilla(color, plantilla) → promesa con la url
+ *  - fotoConPlantilla(color, plantilla, { vistas, laser }) → promesa con la url
  *  - plantillas: las de ahora (se guardan al momento: llegan de afuera) ·
  *    accionesPlantillas: { onRenombrar, onGrupo, onQuitar, onTraer, otras, urlNueva, urlEditar }
  */

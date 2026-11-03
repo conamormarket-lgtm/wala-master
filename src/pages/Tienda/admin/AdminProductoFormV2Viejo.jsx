@@ -1,0 +1,1881 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import useLoViejo from '../../../hooks/useLoViejo';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
+import { getBrands, createBrand, updateBrand } from '../../../services/brands';
+import { getCategories, createCategory } from '../../../services/categories';
+import { getCollections, createCollection } from '../../../services/collections';
+import { getTags, createTag } from '../../../services/tags';
+import { getCharacters, createCharacter } from '../../../services/characters';
+import { getProductTypes, createProductType } from '../../../services/productTypes';
+import { uploadFile, deleteFile } from '../../../services/firebase/storage';
+import CreatableSelect from 'react-select/creatable';
+import { ImagePlus, Save, ArrowLeft, Loader2, Image as ImageIcon, Trash2, Star, X, Edit2 } from 'lucide-react';
+import Button from '../../../components/common/Button';
+import ProductImageContainer from '../components/ProductImageContainer/ProductImageContainer';
+import ThumbnailCropEditor from '../../../components/admin/ThumbnailCropEditor/ThumbnailCropEditor';
+import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
+import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
+import GenerarFrenteEspalda from './GenerarFrenteEspalda';
+import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
+import PersonalizacionPrenda, { prendaBaseInicial, prendaBaseParaGuardar } from '../../admin/prendasCrear/PersonalizacionPrenda';
+import PersonalizarEnCrear from './PersonalizarEnCrear';
+import PlantillasDeLaFicha from '../../admin/prendasCrear/PlantillasDeLaFicha';
+import { getDocument } from '../../../services/firebase/firestore';
+import { leerPlantillas } from '../../../utils/prendaBase';
+import ReactQuill, { Quill } from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import styles from './AdminProductoFormV2.module.css';
+import { PUBLICOS, EDADES } from '../../../utils/giftRecommender.mjs';
+
+const Size = Quill.import('attributors/style/size');
+Size.whitelist = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
+Quill.register(Size, true);
+
+const Font = Quill.import('attributors/style/font');
+Font.whitelist = ['arial', 'courier', 'garamond', 'tahoma', 'times-new-roman', 'verdana', 'impact', 'roboto', 'open-sans', 'montserrat', 'lato'];
+Quill.register(Font, true);
+
+
+const TagInput = ({ tags, setTags, placeholder }) => {
+  const [input, setInput] = useState('');
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = input.trim();
+      if (val && !tags.includes(val)) {
+        setTags([...tags, val]);
+      }
+      setInput('');
+    }
+  };
+  const removeTag = (indexToRemove) => {
+    setTags(tags.filter((_, i) => i !== indexToRemove));
+  };
+  return (
+    <div className={styles.tagInputContainer}>
+      <div className={styles.tagList}>
+        {tags.map((tag, i) => (
+          <span key={i} className={styles.tagBadge}>
+            {tag} <button type="button" onClick={() => removeTag(i)}><X size={12}/></button>
+          </span>
+        ))}
+      </div>
+      <input 
+        type="text" 
+        className={styles.input} 
+        value={input} 
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+};
+
+/**
+ * La ficha del catálogo. Con modo="prenda" es la de una prenda de Crear
+ * (/admin/prendas-crear): siempre esPrendaBase, sin formato de venta, con sus
+ * vistas y zonas a la vista y con "publicada en Crear" (antes se guardaba
+ * siempre visible y una prenda a medias salía en Crear).
+ */
+const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
+  const esModoPrenda = modo === 'prenda';
+  // Los productos de la tienda ya no se personalizan (2026-10-20): eso es
+  // Crear. Con el interruptor personalizableViejo vuelven "Producto
+  // personalizable" (editor viejo) y Yoryo en la ficha de productos.
+  const personalizableViejo = useLoViejo('personalizable');
+  const sinPersonalizacion = esModoPrenda || !personalizableViejo;
+  const rutaLista = esModoPrenda ? '/admin/productos?ver=crear' : '/admin/productos';
+  const { id } = useParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const urlDraftId = searchParams.get('draftId');
+  // Marca preseleccionada al abrir el formulario desde "Crear producto en {marca}"
+  // (AdminMarcas → /admin/productos/nuevo?brandId=<id>). Solo aplica a productos NUEVOS:
+  // siembra form.brandId sin tocar nada de precios/stock ni la lógica de guardado.
+  const urlBrandId = searchParams.get('brandId') || '';
+  const isNew = !id;
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // Si no hay draftId en la URL, se genera uno nuevo (o se usa el id del producto si estamos editando)
+  const [draftId] = useState(() => urlDraftId || (isNew ? generateProductId() : id));
+  
+  // Ref para comunicar la orden de guardado al componente YoryoPersonalizado
+  const yoryoRef = useRef(null);
+
+  // Prevenir duplicación de borradores: inyectar el draftId en la URL si es un producto nuevo
+  // De esta manera, si el usuario recarga la página (F5), se leerá de la URL y reutilizará el mismo borrador.
+  useEffect(() => {
+    if (isNew && !urlDraftId) {
+      // Conservamos brandId en la URL para no perder la marca preseleccionada al inyectar el draftId.
+      const brandParam = urlBrandId ? `&brandId=${urlBrandId}` : '';
+      navigate(`?draftId=${draftId}${brandParam}`, { replace: true });
+    }
+  }, [isNew, urlDraftId, urlBrandId, draftId, navigate]);
+
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    salePrice: '',
+    sku: '',
+    brandId: '',
+    fulfillmentType: '',
+    productType: '',
+    category: '',
+    collections: [],
+    defaultVariantId: '', // ID de la variante principal
+    variants: [], 
+    customizable: false,
+    customizationViews: [],
+    // Apartado Crear: prenda que el cliente diseña (utils/prendaBase.js).
+    esPrendaBase: esModoPrenda,
+    // Se ve en la tienda (o en Crear, si es una prenda). Antes el guardado
+    // lo ponía siempre en true: ocultar algo duraba hasta volver a guardarlo.
+    visible: true,
+    // Una prenda de Crear que también sale en la tienda (utils/enTienda.mjs).
+    enTienda: false,
+    // Y además se vende sin personalizar, con "Agregar al carrito" (la billetera de Yoryo).
+    seVendeTalCual: false,
+    prendaBase: prendaBaseInicial(),
+    characters: [],
+    tags: [],
+    // Datos para las ideas de regalo (ver /admin/publico-productos).
+    publico: '',
+    equipo: '',
+    edadMinima: '',
+    isComboProduct: false,
+    comboItems: [],
+    comboPreviewImage: '',
+    comboTallas: 'porPrenda',
+    featured: false,
+    inStock: esModoPrenda ? '' : 0,
+    // WhatsApp por producto. Vacio = hereda el de su marca (/admin/marcas) y,
+    // si la marca no tiene, el global de /admin/whatsapp.
+    whatsappEnabled: true,
+    whatsappNumber: '',
+    whatsappMessage: '',
+  });
+
+  const [initialFormState, setInitialFormState] = useState(null);
+  const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [designUrlInput, setDesignUrlInput] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  // Editor inline de encuadre (crop no destructivo) de la portada de la variante activa.
+  const [cropEditing, setCropEditing] = useState(false);
+  // URL de la imagen de galería que se está encuadrando (null = ninguna).
+  const [galleryCropTarget, setGalleryCropTarget] = useState(null);
+  const [showBrandModal, setShowBrandModal] = useState(false);
+  // La pestaña abierta (?pestana=): así "Volver al producto" del estudio
+  // regresa a la misma (las plantillas).
+  const [pestana, setPestana] = useState(() => searchParams.get('pestana') || 'general');
+  const cambiarPestana = (nueva) => {
+    setPestana(nueva);
+    const q = new URLSearchParams(window.location.search);
+    q.set('pestana', nueva);
+    navigate({ search: q.toString() }, { replace: true });
+  };
+  const [newBrandForm, setNewBrandForm] = useState({ id: null, name: '', logoUrl: '' });
+  const [creatingBrand, setCreatingBrand] = useState(false);
+
+  const quillModules = {
+    toolbar: [
+      [{ 'font': Font.whitelist }],
+      [{ 'size': Size.whitelist }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+
+  // Consultas de datos
+  const { data: brands } = useQuery({ queryKey: ['admin-brands'], queryFn: async () => (await getBrands()).data });
+  const { data: categories } = useQuery({ queryKey: ['admin-categories'], queryFn: async () => (await getCategories()).data });
+  const { data: collections } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data });
+  const { data: tags } = useQuery({ queryKey: ['admin-tags'], queryFn: async () => (await getTags()).data });
+  const { data: characters } = useQuery({ queryKey: ['admin-characters'], queryFn: async () => (await getCharacters()).data });
+  const { data: productTypes } = useQuery({ queryKey: ['admin-product-types'], queryFn: async () => (await getProductTypes()).data });
+
+  // La categoría maestra puede compartirse entre marcas mediante brandIds.
+  // Al elegir una marca, el producto solo ve las categorías de esa empresa.
+  const categoriesForBrand = useMemo(() => (categories || []).filter((category) => {
+    const categoryBrandIds = Array.isArray(category.brandIds) ? category.brandIds : [];
+    return !form.brandId || categoryBrandIds.includes(form.brandId);
+  }), [categories, form.brandId]);
+
+  const collectionsForBrand = useMemo(() => (collections || []).filter((collection) => {
+    const collectionBrandIds = Array.isArray(collection.brandIds) ? collection.brandIds : [];
+    return !form.brandId || collectionBrandIds.includes(form.brandId);
+  }), [collections, form.brandId]);
+
+  const tagsForBrand = useMemo(() => (tags || []).filter((tag) => {
+    const tagBrandIds = Array.isArray(tag.brandIds) ? tag.brandIds : [];
+    return !form.brandId || tagBrandIds.length === 0 || tagBrandIds.includes(form.brandId);
+  }), [tags, form.brandId]);
+
+  const charactersForBrand = useMemo(() => (characters || []).filter((character) => {
+    const characterBrandIds = Array.isArray(character.brandIds) ? character.brandIds : [];
+    return !form.brandId || characterBrandIds.length === 0 || characterBrandIds.includes(form.brandId);
+  }), [characters, form.brandId]);
+
+  // Si editamos un producto existente en DB
+  const { data: productData, isLoading: loadingProduct } = useQuery({
+    queryKey: ['admin-product', id],
+    queryFn: async () => (await getProduct(id)).data,
+    enabled: !isNew
+  });
+
+  // 1. Cargar datos iniciales (De Firebase o de LocalStorage Draft)
+  useEffect(() => {
+    // Si estamos editando un producto oficial
+    if (!isNew && productData) {
+      let mappedVariants = (productData.variants || []).map(v => ({
+        ...v,
+        // Asegurar que images y sizes siempre sean arrays
+        images: Array.isArray(v.images) ? v.images : [],
+        sizes: Array.isArray(v.sizes) ? v.sizes : [],
+        sizeLabel: v.sizeLabel || 'Talla',
+        showSizeConfig: v.showSizeConfig || (Array.isArray(v.sizes) && v.sizes.length > 0),
+      }));
+
+      // ── FALLBACK: producto sin variants[] (legacy o guardado sin hasVariants) ──
+      // Si no hay variantes pero hay mainImage, creamos una variante sintética
+      // para que el editor de variantes pueda trabajar.
+      if (mappedVariants.length === 0 && !productData.isComboProduct) {
+        const syntheticId = productData.defaultVariantId || `var_${Date.now()}`;
+        mappedVariants = [{
+          id: syntheticId,
+          name: 'Principal',
+          colorHex: '#cccccc',
+          imageUrl: productData.mainImage || '',
+          images: Array.isArray(productData.images) ? productData.images.filter(u => u !== productData.mainImage) : [],
+          sizes: Array.isArray(productData.mainSizes) ? productData.mainSizes : [],
+          sizeLabel: 'Talla',
+          showSizeConfig: Array.isArray(productData.mainSizes) && productData.mainSizes.length > 0,
+          thumbnailCrop: productData.thumbnailCrop || null,
+          imagesCrops: productData.imagesCrops || {},
+        }];
+      }
+
+      const firstVariantId = mappedVariants[0]?.id || '';
+
+      // Cada cosa en su ficha: las prendas y los combos de Crear tienen la suya.
+      if (!esModoPrenda && productData.esPrendaBase === true) {
+        navigate(`/admin/prendas-crear/${id}`, { replace: true });
+        return;
+      }
+      if (!esModoPrenda && productData.esComboCrear === true) {
+        navigate('/admin/combos-crear', { replace: true });
+        return;
+      }
+      if (esModoPrenda && productData.esPrendaBase !== true) {
+        navigate(`/admin/productos/${id}`, { replace: true });
+        return;
+      }
+
+      const newForm = {
+        name: productData.name || '',
+        description: productData.description || '',
+        price: productData.price || '',
+        salePrice: productData.salePrice || '',
+        sku: productData.sku || '',
+        brandId: productData.brandId || '',
+        fulfillmentType: productData.fulfillmentType || '',
+        productType: productData.productType || '',
+        category: (() => {
+          const raw = Array.isArray(productData.categories)
+            ? (productData.categories[0]?.id || productData.categories[0] || '')
+            : (productData.category?.id || productData.category || '');
+          return raw === '[object Object]' ? '' : raw;
+        })(),
+        collections: (() => {
+          const raw = productData.collections;
+          // Retrocompat: array de ids, array de objetos {id}, un solo string o {id}
+          const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+          return arr
+            .map(c => (c && typeof c === 'object' ? c.id : c) || '')
+            .filter(c => c && c !== '[object Object]');
+        })(),
+        defaultVariantId: productData.defaultVariantId || firstVariantId,
+        variants: mappedVariants,
+        customizable: productData.customizable || false,
+        customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
+        esPrendaBase: productData.esPrendaBase === true,
+        personalizarEn: productData.personalizarEn || '',
+        visible: productData.visible !== false,
+        enTienda: productData.enTienda === true,
+        seVendeTalCual: productData.seVendeTalCual === true,
+        prendaBase: productData.prendaBase || prendaBaseInicial(),
+        isComboProduct: Boolean(productData.isComboProduct),
+        comboItems: productData.comboItems || [],
+        comboPreviewImage: productData.comboPreviewImage || '',
+        comboTallas: productData.comboTallas === 'una' ? 'una' : 'porPrenda',
+        characters: productData.characters || [],
+        tags: productData.tags || [],
+        publico: productData.publico || '',
+        equipo: productData.equipo || '',
+        edadMinima: productData.edadMinima ?? '',
+        featured: productData.featured || false,
+        // Una prenda de Crear sin stock no tiene límite: el campo queda vacío.
+        inStock: productData.esPrendaBase === true ? (productData.inStock ?? '') : (productData.inStock || 0),
+        // Sin esto, editar un producto con numero propio lo BORRABA: el form
+        // no los leia ni los reenviaba, y el payload los machacaba con ''.
+        whatsappEnabled: productData.whatsappEnabled !== false,
+        whatsappNumber: productData.whatsappNumber || '',
+        whatsappMessage: productData.whatsappMessage || '',
+      };
+      setForm(newForm);
+      setInitialFormState(JSON.stringify(newForm));
+
+      // Abrir en la variante principal (👑), no en la primera: si no, la foto
+      // que se sube sin cambiar de pestaña cae en otro color (le pasó a
+      // Rodar Contigo: la nueva quedó en Blanco y la tienda seguía en Negro).
+      const pestanaInicial = mappedVariants.some(v => v.id === productData.defaultVariantId)
+        ? productData.defaultVariantId
+        : firstVariantId;
+      if (pestanaInicial) setActiveGalleryTabId(pestanaInicial);
+      return; // No cargamos draft si estamos editando uno oficial directamente sin draftId
+    }
+
+    // Si es un producto NUEVO pero viene con draftId, cargamos el borrador
+    if (isNew && urlDraftId) {
+      const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
+      const draft = savedDrafts.find(d => d.draftId === urlDraftId);
+      if (draft) {
+        setForm(draft.form);
+        setInitialFormState(JSON.stringify(draft.form));
+        if (draft.form.variants?.length > 0) {
+          const principal = draft.form.variants.find(v => v.id === draft.form.defaultVariantId);
+          setActiveGalleryTabId((principal || draft.form.variants[0]).id);
+        }
+      } else {
+        // Fallback si no encuentra el draft
+        initEmptyForm();
+      }
+      return;
+    }
+
+    // Si es completamente nuevo y sin draftId
+    if (isNew && !urlDraftId && form.variants.length === 0) {
+      initEmptyForm();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productData, isNew, urlDraftId]);
+
+  const initEmptyForm = () => {
+    const initialVariantId = `var_${Date.now()}`;
+    setForm(f => {
+      const newForm = {
+        ...f,
+        // Marca preseleccionada (si se abrió con ?brandId=...); si no, conserva lo que hubiera.
+        brandId: urlBrandId || f.brandId || '',
+        defaultVariantId: initialVariantId,
+        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
+        customizable: false,
+        customizationViews: [],
+        esPrendaBase: esModoPrenda,
+        prendaBase: prendaBaseInicial(),
+        visible: true,
+        characters: [],
+        tags: [],
+        publico: '',
+        equipo: '',
+        edadMinima: '',
+        isComboProduct: false,
+        comboItems: [],
+        comboPreviewImage: '',
+        comboTallas: 'porPrenda',
+        featured: false,
+        inStock: esModoPrenda ? '' : 0,
+      };
+      setInitialFormState(JSON.stringify(newForm));
+      return newForm;
+    });
+    setActiveGalleryTabId(initialVariantId);
+  };
+
+  // 2. Autoguardado en LocalStorage
+  useEffect(() => {
+    // Guardar borrador SOLO si la data ha cambiado de su estado inicial
+    if (form.variants.length > 0 && initialFormState && JSON.stringify(form) !== initialFormState) {
+      const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
+      const existingDraftIndex = savedDrafts.findIndex(d => d.draftId === draftId);
+      
+      const draftObj = {
+        draftId,
+        form,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (existingDraftIndex >= 0) {
+        savedDrafts[existingDraftIndex] = draftObj;
+      } else {
+        savedDrafts.push(draftObj);
+      }
+      localStorage.setItem('wala_drafts', JSON.stringify(savedDrafts));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, draftId]);
+
+  const activeVariant = form.variants.find(v => v.id === activeGalleryTabId);
+
+  const updateActiveVariant = (updates) => {
+    setForm(f => ({
+      ...f,
+      variants: f.variants.map(v => v.id === activeGalleryTabId ? { ...v, ...updates } : v)
+    }));
+  };
+
+  // Guarda (o quita, si cropData es null) el encuadre de una imagen de galería,
+  // en el mapa imagesCrops keyeado por URL de la variante activa.
+  const setGalleryImageCrop = (url, cropData) => {
+    setForm(f => ({
+      ...f,
+      variants: f.variants.map(v => {
+        if (v.id !== activeGalleryTabId) return v;
+        const next = { ...(v.imagesCrops || {}) };
+        if (cropData) next[url] = cropData; else delete next[url];
+        return { ...v, imagesCrops: next };
+      })
+    }));
+  };
+
+  // ── Protección de historial (P0): imágenes ya PERSISTIDAS en Firestore ──
+  // Conjunto de URLs de Storage que ya estaban guardadas en el producto ANTES
+  // de esta sesión de edición (variantes, galería, vistas, combo, etc.). Esas
+  // URLs pueden estar congeladas en pedidos/wishlists/listas de regalos, así
+  // que NUNCA se borran de Storage; solo se pueden borrar archivos subidos
+  // durante la sesión de edición actual.
+  const persistedImageUrls = useMemo(() => {
+    const urls = new Set();
+    if (isNew || !productData) return urls;
+    const recolectar = (val) => {
+      if (typeof val === 'string') {
+        if (val.includes('firebasestorage.googleapis.com')) urls.add(val);
+      } else if (Array.isArray(val)) {
+        val.forEach(recolectar);
+      } else if (val && typeof val === 'object') {
+        Object.values(val).forEach(recolectar);
+      }
+    };
+    recolectar(productData);
+    return urls;
+  }, [isNew, productData]);
+
+  const safelyDeleteOldImage = async (url) => {
+    if (!url || !url.includes('firebasestorage.googleapis.com')) return;
+    // No tocar archivos que ya estaban persistidos en el producto publicado:
+    // sus URLs pueden estar congeladas en el historial (pedidos, wishlists).
+    // Al quitarlas del form desaparecen del producto, pero el archivo queda.
+    if (persistedImageUrls.has(url)) return;
+    try { await deleteFile(url); } catch(e) { console.warn('Could not delete old image', e); }
+  };
+
+  /**
+   * Añade al mapa de la variante activa las copias pequeñas que devolvió
+   * uploadFile, con la URL principal como clave (mismo patrón que imagesCrops).
+   * Si no hubo variantes —imagen ya diminuta, o falló su subida— no escribe
+   * nada y esa imagen se sigue sirviendo en su tamaño único, como antes.
+   */
+  const conVariantes = (url, variantes) => {
+    if (!url || !variantes || Object.keys(variantes).length === 0) return {};
+    return { imagesVariantes: { ...(activeVariant?.imagesVariantes || {}), [url]: variantes } };
+  };
+
+  // Deja la variante sin foto principal (el producto puede guardarse sin foto).
+  // Al guardar, mainImage/images vacíos se borran del documento (updateDocument).
+  const handleRemoveMainImage = async () => {
+    if (!activeVariant?.imageUrl) return;
+    if (!window.confirm('¿Quitar la imagen principal de esta variante?')) return;
+    const url = activeVariant.imageUrl;
+    updateActiveVariant({ imageUrl: '', thumbnailCrop: null });
+    setCropEditing(false);
+    await safelyDeleteOldImage(url);
+  };
+
+  const handleDirectImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !activeVariant) return;
+    setUploading(true);
+    try {
+      const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}_${file.name}`;
+      const { url, variantes } = await uploadFile(file, path);
+      if (url) {
+        await safelyDeleteOldImage(activeVariant.imageUrl);
+        updateActiveVariant({ imageUrl: url, ...conVariantes(url, variantes) });
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length || !activeGalleryTabId) return;
+    setUploading(true);
+    try {
+      const newImages = [];
+      const mapaVariantes = { ...(activeVariant.imagesVariantes || {}) };
+      for (const file of files) {
+        const path = `productos_v2/${draftId}/gallery_${Date.now()}_${file.name}`;
+        const { url, variantes } = await uploadFile(file, path);
+        if (url) {
+          newImages.push(url);
+          if (variantes && Object.keys(variantes).length > 0) mapaVariantes[url] = variantes;
+        }
+      }
+      updateActiveVariant({
+        images: [...(activeVariant.images || []), ...newImages],
+        imagesVariantes: mapaVariantes,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // La imagen "frente y espalda" (GenerarFrenteEspalda) entra como una foto más
+  // de la galería, al final: la principal y la segunda quedan como estaban.
+  // El nombre del archivo importa: la ficha de un combo la reconoce por
+  // "_frente-espalda." (esFrenteEspalda en kit/paginas/Producto.jsx).
+  const handleGuardarFrenteEspalda = async (blob) => {
+    if (!activeVariant) return;
+    setUploading(true);
+    try {
+      const archivo = new File([blob], 'frente-espalda.png', { type: 'image/png' });
+      const path = `productos_v2/${draftId}/gallery_${Date.now()}_frente-espalda.png`;
+      const { url, variantes } = await uploadFile(archivo, path);
+      if (!url) throw new Error('No se pudo subir la imagen.');
+      updateActiveVariant({
+        images: [...(activeVariant.images || []), url],
+        ...conVariantes(url, variantes),
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeGalleryImage = async (index) => {
+    const imageUrlToDelete = activeVariant.images[index];
+    if (!imageUrlToDelete) return;
+    
+    setUploading(true);
+    try {
+      await safelyDeleteOldImage(imageUrlToDelete);
+      updateActiveVariant({ images: activeVariant.images.filter((_, i) => i !== index) });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Drag & Drop
+  const [draggedIdx, setDraggedIdx] = useState(null);
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    e.dataTransfer.setData('text/plain', index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  const handleDrop = (e, targetIdx) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
+    const newImages = [...(activeVariant.images || [])];
+    const [draggedImg] = newImages.splice(draggedIdx, 1);
+    newImages.splice(targetIdx, 0, draggedImg);
+    updateActiveVariant({ images: newImages });
+    setDraggedIdx(null);
+  };
+
+  const addVariant = () => {
+    const newId = `var_${Date.now()}`;
+    setForm(f => ({
+      ...f,
+      variants: [...f.variants, { id: newId, name: 'Nueva Variante', colorHex: '#cccccc', images: [], imageUrl: '' }]
+    }));
+    setActiveGalleryTabId(newId);
+  };
+
+  const removeVariant = (variantId) => {
+    if (form.variants.length <= 1) {
+      alert("El producto debe tener al menos una variante.");
+      return;
+    }
+    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta variante? Esto quitará su foto principal y galería.");
+    if (!confirmDelete) return;
+
+    setForm(f => {
+      const newVariants = f.variants.filter(v => v.id !== variantId);
+      return {
+        ...f,
+        variants: newVariants,
+        defaultVariantId: f.defaultVariantId === variantId ? newVariants[0].id : f.defaultVariantId
+      };
+    });
+
+    if (activeGalleryTabId === variantId) {
+      setActiveGalleryTabId(form.variants.find(v => v.id !== variantId)?.id || null);
+    }
+  };
+
+  const handleToggleCustomizable = (e) => {
+    const isCustomizable = e.target.checked;
+    setForm(f => {
+      const newState = { ...f, customizable: isCustomizable };
+      
+      if (isCustomizable && f.customizationViews.length === 0) {
+        let baseImageUrl = '';
+        const defaultVariant = f.variants.find(v => v.id === f.defaultVariantId) || f.variants[0];
+        
+        if (defaultVariant) {
+          baseImageUrl = defaultVariant.imageUrl || '';
+        }
+
+        const newView = {
+          id: `view_${Date.now()}`,
+          name: 'Vista 1 (Frente)',
+          imagesByColor: { default: baseImageUrl },
+          initialLayersByColor: { default: [] },
+          printAreas: [{
+            id: `zone_${Date.now()}_0`,
+            shape: 'rectangle',
+            x: 20, y: 20, width: 60, height: 60, rotation: 0, skewX: 0, skewY: 0
+          }]
+        };
+        newState.customizationViews = [newView];
+      }
+      return newState;
+    });
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async (payload) => {
+      if (isNew) return await createProduct(payload, draftId);
+      return await updateProduct(id, payload);
+    },
+    onSuccess: async () => {
+      // Limpiar borrador si existe
+      const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
+      const filtered = savedDrafts.filter(d => d.draftId !== draftId);
+      localStorage.setItem('wala_drafts', JSON.stringify(filtered));
+
+      // Forzamos la descarga de la nueva lista antes de navegar (refetchQueries sí o sí descarga aunque la query esté inactiva)
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['admin-products'] }),
+        // El formulario de edición lee de ['admin-product', id] con staleTime de 1h.
+        // Sin refetch, al volver a editar se servirían los datos ANTIGUOS de la caché.
+        !isNew && queryClient.refetchQueries({ queryKey: ['admin-product', id] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        // Prendas de Crear (estudio, combos, creaciones) y su lista: un color
+        // nuevo (p.ej. un bicolor al revés) se ve sin esperar la hora de caché.
+        queryClient.invalidateQueries({ queryKey: ['prenda-base'] }),
+        queryClient.invalidateQueries({ queryKey: ['prendas-base'] }),
+        // 'products-infinite' es la query que de verdad alimenta el catálogo
+        // por defecto (home de marca sin ?categoria= ni búsqueda, ver
+        // TiendaPage.jsx). Se agregó en la paginación con cursor DESPUÉS de
+        // esta lista de invalidación y quedó afuera: sin esto, guardar un
+        // producto (p.ej. cambiar la portada de un combo) no se reflejaba
+        // en esa vista hasta que expiraba el staleTime de 5 min o se
+        // remontaba la página.
+        queryClient.invalidateQueries({ queryKey: ['products-infinite'] }),
+        queryClient.invalidateQueries({ queryKey: ['product', id] }),
+        queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
+        queryClient.invalidateQueries({ queryKey: ['collection-products'] }),
+        // Las prendas de Crear: su lista del admin y lo que muestra Crear.
+        queryClient.invalidateQueries({ queryKey: ['admin-prendas-crear'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['prendas-base'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['prenda-base'], refetchType: 'all' }),
+      ].filter(Boolean));
+      
+      navigate(rutaLista);
+    }
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || (!form.isComboProduct && form.variants.length === 0)) return;
+    // Antes esto no se validaba: se podía guardar un "combo" con 0 productos
+    // agregados y quedaba visible/comprable en la tienda sin mostrar nada al
+    // abrirlo (ver comboProductUtils.validateComboStructure, que existe pero
+    // nunca se llama desde ningún lado — este es el único chequeo real hoy).
+    if (form.isComboProduct && (!Array.isArray(form.comboItems) || form.comboItems.length === 0)) {
+      alert('Agrega al menos un producto al combo antes de guardar.');
+      return;
+    }
+
+    const esPrenda = form.esPrendaBase && !form.isComboProduct;
+    if (esPrenda) {
+      const vistas = form.prendaBase?.vistas || [];
+      if (!vistas.length || vistas.some((v) => !v.imagen || !(v.zonas?.length || v.zona))) {
+        cambiarPestana('diseno');
+        alert('Producto personalizable: cada vista necesita su foto y al menos una zona de impresión (pestaña Diseño).');
+        return;
+      }
+    }
+
+    // Validación de imagen eliminada para permitir productos sin foto
+    setUploading(true);
+    try {
+      // Una prenda de Crear no necesita fotos por color: si a una variante le
+      // falta, se usa la foto de su primera vista para que el admin, el carrito
+      // y los pedidos no queden sin miniatura.
+      const fotoPrenda = esPrenda ? (form.prendaBase.vistas[0]?.imagen || '') : '';
+      const finalVariants = form.variants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        colorHex: v.colorHex,
+        imageUrl: v.imageUrl || fotoPrenda,
+        images: Array.isArray(v.images) ? v.images : [],
+        sizes: Array.isArray(v.sizes) ? v.sizes : [],
+        sizeLabel: v.sizeLabel || 'Talla',
+        showSizeConfig: v.showSizeConfig || false,
+        // Encuadre no destructivo de la portada (lo aplican las tarjetas del catálogo).
+        thumbnailCrop: v.thumbnailCrop || null,
+        // Encuadre por imagen de galería: { [url]: { percentages } }.
+        imagesCrops: (v.imagesCrops && typeof v.imagesCrops === 'object') ? v.imagesCrops : {},
+        // Copias de 160/400/800 px que dejó uploadFile, solo de las fotos que
+        // siguen en la variante. Antes no viajaban: subir o volver a guardar
+        // un producto lo dejaba sirviendo siempre la foto grande.
+        imagesVariantes: Object.fromEntries(
+          Object.entries(v.imagesVariantes || {})
+            .filter(([url]) => url === v.imageUrl || (v.images || []).includes(url))
+        ),
+      }));
+
+      // Identify main image
+      const defaultVariant = finalVariants.find(v => v.id === form.defaultVariantId) || finalVariants[0];
+      let currentMainImage = defaultVariant?.imageUrl || '';
+      const isCombo = form.isComboProduct;
+
+      let currentComboPreview = form.comboPreviewImage;
+
+      // Las plantillas se guardan al momento desde su pestaña (y desde el
+      // estudio): se toman del producto tal como está, así guardar la ficha
+      // no borra una que se agregó o cambió mientras estaba abierta.
+      let plantillasActuales = form.prendaBase?.plantillas;
+      if (esPrenda && !isNew) {
+        const { data: actual } = await getDocument('productos_wala', id);
+        if (actual) plantillasActuales = actual.prendaBase?.plantillas || [];
+      }
+
+      // ── CRÍTICO: Capturar la foto del lienzo unificado ANTES de armar el payload ──
+      if (form.customizable && yoryoRef.current) {
+        const newPreviewUrl = await yoryoRef.current.saveYoryoData();
+        if (newPreviewUrl) {
+          if (isCombo) {
+            currentComboPreview = newPreviewUrl;
+          }
+          currentMainImage = newPreviewUrl;
+        }
+      }
+
+      const payload = {
+        name: form.name,
+        description: form.description,
+        price: Number(form.price) || 0,
+        salePrice: Number(form.salePrice) || 0,
+        inStock: esPrenda && form.inStock === '' ? null : Number(form.inStock) || 0,
+        sku: form.sku,
+        brandId: form.brandId,
+        fulfillmentType: form.fulfillmentType || undefined,
+        productType: form.productType || '',
+        categories: form.category ? [form.category] : [],
+        collections: Array.isArray(form.collections) ? form.collections : [],
+        mainImage: currentMainImage,
+        thumbnailWithDesignUrl: form.customizable && !sinPersonalizacion ? currentMainImage : '',
+        mainSizes: [],                     // Las tallas viven dentro de cada variante
+        defaultVariantId: defaultVariant?.id || '',
+        // ── CRÍTICO: persistir hasVariants para que normalizeProductForRead lo lea ──
+        hasVariants: !isCombo && finalVariants.length > 0,
+        customizable: (esPrenda || sinPersonalizacion) ? false : form.customizable,
+        customizationViews: (esPrenda || sinPersonalizacion) ? [] : form.customizationViews,
+        esPrendaBase: esPrenda,
+        ...(esPrenda && { prendaBase: prendaBaseParaGuardar({ ...form.prendaBase, plantillas: plantillasActuales }, finalVariants) }),
+        personalizarEn: esPrenda ? '' : form.personalizarEn || '',
+        whatsappEnabled: form.whatsappEnabled !== false,
+        whatsappNumber: (form.whatsappNumber || '').trim(),
+        whatsappMessage: (form.whatsappMessage || '').trim(),
+        isComboProduct: isCombo,
+        comboItems: isCombo ? form.comboItems : [],
+        comboTallas: form.comboTallas,
+        comboPreviewImage: isCombo ? currentComboPreview : '',
+        characters: form.characters || [],
+        tags: form.tags || [],
+        publico: form.publico || '',
+        equipo: form.equipo || '',
+        edadMinima: form.edadMinima,
+        variants: isCombo ? [] : finalVariants,
+        visible: form.visible !== false,
+        enTienda: esPrenda && form.enTienda === true,
+        seVendeTalCual: esPrenda && form.enTienda === true && form.seVendeTalCual === true,
+        featured: form.featured,
+        isV2: true,
+      };
+
+      await saveMutation.mutateAsync(payload);
+      
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (loadingProduct) return <div className={styles.wrapper}>Cargando...</div>;
+
+  // Un producto que se personaliza en Crear (una prenda o un cuadro, no un combo).
+  const esPersonalizable = form.esPrendaBase && !form.isComboProduct;
+  const nPlantillas = leerPlantillas(form.prendaBase?.plantillas).length;
+  const PESTANAS = esPersonalizable
+    ? [['general', 'General'], ['colores', 'Colores y fotos'], ['diseno', 'Diseño'], ['plantillas', `Plantillas (${nPlantillas})`], ['donde', 'Dónde se ve']]
+    : [['general', 'General'], ['colores', form.isComboProduct ? 'Piezas del combo' : 'Colores y tallas'], ['donde', 'Dónde se ve']];
+  const pestanaActual = PESTANAS.some(([k]) => k === pestana) ? pestana : 'general';
+  // La clase que esconde lo que no es de la pestaña abierta (no se desmonta:
+  // así no se pierde lo que se está editando).
+  const fuera = (...ps) => (ps.includes(pestanaActual) ? '' : ` ${styles.oculta}`);
+  // Al activar "También en la tienda" sin fotos de tienda, la tarjeta mostraría el producto en blanco.
+  const vistasPrenda = form.prendaBase?.vistas || [];
+  const sinFotoTienda = esPersonalizable && !form.variants.some((v) => v.imageUrl && !vistasPrenda.some((vi) => vi.imagen === v.imageUrl));
+  const propsPrenda = {
+    valor: form.prendaBase,
+    variantes: form.variants,
+    varianteDefecto: form.defaultVariantId,
+    draftId,
+    onChange: (valor) => setForm((f) => ({ ...f, prendaBase: typeof valor === 'function' ? valor(f.prendaBase) : valor })),
+    onAgregarVariantes: (nuevas) => setForm((f) => {
+      // Si el producto solo tiene la variante vacía de inicio, se reemplaza.
+      const vacia = f.variants.length === 1 && !f.variants[0].imageUrl && /^Variante 1$/.test(f.variants[0].name || '');
+      const base = vacia ? [] : f.variants;
+      const variants = [...base, ...nuevas.map((n) => ({
+        id: n.id, name: n.nombre, colorHex: n.hex,
+        images: [], imageUrl: '', sizes: n.tallas, sizeLabel: 'Talla', showSizeConfig: true,
+      }))];
+      return { ...f, variants, defaultVariantId: vacia ? variants[0].id : f.defaultVariantId };
+    }),
+    // La foto de tienda de un color = la foto principal de su variante.
+    onFotoTienda: (varianteId, url) => setForm((f) => ({
+      ...f,
+      variants: f.variants.map((v) => (v.id === varianteId ? { ...v, imageUrl: url } : v)),
+    })),
+  };
+
+  const selectedBrand = brands?.find(b => b.id === form.brandId);
+  const brandBgStyle = selectedBrand ? {
+    backgroundColor: selectedBrand.bgType === 'color' ? selectedBrand.bgColor : 'transparent',
+    backgroundImage: selectedBrand.bgType === 'image' && selectedBrand.bgImage
+      ? `url(${selectedBrand.bgImage})`
+      : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center'
+  } : {};
+
+  return (
+    <div className={styles.wrapper}>
+      {/* TOAST DE CARGA (MENOS INVASIVO) */}
+      {(uploading || saveMutation.isPending) && (
+        <div className={styles.loadingToast}>
+          <Loader2 className={styles.spin} size={32} color="#0a0a0a" />
+          <div className={styles.toastText}>
+            <h3>{isNew ? 'Creando Producto...' : 'Guardando Cambios...'}</h3>
+            <p>Por favor, espera un momento.</p>
+          </div>
+        </div>
+      )}
+      <div className={styles.header}>
+        <button className={styles.backBtn} onClick={() => navigate(rutaLista)} type="button">
+          <ArrowLeft size={20} /> Volver
+        </button>
+        <div>
+          <h1 className={styles.title}>
+            {esModoPrenda ? (isNew ? 'Nueva prenda de Crear' : 'Editar prenda de Crear') : (isNew ? 'Crear Producto' : 'Editar Producto')}
+          </h1>
+          <p className={styles.subtitle}>
+            {isNew && <span style={{ color: '#f59f00', fontWeight: 'bold', marginRight: '8px' }}>[Autoguardado Activo]</span>}
+            {esModoPrenda
+              ? 'La prenda que el cliente diseña en Crear: sus colores y tallas, sus vistas y las zonas donde se imprime.'
+              : 'Crea productos con imágenes independientes por cada variante.'}
+          </p>
+        </div>
+      </div>
+
+      {showBrandModal && (
+        <div className={styles.brandModalOverlay}>
+          <div className={styles.brandModal}>
+            <h3>{newBrandForm.id ? 'Editar Marca' : 'Crear Nueva Marca'}</h3>
+            <div className={styles.field}>
+              <label>Nombre de la marca *</label>
+              <input 
+                type="text" 
+                className={styles.input} 
+                value={newBrandForm.name} 
+                onChange={(e) => setNewBrandForm({ ...newBrandForm, name: e.target.value })}
+                placeholder="Ej: Nike, Apple..."
+                autoFocus
+              />
+            </div>
+            <div className={styles.field}>
+              <label>URL de Imagen / Logo (Opcional)</label>
+              <input 
+                type="text" 
+                className={styles.input} 
+                value={newBrandForm.logoUrl} 
+                onChange={(e) => setNewBrandForm({ ...newBrandForm, logoUrl: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+            <div className={styles.brandModalActions}>
+              <button type="button" className={styles.cancelBtn} onClick={() => setShowBrandModal(false)} disabled={creatingBrand}>Cancelar</button>
+              <button 
+                type="button" 
+                className={styles.saveBtn} 
+                onClick={async () => {
+                  if (!newBrandForm.name.trim()) return alert('El nombre es obligatorio');
+                  setCreatingBrand(true);
+                  try {
+                    if (newBrandForm.id) {
+                      await updateBrand(newBrandForm.id, { name: newBrandForm.name, logoUrl: newBrandForm.logoUrl });
+                    } else {
+                      const res = await createBrand({ name: newBrandForm.name, logoUrl: newBrandForm.logoUrl });
+                      setForm(f => ({ ...f, brandId: res.id }));
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
+                    setShowBrandModal(false);
+                    setNewBrandForm({ id: null, name: '', logoUrl: '' });
+                  } catch (err) {
+                    alert('Error creando marca');
+                  } finally {
+                    setCreatingBrand(false);
+                  }
+                }}
+                disabled={creatingBrand}
+              >
+                {creatingBrand ? <span key="creating">Creando...</span> : <span key="default">Guardar Marca</span>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form className={styles.contentGrid} onSubmit={handleSubmit} onInvalidCapture={() => cambiarPestana('general')}>
+        <div className={styles.pestanas} role="tablist" aria-label="Partes del producto">
+          {PESTANAS.map(([clave, texto]) => (
+            <button
+              key={clave}
+              type="button"
+              role="tab"
+              aria-selected={pestanaActual === clave}
+              className={`${styles.pestana} ${pestanaActual === clave ? styles.pestanaActiva : ''}`}
+              onClick={(e) => {
+                cambiarPestana(clave);
+                // En el celular la fila se desliza: la elegida queda a la vista.
+                e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+              }}
+            >
+              {texto}
+            </button>
+          ))}
+        </div>
+        
+        {/* Formato de venta (distinto de la taxonomía productType del filtro).
+            Una prenda de Crear es siempre una prenda suelta: en su lugar, si se
+            ve en Crear o no. */}
+        {esPersonalizable ? (
+          <div className={`${styles.card}${fuera('donde')}`} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>Publicada en Crear</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                  {form.visible !== false
+                    ? 'Los clientes la ven en Crear y pueden diseñarla.'
+                    : 'Borrador: solo la ven los admins (para probarla en Crear).'}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input type="checkbox" checked={form.visible !== false} onChange={(e) => setForm(f => ({ ...f, visible: e.target.checked }))} />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>También en la tienda</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                  {!form.enTienda
+                    ? 'Solo en Crear.'
+                    : form.visible !== false
+                      ? (form.seVendeTalCual
+                        ? 'Sale en la tienda y en la página de su marca, con "Agregar al carrito" y "Personalízalo".'
+                        : 'Sale en la tienda y en la página de su marca, con el botón "Personalízalo" (nunca se vende en blanco).')
+                      : 'Saldrá en la tienda cuando la publiques en Crear.'}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input type="checkbox" checked={form.enTienda === true} onChange={(e) => setForm(f => ({ ...f, enTienda: e.target.checked }))} />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+            {form.enTienda && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                <div>
+                  <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>También se vende sin personalizar</h2>
+                  <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                    {form.seVendeTalCual
+                      ? 'Al mismo precio, tal cual, con el stock de la pestaña General. Quien quiera lo personaliza.'
+                      : 'Solo se vende personalizado.'}
+                  </p>
+                </div>
+                <label className={styles.toggleSwitch}>
+                  <input type="checkbox" checked={form.seVendeTalCual === true} onChange={(e) => setForm(f => ({ ...f, seVendeTalCual: e.target.checked }))} />
+                  <span className={styles.slider}></span>
+                </label>
+              </div>
+            )}
+            {form.enTienda && sinFotoTienda && (
+              <p className={styles.cardSubtitle} style={{ margin: '0.75rem 0 0', color: '#b45309' }}>
+                Aún no tiene fotos de tienda: la tarjeta mostraría el producto en blanco. Ponle una en
+                {' '}<button type="button" className={styles.enlaceTexto} onClick={() => cambiarPestana('colores')}>Colores y fotos</button>{' '}
+                (subida o hecha con una plantilla).
+              </p>
+            )}
+          </div>
+        ) : (
+        <div className={`${styles.card}${fuera('general')}`} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>📦 Formato de venta</h2>
+              <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>¿Qué vas a vender?</p>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input type="radio" checked={!form.isComboProduct} onChange={() => setForm(f => ({ ...f, isComboProduct: false }))} />
+                <span style={{ fontWeight: !form.isComboProduct ? 600 : 400 }}>Producto Individual</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input type="radio" checked={form.isComboProduct} onChange={() => setForm(f => ({ ...f, isComboProduct: true }))} />
+                <span style={{ fontWeight: form.isComboProduct ? 600 : 400 }}>Combo / Paquete</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* COLUMNA IZQUIERDA: Formulario */}
+        <div className={`${styles.leftCol}${fuera('general')}`}>
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Información Básica</h2>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Nombre del Producto <span style={{color: '#e03131'}}>*</span></label>
+              <input
+                type="text"
+                className={styles.input}
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+                placeholder="Ej. Hoodie Oversize"
+              />
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Precio Base <span style={{color: '#e03131'}}>*</span></label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={styles.input}
+                  value={form.price}
+                  onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Precio Oferta (Opcional)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={styles.input}
+                  value={form.salePrice}
+                  onChange={e => setForm(f => ({ ...f, salePrice: e.target.value }))}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>SKU</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={form.sku}
+                  onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
+                  placeholder="Ej. HOOD-BLK-01"
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Stock</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  value={form.inStock}
+                  onChange={e => setForm(f => ({ ...f, inStock: e.target.value }))}
+                  placeholder={esModoPrenda ? 'Sin límite' : '0'}
+                />
+              </div>
+            </div>
+
+            <div className={styles.field} style={{ marginBottom: '1.5rem' }}>
+              <label className={styles.label}>Descripción Breve</label>
+              <div style={{ background: '#fff' }}>
+                <ReactQuill 
+                  theme="snow"
+                  value={form.description}
+                  onChange={(content) => setForm(f => ({ ...f, description: content }))}
+                  modules={quillModules}
+                  placeholder="Escribe la descripción de tu producto..."
+                  style={{ minHeight: '150px' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.card}>
+            <div className={styles.cardHeaderFlex}>
+              <h2 className={styles.cardTitle}>Organización</h2>
+              <button type="button" onClick={() => setShowBrandModal(true)} className={styles.addBrandBtn}>
+                + Crear Marca
+              </button>
+            </div>
+
+            {/* Tipo de cumplimiento (el nicho y el vendedor se retiraron el 2026-10-16) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, margin: '12px 0' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                Tipo de cumplimiento
+                <select value={form.fulfillmentType} onChange={(e) => setForm(f => ({ ...f, fulfillmentType: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">(auto)</option>
+                  <option value="print_on_demand">Personalizado (POD)</option>
+                  <option value="stock">En stock</option>
+                  <option value="made_to_order">Bajo pedido</option>
+                  <option value="dropship">Dropship</option>
+                </select>
+              </label>
+            </div>
+
+            {/* ── WhatsApp de ESTE producto ─────────────────────────────────
+                Se hereda: vacío usa el número de la marca (/admin/marcas) y,
+                si la marca no tiene, el general de /admin/whatsapp. Solo se
+                rellena para un producto que deba atender otro número. */}
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, margin: '12px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.whatsappEnabled !== false}
+                  onChange={(e) => setForm(f => ({ ...f, whatsappEnabled: e.target.checked }))}
+                />
+                Mostrar el botón de WhatsApp en este producto
+              </label>
+
+              {form.whatsappEnabled !== false && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginTop: 10 }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                    Número propio (opcional)
+                    <input
+                      type="text"
+                      value={form.whatsappNumber}
+                      onChange={(e) => setForm(f => ({ ...f, whatsappNumber: e.target.value.replace(/[^\d\s\-()+]/g, '') }))}
+                      placeholder={selectedBrand?.whatsappNumber || 'Hereda el de la marca'}
+                      style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
+                    />
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>
+                      {form.whatsappNumber?.trim()
+                        ? 'Este producto usará este número.'
+                        : selectedBrand?.whatsappNumber
+                          ? `Vacío: usa el de ${selectedBrand.name} (${selectedBrand.whatsappNumber}).`
+                          : 'Vacío: usa el número general de /admin/whatsapp.'}
+                    </span>
+                  </label>
+
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                    Mensaje al abrir el chat (opcional)
+                    <input
+                      type="text"
+                      value={form.whatsappMessage}
+                      onChange={(e) => setForm(f => ({ ...f, whatsappMessage: e.target.value }))}
+                      placeholder="Hola CON AMOR: Me interesa este producto de tu página: {url}"
+                      style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
+                    />
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>
+                      {'{url}'} se reemplaza por el enlace del producto.
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Fila de Marcas (Miniviews) */}
+            <div className={styles.adminBrandsCarousel}>
+              {(brands || []).map(b => (
+                <div 
+                  key={b.id} 
+                  className={`${styles.adminBrandWrapper} ${form.brandId === b.id ? styles.adminBrandActive : ''}`}
+                  onClick={() => setForm(f => ({ ...f, brandId: form.brandId === b.id ? '' : b.id }))}
+                  title={b.name}
+                >
+                  <div className={styles.adminBrandItem}>
+                    {b.logoUrl || b.imageUrl ? (
+                      <img src={b.logoUrl || b.imageUrl} alt={b.name} className={styles.adminBrandImage} />
+                    ) : (
+                      <div className={styles.adminBrandFallback}>{b.name.substring(0, 2).toUpperCase()}</div>
+                    )}
+                    <button 
+                      type="button" 
+                      className={styles.editBrandBtn} 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setNewBrandForm({ id: b.id, name: b.name, logoUrl: b.logoUrl || b.imageUrl || '' }); 
+                        setShowBrandModal(true); 
+                      }}
+                      title="Editar marca"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                  </div>
+                  <span className={styles.adminBrandName}>{b.name}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Categoría</label>
+                <CreatableSelect
+                  isClearable
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, category: val ? val.value : '' }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createCategory({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
+                    queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+                    setForm(f => ({ ...f, category: res.id }));
+                  }}
+                  options={categoriesForBrand.map(c => ({ label: c.name, value: c.id }))}
+                  value={categories?.find(c => c.id === form.category) ? { label: categories.find(c => c.id === form.category).name, value: form.category } : null}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Colección</label>
+                <CreatableSelect
+                  isMulti
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, collections: (val || []).map(v => v.value) }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createCollection({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
+                    queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
+                    setForm(f => ({ ...f, collections: [...(f.collections || []), res.id] }));
+                  }}
+                  options={collectionsForBrand.map(c => ({ label: c.name, value: c.id }))}
+                  value={(form.collections || []).map(id => {
+                    const col = collections?.find(c => c.id === id);
+                    return col ? { label: col.name, value: id } : { label: id, value: id };
+                  })}
+                />
+              </div>
+            </div>
+            
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Tipo de producto (filtro del catálogo)</label>
+                <CreatableSelect
+                  isClearable
+                  placeholder="Seleccionar o crear tipo..."
+                  onChange={(val) => setForm(f => ({ ...f, productType: val ? val.value : '' }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createProductType({ name: inputValue.trim() });
+                    if (!res?.id) return;
+                    queryClient.invalidateQueries({ queryKey: ['admin-product-types'] });
+                    queryClient.invalidateQueries({ queryKey: ['productTypes'] });
+                    setForm(f => ({ ...f, productType: res.id }));
+                  }}
+                  options={(productTypes || []).map(type => ({ label: type.name, value: type.id }))}
+                  value={form.productType
+                    ? (() => {
+                        const type = (productTypes || []).find(item => item.id === form.productType);
+                        return { label: type?.name || form.productType, value: form.productType };
+                      })()
+                    : null}
+                />
+                <p className={styles.helpText}>Este valor alimenta el filtro “Tipo de producto” en la tienda.</p>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Personajes</label>
+                <CreatableSelect
+                  isMulti
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, characters: val.map(v => v.value) }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createCharacter({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
+                    queryClient.invalidateQueries({ queryKey: ['admin-characters'] });
+                    setForm(f => ({ ...f, characters: [...(f.characters || []), res.id] }));
+                  }}
+                  options={charactersForBrand.map(c => ({ label: c.name, value: c.id }))}
+                  value={(form.characters || []).map(id => {
+                    const char = characters?.find(c => c.id === id);
+                    return char ? { label: char.name, value: id } : { label: id, value: id };
+                  })}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Etiquetas / Tags</label>
+                <CreatableSelect
+                  isMulti
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, tags: val.map(v => v.value) }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createTag({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
+                    queryClient.invalidateQueries({ queryKey: ['admin-tags'] });
+                    setForm(f => ({ ...f, tags: [...(f.tags || []), res.id] }));
+                  }}
+                  options={tagsForBrand.map(c => ({ label: c.name, value: c.id }))}
+                  value={(form.tags || []).map(id => {
+                    const tag = tags?.find(c => c.id === id);
+                    return tag ? { label: tag.name, value: id } : { label: id, value: id };
+                  })}
+                />
+              </div>
+              {/* Datos para las ideas de regalo: sin marcar, se deducen de las etiquetas. */}
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="producto-publico">Para quién es</label>
+                <select id="producto-publico" value={form.publico || ''} onChange={(e) => setForm(f => ({ ...f, publico: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">Sin marcar</option>
+                  {PUBLICOS.map(op => <option key={op.id} value={op.id}>{op.label}</option>)}
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="producto-edad">Edad</label>
+                <select id="producto-edad" value={form.edadMinima === '' || form.edadMinima == null ? '' : String(form.edadMinima)} onChange={(e) => setForm(f => ({ ...f, edadMinima: e.target.value === '' ? '' : Number(e.target.value) }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">Sin marcar</option>
+                  {EDADES.map(op => <option key={op.id} value={op.id}>{op.label}</option>)}
+                </select>
+                <p className={styles.helpText}>Lo "Desde 13" o "Solo adultos" nunca se recomienda a un niño.</p>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="producto-equipo">Equipo (si es de un club o selección)</label>
+                <input id="producto-equipo" className={styles.input} value={form.equipo || ''} placeholder="Ej. Alianza Lima" onChange={(e) => setForm(f => ({ ...f, equipo: e.target.value }))} />
+                <p className={styles.helpText}>Solo se recomienda a hinchas de ese equipo. Con la etiqueta "Fútbol" + la del equipo se deduce solo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMNA DERECHA: Editor de Variante / Combo */}
+        <div className={styles.rightCol}>
+          <div className={fuera('colores')}>
+          
+          {form.isComboProduct ? (
+            <>
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Tallas del combo</h2>
+              <p className={styles.cardSubtitle}>Cómo elige la talla el cliente en la ficha del producto.</p>
+              <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem' }}>
+                {[
+                  { valor: 'porPrenda', titulo: 'Una talla por prenda', ayuda: 'Cada prenda elige la suya. Para parejas: él y ella pueden ser de tallas distintas.' },
+                  { valor: 'una', titulo: 'Una sola talla para todas', ayuda: 'Una talla que se aplica a todas las prendas. Para conjuntos de una persona (polo + jogger).' },
+                ].map((o) => (
+                  <label key={o.valor} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="comboTallas"
+                      checked={(form.comboTallas || 'porPrenda') === o.valor}
+                      onChange={() => setForm((f) => ({ ...f, comboTallas: o.valor }))}
+                      style={{ marginTop: '0.2rem' }}
+                    />
+                    <span>
+                      <span style={{ fontWeight: (form.comboTallas || 'porPrenda') === o.valor ? 600 : 400 }}>{o.titulo}</span>
+                      <span style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280' }}>{o.ayuda}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <AdminComboEditor
+              comboItems={form.comboItems}
+              setComboItems={(items) => setForm(f => ({ ...f, comboItems: items }))}
+              comboPreviewImage={form.comboPreviewImage}
+              setComboPreviewImage={(img) => setForm(f => ({ ...f, comboPreviewImage: img }))}
+              draftId={draftId}
+              // Evita agregar el combo a sí mismo cuando se edita uno existente
+              // (id es undefined en "Crear Producto", ahí no aplica).
+              excludeProductId={id}
+              // Con "Personalizable" activo, handleSubmit pisa comboPreviewImage
+              // con la captura del lienzo de Yoryo — avisar ANTES de guardar.
+              comboWillOverridePreview={form.customizable}
+            />
+            </>
+          ) : (
+            <>
+              <div className={styles.card}>
+            <div className={styles.cardHeaderFlex}>
+              <div>
+                <h2 className={styles.cardTitle}>Editor de Variantes</h2>
+                <p className={styles.cardSubtitle}>Configura el diseño y fotos para cada color/variante.</p>
+              </div>
+              <button type="button" onClick={addVariant} className={styles.addVariantBtn}>
+                + Añadir Variante
+              </button>
+            </div>
+
+            <div className={styles.galleryTabs}>
+              {form.variants.map(v => (
+                <button
+                  key={v.id}
+                  type="button"
+                  className={`${styles.galleryTab} ${activeGalleryTabId === v.id ? styles.galleryTabActive : ''}`}
+                  onClick={() => setActiveGalleryTabId(v.id)}
+                >
+                  <span className={styles.tabColorDot} style={{ backgroundColor: v.colorHex || '#ccc' }}></span>
+                  {v.name || 'Variante'}
+                  {form.defaultVariantId === v.id && <span style={{ marginLeft: '4px' }}>👑</span>}
+                </button>
+              ))}
+            </div>
+
+            {activeVariant && (
+              <div className={styles.variantEditorWorkspace}>
+                
+                <div className={styles.variantTopBar}>
+                   <div className={styles.fieldRow} style={{ marginBottom: 0, alignItems: 'flex-end' }}>
+                     <div className={styles.field} style={{ marginBottom: 0, flex: 2 }}>
+                       <label className={styles.label}>Nombre Color / Variante</label>
+                       <input 
+                         type="text" 
+                         className={styles.input} 
+                         value={activeVariant.name}
+                         onChange={e => updateActiveVariant({ name: e.target.value })}
+                         placeholder="Ej. Rojo"
+                       />
+                     </div>
+                     <div className={styles.field} style={{ marginBottom: 0, flex: 1 }}>
+                       <label className={styles.label}>Color (Hex)</label>
+                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                         <input 
+                           type="color" 
+                           value={activeVariant.colorHex}
+                           onChange={e => updateActiveVariant({ colorHex: e.target.value })}
+                           style={{ height: '42px', width: '42px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                         />
+                         <input 
+                           type="text" 
+                           className={styles.input} 
+                           value={activeVariant.colorHex}
+                           onChange={e => updateActiveVariant({ colorHex: e.target.value })}
+                         />
+                       </div>
+                     </div>
+                   </div>
+
+                   <div className={styles.fieldRow} style={{ marginTop: '1rem', alignItems: 'flex-start' }}>
+                     {!activeVariant.showSizeConfig ? (
+                       <button 
+                         type="button" 
+                         onClick={() => updateActiveVariant({ showSizeConfig: true, sizeLabel: 'Talla' })} 
+                         style={{ padding: '8px 16px', background: '#f3f4f6', border: '1px dashed #9ca3af', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, color: '#4b5563', width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}
+                       >
+                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                         Añadir Medidas / Tallas (Opcional)
+                       </button>
+                     ) : (
+                       <div style={{ width: '100%', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                           <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#111' }}>Tallas y Medidas</h4>
+                           <button 
+                             type="button" 
+                             onClick={() => updateActiveVariant({ showSizeConfig: false, sizes: [], sizeLabel: 'Talla' })} 
+                             style={{ color: '#ef4444', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                           >
+                             Desactivar
+                           </button>
+                         </div>
+                         <div className={styles.fieldRow} style={{ marginBottom: 0 }}>
+                           <div className={styles.field} style={{ marginBottom: 0, flex: 1 }}>
+                             <label className={styles.label}>Tipo de Medida (Etiqueta)</label>
+                             <input 
+                               type="text" 
+                               className={styles.input} 
+                               value={activeVariant.sizeLabel || ''}
+                               onChange={e => updateActiveVariant({ sizeLabel: e.target.value })}
+                               placeholder="Ej. Talla, Número, Tamaño, etc."
+                             />
+                             <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                               Esto verá el cliente. Ej: "Selecciona tu {activeVariant.sizeLabel || 'Talla'}"
+                             </span>
+                           </div>
+                           <div className={styles.field} style={{ marginBottom: 0, flex: 2 }}>
+                             <label className={styles.label}>Opciones disponibles (Escribe y presiona Enter o Coma)</label>
+                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.4rem 0.6rem', border: '1px solid #ccc', borderRadius: '4px', background: '#fff', alignItems: 'center', minHeight: '42px' }}>
+                               {(activeVariant.sizes || []).map((s, idx) => (
+                                 <span key={idx} style={{ background: '#e5e7eb', color: '#374151', padding: '0.2rem 0.6rem', borderRadius: '16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+                                   {s}
+                                   <button 
+                                     type="button" 
+                                     onClick={() => updateActiveVariant({ sizes: activeVariant.sizes.filter((_, i) => i !== idx) })} 
+                                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0, display: 'flex', alignItems: 'center' }}
+                                   >
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+                                   </button>
+                                 </span>
+                               ))}
+                               <input 
+                                 type="text" 
+                                 placeholder={(!activeVariant.sizes || activeVariant.sizes.length === 0) ? "Ej. S, M, L..." : ""}
+                                 style={{ border: 'none', outline: 'none', flex: 1, minWidth: '100px', fontSize: '0.9rem', background: 'transparent' }}
+                                 onKeyDown={(e) => {
+                                   if (e.key === ',' || e.key === 'Enter') {
+                                     e.preventDefault();
+                                     const val = e.currentTarget.value.trim();
+                                     if (val && !(activeVariant.sizes || []).includes(val)) {
+                                       updateActiveVariant({ sizes: [...(activeVariant.sizes || []), val] });
+                                     }
+                                     e.currentTarget.value = '';
+                                   }
+                                 }}
+                                 onBlur={(e) => {
+                                   const val = e.target.value.trim();
+                                   if (val && !(activeVariant.sizes || []).includes(val)) {
+                                     updateActiveVariant({ sizes: [...(activeVariant.sizes || []), val] });
+                                   }
+                                   e.target.value = '';
+                                 }}
+                               />
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+
+                   <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                     <button
+                       type="button"
+                       onClick={() => setForm(f => ({ ...f, defaultVariantId: activeVariant.id }))}
+                       className={styles.defaultVariantBtn}
+                       disabled={form.defaultVariantId === activeVariant.id}
+                     >
+                       <Star size={16} fill={form.defaultVariantId === activeVariant.id ? "#f59f00" : "none"} color={form.defaultVariantId === activeVariant.id ? "#f59f00" : "#666"} />
+                       {form.defaultVariantId === activeVariant.id ? <span key="main">Variante Principal</span> : <span key="set">Establecer como Principal</span>}
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => removeVariant(activeVariant.id)}
+                       className={styles.deleteVariantBtn}
+                     >
+                       <Trash2 size={16} /> Eliminar Variante
+                     </button>
+                   </div>
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid #f0f0f0', margin: '2rem 0' }} />
+
+                <h3 className={styles.sectionHeading}>1. Imagen Principal</h3>
+
+                  <div className={styles.directWorkspace}>
+                    {cropEditing && activeVariant.imageUrl ? (
+                      <ThumbnailCropEditor
+                        imageUrl={activeVariant.imageUrl}
+                        initialCrop={activeVariant.thumbnailCrop}
+                        onSave={(cropData) => {
+                          updateActiveVariant({ thumbnailCrop: cropData });
+                          setCropEditing(false);
+                        }}
+                        onCancel={() => setCropEditing(false)}
+                      />
+                    ) : (
+                      <>
+                        <ProductImageContainer
+                          imageUrl={activeVariant.imageUrl}
+                          style={brandBgStyle}
+                          emptyMessage="Sube una imagen del producto terminado"
+                          cropData={activeVariant.thumbnailCrop?.percentages}
+                        />
+                        {activeVariant.imageUrl && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => setCropEditing(true)}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, color: '#374151', fontSize: '0.85rem' }}
+                            >
+                              <ImageIcon size={16} /> Ajustar encuadre de portada
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleRemoveMainImage}
+                              disabled={uploading}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, color: '#dc2626', fontSize: '0.85rem' }}
+                            >
+                              <Trash2 size={16} /> Quitar imagen
+                            </button>
+                            {activeVariant.thumbnailCrop?.percentages && (
+                              <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 600 }}>
+                                ✓ Encuadre personalizado
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className={styles.field} style={{ marginTop: '1rem' }}>
+                      <label className={styles.uploadImageLabel}>
+                        <ImagePlus size={24} />
+                        {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">Subir Imagen Directa</span>}
+                        <input type="file" accept="image/*" onChange={handleDirectImageUpload} disabled={uploading} hidden />
+                      </label>
+                      <div style={{ marginTop: '10px', padding: '10px', background: '#f8f9fa', borderRadius: '6px', border: '1px solid #ddd' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginBottom: '8px' }}>O pega un enlace de imagen externa:</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input 
+                            type="text" 
+                            placeholder="https://..." 
+                            value={designUrlInput}
+                            onChange={(e) => setDesignUrlInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (designUrlInput.trim()) {
+                                  updateActiveVariant({ imageUrl: designUrlInput.trim() });
+                                  setDesignUrlInput('');
+                                }
+                              }
+                            }}
+                            style={{ flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '0.85rem' }}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              if (designUrlInput.trim()) {
+                                updateActiveVariant({ imageUrl: designUrlInput.trim() });
+                                setDesignUrlInput('');
+                              }
+                            }}
+                            disabled={!designUrlInput.trim()}
+                            style={{ padding: '6px 12px', background: '#e5e7eb', border: 'none', borderRadius: '4px', cursor: designUrlInput.trim() ? 'pointer' : 'not-allowed' }}
+                          >
+                            Fijar URL
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid #f0f0f0', margin: '2rem 0' }} />
+
+                <h3 className={styles.sectionHeading}>2. Galería Extra (Opcional)</h3>
+                <p className={styles.cardSubtitle}>
+                  Fotos en uso de <b>este color específico</b>. La primera será el hover.
+                </p>
+
+                <div className={styles.galleryGrid}>
+                  {(activeVariant.images || []).map((img, idx) => (
+                    <div
+                      key={idx}
+                      className={`${styles.galleryItem} ${draggedIdx === idx ? styles.galleryItemDragging : ''}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, idx)}
+                    >
+                      <ProductImageContainer
+                        imageUrl={img}
+                        isGallery={true}
+                        cropData={activeVariant.imagesCrops?.[img]?.percentages}
+                      />
+                      <button type="button" onClick={() => removeGalleryImage(idx)} className={styles.deleteGalleryBtn}>
+                        <Trash2 size={14} />
+                      </button>
+                      {/* Encuadrar esta imagen de galería (mismo editor que la portada) */}
+                      <button
+                        type="button"
+                        onClick={() => setGalleryCropTarget(img)}
+                        title="Ajustar encuadre de esta foto"
+                        style={{ position: 'absolute', bottom: 6, right: 6, zIndex: 20, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: '0.72rem', fontWeight: 600, background: activeVariant.imagesCrops?.[img]?.percentages ? '#16a34a' : 'rgba(0,0,0,0.65)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        <ImageIcon size={12} /> {activeVariant.imagesCrops?.[img]?.percentages ? 'Encuadrada' : 'Encuadrar'}
+                      </button>
+                      {idx === 0 && <span className={styles.hoverBadge}>Hover Image</span>}
+                    </div>
+                  ))}
+
+                  <label className={styles.addGalleryBtn}>
+                    <ImagePlus size={24} />
+                    {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">Agregar Fotos</span>}
+                    <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} disabled={uploading} hidden />
+                  </label>
+                </div>
+
+                <GenerarFrenteEspalda
+                  variante={activeVariant}
+                  marca={selectedBrand || null}
+                  nombreProducto={form.name}
+                  onGuardar={handleGuardarFrenteEspalda}
+                  ocupado={uploading}
+                />
+
+                {/* Editor inline de encuadre para la imagen de galería seleccionada */}
+                {galleryCropTarget && (
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem' }}>Encuadre de la foto de galería</p>
+                    <ThumbnailCropEditor
+                      imageUrl={galleryCropTarget}
+                      initialCrop={activeVariant.imagesCrops?.[galleryCropTarget]}
+                      onSave={(cropData) => {
+                        setGalleryImageCrop(galleryCropTarget, cropData);
+                        setGalleryCropTarget(null);
+                      }}
+                      onCancel={() => setGalleryCropTarget(null)}
+                    />
+                  </div>
+                )}
+
+              </div>
+            )}
+          </div>
+          </>
+          )}
+
+          {esPersonalizable && (
+            <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+              <PersonalizacionPrenda {...propsPrenda} seccion="colores" />
+            </div>
+          )}
+          </div>
+
+          {esPersonalizable && (
+            <div className={`${styles.card}${fuera('diseno')}`}>
+              <PersonalizacionPrenda {...propsPrenda} seccion="diseno" />
+            </div>
+          )}
+          {esPersonalizable && (
+            <div className={`${styles.card}${fuera('plantillas')}`}>
+              <PlantillasDeLaFicha
+                prendaId={draftId}
+                guardado={!isNew}
+                plantillas={leerPlantillas(form.prendaBase?.plantillas)}
+                onPlantillas={(plantillas) => setForm((f) => ({ ...f, prendaBase: { ...f.prendaBase, plantillas } }))}
+              />
+            </div>
+          )}
+
+          {!esModoPrenda && !form.esPrendaBase && (
+            <div className={fuera('donde')}>
+              <PersonalizarEnCrear valor={form.personalizarEn || ''} onChange={(personalizarEn) => setForm((f) => ({ ...f, personalizarEn }))} />
+            </div>
+          )}
+          {!esModoPrenda && (!form.isComboProduct || personalizableViejo) && (
+          <div className={`${styles.card}${fuera('donde')}`} style={{ marginTop: '1.5rem' }}>
+            <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>
+                  {form.isComboProduct ? 'Producto Personalizable' : 'Se personaliza en Crear'}
+                </h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
+                  {form.isComboProduct 
+                    ? <span key="combo">Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.</span>
+                    : form.esPrendaBase
+                      ? <span key="si">Se vende <strong>solo personalizado</strong>: el cliente lo diseña en Crear y se imprime en las zonas que marques (pestañas Diseño y Plantillas). Deja de venderse tal cual.</span>
+                      : <span key="no">Actívalo si el cliente lo diseña en <strong>Crear</strong> con sus imágenes y textos. Si también se vende tal cual, déjalo apagado y usa <strong>Personalizar en Crear</strong> (arriba).</span>}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input
+                  type="checkbox"
+                  checked={form.isComboProduct ? form.customizable : (form.esPrendaBase || form.customizable)}
+                  onChange={form.isComboProduct ? handleToggleCustomizable : (e) => {
+                    const activo = e.target.checked;
+                    setForm((f) => ({
+                      ...f,
+                      esPrendaBase: activo,
+                      customizable: false,
+                      prendaBase: f.prendaBase || prendaBaseInicial(),
+                    }));
+                  }}
+                />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+            {form.customizable && !form.isComboProduct && !form.esPrendaBase && (
+              <div style={{ marginTop: '2rem' }}>
+                <AdminCustomizationViewsEditor 
+                  views={form.customizationViews} 
+                  onChange={(views) => setForm(f => ({ ...f, customizationViews: views }))} 
+                  draftId={draftId}
+                />
+              </div>
+            )}
+            {form.customizable && form.isComboProduct && (
+              <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+                <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
+                  ✅ <strong>Personalización activada.</strong> En la tienda, el cliente podrá personalizar cada elemento de este combo. Las áreas de impresión y vistas se heredarán automáticamente de la configuración original de cada producto.
+                </p>
+              </div>
+            )}
+          </div>
+          )}
+
+          {form.customizable && !sinPersonalizacion && (
+            <div className={`${styles.card}${fuera('donde')}`} style={{ marginTop: '1.5rem' }}>
+              <YoryoPersonalizado 
+                ref={yoryoRef}
+                productImage={form.isComboProduct ? form.comboPreviewImage : form.variants?.[0]?.designImage || form.variants?.[0]?.imageUrl || ''}
+                draftId={draftId}
+                isComboProduct={form.isComboProduct}
+                comboItems={form.comboItems}
+                onComboItemsChange={(newItems) => setForm(f => ({ ...f, comboItems: newItems }))}
+              />
+            </div>
+          )}
+
+          <div className={`${styles.card}${fuera('general')}`} style={{ marginTop: '1.5rem' }}>
+            <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>Configuración</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
+                  Ajustes adicionales para la visualización del producto en la tienda.
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+              <div>
+                <h4 style={{ margin: 0, color: '#111', fontSize: '1rem' }}>Producto Destacado</h4>
+                <p style={{ margin: 0, color: '#666', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                  Resalta este producto en los módulos de "Productos Destacados" de tus landing pages.
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input
+                  type="checkbox"
+                  checked={form.featured}
+                  onChange={(e) => setForm(f => ({ ...f, featured: e.target.checked }))}
+                />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.saveSection}>
+            <Button
+              type="submit"
+              className={styles.saveBtn}
+              disabled={uploading || saveMutation.isPending}
+            >
+              {uploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              {uploading ? <span key="uploading">Procesando...</span> : <span key="default">{isNew ? (esModoPrenda ? 'Guardar prenda' : 'Guardar Producto (Oficial)') : 'Guardar Cambios'}</span>}
+            </Button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default AdminProductoFormV2Viejo;

@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 y D1 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0, D1 y D2 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -228,7 +228,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 |---|---|---|---|---|---|
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | hecho (2026-11-03) |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | hecho (2026-11-03) |
-| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
+| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | hecho (2026-11-03) |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
@@ -815,6 +815,59 @@ plantillas de hoy; el kit solo pone cómo se ve y cómo avisa.
   la pantalla sale a un archivo propio (`plantillasYoryo/pasosYoryo.js`):
   `plantillasDe`, `importar` (paso 2, con la miniatura y la subida) y
   `limpiar` (paso 3).
+
+### D2 unido al admin (2026-11-03)
+
+Los cuatro tramos a la vez, con el interruptor `adminProductosViejo`
+(`useLoViejo('adminProductos')`). Cada página vieja pasó a `…Viejo.jsx`; el
+`.jsx` de siempre elige:
+
+| Página | Conector (`components/panel/`) |
+|---|---|
+| Productos (con las pestañas Personalizables y Packs de Crear) | `ProductosDelPanel.jsx` + `CrearDelPanel.jsx` (`PersonalizablesDelPanel`, `PacksDelPanel` con `nuevoInicial` por `?nuevo=1`) |
+| Inventario | `InventarioDelPanel` en `ProductosDelPanel.jsx` |
+| Datos para recomendar | `RecomendarDelPanel` en `ProductosDelPanel.jsx` |
+| La ficha (producto, combo y personalizable) | `FichaDelPanel.jsx` (por `AdminProductoFormV2.jsx`, también desde `RutasPrendasCrear`) |
+| Blueprints | `BlueprintsDelPanel.jsx` |
+| Plantillas de cuadros | `PlantillasYoryoDelPanel.jsx`; los pasos 2 y 3 salieron de la pantalla a `pages/admin/plantillasYoryo/pasosYoryo.js` (la pantalla vieja los importa de ahí) |
+
+- **La ficha**: la de antes vuelve también con `personalizableViejo` (solo
+  ella tiene "Producto personalizable" y Yoryo). Los borradores de uno
+  nuevo se guardan en `wala_drafts` con la forma de antes (`{ draftId,
+  form, updatedAt }`), así la lista vieja también los lee y la nueva abre
+  los de antes. Las copias chicas de cada foto subida viajan con su
+  variante. Un personalizable relee sus plantillas al guardar; "Nueva
+  plantilla" y "Editar" llevan `state.desde` para que el estudio vuelva a
+  esa pestaña (`PlantillasPrenda` ganó `estadoEnlace`); la foto de tienda
+  con una plantilla recibe las vistas y si es láser (`fotoConPlantilla`
+  ganó un tercer argumento).
+- **Datos para recomendar**: quitar un dato lo borra de verdad
+  (`deleteField`); antes un `null` no se guardaba.
+- **Pendiente: "Pasarla a Crear"** no está conectado. Pasar un producto de
+  la tienda a Crear lo saca de la app de Android (no muestra prendas de
+  Crear) y la ficha de antes además lo sacaba de la tienda; hay que decidir
+  cómo debe quedar antes de ponerlo. Mientras, se hace con la ficha de
+  antes (`adminProductosViejo`).
+- **Diferencias que quedaron** (de los conectores): publicar o archivar un
+  personalizable también refresca la lista de Productos y la tienda; un
+  pack sugerido sin nombre o con precio 0 no deja crear ninguno (antes se
+  creaban todos); los productos "tal cual" de un pack van por nombre (antes
+  primero los de su marca); la portada de un pack se llama
+  `<fecha>_portada.<ext>` (misma carpeta); en Plantillas de cuadros el
+  estado de cada plantilla no se limpia al repetir el paso 2 y los textos
+  intermedios ("Preparando…") se ven en verde.
+
+**Qué se probó** (localhost con los emuladores): la lista con sus cuatro
+pestañas; ocultar un producto escribe solo `visible: false` (precio, stock y
+marca intactos); la ficha de un producto: cambiar el nombre y guardar (el
+documento conserva sus campos, `featuredOrder` incluido); uno nuevo: el
+`?draftId=` en la dirección, el borrador sobrevive a una recarga, guardar
+lo crea y borra el borrador; Inventario: "+" y Guardar → `inStock` 11 y su
+registro en `inventoryLogs` con el correo; Datos para recomendar,
+Personalizables, Packs, Blueprints, Plantillas de cuadros y la ficha de un
+personalizable nuevo abren sin errores; con `adminProductosViejo` vuelve la
+ficha de antes. No se probaron subidas de fotos, el estudio de plantillas
+ni los siete pasos de Yoryo (necesitan archivos y datos reales).
 
 ## D3 · Pedidos y pagos (en el kit desde el 2026-11-02: los tres tramos)
 
@@ -2232,21 +2285,21 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 
 | Parte | Hoy en el admin | Pasa a (kit) | Conector |
 |---|---|---|---|
-| D2a · La lista | `pages/Tienda/admin/AdminProductos.jsx` + `.module.css` (`ListaTodos`, tarjetas, borradores, la personalización de antes), `components/admin/ProductTable`, `components/admin/BulkActions`, `common/Toggle` | `PaginaProductos` (`TablaAdmin`, `AccionesLote`, `CargarMas`) | `ProductosDelPanel.jsx` (`?ver=` y los borradores de `wala_drafts`) |
-| D2a · Inventario | `pages/Tienda/admin/AdminInventario.jsx` + `.module.css` | `PaginaInventario` (`NumeroEnLinea`) | `InventarioDelPanel.jsx` (con `logInventoryChange`) |
-| D2a · Datos para recomendar | `pages/admin/AdminPublicoProductos.jsx` + `.module.css` | `PaginaRecomendar` (`ElegirUno`) | `RecomendarDelPanel.jsx` (con `giftRecommender`) |
-| D2b · La ficha | `pages/Tienda/admin/AdminProductoFormV2.jsx` + `.module.css` (el editor de variantes, la galería, el modal de marca, ReactQuill, CreatableSelect) | `PaginaFichaProducto` (`ElegirMarca`, `ElegirVarios`, `CampoTallas`, `GaleriaFotos`) | `FichaDelPanel.jsx` (pasa el ReactQuill por `descripcion`) |
-| D2b · Encuadre 3:4 | `components/admin/ThumbnailCropEditor` (react-image-crop) | `EncuadreFoto` + `FotoEncuadrada` | la ficha |
-| D2b · Combo | `pages/Tienda/components/AdminComboEditor` | la pestaña "Piezas del combo" (`ListaOrdenable`, `SelectorProductos`) | la ficha |
-| D2b · Frente y espalda | `pages/Tienda/admin/GenerarFrenteEspalda.jsx` (ya hecho con piezas del kit) | **se queda**: entra por `extraGaleria` | la ficha |
-| D2b · Dónde se personaliza | `pages/Tienda/admin/PersonalizarEnCrear.jsx` | `Campo` "Se personaliza en" + `destinosCrear` | la ficha |
-| D2c · Personalizables | `pages/admin/AdminPrendasCrear.jsx` + `.module.css` | `PaginaPersonalizables` | `PersonalizablesDelPanel.jsx` (dentro de Productos, `?ver=crear`) |
-| D2c · Packs | `pages/admin/AdminCombosCrear.jsx` + `.module.css` | `PaginaPacks` | `PacksDelPanel.jsx` (`?ver=packs`, `&nuevo=1`) |
-| D2c · Ficha de un personalizable | `AdminProductoFormV2 modo="prenda"` por `pages/admin/RutasPrendasCrear.jsx` | `PaginaFichaProducto` con `esPrenda` | `FichaDelPanel.jsx` (la misma; `RutasPrendasCrear` pasa a usarla) |
-| D2c · Diseño y colores | `pages/admin/prendasCrear/PersonalizacionPrenda.jsx` + `.module.css`, `ZonaEditor.jsx` | `DisenoPrenda`, `ColoresPrenda`, `EditorZonas`, `ListaZonas` | la ficha |
-| D2c · Plantillas | `pages/admin/prendasCrear/PlantillasDeLaFicha.jsx` + `.module.css` (react-select) | `PlantillasPrenda` | la ficha (con `plantillasProducto.js`) |
-| D2d · Blueprints | `pages/admin/AdminBlueprints.jsx` + `.module.css` | `PaginaBlueprints` (`PaginaListaAdmin`) | `BlueprintsDelPanel.jsx` |
-| D2d · Plantillas de cuadros | `pages/admin/plantillasYoryo/ImportarPlantillasYoryo.jsx` | `PaginaPlantillasYoryo` (`PasoAdmin` por paso) | `PlantillasYoryoDelPanel.jsx` (los mismos scripts de `plantillasYoryo/`) |
+| D2a · La lista ✓ | `pages/Tienda/admin/AdminProductos.jsx` + `.module.css` (`ListaTodos`, tarjetas, borradores, la personalización de antes), `components/admin/ProductTable`, `components/admin/BulkActions`, `common/Toggle` | `PaginaProductos` (`TablaAdmin`, `AccionesLote`, `CargarMas`) | `ProductosDelPanel.jsx` (`?ver=` y los borradores de `wala_drafts`) |
+| D2a · Inventario ✓ | `pages/Tienda/admin/AdminInventario.jsx` + `.module.css` | `PaginaInventario` (`NumeroEnLinea`) | `InventarioDelPanel.jsx` (con `logInventoryChange`) |
+| D2a · Datos para recomendar ✓ | `pages/admin/AdminPublicoProductos.jsx` + `.module.css` | `PaginaRecomendar` (`ElegirUno`) | `RecomendarDelPanel.jsx` (con `giftRecommender`) |
+| D2b · La ficha ✓ | `pages/Tienda/admin/AdminProductoFormV2.jsx` + `.module.css` (el editor de variantes, la galería, el modal de marca, ReactQuill, CreatableSelect) | `PaginaFichaProducto` (`ElegirMarca`, `ElegirVarios`, `CampoTallas`, `GaleriaFotos`) | `FichaDelPanel.jsx` (pasa el ReactQuill por `descripcion`) |
+| D2b · Encuadre 3:4 ✓ | `components/admin/ThumbnailCropEditor` (react-image-crop) | `EncuadreFoto` + `FotoEncuadrada` | la ficha |
+| D2b · Combo ✓ | `pages/Tienda/components/AdminComboEditor` | la pestaña "Piezas del combo" (`ListaOrdenable`, `SelectorProductos`) | la ficha |
+| D2b · Frente y espalda ✓ | `pages/Tienda/admin/GenerarFrenteEspalda.jsx` (ya hecho con piezas del kit) | **se queda**: entra por `extraGaleria` | la ficha |
+| D2b · Dónde se personaliza ✓ | `pages/Tienda/admin/PersonalizarEnCrear.jsx` | `Campo` "Se personaliza en" + `destinosCrear` | la ficha |
+| D2c · Personalizables ✓ | `pages/admin/AdminPrendasCrear.jsx` + `.module.css` | `PaginaPersonalizables` | `PersonalizablesDelPanel.jsx` (dentro de Productos, `?ver=crear`) |
+| D2c · Packs ✓ | `pages/admin/AdminCombosCrear.jsx` + `.module.css` | `PaginaPacks` | `PacksDelPanel.jsx` (`?ver=packs`, `&nuevo=1`) |
+| D2c · Ficha de un personalizable ✓ | `AdminProductoFormV2 modo="prenda"` por `pages/admin/RutasPrendasCrear.jsx` | `PaginaFichaProducto` con `esPrenda` | `FichaDelPanel.jsx` (la misma; `RutasPrendasCrear` pasa a usarla) |
+| D2c · Diseño y colores ✓ | `pages/admin/prendasCrear/PersonalizacionPrenda.jsx` + `.module.css`, `ZonaEditor.jsx` | `DisenoPrenda`, `ColoresPrenda`, `EditorZonas`, `ListaZonas` | la ficha |
+| D2c · Plantillas ✓ | `pages/admin/prendasCrear/PlantillasDeLaFicha.jsx` + `.module.css` (react-select) | `PlantillasPrenda` | la ficha (con `plantillasProducto.js`) |
+| D2d · Blueprints ✓ | `pages/admin/AdminBlueprints.jsx` + `.module.css` | `PaginaBlueprints` (`PaginaListaAdmin`) | `BlueprintsDelPanel.jsx` |
+| D2d · Plantillas de cuadros ✓ | `pages/admin/plantillasYoryo/ImportarPlantillasYoryo.jsx` | `PaginaPlantillasYoryo` (`PasoAdmin` por paso) | `PlantillasYoryoDelPanel.jsx` (los mismos scripts de `plantillasYoryo/`) |
 | Fuera del kit (decidido) | `AdminCustomizationViewsEditor`, `YoryoPersonalizado`, `AdminViewEditor`, `PrintAreasEditor`, `ShapeSelector`, `ShapeCreator` | — (no se rehacen) | — |
 
 ### D3 · Pedidos y pagos
@@ -2384,6 +2437,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D2 unido al admin**: lista, inventario, datos para recomendar, la ficha (producto, combo y personalizable), personalizables, packs, blueprints y plantillas de cuadros (`components/panel/`, interruptor `adminProductosViejo`); `pasosYoryo.js` sale de la pantalla; `PlantillasPrenda` con `estadoEnlace` y `fotoConPlantilla` con las vistas; "Pasarla a Crear" queda pendiente | `components/panel/`, `pages/Tienda/admin/`, `pages/admin/`, `kit/piezas/admin/Crear.jsx` |
 | 2026-11-03 | **D0 y D1 unidos al admin**: el marco, sin permiso y el inicio (`MarcoDelPanel`, `InicioDelPanel`, interruptor `adminViejo`) y las ocho páginas del catálogo base (`components/panel/`, interruptor `adminCatalogoViejo`, la ruta `/admin/marcas/:id/productos`); la barra «Modo administrador» ya no sale en el panel; "Quitar páginas repetidas" pregunta; admins de prueba por permiso en el sembrado del emulador | `components/panel/`, `components/AdminLayout/`, `pages/AdminDashboard.jsx`, `pages/admin/`, `components/marco/BarraDeAdmin.jsx`, `App.jsx`, `scripts/seed-emulator.js` |
 | 2026-11-03 | Revisión antes de unir: lo que guardaría el kit frente a la tienda, `functions/` y la app. Corregido en el kit: la ficha conserva `featuredOrder`; los sorteos conservan «+1 chance desde la app» (`chanceExtra`, ahora una opción más); "Mi cuenta" vacío en WhatsApp se guarda con el número de la tienda; un `/l/…` de enlaces ya no se corta a 60 (`slugDeEnlace`); las monedas `null` de la encuesta de entregas son 0, como el servidor; un pack sin tocar su categoría conserva todas. Lo que depende de cada conector, en «Lo que cada conector tiene que cuidar» | `adaptadoresAdmin.js`, `paginas/admin/Enlaces.jsx`, `guia/ADMIN.md` |
 | 2026-11-02 | Paso 0: el mapa del admin y este plan | `guia/ADMIN.md` |
