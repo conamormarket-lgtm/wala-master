@@ -243,6 +243,7 @@ export default function FichaDelPanel({ modo = 'producto' }) {
         return { id: r.data?.id || r.id, nombre: String(nombre || '').trim() };
       }}
       productos={(productosQ.data || []).filter((p) => p.id !== id).map(productoAdminDesde).filter(Boolean)}
+      equipos={[...new Set((productosQ.data || []).filter((p) => p.deleted !== true).map((p) => String(p.equipo || '').trim()).filter(Boolean))]}
       coloresDe={(productoId) => (crudosPorId.get(productoId)?.variants || []).map((v) => ({ nombre: v.name, foto: v.imageUrl }))}
       destinosCrear={destinosQ.data || []}
       subirImagen={subirImagen}

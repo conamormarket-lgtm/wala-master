@@ -39,6 +39,7 @@ function Bloque({ children, hidden = false }) {
  *  - marcas: [{ id, nombre, logo, whatsapp }] · categorias, colecciones, tipos,
  *    personajes, etiquetas: [{ id, nombre, marcas }] (sin marcas = de todas)
  *  - onCrear(lista, { nombre, marcaId }) → promesa con { id, nombre }
+ *  - equipos: los nombres que ya usan otros productos (el Equipo se elige o se escribe uno nuevo)
  *    (lista: 'categoria' | 'coleccion' | 'tipo' | 'personaje' | 'etiqueta')
  *  - productos (productoAdminDesde, para las piezas de un combo) · coloresDe(productoId) → [{ nombre, foto }]
  *  - destinosCrear: [{ valor, texto }] (dónde se personaliza: /crear/:id, /combo/:id)
@@ -56,7 +57,7 @@ function Bloque({ children, hidden = false }) {
  */
 export function PaginaFichaProducto({
   inicial, nuevo = false, cargando, error, onReintentar,
-  marcas = [], categorias = [], colecciones = [], tipos = [], personajes = [], etiquetas = [], onCrear,
+  marcas = [], categorias = [], colecciones = [], tipos = [], personajes = [], etiquetas = [], onCrear, equipos = [],
   productos = [], coloresDe = () => [], destinosCrear = [], subirImagen,
   onGuardar, onVolver, onPasarACrear, onBorrador, descripcion, extraGaleria,
   pestanaInicial = 'general', onPestana, fotoConPlantilla, plantillas: plantillasVivas, accionesPlantillas = {},
@@ -290,7 +291,18 @@ export function PaginaFichaProducto({
           <GrupoCampos titulo="Para recomendarlo de regalo">
             <div className={s.fila}><span className={s.etiqueta}>Para quién</span><ElegirUno etiqueta="Para quién es" opciones={PUBLICOS} valor={datos.publico} onElegir={(v) => cambiar('publico', v || '')} /></div>
             <div className={s.fila}><span className={s.etiqueta}>Edad</span><ElegirUno etiqueta="Edad" opciones={EDADES} valor={datos.edadMinima} onElegir={(v) => cambiar('edadMinima', v)} /></div>
-            <Campo id={idCampo('equipo')} etiqueta="Equipo" placeholder="Ej. Alianza Lima" value={datos.equipo} onChange={(e) => cambiar('equipo', e.target.value)} />
+            {/* La misma lista que Datos para recomendar: los equipos que ya hay, o uno nuevo. */}
+            <Campo
+              id={idCampo('equipo')}
+              etiqueta="Equipo"
+              opciones={[{ valor: '', texto: 'Ninguno' }, ...[...new Set([...equipos, ...(datos.equipo ? [datos.equipo] : [])])].sort((a, b) => a.localeCompare(b, 'es')).map((e) => ({ valor: e, texto: e }))]}
+              buscable
+              creable
+              placeholder="Ninguno"
+              value={datos.equipo || ''}
+              ayuda="Para las ideas de regalo de un equipo. Si no está, escríbelo."
+              onChange={(e) => cambiar('equipo', String(e.target.value || '').trim())}
+            />
           </GrupoCampos>
         </Bloque>
 

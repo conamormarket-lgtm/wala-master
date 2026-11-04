@@ -7,6 +7,7 @@ import { Chip, Etiqueta } from '../../Etiquetas';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, InsigniaEstado } from '../../piezas/admin/Datos';
 import { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, ElegirUno } from '../../piezas/admin/Formularios';
+import { ElegirMarca } from '../../piezas/admin/Producto';
 import { MODOS_TALLA_PACK, MIN_PIEZAS_PACK, MAX_PIEZAS_PACK, erroresDePack, normalizarBusqueda } from '../../adaptadoresAdmin';
 import { FotoCelda } from './celdas';
 import l from './Lista.module.css';
@@ -204,7 +205,7 @@ function FilaPieza({ pz, i, prendas, talCual, puedeQuitar, onCambiar, onQuitar }
  *  - packs: [packDesdeFirestore] · cargando · error · onReintentar
  *  - prendas: las de Crear [{ id, nombre, foto, precio, colores: [{ id, nombre, hex }] }]
  *  - talCual: los productos de la tienda que pueden ir tal cual (con colores; sin combos ni Crear), con la misma forma
- *  - marcas: [{ id, nombre }] · categorias: [{ id, nombre, marcas }]
+ *  - marcas: [{ id, nombre, logo }] · categorias: [{ id, nombre, marcas }]
  *  - onGuardar(datos, id?) → promesa (el admin: packAGuardar + guardarComboCrear) · onArchivar(id) → promesa
  *  - subirImagen · onVer(pack) (/combo/:id) · nuevoInicial (?nuevo=1)
  *  - onSugerir() → [{ clave, nombre, descripcion, precio, piezas, tallas }] (sugerirCombos) ·
@@ -341,7 +342,8 @@ export function PaginaPacks({
         <GrupoCampos titulo="El pack">
           <Campo etiqueta="Nombre" placeholder="Ej. Pareja Kapi" value={datos.nombre} error={errores.nombre} maxLength={80} onChange={(e) => cambiar('nombre', e.target.value)} />
           <Campo etiqueta="Descripción" multilinea={2} value={datos.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
-          <Campo etiqueta="Marca" opciones={[{ valor: '', texto: 'Sin marca' }, ...marcas.map((m) => ({ valor: m.id, texto: m.nombre }))]} value={datos.marcaId} onChange={(e) => cambiar('marcaId', e.target.value)} />
+          {/* Como en la ficha de un producto: los logos (tocar la elegida la quita). */}
+          <ElegirMarca marcas={marcas} valor={datos.marcaId} onCambiar={(v) => cambiar('marcaId', v)} ayuda="Sin marca, el pack no sale en ninguna página de marca." />
           <Campo
             etiqueta="Categoría"
             opciones={[{ valor: '', texto: 'Sin categoría' }, ...categorias.filter((c) => !marcaDelPack || (c.marcas || []).includes(marcaDelPack)).map((c) => ({ valor: c.id, texto: c.nombre }))]}
