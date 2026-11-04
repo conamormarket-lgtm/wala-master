@@ -440,21 +440,63 @@ export function productoAdminDesde(p = {}) {
 export const DIAS_PAPELERA = 30;
 const queEra = (p) => (p.esComboCrear === true ? 'Pack de Crear' : p.esPrendaBase === true ? 'Personalizable' : p.isComboProduct === true ? 'Combo' : 'Tienda');
 
+/*
+ * Quién nombra a quién: un combo a sus piezas (comboItems), un pack a sus
+ * prendas (prendaId), una ficha vieja a la que la reemplaza (reemplazadoPor),
+ * un producto a su prenda de Crear (personalizarEn: "/crear/<id>") y los
+ * premios de la ruleta y de recompensas a su producto. Se buscan los ids
+ * entre comillas o al final de una ruta, en el documento entero: así no se
+ * escapa un campo nuevo. Igual que functions/papeleraLogic.js.
+ */
+const NOMBRADOS = /"([A-Za-z0-9_-]{1,64})"|\/(?:crear|combo)\/([A-Za-z0-9_-]{1,64})"/g;
+function idsNombrados(texto, ids) {
+  const vistos = new Set();
+  for (const m of String(texto).matchAll(NOMBRADOS)) {
+    const id = m[1] || m[2];
+    if (ids.has(id)) vistos.add(id);
+  }
+  return vistos;
+}
+
+/**
+ * Para cada producto, quién lo usa: Map id → [{ id, nombre, enPapelera, premio }].
+ *  - productos: todos los crudos (vivos y en la papelera)
+ *  - premios: [{ id, nombre, ...datos }] (ruletaPrizes y rewardsCatalog), opcional
+ */
+export function usosDeProductos(productos = [], premios = []) {
+  const ids = new Set(productos.filter(Boolean).map((p) => p.id));
+  const usos = new Map();
+  const anotar = (quien, texto) => idsNombrados(texto, ids).forEach((id) => {
+    if (id === quien.id) return;
+    if (!usos.has(id)) usos.set(id, []);
+    usos.get(id).push(quien);
+  });
+  productos.filter(Boolean).forEach((p) => anotar({ id: p.id, nombre: p.name || p.id, enPapelera: p.deleted === true }, JSON.stringify(p)));
+  premios.filter(Boolean).forEach((x) => anotar({ id: x.id, nombre: x.nombre, enPapelera: false, premio: true }, JSON.stringify(x)));
+  return usos;
+}
+
 /**
  * Lo que está en la papelera (los `deleted` de productos_wala), con:
  *  - seFue (ms): cuándo se movió · seBorra (ms) y dias: cuándo se borra solo
  *    (los de antes de la papelera, sin papeleraDesde, cuentan desde `ahora`:
  *    la función les pone la fecha la primera vez que pasa)
- *  - usadoPor: los productos vivos que lo nombran (un combo que lo lleva de
- *    pieza, uno que lo reemplaza…). Borrarlo los rompería: no se deja.
- * `productos`: todos los crudos (vivos y borrados).
+ *  - usos: quién lo nombra ([{ id, nombre, enPapelera, premio }]). Lo que usa
+ *    algo que se queda no se borra (un combo que lo lleva de pieza, uno que
+ *    lo reemplaza, un premio…); si quien lo usa también se borra, sí.
+ *  - usadoPor: los nombres de los que lo usan y no están en la papelera
+ *  - necesita: lo de la papelera que este nombra (sus piezas): al
+ *    restaurarlo vuelven con él
+ * `productos`: todos los crudos (vivos y borrados) · premios: como en usosDeProductos.
  */
-export function papeleraDesde(productos = [], ahora = Date.now()) {
-  const vivos = productos.filter((p) => p && p.deleted !== true).map((p) => ({ nombre: p.name || p.id, id: p.id, texto: JSON.stringify(p) }));
-  return productos.filter((p) => p && p.deleted === true).map((p) => {
+export function papeleraDesde(productos = [], ahora = Date.now(), premios = []) {
+  const usos = usosDeProductos(productos, premios);
+  const enPapelera = productos.filter((p) => p && p.deleted === true);
+  const idsPapelera = new Set(enPapelera.map((p) => p.id));
+  return enPapelera.map((p) => {
     const desde = msDe(p.papeleraDesde);
     const seBorra = (desde ?? ahora) + DIAS_PAPELERA * DIA_MS;
-    const aguja = `"${p.id}"`;
+    const suyos = usos.get(p.id) || [];
     return {
       id: p.id,
       nombre: p.name || 'Sin nombre',
@@ -464,9 +506,38 @@ export function papeleraDesde(productos = [], ahora = Date.now()) {
       seBorra,
       dias: Math.max(0, Math.ceil((seBorra - ahora) / DIA_MS)),
       visibleAntes: p.visibleAntes === true,
-      usadoPor: vivos.filter((v) => v.id !== p.id && v.texto.includes(aguja)).map((v) => v.nombre),
+      usos: suyos,
+      usadoPor: suyos.filter((u) => !u.enPapelera).map((u) => u.nombre),
+      necesita: [...idsNombrados(JSON.stringify(p), idsPapelera)].filter((id) => id !== p.id),
     };
   });
+}
+
+/**
+ * De `ids` (lo que se quiere borrar), cuáles se pueden: los que nadie usa, o
+ * solo los usan otros que también se borran ahora. Lo demás se queda.
+ */
+export function borrablesDePapelera(papelera = [], ids = []) {
+  const porId = new Map(papelera.map((p) => [p.id, p]));
+  let quedan = new Set(ids.filter((id) => porId.has(id)));
+  for (;;) {
+    const siguen = new Set([...quedan].filter((id) => (porId.get(id).usos || []).every((u) => quedan.has(u.id))));
+    if (siguen.size === quedan.size) return [...siguen];
+    quedan = siguen;
+  }
+}
+
+/** Lo que vuelve al restaurar `ids`: ellos y, de la papelera, lo que necesitan (sus piezas). */
+export function restaurablesDePapelera(papelera = [], ids = []) {
+  const porId = new Map(papelera.map((p) => [p.id, p]));
+  const van = new Set();
+  const sumar = (id) => {
+    if (van.has(id) || !porId.has(id)) return;
+    van.add(id);
+    (porId.get(id).necesita || []).forEach(sumar);
+  };
+  ids.forEach(sumar);
+  return [...van];
 }
 
 /** "Se borra hoy" · "en 1 día" · "en 12 días". */

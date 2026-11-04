@@ -499,38 +499,46 @@ export function SelectorProductos({ productos = [], yaEstan = [], onElegir, acci
 /* ── Un número que se edita en la fila ─────────────────── */
 
 /**
- * Un número que se cambia ahí mismo (el stock del inventario): se guarda
- * solo, un momento después de dejar de escribir, y muestra guardando,
+ * Un número que se cambia ahí mismo (el stock de Productos). No se guarda
+ * solo: al cambiarlo (escribiendo o con − y +) sale debajo una barrita con
+ * "Guardar" y deshacer; Enter guarda y Esc deshace. Muestra guardando,
  * guardado o el error con Reintentar. Lo negativo o vacío no se guarda.
  *  - valor · onGuardar(nuevo, anterior) → promesa · etiqueta (para lectores)
- *  - espera: ms antes de guardar (1000) · min (0) · sufijo ("uds")
+ *  - min (0) · sufijo ("uds")
  */
-export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, espera = 1000, min = 0, sufijo }) {
+export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, min = 0, sufijo }) {
   const [texto, setTextoEstado] = useState(String(valor ?? 0));
   // Lo escrito también en una referencia: dos toques seguidos en "+" suman dos.
   const textoRef = useRef(String(valor ?? 0));
   const setTexto = (v) => { textoRef.current = v; setTextoEstado(v); };
   const [estado, setEstado] = useState(null); // 'guardando' | 'guardado' | { error }
-  const guardado = useRef(Number(valor) || 0);
-  const reloj = useRef(null);
+  const [guardado, setGuardado] = useState(Number(valor) || 0);
   const listo = useRef(null);
+  const entrada = useRef(null);
 
-  // Llega otro valor de afuera (al recargar) y aquí no hay nada pendiente.
+  const n = Number.parseInt(texto, 10);
+  const valido = Number.isFinite(n) && n >= min;
+  const pendiente = valido && n !== guardado;
+  const error = estado && typeof estado === 'object' ? estado.error : null;
+
+  // Llega otro valor de afuera (al recargar) y aquí no hay nada a medias.
   useEffect(() => {
-    if (!reloj.current && estado !== 'guardando') {
+    if (!pendiente && estado !== 'guardando') {
       setTexto(String(valor ?? 0));
-      guardado.current = Number(valor) || 0;
+      setGuardado(Number(valor) || 0);
     }
   }, [valor]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => () => { window.clearTimeout(reloj.current); window.clearTimeout(listo.current); }, []);
+  useEffect(() => () => window.clearTimeout(listo.current), []);
 
-  const guardar = async (n) => {
-    const anterior = guardado.current;
-    if (n === anterior) return;
+  const guardar = async () => {
+    if (!valido || estado === 'guardando') return;
+    const nuevo = Number.parseInt(textoRef.current, 10);
+    const anterior = guardado;
+    if (nuevo === anterior) return;
     setEstado('guardando');
     try {
-      await onGuardar?.(n, anterior);
-      guardado.current = n;
+      await onGuardar?.(nuevo, anterior);
+      setGuardado(nuevo);
       setEstado('guardado');
       window.clearTimeout(listo.current);
       listo.current = window.setTimeout(() => setEstado(null), 2000);
@@ -540,19 +548,16 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, espera = 1000, m
   };
   const cambiar = (t) => {
     setTexto(t);
-    window.clearTimeout(reloj.current);
-    reloj.current = null;
-    const n = Number.parseInt(t, 10);
-    if (!Number.isFinite(n) || n < min) return;
-    reloj.current = window.setTimeout(() => { reloj.current = null; guardar(n); }, espera);
+    if (error || estado === 'guardado') setEstado(null);
   };
+  const deshacer = () => { setTexto(String(guardado)); setEstado(null); entrada.current?.focus(); };
   const actual = () => Number.parseInt(textoRef.current, 10) || 0;
-  const error = estado && typeof estado === 'object' ? estado.error : null;
   return (
     <span className={s.enLinea} data-componente="NumeroEnLinea">
-      <span className={[s.enLineaCaja, error && s.enLineaError].filter(Boolean).join(' ')}>
+      <span className={[s.enLineaCaja, pendiente && s.enLineaCambiado, error && s.enLineaError].filter(Boolean).join(' ')}>
         <button type="button" onClick={() => cambiar(String(Math.max(min, actual() - 1)))} aria-label={`Restar uno: ${etiqueta}`}>−</button>
         <input
+          ref={entrada}
           type="number"
           inputMode="numeric"
           min={min}
@@ -560,20 +565,34 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, espera = 1000, m
           aria-label={etiqueta}
           aria-invalid={error ? true : undefined}
           onChange={(e) => cambiar(e.target.value)}
-          onBlur={() => { const n = Number.parseInt(texto, 10); if (!Number.isFinite(n) || n < min) setTexto(String(guardado.current)); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); guardar(); }
+            if (e.key === 'Escape' && (pendiente || !valido)) { e.preventDefault(); e.stopPropagation(); deshacer(); }
+          }}
+          onBlur={() => { if (!valido) setTexto(String(guardado)); }}
         />
         <button type="button" onClick={() => cambiar(String(actual() + 1))} aria-label={`Sumar uno: ${etiqueta}`}>+</button>
       </span>
       {sufijo && <span className={s.enLineaSufijo}>{sufijo}</span>}
       <span className={s.enLineaEstado} aria-live="polite">
-        {estado === 'guardando' && <Loader2 className={s.girar} aria-label="Guardando" />}
         {estado === 'guardado' && <Check className={s.enLineaListo} aria-label="Guardado" />}
-        {error && (
-          <button type="button" className={s.enLineaReintentar} onClick={() => guardar(actual())} title={error}>
+        {error && !pendiente && (
+          <button type="button" className={s.enLineaReintentar} onClick={guardar} title={error}>
             <RefreshCw aria-hidden="true" /> Reintentar
           </button>
         )}
       </span>
+      {(pendiente || estado === 'guardando') && (
+        <span className={s.enLineaBarra} role="group" aria-label={`Cambio sin guardar: ${etiqueta}`}>
+          <button type="button" className={s.enLineaGuardar} onClick={guardar} disabled={estado === 'guardando'} title="Guardar (Enter)">
+            {estado === 'guardando' ? <Loader2 className={s.girar} aria-hidden="true" /> : <Check aria-hidden="true" />}
+            {estado === 'guardando' ? 'Guardando' : error ? 'Reintentar' : 'Guardar'}
+          </button>
+          <button type="button" className={s.enLineaDeshacer} onClick={deshacer} disabled={estado === 'guardando'} aria-label="Deshacer el cambio" title="Deshacer (Esc)">
+            <X aria-hidden="true" />
+          </button>
+        </span>
+      )}
     </span>
   );
 }

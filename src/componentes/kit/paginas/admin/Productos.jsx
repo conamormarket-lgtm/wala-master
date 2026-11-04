@@ -9,7 +9,7 @@ import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, AccionesLote, CargarMas, InsigniaEstado, NumeroEnLinea } from '../../piezas/admin/Datos';
 import { ElegirUno } from '../../piezas/admin/Formularios';
 import { Campo } from '../../Formulario';
-import { esDeLaTienda, piezasDeCombos, etiquetasDeProducto, estadoDeStock, normalizarBusqueda, textoSeBorra, DIAS_PAPELERA } from '../../adaptadoresAdmin';
+import { esDeLaTienda, piezasDeCombos, etiquetasDeProducto, estadoDeStock, normalizarBusqueda, textoSeBorra, DIAS_PAPELERA, borrablesDePapelera, restaurablesDePapelera } from '../../adaptadoresAdmin';
 import { FotoCelda } from './celdas';
 import l from './Lista.module.css';
 import s from './Productos.module.css';
@@ -133,6 +133,8 @@ const ESTADOS_LISTA = [
  *  - onArchivar(ids) → promesa con { ok, fallaron }: los manda a la papelera · onDuplicar(producto) → promesa
  *  - papelera: papeleraDesde (adaptadoresAdmin) · onRestaurar(ids) / onBorrarParaSiempre(ids) → promesa con { ok, fallaron }
  *    (sin papelera, no sale la pestaña)
+ *  - usos: Map id → [{ nombre, enPapelera, premio }] (usosDeProductos): al mandar a la
+ *    papelera, avisa qué combos, packs o premios lo usan
  *  - onExportar(ids | null) (CSV) · onQuitarPersonalizacionVieja(ids) → promesa con { ok, fallaron }
  *  - cuentas: { crear, packs } (sin ellas, se cuentan de `productos`)
  *  - borradores: [{ id, nombre, fecha }] (los guardados en este aparato) · urlBorrador(id) · onDescartarBorrador(id) → promesa
@@ -150,7 +152,7 @@ export function PaginaProductos({
   onVisible, onVarios, onArchivar, onDuplicar, onExportar, onQuitarPersonalizacionVieja,
   borradores = [], urlBorrador, onDescartarBorrador, cuentas: cuentasCrear,
   colecciones = [], tipos = [], onGuardarStock, urlHistorial, soloStock = false,
-  papelera, onRestaurar, onBorrarParaSiempre,
+  papelera, onRestaurar, onBorrarParaSiempre, usos,
 }) {
   const toast = useToast();
   const [estado, setEstado] = useState('todos');
@@ -470,6 +472,14 @@ export function PaginaProductos({
         onConfirmar={confirmar}
         onCancelar={() => !trabajando && setPregunta(null)}
       >
+        {pregunta?.tipo === 'archivar' && (() => {
+          const lista = pregunta.ids.flatMap((id) => (usos?.get(id) || []).filter((u) => !u.enPapelera).map((u) => ({ de: productos.find((x) => x.id === id)?.nombre || id, ...u })));
+          return lista.length > 0 && (
+            <Aviso tipo="aviso" compacto titulo={lista.length === 1 ? 'Algo lo usa' : `${lista.length} cosas lo usan`}>
+              {lista.slice(0, 6).map((u) => `${u.premio ? u.nombre : `«${u.nombre}»`}${pregunta.ids.length > 1 ? ` (usa «${u.de}»)` : ''}`).join(' · ')}{lista.length > 6 ? ` y ${lista.length - 6} más` : ''}. Mientras esté en la papelera, eso no se puede comprar ni canjear; cámbialo o restáuralo.
+            </Aviso>
+          );
+        })()}
         {pregunta?.tipo === 'viejo' && (
           <ul className={s.listaPregunta}>
             {viejos.slice(0, 15).map((p) => <li key={p.id}>{p.nombre}</li>)}
@@ -504,7 +514,10 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
   const [idos, setIdos] = useState([]); // restaurados o borrados aquí, hasta que llegue la lista
 
   const lista = papelera.filter((p) => !idos.includes(p.id));
-  const borrables = lista.filter((p) => !p.usadoPor.length);
+  // Se borra lo que nadie usa, o lo que solo usan otros que también se borran.
+  const borrables = borrablesDePapelera(lista, lista.map((p) => p.id)).map((id) => lista.find((p) => p.id === id));
+  const sePuedeBorrar = (p) => borrablesDePapelera(lista, [p.id]).length > 0;
+  const deLaPapelera = (p) => (p.usos || []).filter((u) => u.enPapelera).map((u) => u.nombre);
   const q = normalizarBusqueda(buscar);
   const filas = lista
     .filter((p) => (!q || normalizarBusqueda(p.nombre).includes(q)) && (!que || p.que === que))
@@ -517,8 +530,8 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
 
   const confirmar = async () => {
     const { tipo } = pregunta;
-    // Los que usa otro producto no se borran (ni al vaciar).
-    const ids = tipo === 'restaurar' ? pregunta.ids : pregunta.ids.filter((id) => !porId.get(id)?.usadoPor.length);
+    // Restaurar trae sus piezas de la papelera; borrar deja lo que usa algo que se queda.
+    const ids = tipo === 'restaurar' ? restaurablesDePapelera(lista, pregunta.ids) : borrablesDePapelera(lista, pregunta.ids);
     setTrabajando(true);
     try {
       const r = (await (tipo === 'restaurar' ? onRestaurar : onBorrar)?.(ids)) || {};
@@ -526,11 +539,14 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
       const fallaron = r.fallaron ?? 0;
       if (!fallaron) setIdos((x) => [...x, ...ids]);
       setElegidos([]);
-      const saltados = pregunta.ids.length - ids.length;
+      const saltados = tipo === 'restaurar' ? 0 : pregunta.ids.length - ids.length;
+      const extra = tipo === 'restaurar' ? ids.length - pregunta.ids.length : 0;
       toast({
         tipo: fallaron ? 'aviso' : 'exito',
         titulo: tipo === 'restaurar' ? `${ok} ${ok === 1 ? 'producto restaurado' : 'productos restaurados'}` : `${ok} ${ok === 1 ? 'producto borrado' : 'productos borrados'} para siempre`,
-        texto: fallaron ? `${fallaron} no se pudieron: vuelve a intentar con esos.` : saltados ? `${saltados} no se borr${saltados === 1 ? 'ó' : 'aron'}: ${saltados === 1 ? 'lo usa' : 'los usa'} otro producto.` : undefined,
+        texto: fallaron ? `${fallaron} no se pudieron: vuelve a intentar con esos.`
+          : saltados ? `${saltados} no se borr${saltados === 1 ? 'ó' : 'aron'}: ${saltados === 1 ? 'lo usa' : 'los usa'} algo que se queda.`
+            : extra ? `Con ${extra === 1 ? 'su pieza' : `sus ${extra} piezas`} de la papelera.` : undefined,
       });
     } catch (err) {
       toast({ tipo: 'error', titulo: 'No se pudo', texto: err?.message || 'Vuelve a intentar.' });
@@ -542,8 +558,9 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
 
   const n = pregunta?.ids.length || 0;
   const cuales = pregunta?.nombre ? `«${pregunta.nombre}»` : `${n} producto${n === 1 ? '' : 's'}`;
+  const conPiezas = pregunta?.tipo === 'restaurar' ? restaurablesDePapelera(lista, pregunta.ids).filter((id) => !pregunta.ids.includes(id)).map((id) => porId.get(id)?.nombre) : [];
   const textos = !pregunta ? {} : pregunta.tipo === 'restaurar'
-    ? { titulo: `¿Restaurar ${cuales}?`, texto: 'Vuelven a Productos como estaban: los que se veían en la tienda, visibles; los demás, ocultos.', confirmar: 'Restaurar' }
+    ? { titulo: `¿Restaurar ${cuales}?`, texto: `Vuelven a Productos como estaban: los que se veían en la tienda, visibles; los demás, ocultos.${conPiezas.length ? ` También vuelve${conPiezas.length === 1 ? '' : 'n'} ${conPiezas.length === 1 ? 'su pieza' : 'sus piezas'}: ${conPiezas.slice(0, 4).join(', ')}${conPiezas.length > 4 ? '…' : ''}.` : ''}`, confirmar: 'Restaurar' }
     : pregunta.tipo === 'vaciar'
       ? { titulo: '¿Vaciar la papelera?', texto: `${borrables.length === 1 ? 'Se borra para siempre el producto que hay' : `Se borran para siempre los ${borrables.length} productos`}${lista.length > borrables.length ? ' (menos los que usa otro producto, que se quedan)' : ''}. No se puede deshacer. Los pedidos que ${borrables.length === 1 ? 'lo tienen siguen con su nombre' : 'los tienen siguen con sus nombres'} y su foto.`, confirmar: 'Vaciar la papelera' }
       : { titulo: `¿Borrar ${cuales} para siempre?`, texto: 'No se puede deshacer. Los pedidos que los tienen siguen con su nombre y su foto.', confirmar: 'Borrar para siempre' };
@@ -557,7 +574,7 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
           titulo={`Lo que está aquí no se ve en la tienda y se borra solo a los ${DIAS_PAPELERA} días`}
           accion={onBorrar && borrables.length > 0 ? <Boton tamano="sm" variante="contorno" icono={<Trash2 aria-hidden="true" />} onClick={() => setPregunta({ tipo: 'vaciar', ids: borrables.map((p) => p.id) })}>Vaciar la papelera</Boton> : undefined}
         >
-          Antes de eso lo puedes restaurar, o borrarlo ya. Lo que es pieza de otro producto no se borra hasta quitarlo de ahí.
+          Antes de eso lo puedes restaurar (un combo vuelve con sus piezas), o borrarlo ya. Lo que usa un producto o un premio que se queda no se borra; si solo lo usa algo de aquí, se va con eso.
         </Aviso>
       </div>
       <BarraFiltros
@@ -575,7 +592,10 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
           { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
           {
             id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo',
-            celda: (p) => <>{p.nombre}<span className={l.sub}>{p.que}{p.usadoPor.length ? ` · lo usa ${p.usadoPor.slice(0, 2).join(', ')}${p.usadoPor.length > 2 ? '…' : ''}` : ''}</span></>,
+            celda: (p) => {
+              const enPapelera = deLaPapelera(p);
+              return <>{p.nombre}<span className={l.sub}>{p.que}{p.usadoPor.length ? ` · lo usa ${p.usadoPor.slice(0, 2).join(', ')}${p.usadoPor.length > 2 ? '…' : ''}` : enPapelera.length ? ` · va con ${enPapelera.slice(0, 2).join(', ')}` : ''}</span></>;
+            },
           },
           { id: 'seFue', titulo: 'Se fue', ordenable: true, ancho: 140, tarjeta: 'detalle', celda: (p) => fechaCorta(p.seFue) },
           { id: 'seBorra', titulo: 'Se borra', ordenable: true, ancho: 130, tarjeta: 'estado', celda: (p) => (p.usadoPor.length ? <Etiqueta tono="neutro">En uso</Etiqueta> : <Etiqueta tono={p.dias <= 3 ? 'peligro' : 'neutro'}>{textoSeBorra(p.dias)}</Etiqueta>) },
@@ -594,7 +614,7 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
           : { titulo: 'La papelera está vacía', texto: 'Lo que mandes a la papelera desde Productos aparece aquí.', icono: <Trash2 aria-hidden="true" /> }}
         acciones={(p) => [
           ...(onRestaurar ? [{ id: 'restaurar', etiqueta: 'Restaurar', Icono: RotateCcw, accion: () => setPregunta({ tipo: 'restaurar', ids: [p.id], nombre: p.nombre }) }] : []),
-          ...(onBorrar && !p.usadoPor.length ? ['separador', { id: 'borrar', etiqueta: 'Borrar para siempre', Icono: Trash2, peligro: true, accion: () => setPregunta({ tipo: 'borrar', ids: [p.id], nombre: p.nombre }) }] : []),
+          ...(onBorrar && sePuedeBorrar(p) ? ['separador', { id: 'borrar', etiqueta: 'Borrar para siempre', Icono: Trash2, peligro: true, accion: () => setPregunta({ tipo: 'borrar', ids: [p.id], nombre: p.nombre }) }] : []),
         ]}
       />
       <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={['producto', 'productos']} />

@@ -124,7 +124,7 @@ export {
   categoriaDesdeFirestore, categoriaAFirestore, ordenConParte, marcaAdminDesdeFirestore, normalizarBusqueda, mismoNombre,
   coleccionDesdeFirestore, coleccionAFirestore, ATRIBUTOS, usosDeAtributo, atributoDesdeFirestore, atributoAFirestore,
   zonaDesdeFirestore, zonaAFirestore,
-  slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde, papeleraDesde, textoSeBorra, DIAS_PAPELERA,
+  slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde, papeleraDesde, usosDeProductos, borrablesDePapelera, restaurablesDePapelera, textoSeBorra, DIAS_PAPELERA,
   esDeLaTienda, piezasDeCombos, etiquetasDeProducto, rutaAdminDeProducto, estadoDeStock,
   CUMPLIMIENTOS, fichaDesdeProducto, fichaAProducto, erroresDeFicha,
   personalizableDesde, packDesdeFirestore, packAGuardar, erroresDePack, MODOS_TALLA_PACK, MIN_PIEZAS_PACK, MAX_PIEZAS_PACK,

@@ -76,7 +76,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
     staleTime: 300_000,
   });
 
-  const { porIndice: comboProd, porId: subproductos, listas: comboListo, terminado: comboPedido } = usePiezasDelCombo(product);
+  const { porIndice: comboProd, porId: subproductos, listas: comboListo, terminado: comboPedido, incompleto: comboIncompleto } = usePiezasDelCombo(product);
 
   const ficha = useMemo(
     () => (product ? fichaProductoDesde(product, { catalogo: { marcas: marcas || [], categorias: categories }, subproductos }) : null),
@@ -211,7 +211,8 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // Combos: no se agrega mientras cargan las prendas.
   const avisarComboCargando = () => {
     if (comboListo) return false;
-    if (comboPedido) toast.error('No pudimos cargar las prendas del combo. Recarga la página e inténtalo de nuevo.');
+    if (comboIncompleto) toast.error('Este combo no está disponible: una de sus prendas ya no se vende.');
+    else if (comboPedido) toast.error('No pudimos cargar las prendas del combo. Recarga la página e inténtalo de nuevo.');
     else toast.info('Un momento: estamos cargando las prendas del combo.');
     return true;
   };

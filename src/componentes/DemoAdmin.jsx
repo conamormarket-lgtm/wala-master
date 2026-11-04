@@ -812,8 +812,8 @@ function PanelDePrueba() {
   const [productos, setProductos] = useState(PRODUCTOS);
   // La papelera de ejemplo: uno que se borra pronto y uno que es pieza de un combo.
   const [papeleraDemo, setPapeleraDemo] = useState(() => [
-    { id: 'demo-papelera-1', nombre: 'Polo clásico (temporada pasada)', imagen: '', que: 'Tienda', seFue: Date.now() - 28 * 864e5, seBorra: Date.now() + 2 * 864e5, dias: 2, visibleAntes: true, usadoPor: [] },
-    { id: 'demo-papelera-2', nombre: 'Taza Kapi navideña', imagen: '', que: 'Tienda', seFue: Date.now() - 3 * 864e5, seBorra: Date.now() + 27 * 864e5, dias: 27, visibleAntes: false, usadoPor: ['Combo Navidad'] },
+    { id: 'demo-papelera-1', nombre: 'Polo clásico (temporada pasada)', imagen: '', que: 'Tienda', seFue: Date.now() - 28 * 864e5, seBorra: Date.now() + 2 * 864e5, dias: 2, visibleAntes: true, usadoPor: [], usos: [], necesita: [] },
+    { id: 'demo-papelera-2', nombre: 'Taza Kapi navideña', imagen: '', que: 'Tienda', seFue: Date.now() - 3 * 864e5, seBorra: Date.now() + 27 * 864e5, dias: 27, visibleAntes: false, usadoPor: ['Combo Navidad'], usos: [{ id: 'demo-combo-navidad', nombre: 'Combo Navidad', enPapelera: false }], necesita: [] },
   ]);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
   const [borradores, setBorradores] = useState(BORRADORES);
@@ -1117,7 +1117,7 @@ function PanelDePrueba() {
           fallar();
           const idos = productos.filter((x) => ids.includes(x.id));
           setProductos((ps) => ps.filter((x) => !ids.includes(x.id)));
-          setPapeleraDemo((l) => [...idos.map((x) => ({ id: x.id, nombre: x.nombre, imagen: x.imagen, que: 'Tienda', seFue: Date.now(), seBorra: Date.now() + 30 * 864e5, dias: 30, visibleAntes: !x.oculto, usadoPor: [], producto: x })), ...l]);
+          setPapeleraDemo((l) => [...idos.map((x) => ({ id: x.id, nombre: x.nombre, imagen: x.imagen, que: 'Tienda', seFue: Date.now(), seBorra: Date.now() + 30 * 864e5, dias: 30, visibleAntes: !x.oculto, usadoPor: [], usos: [], necesita: [], producto: x })), ...l]);
           return { ok: ids.length, fallaron: 0 };
         }}
         papelera={papeleraDemo}

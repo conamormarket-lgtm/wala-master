@@ -828,3 +828,27 @@ test('papelera: cuándo se borra, qué era y quién lo usa', () => {
   assert.equal(m2.textoSeBorra(0), 'Hoy');
   assert.equal(m2.textoSeBorra(1), 'En 1 día');
 });
+
+test('papelera: personalizarEn, premios, piezas en la papelera, borrar y restaurar juntos', () => {
+  const ahora = Date.parse('2026-11-04T12:00:00Z');
+  const productos = [
+    { id: 'prenda1', name: 'Polo Crear', deleted: true, esPrendaBase: true },
+    { id: 'tienda1', name: 'Polo tienda', personalizarEn: '/crear/prenda1' },
+    { id: 'pieza', name: 'Pieza', deleted: true },
+    { id: 'combo', name: 'Combo', deleted: true, isComboProduct: true, comboItems: [{ productId: 'pieza' }] },
+    { id: 'premiado', name: 'Taza', deleted: true },
+  ];
+  const premios = [{ id: 'r1', nombre: 'Premio de la ruleta «Taza gratis»', productId: 'premiado' }];
+  const lista = m2.papeleraDesde(productos, ahora, premios);
+  const de = (id) => lista.find((x) => x.id === id);
+  assert.deepEqual(de('prenda1').usadoPor, ['Polo tienda']);
+  assert.deepEqual(de('premiado').usadoPor, ['Premio de la ruleta «Taza gratis»']);
+  assert.deepEqual(de('pieza').usadoPor, []);
+  assert.deepEqual(de('combo').necesita, ['pieza']);
+  // La pieza sola no se borra (la usa el combo, que se queda); con el combo, sí.
+  assert.deepEqual(m2.borrablesDePapelera(lista, ['pieza']), []);
+  assert.deepEqual(m2.borrablesDePapelera(lista, ['pieza', 'combo']).sort(), ['combo', 'pieza']);
+  assert.deepEqual(m2.borrablesDePapelera(lista, lista.map((x) => x.id)).sort(), ['combo', 'pieza']);
+  // Restaurar el combo trae su pieza.
+  assert.deepEqual(m2.restaurablesDePapelera(lista, ['combo']).sort(), ['combo', 'pieza']);
+});

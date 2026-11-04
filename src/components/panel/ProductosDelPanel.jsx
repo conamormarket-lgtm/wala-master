@@ -13,17 +13,27 @@ import { getProductTypes } from '../../services/productTypes';
 import { getPrendasBaseAdmin } from '../../services/prendasBase';
 import { getCombosCrear } from '../../services/combosCrear';
 import { deleteFile } from '../../services/firebase/storage';
-import { updateDocument } from '../../services/firebase/firestore';
+import { updateDocument, getCollection } from '../../services/firebase/firestore';
 import { logInventoryChange } from '../../services/inventoryLogs';
 import { quitarPersonalizacionVieja } from '../../services/personalizacionVieja';
 import { exportProducts } from '../../utils/exportProducts';
 import { SINONIMOS, publicoDe, edadMinimaDe, equipoDe, textoProducto } from '../../utils/giftRecommender.mjs';
 import { PaginaProductos, PaginaRecomendar } from '../../componentes/kit/paginas/admin/Productos';
-import { productoAdminDesde, categoriaDesdeFirestore, puedeVer, papeleraDesde } from '../../componentes/kit/adaptadoresAdmin';
+import { productoAdminDesde, categoriaDesdeFirestore, puedeVer, papeleraDesde, usosDeProductos } from '../../componentes/kit/adaptadoresAdmin';
 import { PersonalizablesDelPanel, PacksDelPanel } from './CrearDelPanel';
 import { sinError, useLectura, useInvalidar } from './comun';
 
 const productosConOcultos = () => getProducts([], null, null, { includeHidden: true });
+/* Los premios que dan un producto (ruleta y recompensas): también lo usan. */
+const leerPremios = async () => {
+  const [ruleta, recompensas] = await Promise.all([getCollection('ruletaPrizes'), getCollection('rewardsCatalog')]);
+  const titulo = (x) => x.title || x.titulo || x.nombre || x.name || x.id;
+  // Como un servicio { data }: si una no se puede leer, cuenta la otra.
+  return { data: [
+    ...(ruleta.data || []).map((x) => ({ ...x, id: `ruletaPrizes/${x.id}`, nombre: `Premio de la ruleta «${titulo(x)}»` })),
+    ...(recompensas.data || []).map((x) => ({ ...x, id: `rewardsCatalog/${x.id}`, nombre: `Recompensa «${titulo(x)}»` })),
+  ] };
+};
 const VISTAS = ['tienda', 'crear', 'packs', 'todos', 'papelera'];
 const nombres = (lista = []) => lista.map((x) => ({ id: x.id, nombre: x.name || x.id }));
 
@@ -79,8 +89,10 @@ export default function ProductosDelPanel() {
   const crudos = useMemo(() => productos.datos || [], [productos.datos]);
   const porId = useMemo(() => new Map(crudos.map((p) => [p.id, p])), [crudos]);
   const lista = useMemo(() => crudos.map(productoAdminDesde).filter(Boolean), [crudos]);
-  // La papelera: los `deleted` (los archivados de antes también), con cuándo se borran.
-  const papelera = useMemo(() => papeleraDesde(crudos), [crudos]);
+  const premios = useLectura(['admin-premios-con-producto'], leerPremios);
+  // La papelera: los `deleted` (los archivados de antes también), con cuándo se borran y quién los usa.
+  const papelera = useMemo(() => papeleraDesde(crudos, Date.now(), premios.datos || []), [crudos, premios.datos]);
+  const usos = useMemo(() => usosDeProductos(crudos, premios.datos || []), [crudos, premios.datos]);
   // Restaurar o borrar uno de Crear también cambia sus pestañas.
   const refrescarTodo = () => invalidar(['admin-products'], ['products'], ['featured-products'], ['collection-products'], ['admin-prendas-crear'], ['admin-combos-crear'], ['prendas-base']);
 
@@ -127,6 +139,7 @@ export default function ProductosDelPanel() {
         return r;
       }}
       papelera={soloStock ? undefined : papelera}
+      usos={usos}
       onRestaurar={async (ids) => {
         const r = await unoPorUno(ids, (id) => restaurarProducto(porId.get(id) || { id }));
         await refrescarTodo();

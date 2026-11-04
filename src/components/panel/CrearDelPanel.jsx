@@ -71,7 +71,8 @@ export function PersonalizablesDelPanel({ onAbrir } = {}) {
       urlNueva="/admin/prendas-crear/nueva"
       // updateProductField y deleteProduct ya lanzan si no se guardó.
       onPublicar={async (id, visible) => { await updateProductField(id, { visible }); await refrescar(); }}
-      onArchivar={async (id) => { await deleteProduct(id); await refrescar(); }}
+      // A la papelera, recordando si estaba publicada (para restaurarla igual).
+      onArchivar={async (id) => { await deleteProduct(id, { visibleAntes: (prendas.datos || []).find((p) => p.id === id)?.visible !== false }); await refrescar(); }}
     />
   );
 }
@@ -178,7 +179,7 @@ export function PacksDelPanel({ nuevoInicial = false } = {}) {
         await guardarComboCrear(id || null, conFotos(packAGuardar(datos)));
         await refrescar();
       }}
-      onArchivar={async (id) => { await archivarComboCrear(id); await refrescar(); }}
+      onArchivar={async (id) => { await archivarComboCrear(id, { publicadoAntes: (combos.datos || []).find((c) => c.id === id)?.publicado === true }); await refrescar(); }}
       // Pareja y trío de cada prenda publicada que aún no los tiene.
       onSugerir={() => sugerirCombos((prendas.datos || []).filter((p) => p.visible !== false), combos.datos || [], precioBase)
         .map((c) => ({ clave: c.clave, nombre: c.name, descripcion: c.description, precio: c.price, piezas: c.piezas, tallas: 'auto' }))}

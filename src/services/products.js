@@ -969,7 +969,11 @@ export const restaurarProducto = async (producto = {}) => {
     deletedAt: null,
     papeleraDesde: null,
     visibleAntes: null,
-    visible: producto.visibleAntes === true,
+    // Un pack de Crear se ve por comboCrear.publicado (archivarComboCrear lo
+    // apaga); los demás, por visible.
+    ...(producto.esComboCrear === true
+      ? { 'comboCrear.publicado': producto.visibleAntes === true }
+      : { visible: producto.visibleAntes === true }),
     searchTokens: buildSearchTokens(producto.name || '', producto.brandId || '', producto.productType || ''),
   });
   if (result.error) throw new Error(result.error);

@@ -18,10 +18,16 @@ exports.vaciarPapeleraVieja = onSchedule(
   },
   async () => {
     const db = admin.firestore();
-    const snap = await db.collection("productos_wala").get();
+    const [snap, ruleta, recompensas] = await Promise.all([
+      db.collection("productos_wala").get(),
+      db.collection("ruletaPrizes").get(),
+      db.collection("rewardsCatalog").get(),
+    ]);
     const productos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    // Los premios que dan un producto también lo protegen (su cupón quedaría muerto).
+    const premios = [...ruleta.docs, ...recompensas.docs].map((d) => ({ id: `${d.ref.parent.id}/${d.id}`, ...d.data() }));
     const ahora = Date.now();
-    const { marcar, borrar, enUso } = planPapelera(productos, ahora);
+    const { marcar, borrar, enUso } = planPapelera(productos, ahora, premios);
     const cambios = [
       ...marcar.map((id) => (b) => b.update(db.collection("productos_wala").doc(id), { papeleraDesde: ahora })),
       ...borrar.map((id) => (b) => b.delete(db.collection("productos_wala").doc(id))),

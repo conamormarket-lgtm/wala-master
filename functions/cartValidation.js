@@ -159,9 +159,32 @@ function createCartValidator({ db, HttpsError }) {
     }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
     const snapshots = await reader.getAll(...refs, {
-      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId"],
+      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId", "isComboProduct", "comboItems"],
     });
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+
+    // Un combo de la tienda se cobra entero: si una de sus prendas está en la
+    // papelera (deleted) o ya no existe, no se vende (la app ya lo frena;
+    // la web, en usePiezasDelCombo). Las piezas ocultas sí valen: suelen serlo.
+    const piezasDe = new Map();
+    for (const snapshot of snapshots) {
+      const data = snapshot.exists ? snapshot.data() || {} : {};
+      if (data.isComboProduct === true && Array.isArray(data.comboItems)) {
+        piezasDe.set(snapshot.id, [...new Set(data.comboItems.map((it) => String(it?.productId || "").trim()).filter(Boolean))]);
+      }
+    }
+    const idsPiezas = [...new Set([...piezasDe.values()].flat())];
+    if (idsPiezas.length) {
+      const snapsPiezas = await reader.getAll(...idsPiezas.map((id) => db.collection("productos_wala").doc(id)), { fieldMask: ["deleted"] });
+      const vivas = new Set(snapsPiezas.filter((sp) => sp.exists && (sp.data() || {}).deleted !== true).map((sp) => sp.id));
+      for (const item of items) {
+        const id = String(item?.productoId || "").trim();
+        if ((piezasDe.get(id) || []).some((pieza) => !vivas.has(pieza))) {
+          throw new HttpsError("failed-precondition",
+            `"${item.producto || id}" ya no está disponible: una de sus prendas ya no se vende. Quítalo del carrito.`);
+        }
+      }
+    }
 
     for (const item of items) {
       const id = String(item?.productoId || "").trim();

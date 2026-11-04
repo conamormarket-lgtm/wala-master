@@ -20,6 +20,18 @@ const plan = planPapelera([
 assert.deepStrictEqual(plan.marcar, ["viejo"], "sin fecha: se le pone hoy, no se borra");
 assert.deepStrictEqual(plan.borrar, ["vencido"], "a los 30 días se borra");
 assert.deepStrictEqual(plan.enUso, ["pieza"], "la pieza de un combo vivo se queda");
+// personalizarEn, premios y piezas que vencen junto a su combo.
+const otro = planPapelera([
+  { id: "prenda", deleted: true, papeleraDesde: ahora - 40 * dia },
+  { id: "polo", name: "Polo", personalizarEn: "/crear/prenda" },
+  { id: "taza", deleted: true, papeleraDesde: ahora - 40 * dia },
+  { id: "pieza", deleted: true, papeleraDesde: ahora - 40 * dia },
+  { id: "combo", deleted: true, papeleraDesde: ahora - 35 * dia, comboItems: [{ productId: "pieza" }] },
+  { id: "pieza2", deleted: true, papeleraDesde: ahora - 40 * dia },
+  { id: "combo2", deleted: true, papeleraDesde: ahora - 2 * dia, comboItems: [{ productId: "pieza2" }] },
+], ahora, [{ id: "ruletaPrizes/r1", productId: "taza" }]);
+assert.deepStrictEqual(otro.borrar.sort(), ["combo", "pieza"], "la pieza se va con su combo vencido");
+assert.deepStrictEqual(otro.enUso.sort(), ["pieza2", "prenda", "taza"], "personalizarEn, un premio o un combo que no vence la protegen");
 assert.strictEqual(msDe({ seconds: 10 }), 10000);
 assert.strictEqual(msDe(""), null);
 assert.deepStrictEqual(planPapelera([], ahora), { marcar: [], borrar: [], enUso: [] });

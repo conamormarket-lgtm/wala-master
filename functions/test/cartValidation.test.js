@@ -27,7 +27,7 @@ test("checkout batches unique catalog documents and projects only validation fie
   const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, inStock: 2 } });
   await f.validate([line("a"), line("a", 2), line("b", 1, { precio: 30 })]);
   assert.deepEqual(f.calls, [{ ids: ["a", "b"], options: {
-    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId"],
+    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId", "isComboProduct", "comboItems"],
   } }]);
 });
 
@@ -210,4 +210,15 @@ test("carts without brands do not read brands and keep the half rule", async () 
   const r = await f.validate([line("a")]);
   assert.equal(r.topeMonedas, 22);
   assert.equal(f.calls.length, 1);
+});
+
+test("a store combo with a piece in the trash or gone cannot be bought; hidden pieces are fine", async () => {
+  const combo = { price: 45, isComboProduct: true, comboItems: [{ productId: "p1" }, { productId: "p2" }] };
+  const ok = fixture({ c: combo, p1: { visible: false }, p2: {} });
+  await ok.validate([line("c")]);
+  assert.deepEqual(ok.calls[1], { ids: ["p1", "p2"], options: { fieldMask: ["deleted"] } });
+  for (const p2 of [{ deleted: true }, undefined]) {
+    const f = fixture({ c: combo, p1: {}, p2 });
+    await assert.rejects(f.validate([line("c")]), /ya no se vende/);
+  }
 });

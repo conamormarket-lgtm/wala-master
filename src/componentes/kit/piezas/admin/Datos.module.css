@@ -731,6 +731,7 @@
 
 /* ── Número en la fila ── */
 .enLinea {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -753,6 +754,79 @@
 
 .enLineaError {
   border-color: var(--danger);
+}
+
+/* Cambiado y sin guardar: el borde violeta lo dice aunque se vaya el foco. */
+.enLineaCambiado {
+  border-color: var(--violet-400);
+}
+
+/* La barrita de guardar: debajo del número, encima de la fila siguiente. */
+.enLineaBarra {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 24px -12px rgba(20, 18, 28, 0.45);
+  white-space: nowrap;
+}
+
+.enLineaBarra button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 30px;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.enLineaBarra button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.enLineaBarra svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.enLineaGuardar {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.enLineaGuardar:hover:not(:disabled) {
+  background: var(--primary-hover, var(--primary-color));
+}
+
+.enLineaDeshacer {
+  width: 30px;
+  justify-content: center;
+  padding: 0 !important;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.enLineaDeshacer:hover:not(:disabled) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.enLineaBarra button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .enLineaCaja button {
