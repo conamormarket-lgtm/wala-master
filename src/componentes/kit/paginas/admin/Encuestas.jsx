@@ -7,7 +7,7 @@ import { Chip } from '../../Etiquetas';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, CargarMas } from '../../piezas/admin/Datos';
-import { HojaEdicion, GrupoCampos, CampoColor, BarraGuardar, CampoLista } from '../../piezas/admin/Formularios';
+import { HojaEdicion, GrupoCampos, BarraGuardar, CampoLista } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras, SinDatos } from '../../piezas/admin/Metricas';
 import { resumenEntregas } from '../../../../services/encuestaEntrega.mjs';
 import {
@@ -250,16 +250,6 @@ export function PaginaEncuestaAdmin({ config, guardada, categoriasTienda = [], c
             activo={c.completionPanel.askWhatsapp !== false}
             onChange={(v) => panel('completionPanel', 'askWhatsapp', v)}
           />
-        </GrupoCampos>
-      )}
-
-      {pestana === 'final' && (
-        <GrupoCampos titulo="El color" ayuda="La encuesta usa el fondo y los textos de la tienda (claro y oscuro). Este color va en los botones, la barra de avance y lo elegido.">
-          <CampoColor etiqueta="Color de acento" valor={c.design.primaryColor} onCambiar={(v) => panel('design', 'primaryColor', v)} />
-          <span className={s.muestraColor} style={{ '--acento': /^#[0-9a-f]{6}$/i.test(c.design.primaryColor) ? c.design.primaryColor : '#8b5cf6' }}>
-            <span className={s.muestraBoton}>{c.introPanel.continueButtonText || 'Empezar'}</span>
-            <span className={s.muestraBarra}><span /></span>
-          </span>
         </GrupoCampos>
       )}
 

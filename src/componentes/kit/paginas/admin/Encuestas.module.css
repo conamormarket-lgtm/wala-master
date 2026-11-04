@@ -121,38 +121,6 @@
   flex: 1 1 14rem;
 }
 
-.muestraColor {
-  display: grid;
-  justify-items: start;
-  gap: 0.6rem;
-  padding: 0.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-}
-
-.muestraBoton {
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
-  background: var(--acento);
-  color: #fff;
-  font-weight: 800;
-}
-
-.muestraBarra {
-  width: min(100%, 16rem);
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-surface-2, #eee);
-  overflow: hidden;
-}
-
-.muestraBarra > span {
-  display: block;
-  width: 60%;
-  height: 100%;
-  background: var(--acento);
-}
-
 /* ── Las respuestas ── */
 .barra {
   display: flex;
