@@ -90,7 +90,6 @@ export { PaginaDestacados } from './paginas/admin/Destacados';
 export { PaginaProductos, PaginaInventario, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
 export { PaginaFichaProducto } from './paginas/admin/Ficha';
 export { PaginaPersonalizables, PaginaPacks } from './paginas/admin/Crear';
-export { PaginaPlantillasYoryo } from './paginas/admin/Herramientas';
 export { PasoAdmin } from './piezas/admin/Pasos';
 export { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras } from './piezas/admin/Metricas';
 export { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from './piezas/admin/Resultados';

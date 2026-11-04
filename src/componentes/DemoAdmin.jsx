@@ -5,7 +5,7 @@ import {
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
-  PaginaPlantillasYoryo, PaginaRecepcion,
+  PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaReclamos, reclamoDesdeFirestore,
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
@@ -105,7 +105,6 @@ const HECHAS = [
   ['/admin/productos', 'Productos'],
   ['/admin/inventario', 'Inventario'],
   ['/admin/publico-productos', 'Recomendar'],
-  ['/admin/plantillas-yoryo', 'Plantillas de cuadros'],
 ];
 
 /* El apartado de ADMIN.md donde se hará cada sección que todavía no está. */
@@ -169,14 +168,6 @@ const PLANTILLAS_DEMO = [
   { id: 'demo-escudo', nombre: 'Escudo', grupo: 'Equipos', imagen: '/assets/marca/splash-etiqueta-w.webp', capas: { frente: [{ tipo: 'imagen' }] } },
 ];
 const PRENDAS_CRUDAS = Object.fromEntries(CREAR.prendas.map((p, i) => [p.id, { ...p, inStock: p.inStock ?? null, ...(i === 0 && { prendaBase: { ...p.prendaBase, plantillas: PLANTILLAS_DEMO } }) }]));
-// D2d: las plantillas de Yoryo con sus nombres reales (pages/admin/plantillasYoryo); los pasos se simulan.
-const EQUIPOS_YORYO = ['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Sport Boys', 'Barcelona', 'Real Madrid'];
-const PAREJAS_YORYO = ['Banda dorada', 'Mi lugar favorito', 'Nuestra historia'];
-const PRODUCTOS_YORYO = [{ id: 'cuadro', nombre: 'Cuadro' }, { id: 'mousepad', nombre: 'Mousepad' }, { id: 'tomatodo', nombre: 'Tomatodo' }];
-const PLANTILLAS_YORYO = Object.fromEntries(PRODUCTOS_YORYO.map(({ id }) => [id, [
-  ...(id === 'tomatodo' ? [] : PAREJAS_YORYO.map((n) => ({ id: `${id}-${n}`, grupo: 'Parejas', nombre: n }))),
-  ...EQUIPOS_YORYO.map((n) => ({ id: `${id}-${n}`, grupo: 'Equipos', nombre: n })),
-]]));
 // D3a: pedidos de ejemplo con la forma de normalizarPedidoRecepcion (nombres inventados).
 const ESTADO_DEMO = {
   por_confirmar_pago: { label: 'Por confirmar pago', paid: false },
@@ -752,7 +743,6 @@ function PanelDePrueba() {
   const [colecciones, guardarColeccion, eliminarColeccion, setColecciones] = useListaDemo(COLECCIONES, falla);
   const [zonas, guardarZona, eliminarZona] = useListaDemo(ZONAS, falla);
   const [marcas, guardarMarca, eliminarMarca, setMarcas] = useListaDemo(MARCAS, falla);
-  const [yoryoCreados, setYoryoCreados] = useState(false);
   const [actualizando, setActualizando] = useState(false);
   const [enlaces, setEnlaces] = useState(ENLACES_DEMO);
   const [configPagos, setConfigPagos] = useState(CONFIG_PAGOS_DEMO);
@@ -1916,41 +1906,6 @@ function PanelDePrueba() {
         }}
       />
     );
-  } else if (ruta === '/admin/plantillas-yoryo') {
-    const paso = (textos, fin) => async (avisar) => {
-      for (const texto of textos) { avisar(texto); await espera(600); }
-      fallar('Firestore rechazó el cambio (es una prueba).');
-      return fin;
-    };
-    const prendasYoryo = [
-      ...(yoryoCreados ? PRODUCTOS_YORYO.map((x) => ({ id: `yoryo-crear-${x.id}`, nombre: `${x.nombre} personalizado`, borrador: true })) : []),
-      ...Object.values(prendasCrudas).map((x) => ({ id: x.id, nombre: x.name, borrador: x.visible === false })),
-    ];
-    pagina = (
-      <PaginaPlantillasYoryo
-        productos={PRODUCTOS_YORYO}
-        prendas={prendasYoryo}
-        destinosIniciales={yoryoCreados ? Object.fromEntries(PRODUCTOS_YORYO.map((x) => [x.id, `yoryo-crear-${x.id}`])) : {}}
-        plantillas={PLANTILLAS_YORYO}
-        cargando={con('cargando')}
-        onCrearProductos={async (avisar) => {
-          const r = await paso(['Subiendo la foto del cuadro…', 'Creando el mousepad…', 'Creando el tomatodo…', 'Armando el Pack de oficina…'], 'Listo: 3 productos y el Pack de oficina, en borrador.')(avisar);
-          setYoryoCreados(true);
-          return r;
-        }}
-        onGuardarPlantillas={async ({ destinos, elegidas }, marcar) => {
-          const lista = PRODUCTOS_YORYO.filter((x) => destinos[x.id]).flatMap((x) => PLANTILLAS_YORYO[x.id]).filter((x) => elegidas.includes(x.id));
-          for (const x of lista) { marcar(x.id, 'Guardando…'); await espera(180); marcar(x.id, falla ? 'Error: sin conexión' : 'Guardada'); }
-          fallar('Algunas plantillas no se guardaron (es una prueba).');
-          return `${lista.length} plantillas guardadas en sus productos.`;
-        }}
-        onQuitarCopias={paso(['Buscando copias en la comunidad…'], 'Se retiraron 27 copias y se borraron de Mis creaciones.')}
-        onPasarATienda={paso(['Ocultando los productos de antes…', 'Copiando fotos y descripción…'], 'Los 4 están en la tienda; los enlaces de antes llevan a ellos.')}
-        onAjustarTomatodo={paso(['Rehaciendo las miniaturas…'], 'Tomatodo ajustado: zona, medida y 6 miniaturas.')}
-        onCrearGrabados={paso(['Billetera…', 'Esclava…', 'Packs con el reloj…'], 'Billetera, esclava y 2 packs listos.')}
-        onCrearComodas={paso(['Categoría y tipo…', 'Las 3 cómodas…'], '3 cómodas en Daida Hogar.')}
-      />
-    );
   } else if (ruta === '/admin/destacados') {
     pagina = (
       <PaginaDestacados
@@ -1970,7 +1925,7 @@ function PanelDePrueba() {
       />
     );
   } else {
-    const productosD2 = ['/admin/productos', '/admin/inventario', '/admin/plantillas-yoryo', '/admin/publico-productos'];
+    const productosD2 = ['/admin/productos', '/admin/inventario', '/admin/publico-productos'];
     const grupo = productosD2.includes(dePaso?.item.to) ? 'D2 · Productos' : APARTADOS[dePaso?.grupo.id];
     pagina = (
       <>

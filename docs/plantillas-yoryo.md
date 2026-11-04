@@ -1,5 +1,7 @@
 # Cuadros, mousepads y tomatodos en Crear
 
+> **2026-11-04:** la página de una sola vez (`/admin/plantillas-yoryo`), `src/pages/admin/plantillasYoryo/`, `public/yoryo/` y `public/daida/` se borraron: todos sus pasos ya se habían corrido en producción. Lo de abajo queda como historia; los productos se cambian en Productos › Personalizables.
+
 Desde el 28-10-2026 se diseñan en el mismo estudio que las prendas (`/crear/:id`). El personalizador aparte de octubre (plantillas por formulario, `/admin/plantillas-yoryo` como editor) se quitó.
 
 ## Un producto, una ficha (desde el 28-10-2026)
