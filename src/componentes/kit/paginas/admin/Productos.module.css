@@ -134,22 +134,9 @@
 }
 
 .equipoCampo {
-  width: 9rem;
+  display: block;
+  width: 11rem;
   min-width: 0;
-  height: 36px;
-  padding: 0 0.6rem;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 16px;
-}
-
-.equipoCampo:focus {
-  border-color: var(--violet-400);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 .usar {

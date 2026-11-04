@@ -68,7 +68,9 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
         placeholder={input.placeholder}
         buscable={buscable}
         creable={creable}
-        etiqueta={etiqueta}
+        // Sin etiqueta a la vista (una celda de tabla), el aria-label nombra la lista y su hoja.
+        etiqueta={etiqueta || input['aria-label']}
+        aria-label={etiqueta ? undefined : input['aria-label']}
         {...aria}
       />
     );

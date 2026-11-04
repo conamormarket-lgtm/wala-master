@@ -8,6 +8,7 @@ import { MenuContextual } from '../../piezas/MenuContextual';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, AccionesLote, CargarMas, InsigniaEstado, NumeroEnLinea } from '../../piezas/admin/Datos';
 import { ElegirUno } from '../../piezas/admin/Formularios';
+import { Campo } from '../../Formulario';
 import { esDeLaTienda, piezasDeCombos, etiquetasDeProducto, estadoDeStock, normalizarBusqueda } from '../../adaptadoresAdmin';
 import { FotoCelda } from './celdas';
 import l from './Lista.module.css';
@@ -514,23 +515,32 @@ const FILTROS_RECOMENDAR = [
   { id: 'adultos', texto: 'No para niños' },
 ];
 
-/* El equipo: se guarda al salir del campo o con Enter; "Usar" toma la sugerencia. */
-function CampoEquipo({ p, sugerido, onGuardar }) {
-  const [texto, setTexto] = useState(p.equipo || '');
+/*
+ * El equipo: la lista del kit (ListaOpciones, no la del navegador, que en
+ * cada uno se veía distinta): buscar entre los conocidos o, si no está,
+ * "Usar «…»" con lo escrito. Se guarda al elegir; "Ninguno" lo quita y
+ * "Usar" toma la sugerencia.
+ */
+function CampoEquipo({ p, sugerido, equipos, onGuardar }) {
+  const opciones = useMemo(() => {
+    const nombres = [...new Set([...equipos, ...(p.equipo ? [p.equipo] : [])])].sort((a, b) => a.localeCompare(b, 'es'));
+    return [{ valor: '', texto: 'Ninguno' }, ...nombres.map((e) => ({ valor: e, texto: e }))];
+  }, [equipos, p.equipo]);
   const guardar = (v) => { const t = String(v || '').trim(); if (t !== (p.equipo || '')) onGuardar({ equipo: t || null }); };
   return (
     <span className={s.equipo}>
-      <input
-        className={s.equipoCampo}
-        value={texto}
-        placeholder={sugerido || 'Ninguno'}
-        list="admin-equipos"
-        aria-label={`Equipo de ${p.nombre}`}
-        onChange={(e) => setTexto(e.target.value)}
-        onBlur={() => guardar(texto)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); guardar(texto); } }}
-      />
-      {!p.equipo && sugerido && <button type="button" className={s.usar} onClick={() => { setTexto(sugerido); guardar(sugerido); }}>Usar</button>}
+      <span className={s.equipoCampo}>
+        <Campo
+          opciones={opciones}
+          buscable
+          creable
+          value={p.equipo || ''}
+          placeholder={sugerido || 'Ninguno'}
+          aria-label={`Equipo de ${p.nombre}`}
+          onChange={(e) => guardar(e.target.value)}
+        />
+      </span>
+      {!p.equipo && sugerido && <button type="button" className={s.usar} onClick={() => guardar(sugerido)}>Usar</button>}
     </span>
   );
 }
@@ -653,7 +663,6 @@ export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe
           )}
         </div>
       )}
-      <datalist id="admin-equipos">{equipos.map((e) => <option key={e} value={e} />)}</datalist>
       <TablaAdmin
         etiqueta="Datos para recomendar"
         columnas={[
@@ -661,7 +670,7 @@ export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe
           { id: 'nombre', titulo: 'Producto', tarjeta: 'titulo', celda: (p) => <>{p.nombre}<span className={l.sub}>{nombresDe(p.categorias, porCategoria).join(', ')}{p.oculto ? ' · oculto' : ''}</span></> },
           { id: 'publico', titulo: 'Para quién', tarjeta: 'control', celda: (p) => <ElegirUno etiqueta={`Para quién es ${p.nombre}`} opciones={PUBLICOS} valor={p.publico} sugerido={(sugerenciaDe(p) || {}).publico} onElegir={(v) => guardar(p, { publico: v })} /> },
           { id: 'edad', titulo: 'Edad', tarjeta: 'control', celda: (p) => <ElegirUno etiqueta={`Edad para ${p.nombre}`} opciones={EDADES} valor={p.edadMinima} sugerido={(sugerenciaDe(p) || {}).edadMinima} onElegir={(v) => guardar(p, { edadMinima: v })} /> },
-          { id: 'equipo', titulo: 'Equipo', ancho: 210, tarjeta: 'control', celda: (p) => <CampoEquipo key={`${p.id}-${p.equipo}`} p={p} sugerido={(sugerenciaDe(p) || {}).equipo} onGuardar={(c) => guardar(p, c)} /> },
+          { id: 'equipo', titulo: 'Equipo', ancho: 210, tarjeta: 'control', celda: (p) => <CampoEquipo key={`${p.id}-${p.equipo}`} p={p} sugerido={(sugerenciaDe(p) || {}).equipo} equipos={equipos} onGuardar={(c) => guardar(p, c)} /> },
         ]}
         filas={filas.slice(0, visibles)}
         nombreDe={(p) => p.nombre}
