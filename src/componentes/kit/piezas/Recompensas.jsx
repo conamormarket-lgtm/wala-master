@@ -80,6 +80,7 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
 const ORIGENES = {
   ruleta: { texto: 'Ruleta semanal', icono: 'estrella', clase: 'talonRuleta' },
   recompensa: { texto: 'Catálogo de recompensas', icono: 'regalo', clase: 'talonCatalogo' },
+  nivel: { texto: 'Regalo de nivel', icono: 'estrella', clase: 'talonCatalogo' },
 };
 const ESTADOS_CUPON = { activo: 'Disponible', usado: 'Usado', caducado: 'Vencido' };
 
@@ -252,6 +253,7 @@ export function NivelCuenta({ xp = 0, niveles = NIVELES }) {
         </div>
         <p className={s.nivelFalta}>
           {siguiente ? <TextoResaltado resaltar={[`${miles(siguiente.min - xp)} XP`]}>{`Faltan ${miles(siguiente.min - xp)} XP para ${siguiente.nombre}`}</TextoResaltado> : <Texto>¡Nivel máximo alcanzado!</Texto>}
+          {siguiente?.regalo && <span className={s.nivelRegalo}><Gift aria-hidden="true" /> <Texto>Al llegar:</Texto> <strong><Texto>{siguiente.regalo}</Texto></strong></span>}
         </p>
       </div>
       <BarraProgreso
@@ -267,10 +269,12 @@ export function NivelCuenta({ xp = 0, niveles = NIVELES }) {
             <span className={s.escalonTextos}>
               <span><Texto>{n.nombre}</Texto></span>
               <small>{miles(n.min)} XP</small>
+              {n.regalo && <small className={s.escalonRegalo}><Texto>{n.regalo}</Texto></small>}
             </span>
           </li>
         ))}
       </ol>
+      <p className={s.nivelComo}><Texto>Cómo se gana XP: +10 al entrar a Misiones cada día, +5 por cada misión y +20 por cada pedido entregado. La XP no se gasta y el regalo de cada nivel llega una sola vez a «Mis cupones».</Texto></p>
     </section>
   );
 }

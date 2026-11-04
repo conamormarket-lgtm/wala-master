@@ -33,6 +33,7 @@ const {
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
 const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon } = require("./checkoutTotals");
+const niveles = require("./nivelesLogic");
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
@@ -1740,10 +1741,13 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
       const currentMonedas = Number(userData.monedas || 0);
       const newBalance = currentMonedas + amount;
 
+      // Comprar también sube de nivel: +20 XP por pedido entregado.
+      const nivel = sumarXp(transaction, uid, userData, niveles.XP_PEDIDO);
       transaction.update(userRef, {
         monedas: newBalance,
         monedasActivas,
         monedasReclamadas: FieldValue.arrayUnion(...claimIds),
+        ...nivel.campos,
       });
 
       writeLedger(transaction, uid, {
@@ -1762,6 +1766,7 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
         claimIds,
         orderCollection: orderMatch.collection,
         orderDocId: orderMatch.docId,
+        subioDeNivel: nivel.subio,
       };
     });
   } catch (error) {
@@ -4766,6 +4771,43 @@ const XP_MISSION = 5;
 // Hitos de racha que otorgan bono de monedas en el check-in diario.
 const CHECKIN_MILESTONES = { 3: 5, 7: 15, 30: 50 };
 
+// ── XP y regalos de nivel ────────────────────────────────────────────────────
+// Devuelve los campos para el usuario ({ xp, nivelesPremiados? }) y, de paso,
+// deja en `userCoupons` el regalo de cada nivel alcanzado que no se premió
+// (nivelesLogic.regalosPendientes). Solo escribe: va después de las lecturas.
+// → { campos, subio: [{ key, nombre }] }
+function sumarXp(t, uid, u, ganada) {
+  const xp = (Number(u.xp) || 0) + Math.max(0, Number(ganada) || 0);
+  const pendientes = niveles.regalosPendientes(xp, u.nivelesPremiados);
+  for (const { key, nombre, premio } of pendientes) {
+    const base = { uid, code: generateCouponCode(), status: "active", origen: "nivel", nivel: key, createdAt: FieldValue.serverTimestamp() };
+    t.set(db.collection("userCoupons").doc(), {
+      ...base,
+      title: premio.titulo,
+      titulo: premio.titulo,
+      tipo: premio.tipo,
+      texto: textoPremio({ tipo: premio.tipo, nombre: premio.titulo, descuentoPct: premio.descuentoPct || 0, descuentoMonto: 0, topeDescuento: premio.topeDescuento || 0 }),
+      descuentoPct: premio.descuentoPct || 0,
+      descuentoMonto: 0,
+      topeDescuento: premio.topeDescuento || 0,
+      productId: null,
+      productName: "",
+      expiraEn: limaFechaEnDias(niveles.VIGENCIA_REGALO_DIAS),
+    });
+    if (premio.stickers && PACKS_STICKERS_WHATSAPP.includes(premio.stickers)) {
+      // Si ya tenía el pack, la página de cupones muestra uno solo.
+      t.set(db.collection("userCoupons").doc(), {
+        ...base, code: generateCouponCode(), title: "Stickers de Kapi para WhatsApp", titulo: "Stickers de Kapi para WhatsApp",
+        entrega: "stickers_whatsapp", packId: premio.stickers,
+      });
+    }
+    console.log(`Nivel ${nombre} alcanzado por ${uid}: regalo creado.`);
+  }
+  const campos = { xp };
+  if (pendientes.length) campos.nivelesPremiados = FieldValue.arrayUnion(...pendientes.map((r) => r.key));
+  return { campos, subio: pendientes.map(({ key, nombre }) => ({ key, nombre })) };
+}
+
 // ── Check-in diario seguro (idempotente por día Lima) ──────────────────────────
 // Incrementa la racha si el último check-in fue ayer; la reinicia a 1 si hubo un
 // hueco. En hitos (D3=5, D7=15, D30=50) otorga bono de monedas + ledger. Suma XP.
@@ -4801,10 +4843,11 @@ exports.dailyCheckInSecure = functions.https.onCall(async (data, context) => {
       const currentMonedas = u.monedas || 0;
       const newBalance = currentMonedas + reward;
 
+      const nivel = sumarXp(t, uid, u, XP_CHECKIN);
       const updates = {
         dailyStreak: newStreak,
         lastCheckInDate: today,
-        xp: (u.xp || 0) + XP_CHECKIN,
+        ...nivel.campos,
       };
       if (reward > 0) updates.monedas = newBalance;
       t.update(userRef, updates);
@@ -4818,7 +4861,7 @@ exports.dailyCheckInSecure = functions.https.onCall(async (data, context) => {
         });
       }
 
-      return { streak: newCount, reward };
+      return { streak: newCount, reward, subioDeNivel: nivel.subio };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -4999,9 +5042,10 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
         t.set(umRef, { userId: uid, date: today, items });
       }
 
+      const nivel = sumarXp(t, uid, u, XP_MISSION);
       t.update(userRef, {
         monedas: newBalance,
-        xp: (u.xp || 0) + XP_MISSION,
+        ...nivel.campos,
       });
 
       if (reward > 0) {
@@ -5013,7 +5057,7 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
         });
       }
 
-      return { success: true, reward };
+      return { success: true, reward, subioDeNivel: nivel.subio };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;

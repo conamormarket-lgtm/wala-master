@@ -7,6 +7,7 @@ import { tieneCuenta, urlLogin } from '../../utils/rutaPrivada';
 import { MarcoCuenta, PaginaCuentaInvitado } from '../../componentes/kit/paginas/Cuenta';
 import { EsqueletoPagina } from '../../componentes/kit/Esqueletos';
 import { moduloDeRuta, rutaLimpia, useGruposDeCuenta } from './gruposDeCuenta';
+import { nombreDeNivel } from '../../constants/tiers';
 
 /*
  * El marco de /cuenta (paso 6 de la migración): MarcoCuenta del kit, con el
@@ -46,6 +47,7 @@ export default function MarcoDeCuenta() {
     nombre: userProfile?.displayName || userProfile?.nombre || user?.displayName || user?.email?.split('@')[0] || '',
     email: user?.email || '',
     avatar: userProfile?.avatarConfig?.avatarUrl || user?.photoURL || null,
+    nivel: userProfile && !userProfile._perfilNoCargado ? nombreDeNivel(userProfile.xp) : '',
   };
   const cerrarSesion = async () => {
     await logout();

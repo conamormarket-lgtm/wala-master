@@ -2,12 +2,17 @@
 // Los tiers se derivan de la XP acumulada del usuario. Es lógica de
 // presentación: NO otorga beneficios server-side ni escribe en Firestore.
 // El umbral de cada nivel es su XP mínima (campo `min`).
+// regalo: lo que se recibe una vez al llegar (un cupón en «Mis cupones»); lo
+// crea el servidor (functions/nivelesLogic.js PREMIOS_NIVEL, mismos umbrales).
 export const TIERS = [
-  { key: 'bronce', name: 'Bronce', min: 0, icon: '🥉' },
-  { key: 'plata', name: 'Plata', min: 100, icon: '🥈' },
-  { key: 'oro', name: 'Oro', min: 300, icon: '🥇' },
-  { key: 'diamante', name: 'Diamante', min: 1000, icon: '💎' },
+  { key: 'bronce', name: 'Bronce', min: 0, icon: '🥉', regalo: '' },
+  { key: 'plata', name: 'Plata', min: 100, icon: '🥈', regalo: 'Envío gratis' },
+  { key: 'oro', name: 'Oro', min: 300, icon: '🥇', regalo: '10 % de descuento (hasta S/ 20)' },
+  { key: 'diamante', name: 'Diamante', min: 1000, icon: '💎', regalo: '20 % de descuento (hasta S/ 50) y stickers de WhatsApp' },
 ];
+
+/** El nombre del nivel para una XP ("Plata"). */
+export const nombreDeNivel = (xp) => tierForXp(Number(xp) || 0).current.name;
 
 /**
  * Calcula el tier actual del usuario según su XP acumulada y el progreso

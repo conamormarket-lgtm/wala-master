@@ -813,7 +813,7 @@ export const misionDesdeServidor = (m = {}, acciones = {}) => {
 };
 
 /** TIERS de constants/tiers.js → niveles de NivelCuenta (sin el emoji: cada uno lleva su sello). */
-export const nivelesDesdeTiers = (tiers = []) => tiers.map((t) => ({ clave: t.key, nombre: t.name, min: Number(t.min) || 0 }));
+export const nivelesDesdeTiers = (tiers = []) => tiers.map((t) => ({ clave: t.key, nombre: t.name, min: Number(t.min) || 0, regalo: t.regalo || '' }));
 
 /**
  * Milisegundos del último guardado de un diseño, o null. `updatedAt` llega

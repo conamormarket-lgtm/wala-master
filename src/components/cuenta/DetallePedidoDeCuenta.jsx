@@ -359,6 +359,9 @@ export default function DetallePedidoDeCuenta() {
         }
         setMonedasLocal(true);
         if (r) showFlyingCoins(r.left + r.width / 2, r.top);
+        // Un pedido entregado da +20 XP: si con eso llegó a un nivel, su regalo ya está en Mis cupones.
+        const subio = res?.data?.subioDeNivel;
+        if (Array.isArray(subio) && subio.length) toast.success(`¡Llegaste a Nivel ${subio[subio.length - 1].nombre}! Tu regalo está en «Mis cupones».`);
       },
     } : undefined,
   };

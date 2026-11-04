@@ -27,6 +27,7 @@ import { MONEDA_SRC } from '../common/Moneda';
 import { Cabecera } from '../../componentes/kit/Navegacion';
 import { navDeMarca, rutaDeMarca, sugerenciasDesdeBusqueda } from '../../componentes/kit/adaptadores';
 import s from './CabeceraDeTienda.module.css';
+import { nombreDeNivel } from '../../constants/tiers';
 
 // La cabecera de antes, solo con el interruptor cabeceraVieja (guia/ELIMINAR.md).
 const Header = lazy(() => import('../common/Header'));
@@ -332,6 +333,7 @@ function CabeceraConDatos() {
     nombre: userProfile?.displayName || userProfile?.nombre || user?.displayName || user?.email?.split('@')[0] || '',
     email: user?.email || '',
     avatar: userProfile?.avatarConfig?.avatarUrl || user?.photoURL || null,
+    nivel: userProfile && !userProfile._perfilNoCargado ? nombreDeNivel(userProfile.xp) : '',
   } : null;
   const gruposCuenta = useMemo(() => gruposTodos
     .map((g) => ({ ...g, items: g.items.filter((it) => ACCESOS_RAPIDOS.has(it.to)) }))
