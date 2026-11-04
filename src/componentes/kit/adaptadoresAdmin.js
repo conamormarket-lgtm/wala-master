@@ -434,6 +434,44 @@ export function productoAdminDesde(p = {}) {
   };
 }
 
+/* ── La papelera de productos ───────────────────────────── */
+
+/** Los días que un producto pasa en la papelera antes de borrarse solo (functions/papeleraLogic.js, igual). */
+export const DIAS_PAPELERA = 30;
+const queEra = (p) => (p.esComboCrear === true ? 'Pack de Crear' : p.esPrendaBase === true ? 'Personalizable' : p.isComboProduct === true ? 'Combo' : 'Tienda');
+
+/**
+ * Lo que está en la papelera (los `deleted` de productos_wala), con:
+ *  - seFue (ms): cuándo se movió · seBorra (ms) y dias: cuándo se borra solo
+ *    (los de antes de la papelera, sin papeleraDesde, cuentan desde `ahora`:
+ *    la función les pone la fecha la primera vez que pasa)
+ *  - usadoPor: los productos vivos que lo nombran (un combo que lo lleva de
+ *    pieza, uno que lo reemplaza…). Borrarlo los rompería: no se deja.
+ * `productos`: todos los crudos (vivos y borrados).
+ */
+export function papeleraDesde(productos = [], ahora = Date.now()) {
+  const vivos = productos.filter((p) => p && p.deleted !== true).map((p) => ({ nombre: p.name || p.id, id: p.id, texto: JSON.stringify(p) }));
+  return productos.filter((p) => p && p.deleted === true).map((p) => {
+    const desde = msDe(p.papeleraDesde);
+    const seBorra = (desde ?? ahora) + DIAS_PAPELERA * DIA_MS;
+    const aguja = `"${p.id}"`;
+    return {
+      id: p.id,
+      nombre: p.name || 'Sin nombre',
+      imagen: fotoDeProducto(p),
+      que: queEra(p),
+      seFue: msDe(p.deletedAt) ?? desde,
+      seBorra,
+      dias: Math.max(0, Math.ceil((seBorra - ahora) / DIA_MS)),
+      visibleAntes: p.visibleAntes === true,
+      usadoPor: vivos.filter((v) => v.id !== p.id && v.texto.includes(aguja)).map((v) => v.nombre),
+    };
+  });
+}
+
+/** "Se borra hoy" · "en 1 día" · "en 12 días". */
+export const textoSeBorra = (dias) => (dias <= 0 ? 'Hoy' : dias === 1 ? 'En 1 día' : `En ${dias} días`);
+
 /*
  * Lo que se lista en "Tienda" (como `catalogo` de AdminProductos): sin lo
  * que reemplazó un personalizable, sin los packs de Crear y, de las

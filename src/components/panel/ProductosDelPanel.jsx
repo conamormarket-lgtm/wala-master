@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { deleteField } from '../../services/firebase/observed';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  getProducts, getProduct, getCategories, deleteProduct, updateProductField, createProduct,
+  getProducts, getProduct, getCategories, deleteProduct, updateProductField, createProduct, restaurarProducto, borrarProductoParaSiempre,
 } from '../../services/products';
 import { getBrands } from '../../services/brands';
 import { getCollections } from '../../services/collections';
@@ -19,12 +19,12 @@ import { quitarPersonalizacionVieja } from '../../services/personalizacionVieja'
 import { exportProducts } from '../../utils/exportProducts';
 import { SINONIMOS, publicoDe, edadMinimaDe, equipoDe, textoProducto } from '../../utils/giftRecommender.mjs';
 import { PaginaProductos, PaginaRecomendar } from '../../componentes/kit/paginas/admin/Productos';
-import { productoAdminDesde, categoriaDesdeFirestore, puedeVer } from '../../componentes/kit/adaptadoresAdmin';
+import { productoAdminDesde, categoriaDesdeFirestore, puedeVer, papeleraDesde } from '../../componentes/kit/adaptadoresAdmin';
 import { PersonalizablesDelPanel, PacksDelPanel } from './CrearDelPanel';
 import { sinError, useLectura, useInvalidar } from './comun';
 
 const productosConOcultos = () => getProducts([], null, null, { includeHidden: true });
-const VISTAS = ['tienda', 'crear', 'packs', 'todos'];
+const VISTAS = ['tienda', 'crear', 'packs', 'todos', 'papelera'];
 const nombres = (lista = []) => lista.map((x) => ({ id: x.id, nombre: x.name || x.id }));
 
 /** Uno por uno, contando los que fallan (como las páginas de antes). */
@@ -65,7 +65,7 @@ export default function ProductosDelPanel() {
   const colecciones = useLectura(['collections'], getCollections);
   const tipos = useLectura(['productTypes'], getProductTypes);
   const pedida = VISTAS.includes(searchParams.get('ver')) ? searchParams.get('ver') : 'tienda';
-  const vista = soloStock && (pedida === 'crear' || pedida === 'packs') ? 'tienda' : pedida;
+  const vista = soloStock && (pedida === 'crear' || pedida === 'packs' || pedida === 'papelera') ? 'tienda' : pedida;
   const productos = useLectura(['admin-products'], productosConOcultos);
   const categorias = useLectura(['admin-categories'], getCategories);
   const marcas = useLectura(['admin-brands'], getBrands);
@@ -79,6 +79,10 @@ export default function ProductosDelPanel() {
   const crudos = useMemo(() => productos.datos || [], [productos.datos]);
   const porId = useMemo(() => new Map(crudos.map((p) => [p.id, p])), [crudos]);
   const lista = useMemo(() => crudos.map(productoAdminDesde).filter(Boolean), [crudos]);
+  // La papelera: los `deleted` (los archivados de antes también), con cuándo se borran.
+  const papelera = useMemo(() => papeleraDesde(crudos), [crudos]);
+  // Restaurar o borrar uno de Crear también cambia sus pestañas.
+  const refrescarTodo = () => invalidar(['admin-products'], ['products'], ['featured-products'], ['collection-products'], ['admin-prendas-crear'], ['admin-combos-crear'], ['prendas-base']);
 
   return (
     <PaginaProductos
@@ -117,8 +121,21 @@ export default function ProductosDelPanel() {
         return r;
       }}
       onArchivar={async (ids) => {
-        const r = await unoPorUno(ids, (id) => deleteProduct(id));
+        // A la papelera, recordando si se veía (para restaurarlo igual).
+        const r = await unoPorUno(ids, (id) => deleteProduct(id, { visibleAntes: porId.get(id)?.visible !== false }));
         await refrescar();
+        return r;
+      }}
+      papelera={soloStock ? undefined : papelera}
+      onRestaurar={async (ids) => {
+        const r = await unoPorUno(ids, (id) => restaurarProducto(porId.get(id) || { id }));
+        await refrescarTodo();
+        return r;
+      }}
+      onBorrarParaSiempre={async (ids) => {
+        // Solo el documento: las fotos quedan para los pedidos (borrarProductoParaSiempre).
+        const r = await unoPorUno(ids, (id) => borrarProductoParaSiempre(id));
+        await refrescarTodo();
         return r;
       }}
       onDuplicar={async (p) => {

@@ -105,7 +105,9 @@ export const guardarComboCrear = async (id, form) => {
 
 /** Archiva el combo: deja de ofrecerse, pero los pedidos que lo usan siguen igual. */
 export const archivarComboCrear = async (id) => {
-  const res = await updateDocument(COLLECTION, id, { deleted: true, 'comboCrear.publicado': false });
+  // A la papelera, como los demás productos (Productos › Papelera).
+  const ahora = Date.now();
+  const res = await updateDocument(COLLECTION, id, { deleted: true, deletedAt: new Date(ahora).toISOString(), papeleraDesde: ahora, 'comboCrear.publicado': false });
   if (res.error) throw new Error(res.error);
   clearProductCaches();
 };

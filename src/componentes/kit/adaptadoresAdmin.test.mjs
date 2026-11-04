@@ -810,3 +810,21 @@ test('historial: la versión actual de cada página, el stock y el CSV', () => {
   assert.equal(limite.cambio, 0);
   assert.equal(m2.textoStock(limite.antes), 'Sin límite');
 });
+
+test('papelera: cuándo se borra, qué era y quién lo usa', () => {
+  const ahora = Date.parse('2026-11-04T12:00:00Z');
+  const dia = 24 * 60 * 60 * 1000;
+  const lista = m2.papeleraDesde([
+    { id: 'a', name: 'Polo', deleted: true, deletedAt: '2026-09-10T00:00:00Z' },
+    { id: 'b', name: 'Taza', deleted: true, papeleraDesde: ahora - 29.5 * dia, visibleAntes: true },
+    { id: 'c', name: 'Gorro', deleted: true, esComboCrear: true, papeleraDesde: ahora - 31 * dia },
+    { id: 'combo', name: 'Combo', isComboProduct: true, comboItems: [{ productId: 'a' }] },
+  ], ahora);
+  assert.deepEqual(lista.map((x) => [x.id, x.que, x.dias]), [['a', 'Tienda', 30], ['b', 'Tienda', 1], ['c', 'Pack de Crear', 0]]);
+  assert.deepEqual(lista[0].usadoPor, ['Combo']);
+  assert.deepEqual(lista[1].usadoPor, []);
+  assert.equal(lista[1].visibleAntes, true);
+  assert.equal(lista[0].seFue, Date.parse('2026-09-10T00:00:00Z'));
+  assert.equal(m2.textoSeBorra(0), 'Hoy');
+  assert.equal(m2.textoSeBorra(1), 'En 1 día');
+});

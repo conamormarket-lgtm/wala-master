@@ -6152,6 +6152,9 @@ exports.aggregateAnalyticsDaily = require('./analyticsDaily').aggregateAnalytics
 exports.aggregateAnalyticsDailyBackfill = require('./analyticsDaily').aggregateAnalyticsDailyBackfill;
 exports.aggregateAnalyticsToday = require('./analyticsDaily').aggregateAnalyticsToday;
 
+// La papelera de productos: cada madrugada borra lo que lleva 30 días ahí (./papelera).
+exports.vaciarPapeleraVieja = require('./papelera').vaciarPapeleraVieja;
+
 // ── Búsqueda de clientes (Resultados › Clientes) ──────────────────────────────
 // Guarda en cada perfil los comienzos de nombre/correo/DNI/teléfono para buscar
 // entre todos los clientes. Ver ./clientesBusqueda.js.

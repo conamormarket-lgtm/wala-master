@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Archive, Eye, Pencil, Plus, Send, Sparkles, Trash2, Undo2 } from 'lucide-react';
+import { AlertTriangle, Eye, Pencil, Plus, Send, Sparkles, Trash2, Undo2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, HojaInferior, useToast } from '../../Feedback';
 import { Campo, Casilla, Interruptor } from '../../Formulario';
@@ -64,7 +64,7 @@ export function PaginaPersonalizables({ prendas = [], cargando, error, onReinten
     const p = archivar;
     try {
       await onArchivar?.(p.id);
-      toast({ tipo: 'exito', titulo: 'Archivado', texto: p.nombre });
+      toast({ tipo: 'exito', titulo: 'En la papelera', texto: p.nombre });
     } catch (err) {
       toast({ tipo: 'error', titulo: 'No se pudo archivar', texto: err?.message || 'Vuelve a intentar.' });
     } finally {
@@ -135,14 +135,14 @@ export function PaginaPersonalizables({ prendas = [], cargando, error, onReinten
           { id: 'editar', etiqueta: 'Editar', Icono: Pencil, accion: () => onAbrir?.(p) },
           ...(onVer ? [{ id: 'ver', etiqueta: 'Verlo en Crear', Icono: Eye, accion: () => onVer(p) }] : []),
           ...(onPublicar ? [{ id: 'publicar', etiqueta: p.publicada ? 'Volver a borrador' : 'Publicar en Crear', Icono: p.publicada ? Undo2 : Send, accion: () => publicar(p) }] : []),
-          ...(onArchivar ? ['separador', { id: 'archivar', etiqueta: 'Archivar', Icono: Archive, peligro: true, accion: () => setArchivar(p) }] : []),
+          ...(onArchivar ? ['separador', { id: 'archivar', etiqueta: 'Mover a la papelera', Icono: Trash2, peligro: true, accion: () => setArchivar(p) }] : []),
         ]}
       />
       <Confirmar
         abierta={Boolean(archivar)}
-        titulo={archivar ? `¿Archivar «${archivar.nombre}»?` : ''}
-        texto="Deja de verse en Crear y en la tienda. No se borran sus datos ni sus fotos: los pedidos y las creaciones que la usan siguen igual."
-        confirmar="Archivar"
+        titulo={archivar ? `¿Mover «${archivar.nombre}» a la papelera?` : ''}
+        texto="Deja de verse en Crear y en la tienda. Desde Productos › Papelera se restaura durante 30 días; después se borra sola. Los pedidos y las creaciones que la usan siguen igual."
+        confirmar="Mover a la papelera"
         peligro
         onConfirmar={confirmarArchivar}
         onCancelar={() => setArchivar(null)}
@@ -255,7 +255,7 @@ export function PaginaPacks({
     const k = archivar;
     try {
       await onArchivar?.(k.id);
-      toast({ tipo: 'exito', titulo: 'Pack archivado', texto: k.nombre });
+      toast({ tipo: 'exito', titulo: 'Pack en la papelera', texto: k.nombre });
     } catch (err) {
       toast({ tipo: 'error', titulo: 'No se pudo archivar', texto: err?.message || 'Vuelve a intentar.' });
     } finally {
@@ -325,7 +325,7 @@ export function PaginaPacks({
         acciones={(k) => [
           { id: 'editar', etiqueta: 'Editar', Icono: Pencil, accion: () => abrir(k) },
           ...(onVer ? [{ id: 'ver', etiqueta: 'Verlo', Icono: Eye, accion: () => onVer(k) }] : []),
-          ...(onArchivar ? ['separador', { id: 'archivar', etiqueta: 'Archivar', Icono: Archive, peligro: true, accion: () => setArchivar(k) }] : []),
+          ...(onArchivar ? ['separador', { id: 'archivar', etiqueta: 'Mover a la papelera', Icono: Trash2, peligro: true, accion: () => setArchivar(k) }] : []),
         ]}
       />
 
@@ -440,9 +440,9 @@ export function PaginaPacks({
 
       <Confirmar
         abierta={Boolean(archivar)}
-        titulo={archivar ? `¿Archivar «${archivar.nombre}»?` : ''}
-        texto="Deja de verse en Crear y en la tienda. Los pedidos que lo tienen siguen igual."
-        confirmar="Archivar"
+        titulo={archivar ? `¿Mover «${archivar.nombre}» a la papelera?` : ''}
+        texto="Deja de verse en Crear y en la tienda. Desde Productos › Papelera se restaura durante 30 días; después se borra solo. Los pedidos que lo tienen siguen igual."
+        confirmar="Mover a la papelera"
         peligro
         onConfirmar={confirmarArchivar}
         onCancelar={() => setArchivar(null)}

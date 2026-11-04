@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Archive, Copy, Download, Eye, EyeOff, FileClock, History, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import { Copy, Download, Eye, EyeOff, FileClock, History, MoreHorizontal, Pencil, Plus, RotateCcw, Sparkles, Trash2, Wand2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
 import { Chip, Etiqueta } from '../../Etiquetas';
@@ -9,7 +9,7 @@ import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, AccionesLote, CargarMas, InsigniaEstado, NumeroEnLinea } from '../../piezas/admin/Datos';
 import { ElegirUno } from '../../piezas/admin/Formularios';
 import { Campo } from '../../Formulario';
-import { esDeLaTienda, piezasDeCombos, etiquetasDeProducto, estadoDeStock, normalizarBusqueda } from '../../adaptadoresAdmin';
+import { esDeLaTienda, piezasDeCombos, etiquetasDeProducto, estadoDeStock, normalizarBusqueda, textoSeBorra, DIAS_PAPELERA } from '../../adaptadoresAdmin';
 import { FotoCelda } from './celdas';
 import l from './Lista.module.css';
 import s from './Productos.module.css';
@@ -107,13 +107,19 @@ const VISTAS = [
   { id: 'crear', texto: 'Personalizables' },
   { id: 'packs', texto: 'Packs de Crear' },
   { id: 'todos', texto: 'Todos' },
+  { id: 'papelera', texto: 'Papelera' },
 ];
 
+/*
+ * Los chips de Tienda no se pisan: un producto es visible, oculto o pieza de
+ * combo (las piezas no se cuentan en los otros dos), y Todos es la suma. Las
+ * cuentas siguen a la búsqueda y a los filtros: dicen cuántos verías.
+ */
 const ESTADOS_LISTA = [
+  { id: 'todos', texto: 'Todos' },
   { id: 'visibles', texto: 'Visibles' },
   { id: 'ocultos', texto: 'Ocultos' },
   { id: 'piezas', texto: 'Piezas de combo' },
-  { id: 'todos', texto: 'Todos' },
 ];
 
 /**
@@ -124,7 +130,9 @@ const ESTADOS_LISTA = [
  *    personalizables / packs: lo que va en esas pestañas (D2c); sin él, un aviso
  *  - onAbrir(producto) (su ficha) · onIr(url) (el menú "Crear otro") · urlNuevo · urlNuevoPersonalizable · urlNuevoPack
  *  - onVisible(id, visible) → promesa · onVarios(ids, visible) → promesa con { ok, fallaron }
- *  - onArchivar(ids) → promesa con { ok, fallaron } · onDuplicar(producto) → promesa
+ *  - onArchivar(ids) → promesa con { ok, fallaron }: los manda a la papelera · onDuplicar(producto) → promesa
+ *  - papelera: papeleraDesde (adaptadoresAdmin) · onRestaurar(ids) / onBorrarParaSiempre(ids) → promesa con { ok, fallaron }
+ *    (sin papelera, no sale la pestaña)
  *  - onExportar(ids | null) (CSV) · onQuitarPersonalizacionVieja(ids) → promesa con { ok, fallaron }
  *  - cuentas: { crear, packs } (sin ellas, se cuentan de `productos`)
  *  - borradores: [{ id, nombre, fecha }] (los guardados en este aparato) · urlBorrador(id) · onDescartarBorrador(id) → promesa
@@ -142,9 +150,10 @@ export function PaginaProductos({
   onVisible, onVarios, onArchivar, onDuplicar, onExportar, onQuitarPersonalizacionVieja,
   borradores = [], urlBorrador, onDescartarBorrador, cuentas: cuentasCrear,
   colecciones = [], tipos = [], onGuardarStock, urlHistorial, soloStock = false,
+  papelera, onRestaurar, onBorrarParaSiempre,
 }) {
   const toast = useToast();
-  const [estado, setEstado] = useState('visibles');
+  const [estado, setEstado] = useState('todos');
   const [buscar, setBuscar] = useState('');
   const [filtro, setFiltro] = useState({ categoria: '', marca: '', coleccion: '', tipo: '', stock: '' });
   const [orden, setOrden] = useState({ por: 'nombre', dir: 'asc' });
@@ -170,29 +179,26 @@ export function PaginaProductos({
   }), [productos, cambios, stockLocal]);
   const tienda = useMemo(() => conCambios.filter(esDeLaTienda), [conCambios]);
   const piezas = useMemo(() => piezasDeCombos(tienda), [tienda]);
-  const cuentas = {
-    visibles: tienda.filter((p) => !p.oculto).length,
-    ocultos: tienda.filter((p) => p.oculto && !piezas.has(p.id)).length,
-    piezas: tienda.filter((p) => piezas.has(p.id)).length,
-    todos: tienda.length,
-  };
+  const enEstado = (p, e) => (e === 'visibles' ? !p.oculto && !piezas.has(p.id)
+    : e === 'ocultos' ? p.oculto && !piezas.has(p.id)
+      : e === 'piezas' ? piezas.has(p.id) : true);
   const deCrear = cuentasCrear || { crear: productos.filter((p) => p.personalizable).length, packs: productos.filter((p) => p.pack).length };
   const viejos = tienda.filter((p) => p.personalizacionVieja);
 
   const q = normalizarBusqueda(buscar);
   const coincide = (p) => !q || normalizarBusqueda(`${p.nombre} ${nombresDe(p.categorias, porCategoria).join(' ')} ${p.precio}`).includes(q);
-  const base = useMemo(() => (vista === 'todos' ? conCambios : tienda.filter((p) => (
-    estado === 'visibles' ? !p.oculto
-      : estado === 'ocultos' ? p.oculto && !piezas.has(p.id)
-        : estado === 'piezas' ? piezas.has(p.id) : true
-  ))), [vista, conCambios, tienda, estado, piezas]);
+  const base = useMemo(() => (vista === 'todos' ? conCambios : tienda.filter((p) => enEstado(p, estado))), [vista, conCambios, tienda, estado, piezas]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pasaFiltros = (p) => coincide(p)
+    && (!filtro.categoria || p.categorias.includes(filtro.categoria))
+    && (!filtro.marca || (filtro.marca === '__sin' ? !p.marcaId : p.marcaId === filtro.marca))
+    && (!filtro.coleccion || (p.colecciones || []).includes(filtro.coleccion))
+    && (!filtro.tipo || p.tipo === filtro.tipo)
+    && (!filtro.stock || estadoDeStock(inicial(p)) === filtro.stock);
+  // Los de la tienda que pasan la búsqueda y los filtros: de ahí salen las cuentas de los chips.
+  const tiendaFiltrada = useMemo(() => tienda.filter(pasaFiltros), [tienda, q, filtro]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cuentas = Object.fromEntries(ESTADOS_LISTA.map((e) => [e.id, tiendaFiltrada.filter((p) => enEstado(p, e.id)).length]));
   const filas = useMemo(() => {
-    const lista = base.filter((p) => coincide(p)
-      && (!filtro.categoria || p.categorias.includes(filtro.categoria))
-      && (!filtro.marca || (filtro.marca === '__sin' ? !p.marcaId : p.marcaId === filtro.marca))
-      && (!filtro.coleccion || (p.colecciones || []).includes(filtro.coleccion))
-      && (!filtro.tipo || p.tipo === filtro.tipo)
-      && (!filtro.stock || estadoDeStock(inicial(p)) === filtro.stock));
+    const lista = vista === 'todos' ? conCambios.filter(pasaFiltros) : tiendaFiltrada.filter((p) => enEstado(p, estado));
     const signo = orden.dir === 'desc' ? -1 : 1;
     const cmp = {
       nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
@@ -200,7 +206,7 @@ export function PaginaProductos({
       stock: (a, b) => stockParaOrden(inicial(a)) - stockParaOrden(inicial(b)),
     }[orden.por] || (() => 0);
     return [...lista].sort((a, b) => signo * (cmp(a, b) || 0) || a.nombre.localeCompare(b.nombre, 'es'));
-  }, [base, q, filtro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [vista, conCambios, tiendaFiltrada, estado, q, filtro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
   // Los agotados de lo que se ve (sin contar los sin límite): el aviso los lleva al filtro.
   const agotados = base.filter((p) => p.stock !== null && p.stock <= 0).length;
   const guardarStock = onGuardarStock && (async (p, n, antes) => {
@@ -231,7 +237,7 @@ export function PaginaProductos({
     const { tipo, ids } = pregunta;
     setTrabajando(true);
     try {
-      if (tipo === 'archivar') { resultado(await onArchivar(ids), 'archivados', ids.length); setElegidos([]); }
+      if (tipo === 'archivar') { resultado(await onArchivar(ids), 'en la papelera', ids.length); setElegidos([]); }
       if (tipo === 'mostrar' || tipo === 'ocultar') {
         const visible = tipo === 'mostrar';
         setCambios((c) => ({ ...c, ...Object.fromEntries(ids.map((id) => [id, visible])) }));
@@ -318,7 +324,7 @@ export function PaginaProductos({
 
       <div className={`${s.vistas} ${l.desliza}`}>
         <Pestanas
-          opciones={VISTAS.filter((v) => !soloStock || v.id === 'tienda' || v.id === 'todos').map((v) => ({ ...v, texto: v.id === 'tienda' ? `${v.texto} · ${cuentas.todos}` : deCrear[v.id] !== undefined ? `${v.texto} · ${deCrear[v.id]}` : v.texto }))}
+          opciones={VISTAS.filter((v) => (soloStock ? v.id === 'tienda' || v.id === 'todos' : v.id !== 'papelera' || papelera)).map((v) => ({ ...v, texto: v.id === 'tienda' ? `${v.texto} · ${tienda.length}` : v.id === 'papelera' ? `${v.texto} · ${papelera.length}` : deCrear[v.id] !== undefined ? `${v.texto} · ${deCrear[v.id]}` : v.texto }))}
           valor={vista}
           onChange={(v) => { reiniciar(); onVista?.(v); }}
           etiqueta="Qué productos"
@@ -327,6 +333,9 @@ export function PaginaProductos({
 
       {vista === 'crear' && (personalizables || <Pronto texto="Los personalizables de Crear se arman en el tramo D2c." />)}
       {vista === 'packs' && (packs || <Pronto texto="Los packs de Crear se arman en el tramo D2c." />)}
+      {vista === 'papelera' && papelera && !soloStock && (
+        <PapeleraProductos papelera={papelera} cargando={cargando} error={error} onReintentar={onReintentar} onRestaurar={onRestaurar} onBorrar={onBorrarParaSiempre} />
+      )}
 
       {enLista && (
         <>
@@ -417,7 +426,7 @@ export function PaginaProductos({
               { id: 'editar', etiqueta: 'Editar', Icono: Pencil, accion: () => onAbrir?.(p) },
               { id: 'visible', etiqueta: p.oculto ? 'Mostrar en la tienda' : 'Ocultar de la tienda', Icono: p.oculto ? Eye : EyeOff, accion: () => alternarVisible(p) },
               ...(onDuplicar ? [{ id: 'duplicar', etiqueta: 'Duplicar', Icono: Copy, accion: () => duplicar(p) }] : []),
-              ...(onArchivar ? ['separador', { id: 'archivar', etiqueta: 'Archivar', Icono: Archive, peligro: true, accion: () => setPregunta({ tipo: 'archivar', ids: [p.id], nombre: p.nombre }) }] : []),
+              ...(onArchivar ? ['separador', { id: 'archivar', etiqueta: 'Mover a la papelera', Icono: Trash2, peligro: true, accion: () => setPregunta({ tipo: 'archivar', ids: [p.id], nombre: p.nombre }) }] : []),
             ])}
           />
           <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={['producto', 'productos']} />
@@ -433,7 +442,7 @@ export function PaginaProductos({
                   { id: 'ocultar', texto: 'Ocultar', Icono: EyeOff, onClick: () => setPregunta({ tipo: 'ocultar', ids: elegidos }) },
                 ] : []),
                 ...(onExportar ? [{ id: 'exportar', texto: 'CSV', Icono: Download, onClick: () => exportar(elegidos) }] : []),
-                ...(onArchivar ? [{ id: 'archivar', texto: 'Archivar', Icono: Archive, peligro: true, onClick: () => setPregunta({ tipo: 'archivar', ids: elegidos }) }] : []),
+                ...(onArchivar ? [{ id: 'archivar', texto: 'Papelera', Icono: Trash2, peligro: true, onClick: () => setPregunta({ tipo: 'archivar', ids: elegidos }) }] : []),
               ]}
             />
           )}
@@ -472,11 +481,150 @@ export function PaginaProductos({
   );
 }
 
+/* ── La papelera ───────────────────────────────────────── */
+
+const fechaCorta = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const QUE_ERA = ['Tienda', 'Combo', 'Personalizable', 'Pack de Crear'];
+
+/*
+ * Lo que se mandó a la papelera: no se ve en la tienda, se restaura como
+ * estaba o se borra para siempre (solo el producto: las fotos quedan, porque
+ * los pedidos las muestran). Se borra solo a los DIAS_PAPELERA días. Lo que
+ * otro producto usa (la pieza de un combo) no se deja borrar.
+ */
+function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRestaurar, onBorrar }) {
+  const toast = useToast();
+  const [buscar, setBuscar] = useState('');
+  const [que, setQue] = useState('');
+  const [orden, setOrden] = useState({ por: 'seBorra', dir: 'asc' });
+  const [elegidos, setElegidos] = useState([]);
+  const [visibles, setVisibles] = useState(PASO);
+  const [pregunta, setPregunta] = useState(null); // { tipo: 'restaurar' | 'borrar' | 'vaciar', ids, nombre }
+  const [trabajando, setTrabajando] = useState(false);
+  const [idos, setIdos] = useState([]); // restaurados o borrados aquí, hasta que llegue la lista
+
+  const lista = papelera.filter((p) => !idos.includes(p.id));
+  const borrables = lista.filter((p) => !p.usadoPor.length);
+  const q = normalizarBusqueda(buscar);
+  const filas = lista
+    .filter((p) => (!q || normalizarBusqueda(p.nombre).includes(q)) && (!que || p.que === que))
+    .sort((a, b) => {
+      const signo = orden.dir === 'desc' ? -1 : 1;
+      const cmp = orden.por === 'nombre' ? a.nombre.localeCompare(b.nombre, 'es') : orden.por === 'seFue' ? (a.seFue || 0) - (b.seFue || 0) : a.seBorra - b.seBorra;
+      return signo * cmp || a.nombre.localeCompare(b.nombre, 'es');
+    });
+  const porId = new Map(lista.map((p) => [p.id, p]));
+
+  const confirmar = async () => {
+    const { tipo } = pregunta;
+    // Los que usa otro producto no se borran (ni al vaciar).
+    const ids = tipo === 'restaurar' ? pregunta.ids : pregunta.ids.filter((id) => !porId.get(id)?.usadoPor.length);
+    setTrabajando(true);
+    try {
+      const r = (await (tipo === 'restaurar' ? onRestaurar : onBorrar)?.(ids)) || {};
+      const ok = r.ok ?? ids.length;
+      const fallaron = r.fallaron ?? 0;
+      if (!fallaron) setIdos((x) => [...x, ...ids]);
+      setElegidos([]);
+      const saltados = pregunta.ids.length - ids.length;
+      toast({
+        tipo: fallaron ? 'aviso' : 'exito',
+        titulo: tipo === 'restaurar' ? `${ok} ${ok === 1 ? 'producto restaurado' : 'productos restaurados'}` : `${ok} ${ok === 1 ? 'producto borrado' : 'productos borrados'} para siempre`,
+        texto: fallaron ? `${fallaron} no se pudieron: vuelve a intentar con esos.` : saltados ? `${saltados} no se borr${saltados === 1 ? 'ó' : 'aron'}: ${saltados === 1 ? 'lo usa' : 'los usa'} otro producto.` : undefined,
+      });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se pudo', texto: err?.message || 'Vuelve a intentar.' });
+    } finally {
+      setTrabajando(false);
+      setPregunta(null);
+    }
+  };
+
+  const n = pregunta?.ids.length || 0;
+  const cuales = pregunta?.nombre ? `«${pregunta.nombre}»` : `${n} producto${n === 1 ? '' : 's'}`;
+  const textos = !pregunta ? {} : pregunta.tipo === 'restaurar'
+    ? { titulo: `¿Restaurar ${cuales}?`, texto: 'Vuelven a Productos como estaban: los que se veían en la tienda, visibles; los demás, ocultos.', confirmar: 'Restaurar' }
+    : pregunta.tipo === 'vaciar'
+      ? { titulo: '¿Vaciar la papelera?', texto: `${borrables.length === 1 ? 'Se borra para siempre el producto que hay' : `Se borran para siempre los ${borrables.length} productos`}${lista.length > borrables.length ? ' (menos los que usa otro producto, que se quedan)' : ''}. No se puede deshacer. Los pedidos que ${borrables.length === 1 ? 'lo tienen siguen con su nombre' : 'los tienen siguen con sus nombres'} y su foto.`, confirmar: 'Vaciar la papelera' }
+      : { titulo: `¿Borrar ${cuales} para siempre?`, texto: 'No se puede deshacer. Los pedidos que los tienen siguen con su nombre y su foto.', confirmar: 'Borrar para siempre' };
+
+  return (
+    <>
+      <div className={s.aviso}>
+        <Aviso
+          tipo="info"
+          icono={<Trash2 aria-hidden="true" />}
+          titulo={`Lo que está aquí no se ve en la tienda y se borra solo a los ${DIAS_PAPELERA} días`}
+          accion={onBorrar && borrables.length > 0 ? <Boton tamano="sm" variante="contorno" icono={<Trash2 aria-hidden="true" />} onClick={() => setPregunta({ tipo: 'vaciar', ids: borrables.map((p) => p.id) })}>Vaciar la papelera</Boton> : undefined}
+        >
+          Antes de eso lo puedes restaurar, o borrarlo ya. Lo que es pieza de otro producto no se borra hasta quitarlo de ahí.
+        </Aviso>
+      </div>
+      <BarraFiltros
+        busqueda={buscar}
+        onBusqueda={(t) => { setBuscar(t); setVisibles(PASO); }}
+        placeholder="Buscar en la papelera"
+        filtros={[{ id: 'que', etiqueta: 'Qué era', todos: 'Todo', valor: que, opciones: QUE_ERA.filter((x) => lista.some((p) => p.que === x)).map((x) => ({ valor: x, texto: x })) }]}
+        onFiltro={(_id, v) => { setQue(v); setVisibles(PASO); }}
+        total={cargando || error ? undefined : filas.length}
+        unidad={['producto', 'productos']}
+      />
+      <TablaAdmin
+        etiqueta="Papelera"
+        columnas={[
+          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
+          {
+            id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo',
+            celda: (p) => <>{p.nombre}<span className={l.sub}>{p.que}{p.usadoPor.length ? ` · lo usa ${p.usadoPor.slice(0, 2).join(', ')}${p.usadoPor.length > 2 ? '…' : ''}` : ''}</span></>,
+          },
+          { id: 'seFue', titulo: 'Se fue', ordenable: true, ancho: 140, tarjeta: 'detalle', celda: (p) => fechaCorta(p.seFue) },
+          { id: 'seBorra', titulo: 'Se borra', ordenable: true, ancho: 130, tarjeta: 'estado', celda: (p) => (p.usadoPor.length ? <Etiqueta tono="neutro">En uso</Etiqueta> : <Etiqueta tono={p.dias <= 3 ? 'peligro' : 'neutro'}>{textoSeBorra(p.dias)}</Etiqueta>) },
+        ]}
+        filas={filas.slice(0, visibles)}
+        nombreDe={(p) => p.nombre}
+        cargando={cargando}
+        error={error}
+        onReintentar={onReintentar}
+        orden={orden}
+        onOrden={setOrden}
+        seleccion={elegidos}
+        onSeleccion={setElegidos}
+        vacio={q || que
+          ? { titulo: 'Nada coincide', texto: 'Prueba con otra palabra o quita el filtro.' }
+          : { titulo: 'La papelera está vacía', texto: 'Lo que mandes a la papelera desde Productos aparece aquí.', icono: <Trash2 aria-hidden="true" /> }}
+        acciones={(p) => [
+          ...(onRestaurar ? [{ id: 'restaurar', etiqueta: 'Restaurar', Icono: RotateCcw, accion: () => setPregunta({ tipo: 'restaurar', ids: [p.id], nombre: p.nombre }) }] : []),
+          ...(onBorrar && !p.usadoPor.length ? ['separador', { id: 'borrar', etiqueta: 'Borrar para siempre', Icono: Trash2, peligro: true, accion: () => setPregunta({ tipo: 'borrar', ids: [p.id], nombre: p.nombre }) }] : []),
+        ]}
+      />
+      <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={['producto', 'productos']} />
+      <AccionesLote
+        cantidad={elegidos.length}
+        unidad={['elegido', 'elegidos']}
+        onLimpiar={() => setElegidos([])}
+        acciones={[
+          ...(onRestaurar ? [{ id: 'restaurar', texto: 'Restaurar', Icono: RotateCcw, onClick: () => setPregunta({ tipo: 'restaurar', ids: elegidos }) }] : []),
+          ...(onBorrar ? [{ id: 'borrar', texto: 'Borrar', Icono: Trash2, peligro: true, onClick: () => setPregunta({ tipo: 'borrar', ids: elegidos }) }] : []),
+        ]}
+      />
+      <Confirmar
+        abierta={Boolean(pregunta)}
+        titulo={textos.titulo}
+        texto={textos.texto}
+        confirmar={textos.confirmar}
+        peligro={pregunta?.tipo !== 'restaurar'}
+        onConfirmar={confirmar}
+        onCancelar={() => !trabajando && setPregunta(null)}
+      />
+    </>
+  );
+}
+
 function textoPregunta(p) {
   if (!p) return {};
   const n = p.ids.length;
   const cuales = p.nombre ? `«${p.nombre}»` : `${n} producto${n === 1 ? '' : 's'}`;
-  if (p.tipo === 'archivar') return { titulo: `¿Archivar ${cuales}?`, texto: 'Dejan de verse en la tienda. No se borran sus datos ni sus fotos: los pedidos y las listas que los tienen siguen igual.', confirmar: 'Archivar' };
+  if (p.tipo === 'archivar') return { titulo: `¿Mover ${cuales} a la papelera?`, texto: n === 1 ? `Deja de verse en la tienda. Desde Papelera se restaura durante ${DIAS_PAPELERA} días; después se borra solo. Los pedidos que lo tienen no cambian.` : `Dejan de verse en la tienda. Desde Papelera se restauran durante ${DIAS_PAPELERA} días; después se borran solos. Los pedidos que los tienen no cambian.`, confirmar: 'Mover a la papelera' };
   if (p.tipo === 'mostrar') return { titulo: `¿Mostrar ${cuales} en la tienda?`, confirmar: 'Mostrar' };
   if (p.tipo === 'ocultar') return { titulo: `¿Ocultar ${cuales}?`, texto: 'Dejan de verse en la tienda; se vuelven a mostrar cuando quieras.', confirmar: 'Ocultar' };
   if (p.tipo === 'viejo') return { titulo: `¿Quitar la personalización de antes a ${cuales}?`, texto: 'Se apaga "Producto personalizable" y se borra su configuración de Yoryo. A las esclavas se les suma la nota de cómo pedirla personalizada.', confirmar: 'Quitarla' };

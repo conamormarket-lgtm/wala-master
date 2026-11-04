@@ -810,6 +810,11 @@ function PanelDePrueba() {
   ]);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
+  // La papelera de ejemplo: uno que se borra pronto y uno que es pieza de un combo.
+  const [papeleraDemo, setPapeleraDemo] = useState(() => [
+    { id: 'demo-papelera-1', nombre: 'Polo clásico (temporada pasada)', imagen: '', que: 'Tienda', seFue: Date.now() - 28 * 864e5, seBorra: Date.now() + 2 * 864e5, dias: 2, visibleAntes: true, usadoPor: [] },
+    { id: 'demo-papelera-2', nombre: 'Taza Kapi navideña', imagen: '', que: 'Tienda', seFue: Date.now() - 3 * 864e5, seBorra: Date.now() + 27 * 864e5, dias: 27, visibleAntes: false, usadoPor: ['Combo Navidad'] },
+  ]);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
   const [borradores, setBorradores] = useState(BORRADORES);
   const [crudos, setCrudos] = useState(CRUDOS);
@@ -1107,7 +1112,24 @@ function PanelDePrueba() {
         onIr={(to) => toast({ tipo: 'info', titulo: 'Iría a', texto: to, duracion: 2000 })}
         onVisible={async (id, visible) => { await espera(500); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, oculto: !visible } : x))); }}
         onVarios={(ids, visible) => cambiarProductos(ids, () => ({ oculto: !visible }))}
-        onArchivar={async (ids) => { await espera(700); fallar(); setProductos((ps) => ps.filter((x) => !ids.includes(x.id))); return { ok: ids.length, fallaron: 0 }; }}
+        onArchivar={async (ids) => {
+          await espera(700);
+          fallar();
+          const idos = productos.filter((x) => ids.includes(x.id));
+          setProductos((ps) => ps.filter((x) => !ids.includes(x.id)));
+          setPapeleraDemo((l) => [...idos.map((x) => ({ id: x.id, nombre: x.nombre, imagen: x.imagen, que: 'Tienda', seFue: Date.now(), seBorra: Date.now() + 30 * 864e5, dias: 30, visibleAntes: !x.oculto, usadoPor: [], producto: x })), ...l]);
+          return { ok: ids.length, fallaron: 0 };
+        }}
+        papelera={papeleraDemo}
+        onRestaurar={async (ids) => {
+          await espera(600);
+          fallar();
+          const vuelven = papeleraDemo.filter((x) => ids.includes(x.id) && x.producto).map((x) => ({ ...x.producto, oculto: !x.visibleAntes }));
+          setProductos((ps) => [...vuelven, ...ps]);
+          setPapeleraDemo((l) => l.filter((x) => !ids.includes(x.id)));
+          return { ok: ids.length, fallaron: 0 };
+        }}
+        onBorrarParaSiempre={async (ids) => { await espera(600); fallar(); setPapeleraDemo((l) => l.filter((x) => !ids.includes(x.id))); return { ok: ids.length, fallaron: 0 }; }}
         onDuplicar={async (x) => { await espera(600); fallar(); setProductos((ps) => [...ps, { ...x, id: `copia-${Date.now()}`, nombre: `${x.nombre} (Copia)`, oculto: true, destacado: false }]); }}
         onExportar={() => {}}
         onQuitarPersonalizacionVieja={(ids) => cambiarProductos(ids, () => ({ personalizacionVieja: false }))}
