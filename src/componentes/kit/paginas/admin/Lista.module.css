@@ -140,6 +140,11 @@
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+  /* overflow-x también recorta arriba y abajo: el chip que sube 1 px al pasar
+     el ratón (y el rebote al tocarlo) perdía un pedazo de su borde. Aire de
+     4 px; arriba lo devuelve el margen (abajo no: ahí cada página pone el suyo). */
+  padding-block: 4px;
+  margin-top: -4px;
 }
 
 /* La lista para arrastrar (ordenable): la fila entera abre la edición. */
