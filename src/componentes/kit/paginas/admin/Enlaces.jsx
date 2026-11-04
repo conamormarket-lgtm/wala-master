@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Camera, ExternalLink, Eye, Globe, Link2, MessageCircle, Music2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ExternalLink, Eye, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, useToast } from '../../Feedback';
 import { Campo } from '../../Formulario';
@@ -9,6 +9,8 @@ import { TablaAdmin, BarraFiltros, InsigniaEstado, ListaOrdenable } from '../../
 import { HojaEdicion, GrupoCampos, CampoImagen, CampoColor, ElegirUno, BarraGuardar } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras } from '../../piezas/admin/Metricas';
 import { FotoCelda } from './celdas';
+import { PaginaEnlaces } from '../Enlaces';
+import { IsoWala, Sello } from '../../Marca';
 import { TEMAS, GRADIENTES, PATRONES, construirFondoStyle, estiloBotonStyle } from '../../../../services/linkThemes';
 import {
   slugDeEnlace, TIPOS_RED, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces, normalizarBusqueda,
@@ -27,7 +29,6 @@ const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n)
 const errorDe = (err) => err?.message || 'Vuelve a intentar.';
 const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const ESTADOS = { activo: { texto: 'Activa', tono: 'exito' }, borrador: { texto: 'Borrador', tono: 'neutro' } };
-const ICONO_RED = { instagram: Camera, facebook: Globe, tiktok: Music2, whatsapp: MessageCircle, custom: Link2 };
 
 /**
  * Las páginas de enlaces (/admin/enlaces).
@@ -87,7 +88,7 @@ export function PaginaEnlacesAdmin({ paginas = [], cargando = false, error, onRe
           ...(onEliminar ? ['separador', { id: 'eliminar', etiqueta: 'Eliminar', Icono: Trash2, peligro: true, accion: () => setBorrar(p) }] : []),
         ]}
         columnas={[
-          { id: 'foto', titulo: 'Foto', ancho: 64, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.avatar} forma="circulo" /> },
+          { id: 'foto', titulo: 'Foto', ancho: 64, tarjeta: 'foto', celda: (p) => (p.avatar ? <FotoCelda src={p.avatar} forma="circulo" /> : <Sello tamano={40} girar={-6}><IsoWala tamano={20} tono="blanco" /></Sello>) },
           { id: 'nombre', titulo: 'Página', tarjeta: 'titulo', celda: (p) => <>{p.nombre || 'Sin título'}<span className={l.sub}>/l/{p.slug}</span></> },
           { id: 'botones', titulo: 'Botones', ancho: 110, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <span className={l.numero}>{entero(p.botones.length)}{p.redes.length > 0 && <span className={l.sub}>{p.redes.length} {p.redes.length === 1 ? 'red' : 'redes'}</span>}</span> },
           { id: 'visitas', titulo: 'Visitas', ancho: 100, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <span className={l.numero}>{entero(p.visitas)}</span> },
@@ -126,35 +127,23 @@ export function PaginaEnlacesAdmin({ paginas = [], cargando = false, error, onRe
 
 /* ── El constructor ────────────────────────────────────── */
 
-/** El celular con la página como se verá (los mismos estilos de la página pública). */
+/**
+ * El celular con la página como se verá: la misma PaginaEnlaces de /l/…
+ * (vistaPrevia), con lo que se está escribiendo.
+ */
 function VistaEnlaces({ d }) {
-  const alinear = d.diseno.textAlign || 'center';
-  const flex = alinear === 'left' ? 'flex-start' : alinear === 'right' ? 'flex-end' : 'center';
+  const pagina = {
+    titulo: d.nombre || 'Tu título',
+    descripcion: d.descripcion,
+    avatar: d.avatar,
+    redes: d.redes,
+    botones: (d.botones.length ? d.botones : [{ id: 'x', titulo: 'Botón de ejemplo', url: '' }])
+      .map((b) => ({ id: b.id, titulo: b.titulo || 'Botón', url: b.url, imagen: b.miniatura })),
+    diseno: d.diseno,
+  };
   return (
     <div className={s.telefono} aria-label="Vista previa de la página">
-      <div className={s.pantalla} style={{ ...construirFondoStyle(d.diseno.background), fontFamily: d.diseno.fontFamily || 'inherit' }}>
-        <div className={s.pvCabeza} style={{ textAlign: alinear, alignItems: flex }}>
-          {d.avatar ? <img src={d.avatar} alt="" className={s.pvAvatar} /> : <span className={s.pvSinAvatar}>{(d.nombre || '?').trim().charAt(0).toUpperCase()}</span>}
-          <strong className={s.pvTitulo} style={{ color: d.diseno.titleColor }}>{d.nombre || 'Tu título'}</strong>
-          {d.descripcion && <span className={s.pvTexto} style={{ color: d.diseno.textColor }}>{d.descripcion}</span>}
-        </div>
-        {d.redes.length > 0 && (
-          <div className={s.pvRedes} style={{ justifyContent: flex }}>
-            {d.redes.map((r) => {
-              const Icono = ICONO_RED[r.tipo] || Link2;
-              return <span key={r.id} className={s.pvRed} title={r.nombre} style={{ color: d.diseno.textColor, borderColor: d.diseno.textColor }}>{r.icono ? <img src={r.icono} alt="" /> : <Icono aria-hidden="true" />}</span>;
-            })}
-          </div>
-        )}
-        <div className={s.pvBotones}>
-          {(d.botones.length ? d.botones : [{ id: 'x', titulo: 'Botón de ejemplo' }]).map((b) => (
-            <span key={b.id} className={s.pvBoton} style={estiloBotonStyle(d.diseno)}>
-              {b.miniatura && <img src={b.miniatura} alt="" className={s.pvMiniatura} />}
-              <span>{b.titulo || 'Botón'}</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      <div className={s.pantalla}><PaginaEnlaces vistaPrevia pagina={pagina} /></div>
     </div>
   );
 }

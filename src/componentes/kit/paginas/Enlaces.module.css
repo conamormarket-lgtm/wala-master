@@ -147,3 +147,36 @@
   margin: -10px 0 -6px;
   object-fit: contain;
 }
+
+/* Dentro del celular del admin: lo mismo, a escala de teléfono. */
+.enlacesVista {
+  min-height: 100%;
+  padding: 1.4rem 0.8rem 1.2rem;
+}
+
+.enlacesVista .enlacesColumna {
+  gap: 0.75rem;
+}
+
+.enlacesVista .enlacesCabeza {
+  width: 150px;
+  height: 100px;
+}
+
+.enlacesVista .enlacesAvatar {
+  width: 72px;
+  height: 72px;
+}
+
+.enlacesVista .enlacesTitulo {
+  font-size: 1.25rem;
+}
+
+.enlacesVista .enlacesTexto {
+  font-size: 0.85rem;
+}
+
+.enlacesVista .creado {
+  margin-top: 0.8rem;
+  font-size: 0.75rem;
+}

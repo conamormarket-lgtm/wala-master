@@ -29,10 +29,12 @@ const ALINEAR = { left: 'start', right: 'end' };
  *  - onClic(item): cuenta el clic (registrarClicEnlace), de un botón o de una red
  *  - urlCompartir: el link de la página (si no, el de la barra)
  *  - estado: 'cargando' | 'noDisponible'
+ *  - vistaPrevia: dentro del celular del admin (más chica, sin «Compartir» y
+ *    sin que los enlaces se puedan tocar): así se ve igual que la de verdad
  * Los textos (también el título, la descripción y los botones) pasan por la
  * traducción.
  */
-export function PaginaEnlaces({ pagina = {}, onClic, urlCompartir, estado }) {
+export function PaginaEnlaces({ pagina = {}, onClic, urlCompartir, estado, vistaPrevia = false }) {
   const [copiado, setCopiado] = useState(false);
   const [sinFoto, setSinFoto] = useState(false);
   const t = {
@@ -62,7 +64,7 @@ export function PaginaEnlaces({ pagina = {}, onClic, urlCompartir, estado }) {
   };
   return (
     <div
-      className={s.enlaces}
+      className={[s.enlaces, vistaPrevia && s.enlacesVista].filter(Boolean).join(' ')}
       style={{
         ...construirFondoStyle(d.background),
         '--enl-titulo': d.titleColor || '#fff',
@@ -75,17 +77,20 @@ export function PaginaEnlaces({ pagina = {}, onClic, urlCompartir, estado }) {
       }}
       data-componente="PaginaEnlaces"
     >
-      <button type="button" className={s.enlacesCompartir} onClick={compartir} aria-label={copiado ? t.copiado : t.compartir}>
-        {copiado ? <Link2 aria-hidden="true" /> : <Share2 aria-hidden="true" />}
-        <span><Texto>{copiado ? 'Copiado' : 'Compartir'}</Texto></span>
-      </button>
-      <div className={s.enlacesColumna}>
+      {!vistaPrevia && (
+        <button type="button" className={s.enlacesCompartir} onClick={compartir} aria-label={copiado ? t.copiado : t.compartir}>
+          {copiado ? <Link2 aria-hidden="true" /> : <Share2 aria-hidden="true" />}
+          <span><Texto>{copiado ? 'Copiado' : 'Compartir'}</Texto></span>
+        </button>
+      )}
+      {/* En la vista previa nada se puede tocar ni enfocar (inert). */}
+      <div className={s.enlacesColumna} {...(vistaPrevia ? { inert: '' } : {})}>
         <div className={s.enlacesCabeza}>
           <Garabatos variante="banner" className={s.enlacesGarabatos} />
           {pagina.avatar && !sinFoto
             ? <img {...atributosDeFoto(pagina.avatar, '160px')} alt="" className={s.enlacesAvatar} onError={siFallaDeVerdad(() => setSinFoto(true))} />
             // Sin foto, el sello de Walá (antes, las iniciales del título).
-            : <Sello tamano={96} girar={-6} className={s.enlacesSello}><IsoWala tamano={46} tono="blanco" /></Sello>}
+            : <Sello tamano={vistaPrevia ? 72 : 96} girar={-6} className={s.enlacesSello}><IsoWala tamano={vistaPrevia ? 34 : 46} tono="blanco" /></Sello>}
         </div>
         {pagina.titulo && <h1 className={s.enlacesTitulo}><Texto>{pagina.titulo}</Texto></h1>}
         {pagina.descripcion && <p className={s.enlacesTexto}><Texto>{pagina.descripcion}</Texto></p>}
