@@ -256,7 +256,6 @@ export function MapaDeCalorDelPanel() {
         onIncluirSinOrigen={setIncluirSinMeta}
       >
         <HeatmapViewer
-          variante="kit"
           data={heatmap}
           loading={batchesQuery.isLoading}
           error={batchesQuery.error?.message || null}

@@ -3,6 +3,7 @@ import { ArrowLeftRight, ChevronDown, ImageOff, Info } from 'lucide-react';
 import { Hueso } from '../../Esqueletos';
 import { CampoFecha } from '../../Fecha';
 import { Interruptor } from '../../Formulario';
+import { Etiqueta } from '../../Etiquetas';
 import s from './Metricas.module.css';
 
 /*
@@ -111,8 +112,11 @@ export const SinDatos = ({ children }) => <p className={s.sinDatos}>{children}</
  *  - max (10) · tono: 'violeta' | 'menta' · vacio (texto)
  *  - conCeros: también las filas en 0 (los pasos de un embudo, las estrellas)
  *  - inicial: cuántas se ven antes de "Ver todos" (sin él, todas las de max) · unidad: ['país', 'países']
+ *  - onElegir(fila): cada fila es un botón (elegida: el id de la que está puesta; tocarla de nuevo la deja)
+ *    · numerada: el puesto a la izquierda · en la fila, `etiqueta` (un chip antes del nombre) y `nota`
+ *    (un aviso corto debajo, en ámbar: "No está a la vista")
  */
-export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false, inicial, unidad }) {
+export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false, inicial, unidad, onElegir, elegida, numerada = false }) {
   const [abierta, setAbierta] = useState(false);
   const todas = filas.filter((f) => conCeros || Number(f.valor) > 0).slice(0, max);
   if (!todas.length || !todas.some((f) => Number(f.valor) > 0)) return <SinDatos>{vacio}</SinDatos>;
@@ -121,23 +125,40 @@ export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'S
   return (
     <>
     <ol className={`${s.barras} ${s[`barras_${tono}`] || ''}`} data-componente="ListaBarras">
-      {visibles.map((f) => (
-        <li key={f.id ?? f.nombre} className={s.barraFila}>
-          {f.imagen !== undefined && (
-            <span className={s.miniatura}>{f.imagen ? <img src={f.imagen} alt="" loading="lazy" /> : <ImageOff aria-hidden="true" />}</span>
-          )}
-          <span className={s.barraCuerpo}>
-            <span className={s.barraTexto}>
-              <span className={s.barraNombre} title={f.nombre}>{f.nombre}</span>
-              <span className={s.barraValor}>{f.texto ?? f.valor}</span>
+      {visibles.map((f, i) => {
+        const cuerpo = (
+          <>
+            {numerada && <span className={s.barraPuesto} aria-hidden="true">{i + 1}</span>}
+            {f.imagen !== undefined && (
+              <span className={s.miniatura}>{f.imagen ? <img src={f.imagen} alt="" loading="lazy" /> : <ImageOff aria-hidden="true" />}</span>
+            )}
+            <span className={s.barraCuerpo}>
+              <span className={s.barraTexto}>
+                <span className={s.barraNombre} title={f.nombre}>
+                  {f.etiqueta && <span className={s.barraEtiqueta}><Etiqueta tono="neutro">{f.etiqueta}</Etiqueta></span>}
+                  {f.nombre}
+                </span>
+                <span className={s.barraValor}>{f.texto ?? f.valor}</span>
+              </span>
+              <span className={s.pista} aria-hidden="true">
+                <span className={s.relleno} style={{ width: `${Number(f.valor) > 0 ? Math.max(3, Math.round(((Number(f.valor) || 0) / tope) * 100)) : 0}%` }} />
+              </span>
+              {f.sub && <span className={s.barraSub}>{f.sub}</span>}
+              {f.nota && <span className={s.barraNota}>{f.nota}</span>}
             </span>
-            <span className={s.pista} aria-hidden="true">
-              <span className={s.relleno} style={{ width: `${Number(f.valor) > 0 ? Math.max(3, Math.round(((Number(f.valor) || 0) / tope) * 100)) : 0}%` }} />
-            </span>
-            {f.sub && <span className={s.barraSub}>{f.sub}</span>}
-          </span>
-        </li>
-      ))}
+          </>
+        );
+        const id = f.id ?? f.nombre;
+        return (
+          <li key={id} className={onElegir ? undefined : s.barraFila}>
+            {onElegir ? (
+              <button type="button" className={[s.barraFila, s.barraBoton, elegida === id && s.barraElegida].filter(Boolean).join(' ')} aria-pressed={elegida === id} onClick={() => onElegir(f)}>
+                {cuerpo}
+              </button>
+            ) : cuerpo}
+          </li>
+        );
+      })}
     </ol>
     {inicial ? <VerTodos total={todas.length} inicial={inicial} abierto={abierta} onCambiar={setAbierta} unidad={unidad} /> : null}
     </>

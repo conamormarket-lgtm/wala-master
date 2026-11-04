@@ -481,3 +481,62 @@
   color: var(--color-text-muted);
   font-size: 0.74rem;
 }
+
+/* Un ranking que se toca (onElegir): cada fila es un botón, la elegida queda violeta. */
+.barraBoton {
+  margin: 0 -0.5rem;
+  width: calc(100% + 1rem);
+  padding: 0.45rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.barraBoton:hover {
+  background: var(--color-hover, rgba(124, 58, 237, 0.06));
+}
+
+.barraBoton:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+.barraElegida,
+.barraElegida:hover {
+  border-color: var(--violet-300);
+  background: var(--primary-light);
+}
+
+.barraPuesto {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.barraElegida .barraPuesto {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.barraEtiqueta {
+  margin-right: 0.35rem;
+}
+
+.barraNota {
+  color: var(--warning-text, #b45309);
+  font-size: 0.74rem;
+  font-weight: 600;
+}

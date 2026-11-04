@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { getHeatmapByPage } from '../../services/heatmapData';
 import { auth } from '../../services/firebase/config';
-import { AnimatedNumber, Badge } from '../ui';
+// Lo que se ve, con las piezas del kit (como el resto del panel); el visor
+// solo pone la vista previa y el calor (el iframe, el canvas y los recuadros).
+import Boton from '../../componentes/kit/Boton';
+import { Aviso, EstadoVacio } from '../../componentes/kit/Feedback';
+import { Campo, Deslizador } from '../../componentes/kit/Formulario';
+import { Pestanas } from '../../componentes/kit/Navegacion';
+import { Etiqueta } from '../../componentes/kit/Etiquetas';
+import { Cargando } from '../../componentes/kit/Cargando';
+import { BloqueMetrica, Cifra, FilaCifras, ListaBarras, SinDatos, VerTodos } from '../../componentes/kit/piezas/admin/Metricas';
 import styles from './HeatmapViewer.module.css';
-import { T } from '../../i18n/useTranslatedText';
 
 /**
  * VISOR DE MAPA DE CALOR (HeatmapViewer)
@@ -67,23 +73,13 @@ const DENSITY_CELL = 3;
 const MAX_RESOLUCIONES = 12;
 // Elementos del ranking que se ven antes de "Ver todos".
 const ELEMENTOS_INICIALES = 8;
+// Las páginas que se ven antes de "Ver las N páginas" (la elegida siempre se ve).
+const PAGINAS_INICIALES = 12;
 // Tiempo máximo de espera a que el iframe cargue antes de asumir fallo.
 const IFRAME_TIMEOUT_MS = 6000;
 // Reintentos de carga del iframe antes de rendirse al fallback.
 const IFRAME_MAX_RETRIES = 2;
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
-};
 
 /**
  * Densidad de clics de un lienzo de w x h px (`points` en px: [{ cx, cy }]):
@@ -334,18 +330,6 @@ function rutaVisible(path) {
 }
 
 /**
- * Iniciales para el fallback elegante (cuando el iframe no carga): toma las
- * primeras letras del nombre legible de la página.
- */
-function initialsOf(name) {
-  if (!name || typeof name !== 'string') return '🗺️';
-  const words = name.replace(/[·/]/g, ' ').trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '🗺️';
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
-}
-
-/**
  * @param {Object}  props
  * @param {Object}  [props.data]         Modo CONTROLADO: salida de
  *                                       aggregateHeatmapBatches YA filtrada.
@@ -373,12 +357,7 @@ export default function HeatmapViewer({
   origen = 'todos',
   soloDisenoActual: soloDisenoActualProp = false,
   onCambiarDiseno = null,
-  // 'kit': dentro de la página del kit (Resultados › Mapa de calor): sin su
-  // panel lila, sin los orbes ni su título (la página ya los tiene) y con los
-  // colores del sistema, que también siguen el modo noche.
-  variante = null,
 }) {
-  const enKit = variante === 'kit';
   // Modo controlado = los datos llegan filtrados desde fuera (DashHeatmap).
   const controlled = dataProp != null;
 
@@ -386,6 +365,7 @@ export default function HeatmapViewer({
   const [internalError, setInternalError] = useState(null);
   const [internalData, setInternalData] = useState(EMPTY_HEATMAP_DATA);
   const [selectedPath, setSelectedPath] = useState(null);
+  const [todasLasPaginas, setTodasLasPaginas] = useState(false);
   // 'todas' = todos los clics sobre una pantalla tipo (posición aproximada);
   // 'ANCHOxALTO' = solo los clics de esa resolución, en su pixel exacto.
   const [resolucion, setResolucion] = useState('todas');
@@ -412,7 +392,6 @@ export default function HeatmapViewer({
   const [sinArrancar, setSinArrancar] = useState(null);
   // Elemento del ranking elegido (su `key`): se señala en la vista previa.
   const [elegido, setElegido] = useState(null);
-  const [verTodosElementos, setVerTodosElementos] = useState(false);
   const ultimoScrollElegido = useRef(null);
 
   // Resolución única de la fuente de datos según el modo.
@@ -562,7 +541,6 @@ export default function HeatmapViewer({
   // Al cambiar de página no queda ningún elemento elegido.
   useEffect(() => {
     setElegido(null);
-    setVerTodosElementos(false);
   }, [selectedPath]);
 
   // Reinicia el estado del iframe cada vez que cambia la página seleccionada.
@@ -1068,12 +1046,10 @@ export default function HeatmapViewer({
     setIframeAttempt((n) => n + 1);
   };
 
-  const maxElementCount = topElements.length > 0 ? topElements[0].count : 0;
   const totalElementos = Math.max(
     data.clicksByPath?.[selectedPath] || 0,
     topElements.reduce((t, e) => t + e.count, 0)
   );
-  const elementosVisibles = verTodosElementos ? topElements : topElements.slice(0, ELEMENTOS_INICIALES);
   const posElegido = elegido ? topElements.findIndex((e) => e.key === elegido) + 1 : 0;
   const elElegido = posElegido > 0 ? topElements[posElegido - 1] : null;
   const hayZonas = topElements.some((e) => e.tipo === 'Zona');
@@ -1083,7 +1059,6 @@ export default function HeatmapViewer({
     if (elegido && !topElements.some((e) => e.key === elegido)) setElegido(null);
   }, [elegido, topElements]);
   const showIframe = iframeState !== 'failed' && !!iframeSrc;
-  const maxClicks = data.maxClicks || 0;
 
   // El marco mide una pantalla tipo escalada (+2px de su borde, para que el
   // scroll del marco y el del iframe terminen juntos); hasta medirlo manda el
@@ -1091,238 +1066,130 @@ export default function HeatmapViewer({
   const frameStyle = viewH > 0 ? { height: `${viewH + 2}px` } : undefined;
   const hayScroll = stageH > viewH + 1;
 
+  const textoClics = (n) => `${n.toLocaleString('es-PE')} ${n === 1 ? 'clic' : 'clics'}`;
+  const paginasVisibles = todasLasPaginas
+    ? data.paths
+    : [...data.paths.slice(0, PAGINAS_INICIALES), ...(data.paths.indexOf(selectedPath) >= PAGINAS_INICIALES ? [selectedPath] : [])];
+  const filasElementos = topElements.map((el) => {
+    const pctPagina = totalElementos > 0 ? Math.round((el.count / totalElementos) * 100) : 0;
+    const fuera = clavesEnPagina && !clavesEnPagina.has(el.key)
+      ? motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key))
+      : null;
+    return { id: el.key, nombre: textoElemento(el), etiqueta: el.tipo, valor: el.count, texto: `${el.count.toLocaleString('es-PE')} · ${pctPagina}%`, nota: fuera?.corto };
+  });
+
   return (
-    <motion.section
-      className={`${styles.wrapper} ${enKit ? styles.wrapperKit : ''}`}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Orbes difuminados de fondo */}
-      {!enKit && <div className={styles.blobA} aria-hidden="true" />}
-      {!enKit && <div className={styles.blobB} aria-hidden="true" />}
-
-      {!enKit && (
-      <motion.header className={styles.header} variants={itemVariants}>
-        <div>
-          <h2 className={styles.title}><T>Mapa de calor</T></h2>
-          <p className={styles.subtitle}>
-            Dónde hacen clic tus visitantes, página por página.
-          </p>
-        </div>
-        {hasData && (
-          <div className={styles.statsPill}>
-            <AnimatedNumber
-              className={styles.statValue}
-              value={data.totalClicks}
-              format={(v) => Math.round(v).toLocaleString('es-PE')}
-            />
-            <span className={styles.statLabel}>clics analizados</span>
-          </div>
-        )}
-      </motion.header>
-      )}
-
-      {loading && (
-        <motion.div className={styles.stateBox} variants={itemVariants}>
-          <span className={styles.spinner} aria-hidden="true" />
-          Cargando mapa de calor…
-        </motion.div>
-      )}
+    <section className={styles.visor} data-componente="VisorMapaDeCalor">
+      {loading && <Cargando bloque texto="Cargando el mapa de calor" />}
 
       {!loading && error && (
-        <motion.div className={`${styles.stateBox} ${styles.errorBox}`} variants={itemVariants}>
-          No se pudo cargar el mapa de calor.
-          <span className={styles.errorDetail}>{String(error)}</span>
-        </motion.div>
+        <Aviso tipo="error" titulo="No se pudo cargar el mapa de calor">{String(error)}</Aviso>
       )}
 
       {!loading && !error && data.totalClicks === 0 && (
-        <motion.div className={styles.stateBox} variants={itemVariants}>
-          <span className={styles.emptyIcon} aria-hidden="true">🗺️</span>
-          {/* Mensaje honesto: el padre puede explicar si el vacío se debe a los
-              filtros/rango elegidos (y no a la falta total de datos). */}
-          {emptyMessage
-            || 'Aún sin datos de heatmap. En cuanto tus visitantes empiecen a interactuar, verás aquí dónde hacen clic.'}
-        </motion.div>
+        <EstadoVacio
+          titulo="Todavía no hay clics"
+          // El padre puede explicar si el vacío es por los filtros o el rango (y no por falta de datos).
+          texto={emptyMessage || 'En cuanto tus visitantes empiecen a usar la tienda, aquí verás dónde hacen clic.'}
+        />
       )}
 
       {hasData && (
         <>
-          {/* SELECTOR DE PÁGINAS como MINI-TARJETAS */}
-          <motion.div
-            className={styles.pageCards}
-            variants={itemVariants}
-            role="tablist"
-            aria-label="Páginas con datos de mapa de calor"
-          >
-            {data.paths.map((path) => {
-              const count = data.clicksByPath?.[path] ?? (data.pointsByPath[path] || []).length;
-              const name = data.pageNames?.[path] || path;
-              const active = path === selectedPath;
-              const pct = maxClicks > 0 ? Math.max(6, Math.round((count / maxClicks) * 100)) : 0;
-              return (
-                <motion.button
-                  key={path}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  className={`${styles.pageCard} ${active ? styles.pageCardActive : ''}`}
-                  onClick={() => setSelectedPath(path)}
-                  title={`${name} — ${path}`}
-                  whileHover={{ y: -3 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span className={styles.pageCardTop}>
-                    <span className={styles.pageCardName}>{name}</span>
-                    {active && <span className={styles.pageCardDot} aria-hidden="true" />}
-                  </span>
-                  <AnimatedNumber
-                    className={styles.pageCardCount}
-                    value={count}
-                    format={(v) => Math.round(v).toLocaleString('es-PE')}
+          {/* Las páginas con clics: las cifras del kit, se toca una para ver su calor. */}
+          <BloqueMetrica titulo="Páginas" ayuda="Toca una para ver dónde hacen clic en ella.">
+            <FilaCifras etiqueta="Páginas con clics">
+              {paginasVisibles.map((path) => {
+                const count = data.clicksByPath?.[path] ?? (data.pointsByPath[path] || []).length;
+                const varias = (data.variantesByPath?.[path] || 1) > 1 ? ` · ${data.variantesByPath[path]} páginas` : '';
+                return (
+                  <Cifra
+                    key={path}
+                    nombre={data.pageNames?.[path] || path}
+                    valor={count.toLocaleString('es-PE')}
+                    ayuda={`${rutaVisible(path)}${varias}`}
+                    tono="violeta"
+                    activo={path === selectedPath}
+                    onClick={() => setSelectedPath(path)}
                   />
-                  <span className={styles.pageCardCountLabel}>clics</span>
-                  <span className={styles.pageCardTrack} aria-hidden="true">
-                    <span className={styles.pageCardFill} style={{ width: `${pct}%` }} />
-                  </span>
-                  <span className={styles.pageCardRoute}>
-                    {rutaVisible(path)}
-                    {(data.variantesByPath?.[path] || 1) > 1 ? ` · ${data.variantesByPath[path]} páginas` : ''}
-                  </span>
-                </motion.button>
-              );
-            })}
-          </motion.div>
+                );
+              })}
+            </FilaCifras>
+            <VerTodos total={data.paths.length} inicial={PAGINAS_INICIALES} abierto={todasLasPaginas} onCambiar={setTodasLasPaginas} unidad={['página', 'páginas']} />
+          </BloqueMetrica>
 
-          <motion.div className={styles.grid} variants={itemVariants}>
-            <div className={styles.canvasCard}>
-              <div className={styles.canvasHead}>
-                <span className={styles.canvasPath} title={selectedPath}>
-                  {pageName}
-                  <span className={styles.canvasRoute}>
-                    {variantes > 1
-                      ? `${variantes} páginas · vista previa de la más clicada`
-                      : rutaVisible(selectedPath)}
-                  </span>
-                </span>
-                <Badge tone={showIframe ? 'success' : 'neutral'} size="sm">
-                  {puntosEnUso.length.toLocaleString('es-PE')} clics
-                </Badge>
-              </div>
-
-              <div className={styles.previewControls}>
-                <label className={styles.controlField}>
-                  <span className={styles.controlLabel}>Pantalla del visitante</span>
-                  <select
-                    className={styles.controlSelect}
+          <div className={styles.columnas}>
+            <BloqueMetrica
+              titulo={pageName}
+              ayuda={variantes > 1 ? `${variantes} páginas · vista previa de la más clicada` : rutaVisible(selectedPath)}
+              acciones={<Etiqueta tono={showIframe ? 'exito' : 'neutro'}>{textoClics(puntosEnUso.length)}</Etiqueta>}
+            >
+              <div className={styles.controles}>
+                <div className={styles.controlPantalla}>
+                  <Campo
+                    etiqueta="Pantalla del visitante"
+                    opciones={[
+                      { valor: 'todas', texto: `Todas las pantallas · ${textoClics(points.length)}` },
+                      ...resoluciones.map((r) => ({ valor: r.key, texto: `Solo ${r.w} × ${r.h} · ${textoClics(r.count)}` })),
+                    ]}
                     value={exacta ? exacta.key : 'todas'}
                     onChange={(e) => setResolucion(e.target.value)}
-                  >
-                    <option value="todas">
-                      Todas las pantallas · {points.length.toLocaleString('es-PE')} clics
-                    </option>
-                    {resoluciones.map((r) => (
-                      <option key={r.key} value={r.key}>
-                        Solo {r.w} × {r.h} · {r.count.toLocaleString('es-PE')} {r.count === 1 ? 'clic' : 'clics'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className={styles.intensityField}>
-                  <span className={styles.controlLabel}>Intensidad del calor</span>
-                  <input
-                    type="range"
-                    min="0.3"
-                    max="1"
-                    step="0.05"
-                    value={opacidadCalor}
-                    onChange={(e) => setOpacidadCalor(Number(e.target.value))}
-                    className={styles.intensityRange}
-                    aria-label="Intensidad del calor sobre la página"
                   />
-                </label>
-                <div className={styles.themeToggle} role="group" aria-label="Tema de la vista previa">
-                  {[
-                    { value: 'light', label: 'Claro' },
-                    { value: 'dark', label: 'Oscuro' },
-                  ].map((t) => (
-                    <button
-                      key={t.value}
-                      type="button"
-                      className={`${styles.themeBtn} ${temaPreview === t.value ? styles.themeBtnActive : ''}`}
-                      aria-pressed={temaPreview === t.value}
-                      onClick={() => setTemaPreview(t.value)}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
                 </div>
+                <div className={styles.controlIntensidad}>
+                  <Deslizador etiqueta="Intensidad del calor" valor={opacidadCalor} min={0.3} max={1} paso={0.05} formato={(v) => `${Math.round(v * 100)}%`} onChange={setOpacidadCalor} />
+                </div>
+                <Pestanas
+                  etiqueta="Tema de la vista previa"
+                  opciones={[{ id: 'light', texto: 'Claro' }, { id: 'dark', texto: 'Oscuro' }]}
+                  valor={temaPreview}
+                  onChange={setTemaPreview}
+                />
               </div>
 
               {vistaRedirigida && (
-                <div className={styles.avisoRedirigida} role="status">
-                  La vista previa terminó en <strong>{rutaIframe}</strong> en vez de esta página
-                  {/login|registro/.test(rutaIframe) ? ' (pide iniciar sesión)' : ''}: el calor no
-                  coincide con lo que se ve.
-                </div>
+                <Aviso tipo="aviso" compacto>
+                  {`La vista previa terminó en ${rutaIframe} en vez de esta página${/login|registro/.test(rutaIframe) ? ' (pide iniciar sesión)' : ''}: el calor no coincide con lo que se ve.`}
+                </Aviso>
               )}
               {sinArrancar && (
-                <div className={styles.avisoRedirigida} role="alert">
-                  <strong>La página no terminó de arrancar dentro de la vista previa.</strong>{' '}
-                  {sinArrancar.errores.length > 0
-                    ? 'Al arrancar dio este error:'
-                    : 'No dio ningún error: se quedó esperando algo al arrancar.'}
-                  {sinArrancar.errores.length > 0 && (
-                    <ul className={styles.avisoLista}>
-                      {sinArrancar.errores.slice(0, 3).map((err, i) => <li key={i}>{err}</li>)}
-                    </ul>
+                <Aviso
+                  tipo="error"
+                  compacto
+                  titulo="La página no terminó de arrancar dentro de la vista previa"
+                  accion={(
+                    <span className={styles.acciones}>
+                      <Boton tamano="sm" variante="contorno" onClick={handleRetry}>Reintentar</Boton>
+                      {iframeSrc && <Boton tamano="sm" variante="fantasma" onClick={() => window.open(rutaPreview, '_blank', 'noopener,noreferrer')}>Abrirla en otra pestaña</Boton>}
+                    </span>
                   )}
-                  <span className={styles.avisoDetalle}>
-                    {sinArrancar.sesion === null
-                      ? 'La app ni siquiera cargó su código.'
-                      : sinArrancar.sesion ? 'Tenía tu sesión.' : 'No tenía sesión.'}
-                    {sinArrancar.controladaPorSW ? ' La sirvió la caché del sitio (service worker).' : ''}
-                  </span>
-                  <span className={styles.avisoAcciones}>
-                    <button type="button" className={styles.notaBoton} onClick={handleRetry}>Reintentar</button>
-                    {iframeSrc && (
-                      <a className={styles.notaBoton} href={rutaPreview} target="_blank" rel="noopener noreferrer">
-                        Abrir la página en otra pestaña
-                      </a>
-                    )}
-                  </span>
-                </div>
+                >
+                  {[
+                    sinArrancar.errores.length > 0 ? `Al arrancar dio: ${sinArrancar.errores.slice(0, 3).join(' · ')}.` : 'No dio ningún error: se quedó esperando algo al arrancar.',
+                    sinArrancar.sesion === null ? 'La app ni siquiera cargó su código.' : sinArrancar.sesion ? 'Tenía tu sesión.' : 'No tenía sesión.',
+                    sinArrancar.controladaPorSW ? 'La sirvió la caché del sitio (service worker).' : '',
+                  ].filter(Boolean).join(' ')}
+                </Aviso>
               )}
-
               {!vistaRedirigida && pideLogin && (
-                <div className={styles.avisoRedirigida} role="status">
-                  Esta página pide iniciar sesión y la vista previa se abrió sin sesión: se ve el aviso
-                  de login en vez de la página que vio el cliente. Los clics de lo que está detrás del
-                  login no se pueden ubicar.
-                </div>
+                <Aviso tipo="aviso" compacto>
+                  Esta página pide iniciar sesión y la vista previa se abrió sin sesión: se ve el aviso de login en vez de la página que vio el cliente. Los clics de lo que está detrás del login no se pueden ubicar.
+                </Aviso>
               )}
 
               {elElegido && (
-                <div className={styles.seleccionBar} role="status">
-                  <span className={styles.seleccionNum}>{posElegido}</span>
-                  <span className={styles.tipoChip}>{elElegido.tipo}</span>
-                  <span className={styles.seleccionTexto} title={textoElemento(elElegido)}>
-                    {textoElemento(elElegido)}
-                  </span>
-                  <span className={styles.seleccionInfo}>
-                    {marcas.length > 0
-                      ? `${puntosCalor.length.toLocaleString('es-PE')} ${puntosCalor.length === 1 ? 'clic' : 'clics'}${
-                        marcas.length > 1 ? ` en ${marcas.length} lugares de la página (desplázate para verlos)` : ''
-                      }`
-                      : !anclas
-                        ? 'Buscándolo en la página…'
-                        : motivoNoVisible(elElegido, clavesSeccionBorrada.has(elElegido.key), clavesDisenoAnterior.has(elElegido.key)).largo}
-                  </span>
-                  <button type="button" className={styles.seleccionQuitar} onClick={() => setElegido(null)}>
-                    Ver todo el mapa
-                  </button>
-                </div>
+                <Aviso
+                  tipo="info"
+                  compacto
+                  titulo={`${posElegido}. ${elElegido.tipo}: ${textoElemento(elElegido)}`}
+                  accion={<Boton tamano="sm" variante="contorno" onClick={() => setElegido(null)}>Ver todo el mapa</Boton>}
+                >
+                  {marcas.length > 0
+                    ? `${textoClics(puntosCalor.length)}${marcas.length > 1 ? ` en ${marcas.length} lugares de la página (desplázate para verlos)` : ''}.`
+                    : !anclas
+                      ? 'Buscándolo en la página…'
+                      : motivoNoVisible(elElegido, clavesSeccionBorrada.has(elElegido.key), clavesDisenoAnterior.has(elElegido.key)).largo}
+                </Aviso>
               )}
 
               <div
@@ -1332,18 +1199,11 @@ export default function HeatmapViewer({
                 onScroll={syncIframeScroll}
               >
                 {/*
-                  * PREVIEW real de la página (misma-origen wala.pe).
-                  * Wala es una SPA client-side (Vite): el #root solo trae un splash y
-                  * TODO el contenido lo pinta JavaScript. Sin 'allow-scripts' el iframe
-                  * quedaría en blanco y la preview sería inservible (siempre fallback a
-                  * cuadrícula). Por eso mantenemos 'allow-same-origin allow-scripts' y
-                  * confiamos en (1) caché en memoria de Firestore dentro del iframe y
-                  * (2) tracking desactivado dentro del iframe (IN_IFRAME) para evitar el
-                  * conflicto del lock de persistencia, el doble-conteo y las escrituras
-                  * 404/400. El propio iframe nos avisa de su altura con WALA_HEATMAP_SYNC.
-                  *
-                  * Escenario = la página completa a escala. La ventana (sticky) mide una
-                  * pantalla y lleva el iframe; el canvas cubre todo el escenario.
+                  * PREVIEW real de la página (misma-origen wala.pe): una SPA que pinta
+                  * todo con JavaScript, por eso 'allow-same-origin allow-scripts' (con
+                  * el tracking apagado dentro del iframe). El iframe avisa su altura con
+                  * WALA_HEATMAP_SYNC. Escenario = la página completa a escala; la
+                  * ventana (sticky) mide una pantalla y lleva el iframe.
                   */}
                 <div className={styles.stage} style={{ width: `${stageW}px`, height: `${Math.max(stageH, viewH)}px` }}>
                   <div className={styles.stageViewport} style={{ height: `${viewH}px` }}>
@@ -1369,9 +1229,8 @@ export default function HeatmapViewer({
                     {/* Capa de atenuación para que el calor resalte sobre la preview. */}
                     {showIframe && <div className={styles.previewScrim} aria-hidden="true" />}
 
-                    {/* Calor y recuadros de los elementos FIJOS (barra de abajo,
-                        cabecera, botones flotantes): viven en la ventana, que no
-                        se mueve, igual que en el teléfono del visitante. */}
+                    {/* Calor y recuadros de los elementos FIJOS (barra de abajo, cabecera,
+                        botones flotantes): viven en la ventana, que no se mueve. */}
                     <canvas
                       ref={canvasFijoRef}
                       className={styles.canvas}
@@ -1420,168 +1279,92 @@ export default function HeatmapViewer({
                   ))}
                 </div>
 
-                {/* Spinner mientras carga el iframe (con aviso de reintento). */}
                 {showIframe && iframeState === 'loading' && (
                   <div className={styles.previewLoading}>
-                    <span className={styles.spinner} aria-hidden="true" />
-                    <span className={styles.previewLoadingText}>
-                      {iframeAttempt > 0
-                        ? `Reintentando vista previa (${iframeAttempt}/${IFRAME_MAX_RETRIES})…`
-                        : 'Cargando vista previa…'}
-                    </span>
+                    <Cargando
+                      tamano="sm"
+                      texto={iframeAttempt > 0 ? `Reintentando la vista previa (${iframeAttempt}/${IFRAME_MAX_RETRIES})` : 'Cargando la vista previa'}
+                    />
                   </div>
                 )}
 
-                {/* FALLBACK elegante (glass + iniciales) cuando no hay preview. */}
+                {/* Sin vista previa: el calor sobre una cuadrícula, con el estado vacío del kit. */}
                 {!showIframe && (
                   <div className={styles.fallback}>
-                    <span className={styles.fallbackBadge} aria-hidden="true">
-                      {initialsOf(pageName)}
-                    </span>
-                    <span className={styles.fallbackName}>{pageName}</span>
-                    <span className={styles.fallbackHint}>
-                      {iframeSrc
+                    <EstadoVacio
+                      imagen={null}
+                      titulo={pageName}
+                      texto={iframeSrc
                         ? 'No pudimos cargar la vista previa de esta página, pero el calor sigue siendo válido.'
-                        : 'Esta página no tiene una vista previa navegable; mostramos el calor sobre una cuadrícula.'}
-                    </span>
-                    {iframeSrc && (
-                      <button type="button" className={styles.fallbackRetry} onClick={handleRetry}>
-                        Reintentar vista previa
-                      </button>
-                    )}
+                        : 'Esta página no tiene una vista previa navegable: el calor va sobre una cuadrícula.'}
+                    >
+                      {iframeSrc && <Boton tamano="sm" variante="secundario" onClick={handleRetry}>Reintentar la vista previa</Boton>}
+                    </EstadoVacio>
                   </div>
                 )}
 
                 {puntosEnUso.length === 0 && (
-                  <div className={styles.canvasEmpty}><T>Sin clics ubicables en esta página.</T></div>
+                  <div className={styles.canvasEmpty}><SinDatos>Sin clics ubicables en esta página.</SinDatos></div>
                 )}
               </div>
 
-              <div className={styles.legendRow}>
-                <span className={styles.previewTag}>
+              <div className={styles.leyenda}>
+                <Etiqueta tono="neutro">
                   {showIframe
                     ? `Sobre la página real · ${comoApp ? 'como la app · ' : ''}${exacta ? 'pantalla' : 'vista'} ${pantalla.label} · ${Math.round(scale * 100)}%`
                     : 'Vista de respaldo'}
-                </span>
-                <div className={styles.legend}>
+                </Etiqueta>
+                <span className={styles.legend}>
                   <span className={styles.legendLabel}>Pocos clics</span>
                   <span className={styles.legendBar} aria-hidden="true" />
                   <span className={styles.legendLabel}>Lo más clicado</span>
-                </div>
+                </span>
               </div>
 
-              <div className={styles.canvasNotes}>
+              <div className={styles.notas}>
                 <p>
                   El rojo marca la zona más clicada de esta página; el resto se compara con ella.
                   {hayScroll ? ' Desplázate dentro de la vista para recorrer toda la página.' : ''}
                 </p>
                 {mezclaOrigen && (
                   <p>
-                    Hay clics de la web y de la app ({clicsApp.toLocaleString('es-PE')} de la app); la vista
-                    previa muestra la {comoApp ? 'app' : 'web'}, que se ven distinto (la app no tiene pie de
-                    página). Elige un origen arriba para ver cada uno sobre su versión.
+                    {`Hay clics de la web y de la app (${clicsApp.toLocaleString('es-PE')} de la app); la vista previa muestra la ${comoApp ? 'app' : 'web'}, que se ven distinto (la app no tiene pie de página). Elige un origen arriba para ver cada uno sobre su versión.`}
                   </p>
                 )}
                 {versionActual && (clicsVersionVieja > 0 || soloActual) && (
                   <p>
-                    Esta página se cambió en el builder (
-                    {new Date(Number(versionActual)).toLocaleString('es-PE', {
-                      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                    })}
-                    ):{' '}
-                    {clicsVersionVieja.toLocaleString('es-PE')}{' '}
-                    {clicsVersionVieja === 1 ? 'clic es' : 'clics son'} de antes de ese cambio
-                    {soloActual ? ' y no se cuentan ni se muestran.' : '.'}{' '}
-                    <button type="button" className={styles.notaBoton} onClick={cambiarSoloActual}>
-                      {soloActual ? 'Ver todos los diseños' : 'Ver solo el diseño actual'}
-                    </button>
+                    {`Esta página se cambió en el builder (${new Date(Number(versionActual)).toLocaleString('es-PE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}): ${clicsVersionVieja.toLocaleString('es-PE')} ${clicsVersionVieja === 1 ? 'clic es' : 'clics son'} de antes de ese cambio${soloActual ? ' y no se cuentan ni se muestran.' : '.'} `}
+                    <Boton tamano="sm" variante="fantasma" onClick={cambiarSoloActual}>{soloActual ? 'Ver todos los diseños' : 'Ver solo el diseño actual'}</Boton>
                   </p>
                 )}
                 {sinUbicar > 0 && (
                   <p>
-                    {sinUbicar.toLocaleString('es-PE')} de {puntosEnUso.length.toLocaleString('es-PE')} clics no
-                    se pueden ubicar en la página actual (son de un diseño anterior, fueron dentro de una
-                    ventana, su elemento no está a la vista o son clics antiguos sin ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
-                    <button
-                      type="button"
-                      className={styles.notaBoton}
-                      onClick={() => setMostrarSinUbicar((v) => !v)}
-                    >
-                      {mostrarSinUbicar ? 'Ocultarlos' : 'Mostrarlos igual'}
-                    </button>
+                    {`${sinUbicar.toLocaleString('es-PE')} de ${puntosEnUso.length.toLocaleString('es-PE')} clics no se pueden ubicar en la página actual (son de un diseño anterior, fueron dentro de una ventana, su elemento no está a la vista o son clics antiguos sin ubicación) y ${mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'} `}
+                    <Boton tamano="sm" variante="fantasma" onClick={() => setMostrarSinUbicar((v) => !v)}>{mostrarSinUbicar ? 'Ocultarlos' : 'Mostrarlos igual'}</Boton>
                   </p>
                 )}
               </div>
-            </div>
+            </BloqueMetrica>
 
-            <div className={styles.sideCard}>
-              <h3 className={styles.sideTitle}><T>Elementos más clicados</T></h3>
-              {topElements.length === 0 ? (
-                <p className={styles.sideEmpty}><T>Sin elementos registrados en esta página.</T></p>
-              ) : (
-                <>
-                  <p className={styles.sideHint}>
-                    Toca uno para verlo señalado en la página.
-                    {hayZonas ? ' «Zona» es un clic fuera de un botón o enlace.' : ''}
-                  </p>
-                  <ul className={styles.rankList}>
-                    {elementosVisibles.map((el, idx) => {
-                      const pct = maxElementCount > 0 ? (el.count / maxElementCount) * 100 : 0;
-                      const pctPagina = totalElementos > 0 ? Math.round((el.count / totalElementos) * 100) : 0;
-                      const activo = el.key === elegido;
-                      return (
-                        <li key={el.key}>
-                          <button
-                            type="button"
-                            className={`${styles.rankItem} ${activo ? styles.rankItemActive : ''}`}
-                            aria-pressed={activo}
-                            onClick={() => setElegido(activo ? null : el.key)}
-                            title={`${el.tipo}: ${textoElemento(el)} · ${el.count} ${el.count === 1 ? 'clic' : 'clics'}`}
-                          >
-                            <span className={styles.rankPos}>{idx + 1}</span>
-                            <span className={styles.rankBody}>
-                              <span className={styles.rankTop}>
-                                <span className={styles.tipoChip}>{el.tipo}</span>
-                                <span className={`${styles.rankLabel} ${el.texto ? '' : styles.rankLabelGeneric}`}>
-                                  {textoElemento(el)}
-                                </span>
-                              </span>
-                              <span className={styles.rankTrack}>
-                                <span className={styles.rankFill} style={{ width: `${pct}%` }} />
-                              </span>
-                              {clavesEnPagina && !clavesEnPagina.has(el.key) && (
-                                <span
-                                  className={motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key)).ventana ? styles.rankVentana : styles.rankAusente}
-                                  title={motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key)).largo}
-                                >
-                                  {motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key)).corto}
-                                </span>
-                              )}
-                            </span>
-                            <span className={styles.rankCount}>
-                              {el.count.toLocaleString('es-PE')}
-                              <span className={styles.rankPct}>{pctPagina}%</span>
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {topElements.length > ELEMENTOS_INICIALES && (
-                    <button
-                      type="button"
-                      className={styles.verMas}
-                      onClick={() => setVerTodosElementos((v) => !v)}
-                    >
-                      {verTodosElementos ? 'Ver menos' : `Ver los ${topElements.length}`}
-                    </button>
-                  )}
-                </>
+            <BloqueMetrica
+              titulo="Elementos más clicados"
+              ayuda={topElements.length ? `Toca uno para verlo señalado en la página.${hayZonas ? ' «Zona» es un clic fuera de un botón o enlace.' : ''}` : undefined}
+            >
+              {topElements.length === 0 ? <SinDatos>Sin elementos registrados en esta página.</SinDatos> : (
+                <ListaBarras
+                  filas={filasElementos}
+                  max={filasElementos.length}
+                  inicial={ELEMENTOS_INICIALES}
+                  unidad={['elemento', 'elementos']}
+                  numerada
+                  elegida={elegido}
+                  onElegir={(f) => setElegido(f.id === elegido ? null : f.id)}
+                />
               )}
-            </div>
-          </motion.div>
+            </BloqueMetrica>
+          </div>
         </>
       )}
-    </motion.section>
+    </section>
   );
 }
