@@ -196,6 +196,7 @@ export function PaginaSuscripcionAdmin({
   campana, contador, cargando = false, error, onReintentar, pestana: pestanaFuera, onPestana, urlLista = '/admin/sorteos-suscripcion', urlPublica,
   suscriptores = [], onDarChances, onDecidirGanadores,
   beneficios = [], onGuardarBeneficio, onEliminarBeneficio, galeria = [], onGuardarGanador, onEliminarGanador, subirImagen,
+  onOrdenBeneficios, onOrdenGaleria,
 }) {
   const [pestanaDentro, setPestanaDentro] = useState('suscriptores');
   const pestana = pestanaFuera || pestanaDentro;
@@ -247,8 +248,32 @@ export function PaginaSuscripcionAdmin({
           { id: 'nombre', titulo: 'Beneficio', tarjeta: 'titulo', celda: (b) => <>{b.marca || b.nombre}{b.marca && b.nombre && <span className={l.sub}>{b.nombre}</span>}</> },
           { id: 'descuento', titulo: 'Descuento', ancho: 120, tarjeta: 'detalle', celda: (b) => b.descuento || <span className={l.sub}>—</span> },
           { id: 'donde', titulo: 'Rubro · dónde', tarjeta: 'detalle', celda: (b) => [b.categoria, b.ubicacion].filter(Boolean).join(' · ') || <span className={l.sub}>—</span> },
-          { id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (b) => b.orden },
+          ...(onOrdenBeneficios ? [] : [{ id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (b) => b.orden }]),
         ]}
+        // Con onOrdenBeneficios se arrastra: es el orden en que salen en la página.
+        ordenable={onOrdenBeneficios ? {
+          etiqueta: 'Orden de los beneficios',
+          onGuardar: onOrdenBeneficios,
+          cabecera: (
+            <span className={s.filaOrden}>
+              <span>Foto</span>
+              <span>Beneficio</span>
+              <span className={s.filaOrdenExtra}>Descuento</span>
+              <span className={s.filaOrdenExtra}>Rubro · dónde</span>
+            </span>
+          ),
+          fila: (b) => (
+            <span className={s.filaOrden}>
+              <FotoCelda src={b.imagen} contener tamano={40} />
+              <span className={s.filaOrdenTextos}>
+                <strong>{b.marca || b.nombre}</strong>
+                {b.marca && b.nombre && <span className={l.sub}>{b.nombre}</span>}
+              </span>
+              <span className={s.filaOrdenExtra}>{b.descuento || <span className={l.sub}>—</span>}</span>
+              <span className={s.filaOrdenExtra}>{[b.categoria, b.ubicacion].filter(Boolean).join(' · ') || <span className={l.sub}>—</span>}</span>
+            </span>
+          ),
+        } : undefined}
         ordenes={{ orden: porOrden }}
         ordenInicial={{ por: 'orden', dir: 'asc' }}
         vacio={{ titulo: 'Todavía no hay beneficios', texto: 'Agrega las marcas aliadas y sus descuentos para suscriptores.' }}
@@ -260,7 +285,8 @@ export function PaginaSuscripcionAdmin({
           nuevo: 'Nuevo beneficio',
           titulos: { nuevo: 'Nuevo beneficio', editar: 'Editar beneficio' },
           textoGuardar: { nuevo: 'Agregar beneficio' },
-          vacio: ({ registros }) => ({ marca: '', nombre: '', descuento: '', imagen: '', categoria: '', ubicacion: '', url: '', orden: registros.length }),
+          // Uno nuevo va al final.
+          vacio: ({ registros }) => ({ marca: '', nombre: '', descuento: '', imagen: '', categoria: '', ubicacion: '', url: '', orden: registros.reduce((x, b) => Math.max(x, (Number(b.orden) || 0) + 1), 0) }),
           desde: (b) => ({ ...b, id: undefined }),
           validar: (d) => ({ marca: String(d.marca).trim() || String(d.nombre).trim() ? undefined : 'Escribe la marca o el título.' }),
           campos: ({ datos: d, cambiar, errores, idDe }) => (
@@ -277,7 +303,7 @@ export function PaginaSuscripcionAdmin({
                 </div>
                 <Campo etiqueta="Enlace (opcional)" type="url" placeholder="https://…" value={d.url} onChange={(e) => cambiar('url', e.target.value)} />
                 <CampoImagen etiqueta="Logo o foto" valor={d.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} forma="cuadro" contener />
-                <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={d.orden} onChange={(e) => cambiar('orden', e.target.value)} />
+                {!onOrdenBeneficios && <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={d.orden} onChange={(e) => cambiar('orden', e.target.value)} />}
               </GrupoCampos>
             </>
           ),
@@ -298,8 +324,29 @@ export function PaginaSuscripcionAdmin({
           { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (g) => <FotoCelda src={g.foto} forma="circulo" /> },
           { id: 'nombre', titulo: 'Ganador', tarjeta: 'titulo', celda: (g) => <>{g.nombre}{g.premio && <span className={l.sub}>{g.premio}</span>}</> },
           { id: 'fecha', titulo: 'Cuándo', ancho: 140, tarjeta: 'detalle', celda: (g) => g.fecha || <span className={l.sub}>—</span> },
-          { id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (g) => g.orden },
+          ...(onOrdenGaleria ? [] : [{ id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (g) => g.orden }]),
         ]}
+        ordenable={onOrdenGaleria ? {
+          etiqueta: 'Orden de la galería',
+          onGuardar: onOrdenGaleria,
+          cabecera: (
+            <span className={s.filaOrden}>
+              <span>Foto</span>
+              <span>Ganador</span>
+              <span className={s.filaOrdenExtra}>Cuándo</span>
+            </span>
+          ),
+          fila: (g) => (
+            <span className={s.filaOrden}>
+              <FotoCelda src={g.foto} forma="circulo" tamano={40} />
+              <span className={s.filaOrdenTextos}>
+                <strong>{g.nombre}</strong>
+                {g.premio && <span className={l.sub}>{g.premio}</span>}
+              </span>
+              <span className={s.filaOrdenExtra}>{g.fecha || <span className={l.sub}>—</span>}</span>
+            </span>
+          ),
+        } : undefined}
         ordenes={{ orden: porOrden }}
         ordenInicial={{ por: 'orden', dir: 'asc' }}
         vacio={{ titulo: 'La galería está vacía', texto: 'Sube a los ganadores de antes con su premio y una foto.' }}
@@ -311,7 +358,7 @@ export function PaginaSuscripcionAdmin({
           nuevo: 'Agregar ganador',
           titulos: { nuevo: 'Ganador de antes', editar: 'Editar ganador' },
           textoGuardar: { nuevo: 'Agregar a la galería' },
-          vacio: ({ registros }) => ({ nombre: '', premio: '', foto: '', fecha: '', orden: registros.length }),
+          vacio: ({ registros }) => ({ nombre: '', premio: '', foto: '', fecha: '', orden: registros.reduce((x, g) => Math.max(x, (Number(g.orden) || 0) + 1), 0) }),
           desde: (g) => ({ ...g, id: undefined }),
           validar: (d) => ({ nombre: String(d.nombre).trim() ? undefined : 'Escribe el nombre del ganador.' }),
           campos: ({ datos: d, cambiar, errores, idDe }) => (
@@ -322,7 +369,7 @@ export function PaginaSuscripcionAdmin({
               </div>
               <Campo etiqueta="Qué ganó" placeholder="Ej. Casaca One Piece" value={d.premio} onChange={(e) => cambiar('premio', e.target.value)} />
               <CampoImagen etiqueta="Foto" valor={d.foto} onCambiar={(url) => cambiar('foto', url)} subir={subirImagen} recorte="circulo" forma="circulo" />
-              <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={d.orden} onChange={(e) => cambiar('orden', e.target.value)} />
+              {!onOrdenGaleria && <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={d.orden} onChange={(e) => cambiar('orden', e.target.value)} />}
             </GrupoCampos>
           ),
         }}

@@ -120,6 +120,13 @@ export function MisionesDelPanel() {
         await sinError(deleteMission(id));
         await invalidar(['admin-missions']);
       }}
+      // Ordenar: se numeran 1, 2, 3… y solo se escriben las que cambian.
+      onGuardarOrden={async (ids) => {
+        const antes = new Map((misiones.datos || []).map((m) => [m.id, m.order]));
+        const cambian = ids.map((id, i) => [id, i + 1]).filter(([id, n]) => antes.get(id) !== n);
+        await Promise.all(cambian.map(([id, order]) => sinError(updateMission(id, { order }))));
+        await invalidar(['admin-missions']);
+      }}
     />
   );
 }

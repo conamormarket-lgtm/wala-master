@@ -160,8 +160,10 @@ function VisitasDeReferente({ persona: p }) {
  *  - misiones: [misionDesdeFirestore] · verificaciones: [{ valor, texto }] (MISSION_ACTIONS)
  *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id)
  */
-export function PaginaMisionesAdmin({ misiones = [], verificaciones = [], cargando, error, onReintentar, onGuardar, onEliminar }) {
+export function PaginaMisionesAdmin({ misiones = [], verificaciones = [], cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden }) {
   const textoVerificacion = (v) => verificaciones.find((x) => x.valor === v)?.texto || v;
+  const comoSeComprueba = (m) => (m.verificacion ? textoVerificacion(m.verificacion) : <span className={l.sub}>La marca el cliente</span>);
+  const estadoDe = (m) => <InsigniaEstado estado={m.activa ? 'activo' : 'oculto'}>{m.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado>;
   return (
     <PaginaListaAdmin
       cabeza={{ icono: 'misiones', tono: 'rosa', titulo: 'Misiones diarias', subtitulo: 'Tareas cortas que el cliente completa cada día a cambio de monedas.' }}
@@ -177,10 +179,34 @@ export function PaginaMisionesAdmin({ misiones = [], verificaciones = [], cargan
       columnas={[
         { id: 'nombre', titulo: 'Misión', tarjeta: 'titulo', celda: (m) => <>{m.nombre}{m.descripcion && <span className={l.sub}>{m.descripcion}</span>}</> },
         { id: 'monedas', titulo: 'Da', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (m) => <span className={l.numero}>{entero(m.monedas)} monedas</span> },
-        { id: 'verificacion', titulo: 'Cómo se comprueba', tarjeta: 'detalle', celda: (m) => (m.verificacion ? textoVerificacion(m.verificacion) : <span className={l.sub}>La marca el cliente</span>) },
-        { id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (m) => m.orden },
-        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (m) => <InsigniaEstado estado={m.activa ? 'activo' : 'oculto'}>{m.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado> },
+        { id: 'verificacion', titulo: 'Cómo se comprueba', tarjeta: 'detalle', celda: comoSeComprueba },
+        ...(onGuardarOrden ? [] : [{ id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (m) => m.orden }]),
+        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: estadoDe },
       ]}
+      // Con onGuardarOrden se arrastra: es el orden de «Mi cuenta › Misiones».
+      ordenable={onGuardarOrden ? {
+        etiqueta: 'Orden de las misiones',
+        onGuardar: onGuardarOrden,
+        cabecera: (
+          <span className={s.filaMision}>
+            <span>Misión</span>
+            <span className={s.filaCuesta}>Da</span>
+            <span className={s.filaDa}>Cómo se comprueba</span>
+            <span className={s.filaEstado}>Estado</span>
+          </span>
+        ),
+        fila: (m) => (
+          <span className={s.filaMision}>
+            <span className={s.filaTextos}>
+              <strong>{m.nombre}</strong>
+              {m.descripcion && <span className={l.sub}>{m.descripcion}</span>}
+            </span>
+            <span className={`${s.filaCuesta} ${l.numero}`}>{entero(m.monedas)} monedas</span>
+            <span className={s.filaDa}>{comoSeComprueba(m)}</span>
+            <span className={s.filaEstado}>{estadoDe(m)}</span>
+          </span>
+        ),
+      } : undefined}
       ordenes={{ orden: porOrden }}
       ordenInicial={{ por: 'orden', dir: 'asc' }}
       vacio={{ titulo: 'Todavía no hay misiones', texto: 'La lista que ven tus clientes en «Mi cuenta › Misiones» se llena con las que actives aquí.' }}
@@ -192,7 +218,8 @@ export function PaginaMisionesAdmin({ misiones = [], verificaciones = [], cargan
         nuevo: 'Nueva misión',
         titulos: { nuevo: 'Nueva misión', editar: 'Editar misión' },
         textoGuardar: { nuevo: 'Crear misión' },
-        vacio: ({ registros }) => ({ nombre: '', descripcion: '', monedas: 0, orden: registros.length, activa: true, verificacion: '' }),
+        // Una nueva va al final.
+        vacio: ({ registros }) => ({ nombre: '', descripcion: '', monedas: 0, orden: registros.reduce((x, m) => Math.max(x, (Number(m.orden) || 0) + 1), 0), activa: true, verificacion: '' }),
         desde: (m) => ({ ...m }),
         validar: (d) => ({ nombre: String(d.nombre).trim() ? undefined : 'Escribe el título de la misión.' }),
         campos: ({ datos, cambiar, errores, idDe }) => (
@@ -201,9 +228,10 @@ export function PaginaMisionesAdmin({ misiones = [], verificaciones = [], cargan
               <Campo id={idDe('nombre')} etiqueta="Título" placeholder="Ej. Visita el Catálogo de Recompensas" value={datos.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
               <Campo etiqueta="Descripción" multilinea={3} placeholder="Una línea de qué tiene que hacer" value={datos.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
             </GrupoCampos>
-            <GrupoCampos titulo="Lo que da y dónde va" columnas={2}>
+            <GrupoCampos titulo={onGuardarOrden ? 'Lo que da' : 'Lo que da y dónde va'} columnas={onGuardarOrden ? 1 : 2}>
               <Campo etiqueta="Monedas" type="number" inputMode="numeric" min={0} sufijo="monedas" value={datos.monedas} onChange={(e) => cambiar('monedas', e.target.value)} />
-              <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />
+              {/* Con la lista para arrastrar, el orden no se escribe. */}
+              {!onGuardarOrden && <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />}
             </GrupoCampos>
             <GrupoCampos titulo="Cómo se comprueba">
               <Campo

@@ -240,6 +240,19 @@ export function SuscripcionDelPanel() {
         await sinError(deleteGanadorGaleria(id, ganadorId));
         await invalidar(['admin-suscripcion-galeria', id]);
       }}
+      // Ordenar arrastrando: se numeran 1, 2, 3… y solo se escriben los que cambian.
+      onOrdenBeneficios={async (ids) => {
+        const antes = new Map((beneficios.datos || []).map((b) => [b.id, Number(b.orden) || 0]));
+        const cambian = ids.map((bid, i) => [bid, i + 1]).filter(([bid, n]) => antes.get(bid) !== n);
+        await Promise.all(cambian.map(([bid, orden]) => sinError(updateBeneficio(id, bid, { orden }))));
+        await invalidar(['admin-suscripcion-beneficios', id]);
+      }}
+      onOrdenGaleria={async (ids) => {
+        const antes = new Map((galeria.datos || []).map((g) => [g.id, Number(g.orden) || 0]));
+        const cambian = ids.map((gid, i) => [gid, i + 1]).filter(([gid, n]) => antes.get(gid) !== n);
+        await Promise.all(cambian.map(([gid, orden]) => sinError(updateGanadorGaleria(id, gid, { orden }))));
+        await invalidar(['admin-suscripcion-galeria', id]);
+      }}
       // Cada pestaña sube a su carpeta de antes (los logos de las marcas o las fotos de la galería).
       subirImagen={pestana === 'galeria' ? subirGanadorGaleria : subirBeneficio}
     />
