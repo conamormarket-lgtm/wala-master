@@ -4,7 +4,7 @@ import { getBrands } from '../../services/brands';
 import { getProductTypes, createProductType } from '../../services/productTypes';
 import { getProducts, updateProductField } from '../../services/products';
 import { PaginaCategorias } from '../../componentes/kit/paginas/admin/Categorias';
-import { categoriaDesdeFirestore, categoriaAFirestore, marcaAdminDesdeFirestore, tiposParaSincronizar, tiposSugeridosDeCategorias } from '../../componentes/kit/adaptadoresAdmin';
+import { categoriaDesdeFirestore, categoriaAFirestore, marcaAdminDesdeFirestore, tiposParaSincronizar, tiposSugeridosDeCategorias, mismoNombre } from '../../componentes/kit/adaptadoresAdmin';
 import { useToast } from '../../componentes/kit/Feedback';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
@@ -37,6 +37,36 @@ export default function CategoriasDelPanel() {
       onReintentar={() => { categorias.onReintentar(); marcas.onReintentar(); }}
       tipos={(tipos.datos || []).map((t) => ({ id: t.id, nombre: t.name || t.id }))}
       tiposSugeridos={sugeridos}
+      // Ponerlos todos: crea los tipos que no existen, guarda cada categoría y
+      // les pasa el tipo a sus productos. Sigue aunque uno falle (los cuenta).
+      onPonerTipos={async (lista) => {
+        const existentes = (tipos.datos || []).map((t) => ({ id: t.id, nombre: t.name || '' }));
+        const idDe = new Map();
+        let fallaron = 0;
+        for (const nombre of [...new Set(lista.map((x) => x.tipo))]) {
+          const hay = existentes.find((t) => mismoNombre(t.nombre, nombre));
+          if (hay) { idDe.set(nombre, hay.id); continue; }
+          const r = await createProductType({ name: nombre });
+          if (r?.error || !(r?.data?.id || r?.id)) { fallaron += 1; continue; }
+          idDe.set(nombre, r.data?.id || r.id);
+        }
+        let hechas = 0;
+        let productosCambiados = 0;
+        for (const { id, tipo } of lista) {
+          const tipoId = idDe.get(tipo);
+          if (!tipoId) { fallaron += 1; continue; }
+          try {
+            await sinError(updateCategory(id, { productType: tipoId }));
+            hechas += 1;
+          } catch { fallaron += 1; continue; }
+          for (const p of tiposParaSincronizar(productos.datos || [], id, tipoId)) {
+            try { await updateProductField(p.id, { productType: p.productType }); productosCambiados += 1; } catch { fallaron += 1; }
+          }
+        }
+        await refrescar();
+        await invalidar(['admin-product-types'], ['productTypes'], ['admin-products'], ['products']);
+        return { categorias: hechas, productos: productosCambiados, fallaron };
+      }}
       onCrearTipo={async (nombre) => {
         // createDocument devuelve { id, error } (no { data }).
         const r = await createProductType({ name: String(nombre).trim() });

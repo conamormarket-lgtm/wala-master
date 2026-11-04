@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Aviso } from '../../Feedback';
 import Boton from '../../Boton';
 import { Campo } from '../../Formulario';
-import { GrupoCampos, CampoImagen } from '../../piezas/admin/Formularios';
-import { mismoNombre } from '../../adaptadoresAdmin';
+import { GrupoCampos, CampoImagen, HojaEdicion } from '../../piezas/admin/Formularios';
+import { mismoNombre, propuestaDeTipos, TIPOS_PROPUESTOS } from '../../adaptadoresAdmin';
+import { useToast } from '../../Feedback';
 import { PaginaListaAdmin } from './Lista';
 import s from './Categorias.module.css';
 import { FotoCelda, MarcasCelda, NumeroCelda, ElegirMarcas, porNombre, porOrden } from './celdas';
@@ -31,13 +32,78 @@ const SIN_TIPO = '__sin_tipo';
  *  - tipos: [{ id, nombre }] (productTypes) · onCrearTipo(nombre) → promesa con { id, nombre }
  *  - tiposSugeridos: Map id → tipo (el que ya tienen sus productos), para las que no tienen
  *  El tipo lo heredan sus productos: el admin se lo pone a todos al guardar.
+ *  - onPonerTipos([{ id, tipo: nombre del tipo }]) → promesa con { categorias, productos, fallaron }:
+ *    "Ponerlos todos" (la propuesta por nombre, para revisar y guardar de una vez;
+ *    los tipos que no existen se crean)
  */
-export function PaginaCategorias({ categorias = [], marcas = [], cargando = false, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, subirImagen, tipos = [], onCrearTipo, tiposSugeridos = new Map() }) {
+
+/*
+ * Revisar y poner el tipo a todas las categorías que no tienen: cada una con
+ * el propuesto por su nombre (o el de sus productos), que se cambia antes de
+ * guardar. Las que se dejan "Sin tipo" no se tocan.
+ */
+function HojaPonerTipos({ abierta, onCerrar, propuesta, tipos, onPonerTipos }) {
+  const toast = useToast();
+  const [elegidos, setElegidos] = useState({});
+  const valor = (c) => (c.id in elegidos ? elegidos[c.id] : c.tipo);
+  const nombres = [...new Set([...TIPOS_PROPUESTOS, ...tipos.map((t) => t.nombre), ...Object.values(elegidos).filter(Boolean)])];
+  const opciones = [{ valor: '', texto: 'Sin tipo' }, ...nombres.map((n) => ({ valor: n, texto: tipos.some((t) => mismoNombre(t.nombre, n)) ? n : `${n} (nuevo)` }))];
+  const van = propuesta.filter((c) => valor(c));
+  const guardar = async () => {
+    const r = await onPonerTipos(van.map((c) => ({ id: c.id, tipo: valor(c) })));
+    toast(r?.fallaron
+      ? { tipo: 'aviso', titulo: `${r.categorias} categorías con tipo; ${r.fallaron} cambios no se pudieron`, texto: 'Vuelve a intentar con las que quedaron sin tipo.' }
+      : { tipo: 'exito', titulo: `${r?.categorias ?? van.length} categorías con tipo`, texto: r?.productos ? `${r.productos} productos lo tomaron.` : undefined });
+    setElegidos({});
+    onCerrar();
+  };
+  return (
+    <HojaEdicion
+      abierta={abierta}
+      titulo="Poner el tipo a las categorías"
+      subtitulo="Propuesto por su nombre: cámbialo donde no sea. Sus productos lo toman al guardar."
+      onCerrar={() => { setElegidos({}); onCerrar(); }}
+      onGuardar={guardar}
+      sucio={Object.keys(elegidos).length > 0}
+      textoGuardar={van.length === 1 ? 'Guardar 1 tipo' : `Guardar ${van.length} tipos`}
+      puedeGuardar={van.length > 0}
+    >
+      <GrupoCampos titulo={`${propuesta.length} sin tipo`} ayuda="Las que dejes en «Sin tipo» quedan como están. Un tipo marcado (nuevo) se crea al guardar.">
+        <div className={s.ponerTipos}>
+          {propuesta.map((c) => (
+            <div key={c.id} className={s.ponerTipo}>
+              <span className={s.nombre}>{c.nombre}</span>
+              <Campo
+                opciones={opciones}
+                creable
+                value={valor(c)}
+                aria-label={`Tipo de ${c.nombre}`}
+                onChange={(e) => setElegidos((m) => ({ ...m, [c.id]: String(e.target.value || '').trim() }))}
+              />
+            </div>
+          ))}
+        </div>
+      </GrupoCampos>
+    </HojaEdicion>
+  );
+}
+export function PaginaCategorias({ categorias = [], marcas = [], cargando = false, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, subirImagen, tipos = [], onCrearTipo, tiposSugeridos = new Map(), onPonerTipos }) {
+  const [poniendo, setPoniendo] = useState(false);
   const sinMarca = categorias.filter((c) => !c.marcas.length).length;
-  const sinTipo = tipos.length ? categorias.filter((c) => !c.tipo).length : 0;
+  const sinTipo = tipos.length || onPonerTipos ? categorias.filter((c) => !c.tipo).length : 0;
   const nombreTipo = (id) => tipos.find((t) => t.id === id)?.nombre || '';
   const CeldaTipo = ({ c }) => (c.tipo ? <span>{nombreTipo(c.tipo) || 'Sin tipo'}</span> : <span className={s.sinTipo}>Sin tipo</span>);
   return (
+    <>
+    {onPonerTipos && (
+      <HojaPonerTipos
+        abierta={poniendo}
+        onCerrar={() => setPoniendo(false)}
+        propuesta={poniendo ? propuestaDeTipos(categorias, tipos, tiposSugeridos) : []}
+        tipos={tipos}
+        onPonerTipos={onPonerTipos}
+      />
+    )}
     <PaginaListaAdmin
       cabeza={{
         icono: 'categorias',
@@ -73,9 +139,14 @@ export function PaginaCategorias({ categorias = [], marcas = [], cargando = fals
           <Aviso
             tipo="aviso"
             titulo={sinTipo === 1 ? 'Una categoría no tiene tipo' : `${sinTipo} categorías no tienen tipo`}
-            accion={<Boton tamano="sm" variante="contorno" onClick={() => filtrar('tipo', SIN_TIPO)}>Verlas</Boton>}
+            accion={(
+              <span className={s.acciones}>
+                {onPonerTipos && <Boton tamano="sm" onClick={() => setPoniendo(true)}>Ponerlos todos</Boton>}
+                <Boton tamano="sm" variante="contorno" onClick={() => filtrar('tipo', SIN_TIPO)}>Verlas</Boton>
+              </span>
+            )}
           >
-            Sus productos no salen en el filtro «Tipo» de la tienda. Ábrelas y elige el suyo: lo toman todos sus productos.
+            Sus productos no salen en el filtro «Tipo» de la tienda. «Ponerlos todos» te propone el de cada una para revisar y guardar de una vez; sus productos lo toman.
           </Aviso>
         )}
         {sinMarca > 0 && valores.marca !== SIN_MARCA && (
@@ -174,5 +245,6 @@ export function PaginaCategorias({ categorias = [], marcas = [], cargando = fals
         ),
       }}
     />
+    </>
   );
 }

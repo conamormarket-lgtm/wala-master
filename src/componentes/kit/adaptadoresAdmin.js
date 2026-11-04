@@ -206,6 +206,44 @@ export function tiposParaSincronizar(productos = [], id, tipo = '') {
     .map((p) => ({ id: p.id, productType: tipo || '' }));
 }
 
+/*
+ * Los tipos que ve el cliente (el filtro «Tipo» de la tienda), por encima de
+ * las marcas. Se proponen por el nombre de la categoría; lo que no se
+ * reconoce queda para elegir a mano.
+ */
+export const TIPOS_PROPUESTOS = ['Ropa', 'Accesorios', 'Belleza', 'Hogar'];
+const PALABRAS_DE_TIPO = [
+  ['Belleza', ['serum', 'tratamiento', 'tonico', 'hidrat', 'limpiador', 'mascarilla', 'protector', 'solar', 'skincare', 'crema', 'maquill', 'belleza']],
+  ['Ropa', ['polo', 'polera', 'casaca', 'jogger', 'ropa', 'hoodie', 'camiseta', 'short', 'pantal', 'buzo', 'chompa', 'conjunto', 'pijama', 'medias']],
+  ['Hogar', ['comoda', 'mueble', 'cuadro', 'decora', 'hogar', 'vaso', 'termo', 'taza', 'oficina', 'cocina', 'almohad']],
+  ['Accesorios', ['accesorio', 'billetera', 'reloj', 'lente', 'joya', 'esclava', 'pulsera', 'collar', 'gorro', 'gorra', 'mochila', 'llavero', 'arete']],
+];
+// Los nombres de antes (Atributos › Tipos) → los de ahora.
+const TIPOS_DE_ANTES = { prenda: 'Ropa', ropa: 'Ropa', accesorio: 'Accesorios', accesorios: 'Accesorios', mueble: 'Hogar', hogar: 'Hogar', belleza: 'Belleza' };
+
+/** 'Ropa' | 'Accesorios' | 'Belleza' | 'Hogar' | '' (no se reconoce por el nombre). */
+export function tipoPorNombreDeCategoria(nombre = '') {
+  const n = normalizarBusqueda(nombre);
+  const hallado = PALABRAS_DE_TIPO.find(([, palabras]) => palabras.some((p) => n.includes(p)));
+  return hallado ? hallado[0] : '';
+}
+
+/**
+ * La propuesta para poner el tipo a las categorías que no tienen: por su
+ * nombre y, si no se reconoce, por el tipo que ya tenían sus productos.
+ *  - categorias: [{ id, nombre, tipo }] · tipos: [{ id, nombre }] (los de Firestore)
+ *  - sugeridos: Map categoría → id de tipo (tiposSugeridosDeCategorias)
+ * → [{ id, nombre, tipo: nombre propuesto o '' }]
+ */
+export function propuestaDeTipos(categorias = [], tipos = [], sugeridos = new Map()) {
+  const nombreDe = (id) => tipos.find((t) => t.id === id)?.nombre || '';
+  return categorias.filter((c) => !c.tipo).map((c) => {
+    const porNombre = tipoPorNombreDeCategoria(c.nombre);
+    const deSusProductos = TIPOS_DE_ANTES[normalizarBusqueda(nombreDe(sugeridos.get(c.id)))] || '';
+    return { id: c.id, nombre: c.nombre, tipo: porNombre || deSusProductos };
+  });
+}
+
 /**
  * El tipo que sugiere una categoría sin tipo: el que más tienen sus productos
  * (los de antes lo ponían a mano). Map id → tipo.
