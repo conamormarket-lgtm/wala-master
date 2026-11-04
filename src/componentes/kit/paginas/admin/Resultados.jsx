@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronRight, RefreshCw } from 'lucide-react';
+import { Activity, ChevronRight, Clock, MonitorSmartphone, MousePointerClick, RefreshCw, Wrench } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio } from '../../Feedback';
 import { Buscador, Interruptor } from '../../Formulario';
@@ -130,7 +130,7 @@ export function PaginaResumenResultados({
       )}
       {otros && <p className={s.nota}><strong>Otros cobros: {otros.montos}</strong> ({otros.detalle}). No son pedidos de la tienda, por eso van aparte.</p>}
       {!datos.diasConResultados && (
-        <Aviso tipo="aviso" compacto>Los pedidos y las ventas de este periodo todavía no están sumados. Se cuentan desde el 24/10/2026; para los días anteriores, usa «Reconstruir el resumen diario» en Detalle técnico.</Aviso>
+        <Aviso tipo="aviso" compacto>Los pedidos y las ventas de este periodo todavía no están sumados. Se cuentan desde el 24/10/2026; para los días anteriores, usa Detalle técnico › Mantenimiento.</Aviso>
       )}
       {comparar && !hayAnterior && <Aviso tipo="info" compacto>{mayuscula(periodo.contra)} todavía no tiene pedidos ni ventas sumados: no se puede comparar.</Aviso>}
 
@@ -236,7 +236,7 @@ export function PaginaProductosResultados({ datos, cargando = false, error, prod
   return (
     <div className={s.resumen} data-componente="PaginaProductosResultados">
       {!datos.diasConResultados && (
-        <Aviso tipo="aviso" compacto>Ventas, interés, deseos y Crear se suman desde el 24/10/2026. Para los días anteriores, usa «Reconstruir el resumen diario» en Detalle técnico.</Aviso>
+        <Aviso tipo="aviso" compacto>Ventas, interés, deseos y Crear se suman desde el 24/10/2026. Para los días anteriores, usa Detalle técnico › Mantenimiento.</Aviso>
       )}
       <ColumnasMetricas>
         <BloqueMetrica titulo="Más vistos" ayuda="Veces que abrieron la ficha del producto.">
@@ -507,20 +507,22 @@ export function PaginaOpinionesResultados({ encuesta = 'entregas', onEncuesta, c
 /* ── D4d · Detalle técnico ────────────────────────────── */
 
 export const PANTALLAS_TECNICAS = [
-  { id: 'mapa-de-calor', titulo: 'Mapa de calor', texto: 'Dónde hacen clic, página por página.' },
-  { id: 'paginas', titulo: 'Páginas y tiempo', texto: 'Las páginas más vistas, por día, y el seguimiento de pedidos.' },
-  { id: 'uso', titulo: 'Uso y permanencia', texto: 'Funciones más usadas, cuánto bajan en cada página y dónde se quedan más.' },
-  { id: 'navegador', titulo: 'Navegador y sistema', texto: 'Chrome, Safari…, Android, iPhone, Windows y regiones.' },
+  { id: 'mapa-de-calor', titulo: 'Mapa de calor', texto: 'Dónde hacen clic, página por página.', Icono: MousePointerClick, tono: 'rosa' },
+  { id: 'paginas', titulo: 'Páginas y tiempo', texto: 'Las páginas más vistas, por día, y el seguimiento de pedidos.', Icono: Clock, tono: 'cielo' },
+  { id: 'uso', titulo: 'Uso y permanencia', texto: 'Funciones más usadas, cuánto bajan en cada página y dónde se quedan más.', Icono: Activity, tono: 'menta' },
+  { id: 'navegador', titulo: 'Navegador y sistema', texto: 'Chrome, Safari…, Android, iPhone, Windows y regiones.', Icono: MonitorSmartphone, tono: 'oro' },
 ];
 
 /**
  * Detalle técnico (solo admin): la calidad de los datos, las pantallas
- * técnicas y las dos reconstrucciones.
+ * técnicas y, plegado en Mantenimiento, reconstruir el resumen diario (solo
+ * hace falta si cambia cómo se mide). "Recalcular compras de antes de medir"
+ * salió el 2026-11-04: era de una sola vez (sus estimados siguen en cada ficha).
  *  - datos (useDashboardAnalytics: calidad, visitas) · rutaDe(id) → to de cada pantalla
  *  - onReconstruirTramo({ fromDay, toDay }) → { processed, ok } (aggregateAnalyticsDailyBackfill)
- *  - onRecalcular() → promesa (rebuildHistoricalAnalyticsSummary) · hoy (Date, para las pruebas)
+ *  - hoy (Date, para las pruebas)
  */
-export function PaginaDetalleTecnico({ datos, rutaDe = (id) => id, onReconstruirTramo, onRecalcular, hoy }) {
+export function PaginaDetalleTecnico({ datos, rutaDe = (id) => id, onReconstruirTramo, hoy }) {
   const [inicio] = useState(() => hoy || new Date());
   const [rango, setRango] = useState(() => ultimosDias(30, inicio));
   const filas = filasDeCalidad(datos?.calidad, datos?.visitas);
@@ -560,11 +562,12 @@ export function PaginaDetalleTecnico({ datos, rutaDe = (id) => id, onReconstruir
         </BloqueMetrica>
         <BloqueMetrica titulo="Pantallas técnicas">
           <ul className={s.pantallas}>
-            {PANTALLAS_TECNICAS.map((x) => (
-              <li key={x.id}>
-                <Enlace to={rutaDe(x.id)} className={s.pantalla}>
-                  <span><strong>{x.titulo}</strong><span>{x.texto}</span></span>
-                  <ChevronRight aria-hidden="true" />
+            {PANTALLAS_TECNICAS.map(({ id, titulo, texto, Icono, tono }) => (
+              <li key={id}>
+                <Enlace to={rutaDe(id)} className={s.pantalla}>
+                  <span className={`${s.pantallaIcono} ${s[`tono_${tono}`] || ''}`}><Icono aria-hidden="true" /></span>
+                  <span className={s.pantallaTextos}><strong>{titulo}</strong><span>{texto}</span></span>
+                  <ChevronRight aria-hidden="true" className={s.pantallaFlecha} />
                 </Enlace>
               </li>
             ))}
@@ -572,33 +575,37 @@ export function PaginaDetalleTecnico({ datos, rutaDe = (id) => id, onReconstruir
         </BloqueMetrica>
       </ColumnasMetricas>
 
-      <PasoAdmin
-        numero={1}
-        titulo="Reconstruir el resumen diario"
-        boton={{ texto: 'Reconstruir' }}
-        onEjecutar={reconstruir}
-        deshabilitado={!ayuda.valido}
-        motivo={ayuda.valido ? undefined : ayuda.texto}
-        contenido={(
-          <div className={s.reconstruir}>
-            <div className={s.atajos} role="group" aria-label="Atajos de rango">
-              <Boton tamano="sm" variante="contorno" onClick={() => setRango(ultimosDias(30, inicio))}>Últimos 30 días</Boton>
-              <Boton tamano="sm" variante="contorno" onClick={() => setRango(ultimosDias(90, inicio))}>Últimos 90 días</Boton>
+      {/* Mantenimiento: cerrado, porque casi nunca hace falta. */}
+      <details className={s.mantenimiento}>
+        <summary>
+          <Wrench aria-hidden="true" />
+          <span><strong>Mantenimiento</strong><span>Reconstruir el resumen diario. Solo hace falta si cambia cómo se mide o para sumar días anteriores al 24/10/2026.</span></span>
+          <ChevronRight aria-hidden="true" className={s.mantenimientoFlecha} />
+        </summary>
+        <PasoAdmin
+          numero={1}
+          titulo="Reconstruir el resumen diario"
+          boton={{ texto: 'Reconstruir' }}
+          onEjecutar={reconstruir}
+          deshabilitado={!ayuda.valido}
+          motivo={ayuda.valido ? undefined : ayuda.texto}
+          contenido={(
+            <div className={s.reconstruir}>
+              <div className={s.atajos} role="group" aria-label="Atajos de rango">
+                <Boton tamano="sm" variante="contorno" onClick={() => setRango(ultimosDias(30, inicio))}>Últimos 30 días</Boton>
+                <Boton tamano="sm" variante="contorno" onClick={() => setRango(ultimosDias(90, inicio))}>Últimos 90 días</Boton>
+              </div>
+              <div className={s.fechasDos}>
+                <CampoFecha etiqueta="Desde" valor={rango.desde} max={rango.hasta} onCambiar={(v) => setRango((r) => ({ ...r, desde: v }))} />
+                <CampoFecha etiqueta="Hasta" valor={rango.hasta} min={rango.desde} max={ultimosDias(1, inicio).hasta} onCambiar={(v) => setRango((r) => ({ ...r, hasta: v }))} />
+              </div>
+              {ayuda.valido && <span className={s.nota}>{ayuda.texto}</span>}
             </div>
-            <div className={s.fechasDos}>
-              <CampoFecha etiqueta="Desde" valor={rango.desde} max={rango.hasta} onCambiar={(v) => setRango((r) => ({ ...r, desde: v }))} />
-              <CampoFecha etiqueta="Hasta" valor={rango.hasta} min={rango.desde} max={ultimosDias(1, inicio).hasta} onCambiar={(v) => setRango((r) => ({ ...r, hasta: v }))} />
-            </div>
-            {ayuda.valido && <span className={s.nota}>{ayuda.texto}</span>}
-          </div>
-        )}
-      >
-        Vuelve a sumar los días elegidos con lo que registró la tienda (después de un cambio en cómo se mide). Solo reconstruye la analítica: no toca pedidos ni precios.
-      </PasoAdmin>
-
-      <PasoAdmin numero={2} titulo="Recalcular compras de antes de medir" boton={{ texto: 'Recalcular' }} onEjecutar={async () => { await onRecalcular?.(); return 'Listo.'; }}>
-        Estima, con los pedidos del ERP, lo que compró cada cliente antes de que la tienda midiera (sale en su ficha).
-      </PasoAdmin>
+          )}
+        >
+          Vuelve a sumar los días elegidos con lo que registró la tienda. Solo reconstruye la analítica: no toca pedidos ni precios.
+        </PasoAdmin>
+      </details>
     </div>
   );
 }

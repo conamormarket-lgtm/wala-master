@@ -1397,7 +1397,6 @@ function PanelDePrueba() {
             datos={vacio ? {} : datosRes}
             rutaDe={(id) => `/admin/resultados/tecnico/${id}`}
             onReconstruirTramo={async () => { await espera(450); fallar('El servidor tardó demasiado (es una prueba).'); return { processed: 10, ok: 10 }; }}
-            onRecalcular={async () => { await espera(900); fallar(); }}
           />
         ) : resPestana === 'visitantes' ? (
           <PaginaVisitantesResultados

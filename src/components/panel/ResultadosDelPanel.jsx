@@ -116,6 +116,9 @@ export default function ResultadosDelPanel() {
   return (
     <MarcoResultados
       {...marco}
+      // Comparar solo cambia el Resumen (sus cifras y la tabla): en las demás pestañas no sale.
+      comparar={actual?.end ? marco.comparar : false}
+      onComparar={actual?.end ? marco.onComparar : undefined}
       pestanas={pestanas.map((p) => ({ id: p.to, texto: p.label }))}
       pestana={actual?.to}
       onPestana={(to) => navigate({ pathname: to, search: filtros.filtersSearch })}

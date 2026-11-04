@@ -3,7 +3,6 @@ import { useOutletContext } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import HeatmapViewer from '../dashboard/HeatmapViewer';
-import { rebuildHistoricalAnalyticsSummary } from '../../services/adminAnalyticsBackfill';
 import { deriveAppUsage } from '../../services/analytics/derive';
 import {
   fetchHeatmapBatches, aggregateHeatmapBatches, versionesDesdePaginas, ANCHOS_PANTALLA,
@@ -39,6 +38,9 @@ function MarcoTecnico({ filtros, consulta, titulo, queHace, controles, children 
   return (
     <MarcoResultados
       {...marco}
+      // Las pantallas técnicas no comparan: sin el interruptor.
+      comparar={false}
+      onComparar={undefined}
       titulo={titulo}
       queHace={queHace}
       migas={[
@@ -55,11 +57,10 @@ function MarcoTecnico({ filtros, consulta, titulo, queHace, controles, children 
 
 /**
  * Detalle técnico (pestaña): la calidad de los datos, las cuatro pantallas
- * y las dos reconstrucciones (BackfillAnaliticaButton y RecalcularEstimado).
+ * y reconstruir el resumen diario (BackfillAnaliticaButton), en Mantenimiento.
  */
 export function DetalleTecnicoDelPanel() {
   const { filtros, analitica } = useOutletContext();
-  const queryClient = useQueryClient();
   return (
     <PaginaDetalleTecnico
       datos={analitica.data}
@@ -69,11 +70,6 @@ export function DetalleTecnicoDelPanel() {
       onReconstruirTramo={async (tramo) => {
         const res = await httpsCallable(getFunctions(), 'aggregateAnalyticsDailyBackfill', { timeout: 540000 })(tramo);
         return res.data;
-      }}
-      onRecalcular={async () => {
-        const { error } = await rebuildHistoricalAnalyticsSummary();
-        if (error) throw new Error(String(error?.message || error));
-        queryClient.invalidateQueries({ queryKey: ['admin-analytics-user-detail'] });
       }}
     />
   );

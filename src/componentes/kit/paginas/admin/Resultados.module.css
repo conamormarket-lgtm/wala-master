@@ -213,44 +213,163 @@
 
 .pantallas {
   display: grid;
-  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.6rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* Cada pantalla: una tarjeta con su ícono; al pasar, el borde se pinta y la flecha avanza. */
 .pantalla {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.6rem 0.75rem;
+  gap: 0.75rem;
+  height: 100%;
+  padding: 0.85rem 0.9rem;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
+  background: var(--color-surface);
   color: inherit;
   text-decoration: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.pantalla > span {
+.pantalla:hover {
+  border-color: var(--violet-300);
+  box-shadow: 0 10px 24px -18px rgba(91, 33, 182, 0.55);
+  transform: translateY(-1px);
+}
+
+.pantalla:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.pantallaIcono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.pantallaIcono svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.tono_rosa { background: rgba(236, 72, 153, 0.12); color: #db2777; }
+.tono_cielo { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
+.tono_menta { background: rgba(16, 185, 129, 0.12); color: #059669; }
+.tono_oro { background: rgba(245, 158, 11, 0.14); color: #d97706; }
+
+.pantallaTextos {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
-.pantalla strong {
-  font-size: 0.9rem;
+.pantallaTextos strong {
+  font-size: 0.92rem;
+  font-weight: 800;
 }
 
-.pantalla span span {
+.pantallaTextos span {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.pantallaFlecha {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-text-muted);
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+.pantalla:hover .pantallaFlecha {
+  color: var(--primary-color);
+  transform: translateX(2px);
+}
+
+/* Mantenimiento: plegado; al abrirlo, el paso de reconstruir. */
+.mantenimiento {
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.mantenimiento > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mantenimiento > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mantenimiento > summary:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.mantenimiento > summary > svg:first-child {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--color-text-muted);
+}
+
+.mantenimiento > summary > span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.mantenimiento > summary strong {
+  font-size: 0.92rem;
+}
+
+.mantenimiento > summary span span {
   color: var(--color-text-muted);
   font-size: 0.8rem;
 }
 
-.pantalla svg {
-  flex: none;
+.mantenimientoFlecha {
   width: 1rem;
   height: 1rem;
   color: var(--color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.mantenimiento[open] .mantenimientoFlecha {
+  transform: rotate(90deg);
+}
+
+.mantenimiento[open] > summary {
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 18px 18px 0 0;
+}
+
+.mantenimiento > :not(summary) {
+  margin: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pantalla,
+  .pantallaFlecha,
+  .mantenimientoFlecha {
+    transition: none;
+  }
 }
 
 .pantalla:hover {

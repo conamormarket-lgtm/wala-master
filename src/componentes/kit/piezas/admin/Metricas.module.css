@@ -284,6 +284,39 @@
   min-width: 0;
 }
 
+/* Comparar con el periodo anterior: una pastilla aparte, violeta cuando compara. */
+.comparar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.comparar label {
+  gap: 0.75rem;
+}
+
+.compararIcono {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-text-muted);
+  transition: color 160ms ease;
+}
+
+.compararActivo {
+  border-color: var(--violet-300);
+  background: var(--primary-light);
+}
+
+.compararActivo .compararIcono {
+  color: var(--primary-color);
+}
+
 .segmentos {
   display: flex;
   gap: 0.2rem;

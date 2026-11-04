@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { ChevronDown, ImageOff, Info } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown, ImageOff, Info } from 'lucide-react';
 import { Hueso } from '../../Esqueletos';
 import { CampoFecha } from '../../Fecha';
 import { Interruptor } from '../../Formulario';
@@ -168,7 +168,13 @@ export function SelectorPeriodo({ opciones = [], valor, onCambiar, desde = '', h
           <CampoFecha etiqueta="Hasta" valor={hasta} min={desde || undefined} max={max} onCambiar={(v) => onFechas?.(desde, v)} />
         </div>
       )}
-      {onComparar && <Interruptor etiqueta={textoComparar} activo={Boolean(comparar)} onChange={onComparar} />}
+      {/* Comparar: solo donde sirve (quien usa el selector no pasa onComparar en el resto). */}
+      {onComparar && (
+        <div className={[s.comparar, comparar && s.compararActivo].filter(Boolean).join(' ')}>
+          <ArrowLeftRight aria-hidden="true" className={s.compararIcono} />
+          <Interruptor etiqueta={textoComparar} activo={Boolean(comparar)} onChange={onComparar} />
+        </div>
+      )}
     </div>
   );
 }
