@@ -17,7 +17,7 @@ import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from
 import { PasosCompra, ResumenCompra, MetodoPago } from '../piezas/Checkout';
 import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
 import { TextoResaltado } from '../piezas/TextoResaltado';
-import { topeMonedasCheckout } from '../../../utils/topeMonedas';
+import { topeMonedasCheckout, repartoTopeCupon } from '../../../utils/topeMonedas';
 import s from './Checkout.module.css';
 
 /*
@@ -41,12 +41,16 @@ const cuentasDe = ({ items, usar, saldo, cupon, reglaEnvio }) => {
   // Tope de monedas: el de la marca de cada producto (topeMonedas: un % o
   // monedas por producto; sin él, la mitad). La misma cuenta que hace el
   // servidor al preparar el pago.
-  const maximo = topeMonedasCheckout(items.map((it) => ({ importe: it.precio * it.cantidad, cantidad: it.cantidad, tope: it.topeMonedas })));
+  const tope = topeMonedasCheckout(items.map((it) => ({ importe: it.precio * it.cantidad, cantidad: it.cantidad, tope: it.topeMonedas })));
+  // Monedas + cupón no pasan ese tope: el cupón va primero y las monedas usan lo
+  // que quede (repartoTopeCupon, la misma regla del servidor).
+  const reparto = repartoTopeCupon({ topeMonedas: tope, descuentoCupon: cupon?.descuento, tipoCupon: cupon?.tipo, envioGratis: cupon?.envioGratis });
+  const maximo = reparto.maxMonedas;
   const descuentoMonedas = usar ? Math.min(saldo || 0, maximo) : 0;
-  const descuentoCupon = cupon?.envioGratis ? 0 : cupon?.descuento || 0;
+  const descuentoCupon = reparto.descuentoCupon;
   const envioBase = subtotal > reglaEnvio.gratisDesde ? 0 : reglaEnvio.costo;
   const envio = cupon?.envioGratis ? 0 : envioBase;
-  return { subtotal, maximo, descuentoMonedas, envioBase, envio, total: Math.max(0, subtotal - descuentoMonedas - descuentoCupon) + envio };
+  return { subtotal, maximo, tope, descuentoMonedas, descuentoCupon, envioBase, envio, total: Math.max(0, subtotal - descuentoMonedas - descuentoCupon) + envio };
 };
 
 const correoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c || '').trim());
@@ -233,7 +237,7 @@ export function PaginaCheckout({
     try {
       const datos = {
         direccion, correo: pedirCorreo ? correo.trim() : perfil.email, guardar: modo === 'formulario' && guardar,
-        regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: cupon?.codigo, total: cuentas.total,
+        regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: cupon?.codigo, descuentoCupon: cuentas.descuentoCupon, total: cuentas.total,
       };
       const r = await onPreparar?.(datos);
       preparados.current = datos;
@@ -330,7 +334,8 @@ export function PaginaCheckout({
               items={items}
               subtotal={cuentas.subtotal}
               descuentoMonedas={cuentas.descuentoMonedas}
-              cupon={cupon}
+              // El cupón con lo que de verdad descuenta (recortado al tope de la marca).
+              cupon={cupon && { ...cupon, descuento: cuentas.descuentoCupon }}
               envio={cuentas.envio}
               gratisDesde={reglaEnvio.gratisDesde}
               total={cuentas.total}
@@ -340,7 +345,7 @@ export function PaginaCheckout({
               /* Ya en el pago, el cupón queda como se preparó (para cambiarlo, "Cambiar el envío"). */
               cupones={onCupon && (paso === 0 || cupon) ? {
                 aplicado: cupon,
-                onAplicar: async (c) => setCupon(await onCupon(c, { subtotal: cuentas.subtotal - cuentas.descuentoMonedas, subtotalProductos: cuentas.subtotal, envio: cuentas.envioBase })),
+                onAplicar: async (c) => setCupon(await onCupon(c, { subtotal: cuentas.subtotal, subtotalProductos: cuentas.subtotal, envio: cuentas.envioBase })),
                 onQuitar: paso === 0 ? () => setCupon(null) : undefined,
               } : undefined}
               pie={(

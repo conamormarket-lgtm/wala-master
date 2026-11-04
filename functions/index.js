@@ -32,7 +32,7 @@ const {
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
-const { totalEsperadoCheckout, toleranciaCheckout } = require("./checkoutTotals");
+const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon } = require("./checkoutTotals");
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
@@ -512,6 +512,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
 
     let descuentoCupon = 0;
     let envioGratis = false;
+    let tipoCupon = "";
     if (uid && cuponCode) {
       const encontrado = await buscarCupon(uid, cuponCode, t);
       const motivoCupon = motivoRechazo(encontrado && encontrado.cupon);
@@ -523,15 +524,23 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
         const items = Object.values(orderPayload.productos || {}).map((p) => ({
           productId: p && p.productoId, qty: p && p.cantidad, precio: p && p.precio, personalizado: true,
         }));
+        // La base es el subtotal entero, como al validar el cupón (validarCuponSecure
+        // con un carrito de catálogo): con la base rebajada por las monedas, un cupón
+        // de % valía menos al pagar que al aplicarlo y el total no cuadraba. El tope
+        // de monedas + cupón lo pone repartoTopeCupon.
         const calculo = await calcularDescuentoCupon(encontrado.cupon, {
           items,
-          subtotal: Math.max(0, subtotal - monedasPedidas),
+          subtotal,
           subtotalProductos: subtotal,
         });
         envioGratis = envioGratis || calculo.envioGratis;
         descuentoCupon = calculo.envioGratis ? 0 : calculo.descuento;
+        tipoCupon = encontrado.cupon.tipo || "";
       }
     }
+    // Monedas + cupón no pasan el tope de la marca (checkoutTotals.repartoTopeCupon).
+    const reparto = repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis });
+    descuentoCupon = reparto.descuentoCupon;
 
     // ── Monedas ──
     const historial = Array.isArray(u.historialMonedasEspera) ? [...u.historialMonedasEspera] : [];
@@ -546,10 +555,12 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     }
     if (monedasPedidas > 0) {
       // El % de cada marca (Admin → Marcas); sin marca, la mitad.
-      const tope = topeMonedas;
+      // Con cupón, lo que quede del tope después de él.
+      const tope = reparto.maxMonedas;
       if (monedasPedidas > tope) {
-        throw new functions.https.HttpsError("failed-precondition",
-          `En este pedido puedes usar hasta ${tope} monedas. Recarga la página.`);
+        throw new functions.https.HttpsError("failed-precondition", descuentoCupon > 0
+          ? `Con tu cupón puedes usar hasta ${tope} monedas en este pedido. Quita las monedas o el cupón y vuelve a intentar.`
+          : `En este pedido puedes usar hasta ${tope} monedas. Recarga la página.`);
       }
       const disponibles = (Number(u.monedas) || 0) + liberar;
       if (disponibles < monedasPedidas) {

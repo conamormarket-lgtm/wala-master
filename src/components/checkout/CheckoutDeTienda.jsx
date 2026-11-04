@@ -289,7 +289,7 @@ export default function CheckoutDeTienda() {
     // Un cupón que no resta nada en este carrito no se aplica: se consumiría para nada.
     if (!res.descuento) throw new Error(res.aviso || 'Este cupón no descuenta nada en este carrito.');
     const cupon = {
-      codigo, descuento: res.descuento, envioGratis: res.envioGratis,
+      codigo, descuento: res.descuento, envioGratis: res.envioGratis, tipo: res.cupon?.tipo || '',
       texto: res.cupon?.texto || res.cupon?.titulo || '', aviso: res.aviso || '',
     };
     cuponRef.current = cupon;
@@ -314,9 +314,10 @@ export default function CheckoutDeTienda() {
     const subtotal = getTotalPrice();
     const discount = datos.monedas || 0;
     const cupon = datos.cupon && cuponRef.current?.codigo === datos.cupon ? cuponRef.current : null;
-    const cuponAplicado = cupon ? { code: cupon.codigo, descuento: cupon.descuento, envioGratis: cupon.envioGratis } : null;
     const cuponEnvioGratis = Boolean(cupon?.envioGratis);
-    const descuentoCupon = cuponEnvioGratis ? 0 : (cupon?.descuento || 0);
+    // Lo que de verdad descuenta: el kit lo recorta al tope de la marca (monedas + cupón).
+    const descuentoCupon = cuponEnvioGratis ? 0 : (datos.descuentoCupon ?? cupon?.descuento ?? 0);
+    const cuponAplicado = cupon ? { code: cupon.codigo, descuento: descuentoCupon, envioGratis: cupon.envioGratis } : null;
     const shipping = cuponEnvioGratis ? 0 : costoEnvio(subtotal);
     const total = Math.max(0, subtotal - discount - descuentoCupon) + shipping;
     // El teléfono con el código del país: fuera del Perú (en el Perú, el número tal cual, como antes).

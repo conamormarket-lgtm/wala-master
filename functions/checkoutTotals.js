@@ -79,10 +79,29 @@ function topeMonedasCheckout(lineas) {
   return Math.floor(suma + 1e-9);
 }
 
+// Monedas + cupón juntos no pasan el tope de la marca (2026-11-04): antes el
+// cupón se sumaba encima y un pedido de S/ 200 en una marca al 50 % podía
+// salir con 70 % de descuento. El cupón va primero (es un premio de una vez;
+// las monedas que sobran sirven en otra compra del mes):
+//  - un cupón de productos descuenta como mucho el tope; "producto_gratis" es
+//    un regalo entero y no se recorta;
+//  - el envío gratis no toca el precio de los productos (no cuenta);
+//  - las monedas, hasta lo que quede del tope.
+function repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis }) {
+  const tope = Math.max(0, Number(topeMonedas) || 0);
+  const crudo = envioGratis ? 0 : Math.max(0, Number(descuentoCupon) || 0);
+  const cupon = tipoCupon === "producto_gratis" ? crudo : Math.min(crudo, tope);
+  return {
+    descuentoCupon: Math.round(cupon * 100) / 100,
+    maxMonedas: Math.max(0, Math.floor(tope - cupon + 1e-9)),
+  };
+}
+
 // Margen para redondeos: cada línea de catálogo puede diferir en ±0,01 del
 // precio del servidor (verificarPreciosYStock lo tolera).
 const toleranciaCheckout = (unidades) => 0.05 + 0.01 * Math.max(0, Number(unidades) || 0);
 
 module.exports = {
   totalEsperadoCheckout, topeMonedasCheckout, pctMonedasDeMarca, topeDeMarca, TOPE_MONEDAS_PCT_POR_DEFECTO, toleranciaCheckout,
+  repartoTopeCupon,
 };
