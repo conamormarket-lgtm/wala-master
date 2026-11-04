@@ -394,6 +394,7 @@ test('resultados: las listas de Productos y de Visitantes', () => {
   assert.equal(v.paisAproximado, true);
   assert.deepEqual(v.paises.map((p) => [p.nombre, p.texto]), [['Perú', '75%'], ['No se sabe', '25%']]);
   assert.deepEqual(v.dispositivos.map((p) => p.nombre), ['Celular', 'Computadora']);
+  assert.deepEqual(m2.listasDeVisitantes({ byCountry: [{ name: 'PE', count: 3 }, { name: 'US', count: 1 }] }).paises.map((p) => p.nombre), ['Perú', 'Estados Unidos']);
 });
 
 test('resultados: carritos, cumpleaños y la ficha de un cliente', () => {

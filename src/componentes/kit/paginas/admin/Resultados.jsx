@@ -12,7 +12,7 @@ import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin } from '../../piezas/admin/Datos';
 import { HojaEdicion } from '../../piezas/admin/Formularios';
 import { FichaCliente, ListaCumpleanos } from '../../piezas/admin/Clientes';
-import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras } from '../../piezas/admin/Metricas';
+import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras, VerTodos } from '../../piezas/admin/Metricas';
 import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from '../../piezas/admin/Resultados';
 import {
@@ -225,7 +225,9 @@ export function PaginaProductosResultados({ datos, cargando = false, error, prod
         whatsapp: crudo && telefono && permiso ? urlWhatsApp(telefono, mensajeProductoVisto(nombre, crudo)) : null,
         motivo: cargandoPerfiles ? 'Cargando…' : !telefono ? 'Sin teléfono' : !permiso ? 'No aceptó WhatsApp' : '—',
       };
-    }), [datos?.interes?.pares, perfiles, soloConPermiso, productoDe, cargandoPerfiles]);
+    })
+    // Primero a quien se le puede escribir: lo útil queda arriba aunque la lista se cierre.
+    .sort((a, b) => Number(Boolean(b.whatsapp)) - Number(Boolean(a.whatsapp))), [datos?.interes?.pares, perfiles, soloConPermiso, productoDe, cargandoPerfiles]);
 
   const estado = EstadoDePestana({ cargando, error, datos });
   if (estado) return estado;
@@ -254,7 +256,7 @@ export function PaginaProductosResultados({ datos, cargando = false, error, prod
           <ListaBarras filas={listas.masMirados} vacio="Sin tiempo registrado en fichas de producto." />
           <div className={s.interesados}>
             <Interruptor etiqueta="Solo quienes aceptaron WhatsApp" activo={soloConPermiso} onChange={setSoloConPermiso} />
-            <ListaInteresados personas={interesados} vacio={soloConPermiso ? 'Nadie de este periodo aceptó recibir mensajes por WhatsApp.' : 'Nadie con cuenta se quedó mirando un producto.'} />
+            <ListaInteresados personas={interesados} inicial={8} vacio={soloConPermiso ? 'Nadie de este periodo aceptó recibir mensajes por WhatsApp.' : 'Nadie con cuenta se quedó mirando un producto.'} />
           </div>
         </ColumnasMetricas>
       </BloqueMetrica>
@@ -320,7 +322,7 @@ export function PaginaVisitantesResultados({ datos, cargando = false, error }) {
       </BloqueMetrica>
       <ColumnasMetricas>
         <BloqueMetrica titulo="País" ayuda={v.paisAproximado ? 'Aproximado por la hora del dispositivo (días anteriores a medir el país).' : undefined}>
-          <ListaBarras filas={v.paises} vacio="Sin datos de país en este periodo." />
+          <ListaBarras filas={v.paises} max={40} inicial={6} unidad={['país', 'países']} vacio="Sin datos de país en este periodo." />
         </BloqueMetrica>
         <BloqueMetrica titulo="Con qué entran">
           <ListaBarras filas={v.dispositivos} vacio="Sin datos de dispositivo en este periodo." />
@@ -332,6 +334,9 @@ export function PaginaVisitantesResultados({ datos, cargando = false, error }) {
 }
 
 /* ── D4c · Clientes y Opiniones ───────────────────────── */
+
+/* Los carritos que se ven antes de "Ver los N carritos". */
+const CARRITOS_INICIAL = 8;
 
 const solesCentimos = (c) => `S/ ${((Number(c) || 0) / 100).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fechaHoraCorta = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -367,6 +372,7 @@ export function PaginaClientesResultados({
   const [abierto, setAbierto] = useState(null);
   const [preguntando, setPreguntando] = useState(false);
   const [preparando, setPreparando] = useState('');
+  const [todosCarritos, setTodosCarritos] = useState(false);
   const buscando = texto.trim().length >= 2;
 
   // Espera a que deje de escribir antes de buscar (una consulta, no una por letra).
@@ -378,7 +384,9 @@ export function PaginaClientesResultados({
   const carritos = useMemo(() => (datos?.abandonedCarts || []).map((c) => ({
     id: c.id, quien: quienDelCarrito(c, perfiles?.get?.(c.uid)), valor: solesCentimos(c.lastCartValue), cuando: fechaHoraCorta(c.abandonedAtMs),
     ...contactoDelCarrito(c, perfiles?.get?.(c.uid), cargandoPerfiles),
-  })), [datos?.abandonedCarts, perfiles, cargandoPerfiles]);
+  }))
+    // Primero a quien se le puede escribir; después, los demás (cada grupo, del más nuevo).
+    .sort((a, b) => Number(Boolean(b.whatsapp)) - Number(Boolean(a.whatsapp))), [datos?.abandonedCarts, perfiles, cargandoPerfiles]);
   const cumples = useMemo(() => cumpleanosDe(cumpleanos?.proximosCumpleanos), [cumpleanos]);
   const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
 
@@ -406,7 +414,7 @@ export function PaginaClientesResultados({
       <BloqueMetrica titulo="Carritos abandonados" ayuda="Agregaron productos y no terminaron el pedido. El botón abre WhatsApp con el mensaje listo; lo envías tú.">
         <TablaAdmin
           etiqueta="Carritos abandonados"
-          filas={carritos}
+          filas={todosCarritos ? carritos : carritos.slice(0, CARRITOS_INICIAL)}
           nombreDe={(c) => c.quien}
           vacio={{ titulo: 'Ningún carrito abandonado', texto: 'Nadie dejó su carrito en este periodo.' }}
           columnas={[
@@ -421,6 +429,7 @@ export function PaginaClientesResultados({
             },
           ]}
         />
+        <VerTodos total={carritos.length} inicial={CARRITOS_INICIAL} abierto={todosCarritos} onCambiar={setTodosCarritos} unidad={['carrito', 'carritos']} />
       </BloqueMetrica>
 
       <ColumnasMetricas>
@@ -436,7 +445,7 @@ export function PaginaClientesResultados({
           {cargandoClientes ? <SinDatos>Cargando clientes…</SinDatos> : errorClientes ? <SinDatos>No se pudieron cargar: {errorClientes}</SinDatos> : !clientes.length ? (
             !buscando && <SinDatos>Todavía no hay clientes.</SinDatos>
           ) : (
-            <ul className={s.clientes}>
+            <ul className={s.clientes} tabIndex={0} aria-label="Clientes">
               {clientes.map((c) => (
                 <li key={c.uid}>
                   <button type="button" className={abierto?.uid === c.uid ? s.clienteActivo : s.cliente} onClick={() => abrir(c)}>

@@ -1333,11 +1333,12 @@ const cuentaDe = (n, uno, varios) => `${enteroPE(n)} ${Number(n) === 1 ? uno : v
 const pctDe = (parte, total) => (total > 0 ? Math.round((parte / total) * 100) : 0);
 
 /** Las listas de la pestaña Productos. medida: 'ingresos' | 'unidades' (cómo se ordenan los vendidos). */
-export function listasDeProductos({ datos = {}, productoDe = (id, n) => ({ nombre: n || 'Producto sin nombre', imagen: '' }), nombreCategoria = (id) => id, medida = 'ingresos' } = {}) {
+export function listasDeProductos({ datos = {}, productoDe = (id, n) => ({ nombre: n || 'Producto que ya no está', imagen: '' }), nombreCategoria = (id) => id, medida = 'ingresos' } = {}) {
   const d = datos || {};
+  // Sin nombre: el producto se borró (ya no está en el catálogo ni lo guardó el evento).
   const producto = (id, n) => {
     const p = productoDe(id, n) || {};
-    return { nombre: p.nombre || n || 'Producto sin nombre', imagen: p.imagen || '' };
+    return { nombre: p.nombre || n || 'Producto que ya no está', imagen: p.imagen || '' };
   };
   const vistos = lista(d.topProducts).map((p) => ({ id: p.productId || p.name, ...producto(p.productId, p.name), valor: p.total, texto: cuentaDe(p.total, 'vista', 'vistas') }));
   const vendidos = lista(d.topVendidos).map((p) => ({
@@ -1389,8 +1390,10 @@ export function listasDeVisitantes(datos = {}) {
   const d = datos || {};
   const v = d.visitas || {};
   const visitas = v.total?.total || 0;
-  const paises = conPorcentaje(d.byCountry);
-  const aprox = paises.length ? [] : conPorcentaje(d.byCountryAprox);
+  // Con su nombre (Perú, Estados Unidos…), no el código.
+  const conNombreDePais = (filas) => conPorcentaje(filas).map((f) => ({ ...f, nombre: /^[A-Za-z]{2}$/.test(f.nombre) ? nombreDePais(f.nombre) : f.nombre }));
+  const paises = conNombreDePais(d.byCountry);
+  const aprox = paises.length ? [] : conNombreDePais(d.byCountryAprox);
   return {
     cifras: [
       { id: 'visitas', nombre: 'Visitas', valor: enteroPE(visitas) },

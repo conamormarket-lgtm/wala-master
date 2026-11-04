@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { ImageOff, Info } from 'lucide-react';
+import { ChevronDown, ImageOff, Info } from 'lucide-react';
 import { Hueso } from '../../Esqueletos';
 import { CampoFecha } from '../../Fecha';
 import { Interruptor } from '../../Formulario';
@@ -80,6 +80,21 @@ export function BloqueMetrica({ titulo, ayuda, acciones, id, children }) {
   );
 }
 
+/**
+ * "Ver los 32" / "Ver menos" bajo una lista larga: así una tarjeta no estira
+ * la página (y la de al lado no parece vacía).
+ *  - total · inicial (cuántos se ven cerrada) · abierto · onCambiar(bool) · unidad: ['carrito', 'carritos']
+ */
+export function VerTodos({ total = 0, inicial = 0, abierto = false, onCambiar, unidad = ['más', 'más'] }) {
+  if (total <= inicial) return null;
+  return (
+    <button type="button" className={s.verTodos} aria-expanded={abierto} onClick={() => onCambiar?.(!abierto)}>
+      {abierto ? 'Ver menos' : `Ver ${total === 1 ? 'el' : 'los'} ${total} ${total === 1 ? unidad[0] : unidad[1]}`}
+      <ChevronDown aria-hidden="true" className={abierto ? s.verTodosAbierto : undefined} />
+    </button>
+  );
+}
+
 /** Dos bloques lado a lado cuando hay ancho; uno debajo del otro en el celular. */
 export function ColumnasMetricas({ children }) {
   return <div className={s.columnas}>{children}</div>;
@@ -95,12 +110,16 @@ export const SinDatos = ({ children }) => <p className={s.sinDatos}>{children}</
  *    (con `imagen` en la fila, sale su foto, aunque esté vacía)
  *  - max (10) · tono: 'violeta' | 'menta' · vacio (texto)
  *  - conCeros: también las filas en 0 (los pasos de un embudo, las estrellas)
+ *  - inicial: cuántas se ven antes de "Ver todos" (sin él, todas las de max) · unidad: ['país', 'países']
  */
-export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false }) {
-  const visibles = filas.filter((f) => conCeros || Number(f.valor) > 0).slice(0, max);
-  if (!visibles.length || !visibles.some((f) => Number(f.valor) > 0)) return <SinDatos>{vacio}</SinDatos>;
-  const tope = Math.max(...visibles.map((f) => Number(f.valor) || 0)) || 1;
+export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false, inicial, unidad }) {
+  const [abierta, setAbierta] = useState(false);
+  const todas = filas.filter((f) => conCeros || Number(f.valor) > 0).slice(0, max);
+  if (!todas.length || !todas.some((f) => Number(f.valor) > 0)) return <SinDatos>{vacio}</SinDatos>;
+  const tope = Math.max(...todas.map((f) => Number(f.valor) || 0)) || 1;
+  const visibles = inicial && !abierta ? todas.slice(0, inicial) : todas;
   return (
+    <>
     <ol className={`${s.barras} ${s[`barras_${tono}`] || ''}`} data-componente="ListaBarras">
       {visibles.map((f) => (
         <li key={f.id ?? f.nombre} className={s.barraFila}>
@@ -120,6 +139,8 @@ export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'S
         </li>
       ))}
     </ol>
+    {inicial ? <VerTodos total={todas.length} inicial={inicial} abierto={abierta} onCambiar={setAbierta} unidad={unidad} /> : null}
+    </>
   );
 }
 

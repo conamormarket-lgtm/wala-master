@@ -224,11 +224,48 @@
   font-size: 0.8rem;
 }
 
+/* Lado a lado con la misma altura: la más corta no deja un hueco debajo. */
 .columnas {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 0.9rem;
+}
+
+.verTodos {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.verTodos:hover {
+  background: var(--primary-light);
+}
+
+.verTodos:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.verTodos svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 160ms ease;
+}
+
+.verTodosAbierto {
+  transform: rotate(180deg);
 }
 
 .sinDatos {

@@ -5,7 +5,7 @@ import { Confirmar } from '../../Feedback';
 import { Campo } from '../../Formulario';
 import { Enlace } from '../../Enlace';
 import { Etiqueta } from '../../Etiquetas';
-import { BloqueMetrica, SinDatos } from './Metricas';
+import { BloqueMetrica, SinDatos, VerTodos } from './Metricas';
 import s from './Resultados.module.css';
 
 /*
@@ -101,13 +101,16 @@ export function ListaEnVivo({ personas = [], max = 10 }) {
  * Quién se quedó mirando un producto (30 segundos o más), para escribirle
  * mientras lo tiene en mente.
  *  - personas: [{ id, nombre, producto, tiempo ('2m 5s'), vistoMs, whatsapp (url) | motivo ('Sin teléfono') }]
- *  - vacio (texto)
+ *  - vacio (texto) · inicial: cuántas se ven antes de "Ver todas" (sin él, todas)
  */
-export function ListaInteresados({ personas = [], vacio = 'Nadie con cuenta se quedó mirando un producto.' }) {
+export function ListaInteresados({ personas = [], vacio = 'Nadie con cuenta se quedó mirando un producto.', inicial }) {
+  const [abierta, setAbierta] = useState(false);
   if (!personas.length) return <SinDatos>{vacio}</SinDatos>;
+  const visibles = inicial && !abierta ? personas.slice(0, inicial) : personas;
   return (
+    <>
     <ul className={s.interesados} data-componente="ListaInteresados">
-      {personas.map((p) => (
+      {visibles.map((p) => (
         <li key={p.id}>
           <span className={s.interesadoTextos}>
             <strong>{p.nombre}</strong>
@@ -120,6 +123,8 @@ export function ListaInteresados({ personas = [], vacio = 'Nadie con cuenta se q
         </li>
       ))}
     </ul>
+    {inicial ? <VerTodos total={personas.length} inicial={inicial} abierto={abierta} onCambiar={setAbierta} unidad={['persona', 'personas']} /> : null}
+    </>
   );
 }
 
