@@ -10,7 +10,7 @@ import {
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, referentesDesde, misionDesdeFirestore, misionAFirestore,
-  retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
+  retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, PaginaCanjesAdmin, canjesDesde, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
   PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
   PaginaSorteosAdmin, PaginaSorteoAdmin, sorteoDesdeFirestore, sorteoAFormulario, participanteDesde,
@@ -383,6 +383,12 @@ const REFERIDOS_DEMO = [
   ['VALE', 'purchased', { visitanteNombre: 'Diego Fernández', orderId: 'WALA-01806', orderTotal: 75 }],
   ['ANA2026', 'ineligible', { linkId: 'x', visitanteNombre: 'Ana Pérez', orderId: 'WALA-01760', orderTotal: 60 }],
 ].map(([referrerCode, status, extra], i) => referidoDesdeFirestore({ id: `ref-${i}`, referrerCode, status, createdAt: Date.now() - 86400000 * (i * 3 + 1), tipo: 'tienda', ...(extra || {}) }, estimarDemo));
+const CANJES_DEMO = [
+  { id: 'cj1', titulo: 'Pack de stickers Kapi', code: 'WALA-K7P2QX', status: 'active', creadoMs: Date.now() - 3600000 * 5, cliente: { nombre: 'Rosa Huamán', telefono: '987654321' } },
+  { id: 'cj2', titulo: '15% de descuento', tipo: 'descuento', code: 'WALA-M3RT8Z', status: 'active', expiraEn: '2099-01-01', creadoMs: Date.now() - 86400000 * 2, cliente: { nombre: 'Kevin Ramos', telefono: '912345678' } },
+  { id: 'cj3', titulo: 'Envío gratis en tu próximo pedido', tipo: 'envio_gratis', code: 'WALA-A9BC4D', status: 'used', orderId: 'WALA-01806', creadoMs: Date.now() - 86400000 * 6, cliente: { nombre: 'Diego Fernández' } },
+  { id: 'cj4', titulo: 'Pack de stickers Kapi', code: 'WALA-Z2XY7W', status: 'used', creadoMs: Date.now() - 86400000 * 9, entregadoMs: Date.now() - 86400000 * 8, entregadoPor: 'admin@wala.pe', cliente: { email: 'luis@correo.pe' } },
+];
 const REFERENTES_DEMO = { ANA2026: { nombre: 'Ana Pérez', uid: 'a' }, LUIS77: { nombre: 'Luis Torres', uid: 'l' } };
 const VERIFICACIONES_DEMO = [
   { valor: 'visit_catalogo_recompensas', texto: 'Visitó el Catálogo de Recompensas' }, { valor: 'visit_mis_cupones', texto: 'Visitó Mis Cupones' },
@@ -803,6 +809,7 @@ function PanelDePrueba() {
   const [diasAviso, setDiasAviso] = useState([7, 1]);
   const [paquetes, setPaquetes] = useState(PAQUETES_DEMO);
   const [recompensas, guardarRecompensaCruda, eliminarRecompensa, setRecompensas] = useListaDemo(RECOMPENSAS_DEMO, falla);
+  const [canjesDemo, setCanjesDemo] = useState(CANJES_DEMO);
   const [retos, guardarRetoCrudo, eliminarReto] = useListaDemo(RETOS_DEMO, falla);
   const [retoActivo, setRetoActivo] = useState(() => retoActivoDesde(RETOS_DEMO[0], new Date(Date.now() - 86400000 * 2)));
   const [evidencias, setEvidencias] = useState(() => [
@@ -1412,10 +1419,34 @@ function PanelDePrueba() {
     );
   } else if (ruta === '/admin/referidos') {
     pagina = <PaginaReferidosAdmin referidos={vacio ? [] : REFERIDOS_DEMO} personas={vacio ? [] : referentesDesde(REFERIDOS_DEMO, REFERENTES_DEMO)} cargando={con('cargando')} error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined} onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))} />;
-  } else if (ruta === '/admin/recompensas') {
-    pagina = (
+  } else if (rutaSola === '/admin/recompensas') {
+    const enCanjes = ruta.endsWith('?ver=canjes');
+    const canjesVista = canjesDesde(vacio ? [] : canjesDemo, '2026-11-04');
+    const pestanasRecompensas = (
+      <Pestanas
+        opciones={[{ id: 'catalogo', texto: `Catálogo · ${recompensas.length}` }, { id: 'canjes', texto: `Canjes · ${canjesVista.filter((c) => c.estado === 'porEntregar').length} por entregar` }]}
+        valor={enCanjes ? 'canjes' : 'catalogo'}
+        onChange={(v) => setRuta(v === 'canjes' ? '/admin/recompensas?ver=canjes' : '/admin/recompensas')}
+        etiqueta="Qué lista"
+      />
+    );
+    pagina = enCanjes ? (
+      <PaginaCanjesAdmin
+        pestanas={pestanasRecompensas}
+        canjes={canjesVista}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))}
+        onEntregar={async (id, entregado) => {
+          await espera(600);
+          if (falla) throw new Error('Sin conexión con el servidor (es una prueba).');
+          setCanjesDemo((l) => l.map((c) => (c.id === id ? { ...c, status: entregado ? 'used' : 'active', entregadoMs: entregado ? Date.now() : null, entregadoPor: entregado ? 'tú' : '' } : c)));
+        }}
+      />
+    ) : (
       <PaginaRecompensasAdmin
         {...comunes}
+        pestanas={pestanasRecompensas}
         recompensas={vacio ? [] : recompensas}
         productos={PRODUCTOS}
         subirImagen={subir}

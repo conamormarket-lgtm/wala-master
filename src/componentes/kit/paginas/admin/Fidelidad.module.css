@@ -139,6 +139,20 @@
   }
 }
 
+/* Canjes: la insignia con su fecha y los botones de la fila. */
+.canjeEstado {
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+}
+
+.canjeAcciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
 .revisar {
   display: flex;
   flex-wrap: wrap;

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, query, getDocs, orderBy, where, deleteField } from '../../services/firebase/observed';
@@ -9,11 +10,13 @@ import { getMissions, createMission, updateMission, deleteMission } from '../../
 import { getRewards, createReward, updateReward, deleteReward } from '../../services/rewardsCatalog';
 import { getProducts } from '../../services/products';
 import { MISSION_ACTIONS } from '../../constants/missionActions';
+import { limaTodayStr } from '../../utils/fechaLima';
+import { Pestanas } from '../../componentes/kit/Navegacion';
 import {
-  PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin,
+  PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin, PaginaCanjesAdmin,
 } from '../../componentes/kit/paginas/admin/Fidelidad';
 import {
-  referidoDesdeFirestore, referentesDesde, misionDesdeFirestore, misionAFirestore, retoDesdeFirestore, retoAFirestore,
+  referidoDesdeFirestore, referentesDesde, canjesDesde, misionDesdeFirestore, misionAFirestore, retoDesdeFirestore, retoAFirestore,
   retoActivoDesde, evidenciaDesde, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, productoAdminDesde,
 } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
@@ -189,15 +192,68 @@ const subirImagen = subirA('rewards', 'cropped');
  * «Mi cuenta»). Los productos para elegir: el catálogo de la tienda
  * (getProducts sin ocultos, como el BuscadorProducto de antes).
  */
+/** Catálogo · Canjes, arriba de las dos pestañas de /admin/recompensas. */
+function PestanasRecompensas({ ver, cuentas }) {
+  const navigate = useNavigate();
+  return (
+    <Pestanas
+      opciones={[
+        { id: 'catalogo', texto: `Catálogo${cuentas.catalogo != null ? ` · ${cuentas.catalogo}` : ''}` },
+        { id: 'canjes', texto: `Canjes${cuentas.porEntregar ? ` · ${cuentas.porEntregar} por entregar` : ''}` },
+      ]}
+      valor={ver}
+      onChange={(v) => navigate(v === 'canjes' ? '/admin/recompensas?ver=canjes' : '/admin/recompensas')}
+      etiqueta="Qué lista"
+    />
+  );
+}
+
+/** Los canjes los da el servidor: userCoupons solo lo lee su dueño. */
+const leerCanjes = async () => {
+  const res = await httpsCallable(getFunctions(), 'canjesRecompensasSecure')({});
+  return res.data?.canjes || [];
+};
+
+/** /admin/recompensas?ver=canjes: quién canjeó qué; lo manual se marca entregado. */
+function CanjesDelPanel({ pestanas, canjes }) {
+  const invalidar = useInvalidar();
+  return (
+    <PaginaCanjesAdmin
+      pestanas={pestanas}
+      canjes={canjes.data || []}
+      cargando={canjes.isLoading}
+      error={canjes.error ? canjes.error.message || 'No se pudieron cargar los canjes.' : undefined}
+      onReintentar={() => canjes.refetch()}
+      onEntregar={async (id, entregado) => {
+        await httpsCallable(getFunctions(), 'entregarCanjeSecure')({ id, entregado });
+        await invalidar(['admin-canjes']);
+      }}
+    />
+  );
+}
+
 export function RecompensasDelPanel() {
+  const [searchParams] = useSearchParams();
+  const ver = searchParams.get('ver') === 'canjes' ? 'canjes' : 'catalogo';
+  const canjesCrudos = useQuery({ queryKey: ['admin-canjes'], queryFn: leerCanjes, staleTime: 60 * 1000 });
+  const canjes = useMemo(() => canjesDesde(canjesCrudos.data || [], limaTodayStr()), [canjesCrudos.data]);
   const recompensas = useLectura(['admin-rewards'], getRewards);
   const productos = useLectura(['admin-recompensas-productos'], () => getProducts(), { staleTime: 5 * 60 * 1000 });
   const invalidar = useInvalidar();
   const refrescar = () => invalidar(['admin-rewards'], ['rewards']);
   const lista = useMemo(() => (productos.datos || []).map(productoAdminDesde).filter(Boolean), [productos.datos]);
 
+  const pestanas = (
+    <PestanasRecompensas
+      ver={ver}
+      cuentas={{ catalogo: recompensas.datos?.length, porEntregar: canjes.filter((c) => c.estado === 'porEntregar').length }}
+    />
+  );
+  if (ver === 'canjes') return <CanjesDelPanel pestanas={pestanas} canjes={{ ...canjesCrudos, data: canjes }} />;
+
   return (
     <PaginaRecompensasAdmin
+      pestanas={pestanas}
       recompensas={(recompensas.datos || []).map(recompensaAdminDesdeFirestore)}
       productos={lista}
       subirImagen={subirImagen}

@@ -2029,6 +2029,63 @@ export function erroresDeRecompensa(r = {}) {
   };
 }
 
+/*
+ * Canjes del catálogo (Recompensas › Canjes): lo que dio canjesRecompensasSecure.
+ * Los que se entregan a mano (cupón sin tipo) están por entregar hasta que el
+ * equipo los marca; los de descuento y envío los usa el cliente en el carrito.
+ */
+export const ESTADOS_CANJE = {
+  porEntregar: { texto: 'Por entregar', tono: 'aviso' },
+  entregado: { texto: 'Entregado', tono: 'exito' },
+  sinUsar: { texto: 'Cupón sin usar', tono: 'violeta', ayuda: 'Lo aplica el cliente en el carrito' },
+  usado: { texto: 'Cupón usado', tono: 'exito' },
+  vencido: { texto: 'Venció', tono: 'neutro' },
+};
+
+/** wa.me sin el +: 9 dígitos de Perú llevan el 51 delante. */
+const whatsappDeTelefono = (tel) => {
+  const d = String(tel || '').replace(/\D/g, '');
+  if (d.length < 7) return '';
+  return `https://wa.me/${d.length === 9 ? `51${d}` : d}`;
+};
+
+/** hoy: 'AAAA-MM-DD' de Lima (los cupones vencen por día, como en el servidor). */
+export function canjeDesde(c = {}, hoy = '') {
+  const manual = !c.tipo;
+  const usado = c.status === 'used' || Boolean(c.orderId);
+  const estado = manual
+    ? (usado ? 'entregado' : 'porEntregar')
+    : (usado ? 'usado' : c.expiraEn && hoy && c.expiraEn < hoy ? 'vencido' : 'sinUsar');
+  const cliente = c.cliente || {};
+  return {
+    id: c.id,
+    codigo: c.code || '',
+    recompensa: c.titulo || 'Recompensa',
+    manual,
+    estado,
+    creadoMs: c.creadoMs || null,
+    entregadoMs: c.entregadoMs || null,
+    entregadoPor: c.entregadoPor || '',
+    pedido: c.orderId || '',
+    cliente: cliente.nombre || cliente.email || 'Cliente sin nombre',
+    telefono: cliente.telefono || '',
+    email: cliente.email || '',
+    whatsapp: whatsappDeTelefono(cliente.telefono),
+  };
+}
+
+/** Primero los que hay que entregar; después, del más nuevo al más viejo. */
+export function canjesDesde(lista_ = [], hoy = '') {
+  return lista(lista_).map((c) => canjeDesde(c, hoy))
+    .sort((a, b) => (b.estado === 'porEntregar') - (a.estado === 'porEntregar') || (b.creadoMs || 0) - (a.creadoMs || 0));
+}
+
+export function resumenCanjes(canjes = []) {
+  const l = lista(canjes);
+  const de = (e) => l.filter((c) => c.estado === e).length;
+  return { porEntregar: de('porEntregar'), entregados: de('entregado'), sinUsar: de('sinUsar'), usados: de('usado'), total: l.length };
+}
+
 /* ── D5c · Fechas importantes ─────────────────────────── */
 
 /*

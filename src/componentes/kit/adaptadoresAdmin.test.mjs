@@ -473,6 +473,20 @@ test('pantallas técnicas: origen, tráfico por día, seguimiento, uso y navegad
   assert.equal(n.diasSinPais, 4);
 });
 
+test('canjes: por entregar primero, cupones y vencidos', () => {
+  const c = m2.canjesDesde([
+    { id: 'a', titulo: '15%', tipo: 'descuento', status: 'active', expiraEn: '2026-10-01', creadoMs: 300, cliente: { nombre: 'Ana', telefono: '987 654 321' } },
+    { id: 'b', titulo: 'Stickers', status: 'active', creadoMs: 100, cliente: { email: 'luis@x.pe', telefono: '+51 912345678' } },
+    { id: 'c', titulo: 'Stickers', status: 'used', creadoMs: 200, entregadoMs: 250, cliente: {} },
+    { id: 'd', titulo: 'Envío', tipo: 'envio_gratis', status: 'used', orderId: 'P1', creadoMs: 400 },
+  ], '2026-11-04');
+  assert.deepEqual(c.map((x) => [x.id, x.estado, x.cliente]), [['b', 'porEntregar', 'luis@x.pe'], ['d', 'usado', 'Cliente sin nombre'], ['a', 'vencido', 'Ana'], ['c', 'entregado', 'Cliente sin nombre']]);
+  assert.equal(c[0].whatsapp, 'https://wa.me/51912345678');
+  assert.equal(c[2].whatsapp, 'https://wa.me/51987654321');
+  assert.equal(c[3].whatsapp, '');
+  assert.deepEqual(m2.resumenCanjes(c), { porEntregar: 1, entregados: 1, sinUsar: 0, usados: 1, total: 4 });
+});
+
 test('fidelidad: referidos, misiones y retos', () => {
   const estimar = (total) => Math.round(total * (total > 200 ? 0.1 : 0.05));
   const r = [

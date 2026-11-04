@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, ExternalLink, Rocket, X } from 'lucide-react';
+import { Check, ExternalLink, MessageCircle, Rocket, Undo2, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio, HojaInferior, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
@@ -11,7 +11,7 @@ import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, porOrden } from './celdas';
 import {
-  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
+  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, ESTADOS_CANJE, resumenCanjes, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
   TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, erroresDeRecompensa,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -421,13 +421,14 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
  *  - subirImagen(blob, { alAvanzar }) → url · cargando · error · onReintentar
  *  - onGuardar(datos, id?) · onEliminar(id)
  */
-export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden }) {
+export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, pestanas }) {
   const tipoTexto = (v) => TIPOS_RECOMPENSA.find((x) => x.valor === v)?.texto || v;
   const queDa = (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</>;
   const estadoDe = (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado>;
   return (
     <PaginaListaAdmin
       cabeza={{ icono: 'recompensas', tono: 'rosa', titulo: 'Recompensas', subtitulo: 'Lo que tus clientes canjean con sus monedas en «Mi cuenta».' }}
+      antes={pestanas}
       registros={recompensas}
       cargando={cargando}
       error={error}
@@ -552,3 +553,112 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subir
     />
   );
 }
+
+/* ── Canjes de recompensas ─────────────────────────────── */
+
+/**
+ * Recompensas › Canjes: quién canjeó qué. Lo que se entrega a mano (el pack
+ * de stickers) queda por entregar hasta que alguien lo marca; los cupones de
+ * descuento y envío los usa el cliente en el carrito (aquí solo se ven).
+ *  - canjes: [canjesDesde] · cargando · error · onReintentar
+ *  - onEntregar(id, entregado) → promesa · pestanas: un nodo debajo de la cabecera
+ */
+export function PaginaCanjesAdmin({ canjes = [], cargando = false, error, onReintentar, onEntregar, pestanas }) {
+  const toast = useToast();
+  const [busqueda, setBusqueda] = useState('');
+  const [estado, setEstado] = useState('');
+  const [visibles, setVisibles] = useState(PASO);
+  const [procesando, setProcesando] = useState(null);
+  const [deshacer, setDeshacer] = useState(null);
+  const r = useMemo(() => resumenCanjes(canjes), [canjes]);
+  const filtrados = useMemo(() => {
+    const q = normalizarBusqueda(busqueda);
+    return canjes.filter((c) => (!estado || c.estado === estado) && (!q || normalizarBusqueda(
+      `${c.cliente} ${c.email} ${c.telefono} ${c.codigo} ${c.recompensa}`,
+    ).includes(q)));
+  }, [canjes, busqueda, estado]);
+
+  const marcar = async (c, entregado) => {
+    setProcesando(c.id);
+    try {
+      await onEntregar(c.id, entregado);
+      toast({ tipo: 'exito', titulo: entregado ? 'Marcado como entregado' : 'Vuelve a estar por entregar', texto: `${c.recompensa} · ${c.cliente}` });
+    } catch (e) {
+      toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: e?.message || 'Inténtalo otra vez.' });
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  return (
+    <div className={s.pagina} data-componente="PaginaCanjesAdmin">
+      <CabezaAdmin icono="recompensas" tono="rosa" titulo="Recompensas" subtitulo="Lo que tus clientes canjean con sus monedas en «Mi cuenta»." />
+      {pestanas}
+      <Aviso tipo="info" compacto>
+        Lo que se entrega a mano (como el pack de stickers) queda aquí por entregar: escríbele al cliente, coordina el envío y márcalo entregado. Los cupones de descuento y de envío gratis los usa el cliente solo, en el carrito.
+      </Aviso>
+      <FilaCifras etiqueta="Resumen de canjes">
+        <Cifra nombre="Por entregar" valor={entero(r.porEntregar)} tono="aviso" cargando={cargando} />
+        <Cifra nombre="Entregados" valor={entero(r.entregados)} tono="exito" cargando={cargando} />
+        <Cifra nombre="Cupones sin usar" valor={entero(r.sinUsar)} tono="violeta" cargando={cargando} />
+        <Cifra nombre="Cupones usados" valor={entero(r.usados)} tono="neutro" cargando={cargando} />
+      </FilaCifras>
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={(t) => { setBusqueda(t); setVisibles(PASO); }}
+        placeholder="Buscar por cliente, teléfono, código o recompensa"
+        filtros={[{ id: 'estado', etiqueta: 'Estado', todos: 'Todos', opciones: Object.entries(ESTADOS_CANJE).map(([valor, e]) => ({ valor, texto: e.texto })), valor: estado }]}
+        onFiltro={(_, v) => { setEstado(v); setVisibles(PASO); }}
+        total={cargando || error ? undefined : filtrados.length}
+        unidad={['canje', 'canjes']}
+      />
+      <TablaAdmin
+        etiqueta="Canjes"
+        filas={filtrados.slice(0, visibles)}
+        nombreDe={(c) => `${c.recompensa} de ${c.cliente}`}
+        cargando={cargando}
+        error={error}
+        onReintentar={onReintentar}
+        vacio={canjes.length ? { titulo: 'Ningún canje coincide', texto: 'Prueba con otro estado o busca otra cosa.' } : { titulo: 'Todavía nadie canjeó', texto: 'Cuando un cliente canjee una recompensa con sus monedas, aparece aquí.' }}
+        columnas={[
+          { id: 'cliente', titulo: 'Cliente', tarjeta: 'titulo', celda: (c) => <>{c.cliente}<span className={l.sub}>{c.telefono || c.email || 'Sin teléfono'}</span></> },
+          { id: 'recompensa', titulo: 'Recompensa', tarjeta: 'detalle', celda: (c) => <>{c.recompensa}<span className={l.sub}>Código <code className={s.codigo}>{c.codigo}</code></span></> },
+          { id: 'fecha', titulo: 'Canjeó', ancho: 140, tarjeta: 'detalle', celda: (c) => <span className={l.sub}><span className={l.soloTarjeta}>Canjeó el </span>{fechaHora(c.creadoMs)}</span> },
+          {
+            id: 'estado', titulo: 'Estado', ancho: 170, tarjeta: 'estado',
+            celda: (c) => (
+              <span className={s.canjeEstado}>
+                <InsigniaEstado estado={c.estado} estados={ESTADOS_CANJE} />
+                {c.estado === 'entregado' && c.entregadoMs && <span className={l.sub}>{fecha(c.entregadoMs)}{c.entregadoPor && ` · ${c.entregadoPor}`}</span>}
+                {c.pedido && <span className={l.sub}>Pedido {c.pedido}</span>}
+              </span>
+            ),
+          },
+          {
+            id: 'acciones', titulo: '', ancho: 260, alinear: 'fin', tarjeta: 'control',
+            celda: (c) => (c.manual ? (
+              <span className={s.canjeAcciones}>
+                {c.whatsapp && c.estado === 'porEntregar' && (
+                  <Boton tamano="sm" variante="contorno" icono={<MessageCircle aria-hidden="true" />} to={c.whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp</Boton>
+                )}
+                {c.estado === 'porEntregar'
+                  ? <Boton tamano="sm" icono={<Check aria-hidden="true" />} cargando={procesando === c.id} onClick={() => marcar(c, true)}>Entregado</Boton>
+                  : <Boton tamano="sm" variante="fantasma" icono={<Undo2 aria-hidden="true" />} disabled={procesando === c.id} onClick={() => setDeshacer(c)}>Deshacer</Boton>}
+              </span>
+            ) : null),
+          },
+        ]}
+      />
+      <CargarMas visibles={Math.min(visibles, filtrados.length)} total={filtrados.length} paso={PASO} onMas={() => setVisibles((v) => v + PASO)} unidad={['canje', 'canjes']} />
+      <Confirmar
+        abierta={Boolean(deshacer)}
+        titulo="¿Volver a «por entregar»?"
+        texto={deshacer ? `${deshacer.recompensa} de ${deshacer.cliente} vuelve a la lista de por entregar, y su cupón vuelve a estar activo en su cuenta.` : ''}
+        confirmar="Sí, deshacer"
+        onCancelar={() => setDeshacer(null)}
+        onConfirmar={() => { const c = deshacer; setDeshacer(null); marcar(c, false); }}
+      />
+    </div>
+  );
+}
+

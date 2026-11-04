@@ -5183,6 +5183,89 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ── Canjes del catálogo de recompensas (admin) ───────────────────────────────
+// userCoupons solo lo lee su dueño, así que el panel ve los canjes por aquí.
+// Los que se entregan a mano (tipo 'manual': sin `tipo` en el cupón, como el
+// pack de stickers) quedan "por entregar" hasta que alguien del equipo los
+// marca entregados: el cupón pasa a 'used' y el cliente lo ve como usado.
+function nombreCompletoDePerfil(p) {
+  const v = [p.displayName, p.clienteNombre, p.name, p.nombre]
+    .map((x) => String(x == null ? "" : x).trim())
+    .find((x) => x && !x.includes("@"));
+  return v || "";
+}
+const msDeTimestamp = (v) => (v && typeof v.toMillis === "function" ? v.toMillis() : null);
+
+exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) => {
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los canjes.");
+  }
+  const snap = await db.collection("userCoupons").where("origen", "==", "recompensa").get();
+  const cupones = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+  const uids = [...new Set(cupones.map((c) => c.uid).filter(Boolean))];
+  const perfiles = new Map();
+  for (let i = 0; i < uids.length; i += 100) {
+    const refs = uids.slice(i, i + 100).map((u) => db.collection(PORTAL_USERS_COLLECTION).doc(String(u)));
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((s) => { if (s.exists) perfiles.set(s.id, s.data() || {}); });
+  }
+  const canjes = cupones.map((c) => {
+    const p = perfiles.get(c.uid) || {};
+    return {
+      id: c.id,
+      code: c.code || "",
+      titulo: c.title || c.titulo || "",
+      rewardId: c.rewardId || "",
+      tipo: c.tipo || null,
+      status: c.status || "active",
+      orderId: c.orderId || null,
+      expiraEn: c.expiraEn || null,
+      creadoMs: msDeTimestamp(c.createdAt),
+      usadoMs: msDeTimestamp(c.usadoAt),
+      entregadoMs: msDeTimestamp(c.entregadoAt),
+      entregadoPor: c.entregadoPor || "",
+      cliente: {
+        uid: c.uid || "",
+        nombre: nombreCompletoDePerfil(p),
+        telefono: String(p.phone || "").trim(),
+        email: String(p.email || "").trim(),
+      },
+    };
+  }).sort((a, b) => (b.creadoMs || 0) - (a.creadoMs || 0));
+  return { canjes };
+});
+
+// Marcar entregado (o deshacerlo) un canje que se entrega a mano.
+exports.entregarCanjeSecure = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede marcar canjes.");
+  }
+  const id = limpiarId(data && data.id);
+  if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta el canje.");
+  const entregado = !(data && data.entregado === false);
+  const ref = db.collection("userCoupons").doc(id);
+  return db.runTransaction(async (t) => {
+    const s = await t.get(ref);
+    const c = s.exists ? s.data() || {} : null;
+    if (!c || c.origen !== "recompensa") throw new functions.https.HttpsError("not-found", "Ese canje no existe.");
+    if (c.tipo) {
+      throw new functions.https.HttpsError("failed-precondition", "Este cupón lo usa el cliente en el carrito: no se entrega a mano.");
+    }
+    if (entregado) {
+      if (c.status === "used") return { entregado: true, yaEstaba: true };
+      t.update(ref, {
+        status: "used",
+        entregadoAt: FieldValue.serverTimestamp(),
+        entregadoPor: String((context.auth.token && context.auth.token.email) || context.auth.uid),
+      });
+      return { entregado: true };
+    }
+    if (c.status !== "used") return { entregado: false, yaEstaba: true };
+    t.update(ref, { status: "active", entregadoAt: FieldValue.delete(), entregadoPor: FieldValue.delete() });
+    return { entregado: false };
+  });
+});
+
 // ════════════════════════════════════════════════════════════════════════════
 // CUPONES EN EL CHECKOUT
 // ----------------------------------------------------------------------------
