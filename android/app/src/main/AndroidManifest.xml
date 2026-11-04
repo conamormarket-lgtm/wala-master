@@ -39,7 +39,21 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Stickers de WhatsApp: WhatsApp lee de aquí los packs canjeados (stickers/ProveedorDeStickers). -->
+        <provider
+            android:name=".stickers.ProveedorDeStickers"
+            android:authorities="${applicationId}.stickercontentprovider"
+            android:enabled="true"
+            android:exported="true"
+            android:readPermission="com.whatsapp.sticker.READ" />
     </application>
+
+    <!-- Para saber si hay WhatsApp y si el pack ya está en él (Android 11+). -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
 
     <!-- Permissions -->
 

@@ -27,6 +27,13 @@ const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n)
 const fecha = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 const fechaHora = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
 
+// Lo que se explica bajo "Qué da", según el tipo.
+const AYUDA_TIPO = {
+  manual: 'El cliente recibe un código y lo canjea con un asesor (envíos, algo físico…).',
+  stickers_whatsapp: 'Digital: no se envía nada. El cliente los añade a WhatsApp desde la app de Walá y el canje queda entregado solo.',
+  cupon: 'Al canjearla se genera un cupón que el cliente aplica solo, en el carrito.',
+};
+
 /* ── Referidos ─────────────────────────────────────────── */
 
 /**
@@ -421,7 +428,7 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
  *  - subirImagen(blob, { alAvanzar }) → url · cargando · error · onReintentar
  *  - onGuardar(datos, id?) · onEliminar(id)
  */
-export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, pestanas }) {
+export function PaginaRecompensasAdmin({ recompensas = [], productos = [], packsStickers = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, pestanas }) {
   const tipoTexto = (v) => TIPOS_RECOMPENSA.find((x) => x.valor === v)?.texto || v;
   const queDa = (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</>;
   const estadoDe = (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado>;
@@ -511,8 +518,11 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subir
                 {/* Con la lista para arrastrar, el orden no se escribe. */}
                 {!onGuardarOrden && <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />}
               </GrupoCampos>
-              <GrupoCampos titulo="Qué da" ayuda={datos.tipo === 'manual' ? 'El cliente recibe un código y lo canjea con un asesor (envíos, algo físico…).' : 'Al canjearla se genera un cupón que el cliente aplica solo, en el carrito.'}>
-                <Campo etiqueta="Tipo" opciones={TIPOS_RECOMPENSA} value={datos.tipo} onChange={(e) => cambiar('tipo', e.target.value)} />
+              <GrupoCampos titulo="Qué da" ayuda={AYUDA_TIPO[datos.tipo] || AYUDA_TIPO.cupon}>
+                <Campo etiqueta="Tipo" opciones={TIPOS_RECOMPENSA} value={datos.tipo} onChange={(e) => { cambiar('tipo', e.target.value); if (e.target.value === 'stickers_whatsapp' && !datos.packId && packsStickers[0]) cambiar('packId', packsStickers[0].valor); }} />
+                {datos.tipo === 'stickers_whatsapp' && (
+                  <Campo id={idDe('packId')} etiqueta="Pack" opciones={packsStickers} value={datos.packId} error={errores.packId} onChange={(e) => cambiar('packId', e.target.value)} ayuda="Una sola vez por persona. Los añade a WhatsApp desde la app de Android; en la web le sale el enlace a Google Play." />
+                )}
                 {RECOMPENSA_CON_PRODUCTO.includes(datos.tipo) && (
                   <div className={s.producto}>
                     <span id={idDe('productoId')} tabIndex={-1} className={s.productoElegido}>
@@ -595,7 +605,7 @@ export function PaginaCanjesAdmin({ canjes = [], cargando = false, error, onRein
       <CabezaAdmin icono="recompensas" tono="rosa" titulo="Recompensas" subtitulo="Lo que tus clientes canjean con sus monedas en «Mi cuenta»." />
       {pestanas}
       <Aviso tipo="info" compacto>
-        Lo que se entrega a mano (como el pack de stickers) queda aquí por entregar: escríbele al cliente, coordina el envío y márcalo entregado. Los cupones de descuento y de envío gratis los usa el cliente solo, en el carrito.
+        Lo que se entrega a mano queda aquí por entregar: escríbele al cliente, coordina el envío y márcalo entregado. Los stickers de WhatsApp se entregan solos cuando el cliente los añade desde la app, y los cupones de descuento y de envío gratis los usa él mismo en el carrito.
       </Aviso>
       <FilaCifras etiqueta="Resumen de canjes">
         <Cifra nombre="Por entregar" valor={entero(r.porEntregar)} tono="aviso" cargando={cargando} />

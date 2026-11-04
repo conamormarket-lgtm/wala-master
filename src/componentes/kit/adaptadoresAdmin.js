@@ -1955,6 +1955,7 @@ export const TIPOS_RECOMPENSA = [
   { valor: 'producto_descuento', texto: 'Descuento en un producto' },
   { valor: 'producto_gratis', texto: 'Producto gratis' },
   { valor: 'envio_gratis', texto: 'Envío gratis' },
+  { valor: 'stickers_whatsapp', texto: 'Stickers de WhatsApp (en la app)' },
 ];
 export const RECOMPENSA_CON_PRODUCTO = ['producto_descuento', 'producto_gratis'];
 export const RECOMPENSA_CON_VIGENCIA = ['descuento', 'producto_descuento', 'producto_gratis', 'envio_gratis'];
@@ -1972,6 +1973,8 @@ export function beneficioDeRecompensa(r = {}) {
       return `${r.productoNombre || r.productName || 'Un producto'} gratis`;
     case 'envio_gratis':
       return 'Envío gratis';
+    case 'stickers_whatsapp':
+      return 'Stickers para WhatsApp, en la app de Walá';
     default:
       return '';
   }
@@ -1994,6 +1997,7 @@ export function recompensaAdminDesdeFirestore(doc = {}) {
     productoNombre: doc.productName || '',
     vigenciaDias: Number(doc.vigenciaDias) || 30,
     imagen: doc.imageUrl || '',
+    packId: doc.packId || '',
   };
 }
 
@@ -2015,6 +2019,7 @@ export function recompensaAdminAFirestore(r = {}) {
     productName: conProducto ? r.productoNombre || '' : '',
     vigenciaDias: Number(r.vigenciaDias) || 30,
     imageUrl: r.imagen || '',
+    packId: r.tipo === 'stickers_whatsapp' ? r.packId || '' : '',
   };
 }
 
@@ -2023,6 +2028,7 @@ export function erroresDeRecompensa(r = {}) {
   const pct = Number(r.descuentoPct) || 0;
   return {
     nombre: String(r.nombre || '').trim() ? undefined : 'Escribe el título de la recompensa.',
+    packId: r.tipo === 'stickers_whatsapp' && !r.packId ? 'Elige el pack de stickers.' : undefined,
     productoId: RECOMPENSA_CON_PRODUCTO.includes(r.tipo) && !r.productoId ? 'Elige el producto de la recompensa.' : undefined,
     topeDescuento: r.tipo === 'descuento' && pct > 0 && !(Number(r.topeDescuento) > 0) ? 'Pon un tope en soles para el descuento por porcentaje.' : undefined,
     descuentoPct: (r.tipo === 'descuento' || r.tipo === 'producto_descuento') && (pct < 0 || pct > 100) ? 'El porcentaje va de 0 a 100.' : undefined,
@@ -2036,6 +2042,7 @@ export function erroresDeRecompensa(r = {}) {
  */
 export const ESTADOS_CANJE = {
   porEntregar: { texto: 'Por entregar', tono: 'aviso' },
+  enLaApp: { texto: 'Falta añadirlos', tono: 'violeta', ayuda: 'Se añaden a WhatsApp desde la app' },
   entregado: { texto: 'Entregado', tono: 'exito' },
   sinUsar: { texto: 'Cupón sin usar', tono: 'violeta', ayuda: 'Lo aplica el cliente en el carrito' },
   usado: { texto: 'Cupón usado', tono: 'exito' },
@@ -2051,9 +2058,12 @@ const whatsappDeTelefono = (tel) => {
 
 /** hoy: 'AAAA-MM-DD' de Lima (los cupones vencen por día, como en el servidor). */
 export function canjeDesde(c = {}, hoy = '') {
-  const manual = !c.tipo;
+  const digital = c.entrega === 'stickers_whatsapp';
+  const manual = !c.tipo && !digital;
   const usado = c.status === 'used' || Boolean(c.orderId);
-  const estado = manual
+  const estado = digital
+    ? (usado ? 'entregado' : 'enLaApp')
+    : manual
     ? (usado ? 'entregado' : 'porEntregar')
     : (usado ? 'usado' : c.expiraEn && hoy && c.expiraEn < hoy ? 'vencido' : 'sinUsar');
   const cliente = c.cliente || {};
@@ -2062,10 +2072,11 @@ export function canjeDesde(c = {}, hoy = '') {
     codigo: c.code || '',
     recompensa: c.titulo || 'Recompensa',
     manual,
+    digital,
     estado,
     creadoMs: c.creadoMs || null,
     entregadoMs: c.entregadoMs || null,
-    entregadoPor: c.entregadoPor || '',
+    entregadoPor: c.entregadoPor === 'app' ? 'desde la app' : c.entregadoPor || '',
     pedido: c.orderId || '',
     cliente: cliente.nombre || cliente.email || 'Cliente sin nombre',
     telefono: cliente.telefono || '',

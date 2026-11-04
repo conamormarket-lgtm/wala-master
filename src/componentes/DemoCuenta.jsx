@@ -482,6 +482,12 @@ export function CuentaDemo({
     pagina = (
       <PaginaCupones
         cupones={vacio ? [] : cupones}
+        stickers={vacio ? [] : [{
+          id: 'st-kapi', nombre: 'Kapi de Walá', cantidad: 13, modo: 'web',
+          muestras: ['kapi_02.webp', 'kapi_03.webp', 'kapi_04.webp', 'kapi_12.webp'].map((f) => `/stickers/kapi/${f}`),
+        }]}
+        urlPlayStore="https://play.google.com/store/apps/details?id=com.wala.tienda"
+        onAgregarStickers={() => avisar('En la app', 'Abriría WhatsApp para añadir el pack', 'info')}
         cargando={cargando}
         error={conError}
         onReintentar={() => avisar('En la tienda', 'Volvería a pedir tus cupones', 'info')}

@@ -38,6 +38,8 @@
 -keep class com.getcapacitor.** { *; }
 -keep class com.capacitorjs.plugins.** { *; }
 -keep class com.codetrixstudio.capacitor.GoogleAuth.** { *; }
+# Stickers de WhatsApp: el plugin (su @ActivityCallback se llama por nombre) y el proveedor.
+-keep class com.wala.tienda.stickers.** { *; }
 
 # Los errores de Play Console con su línea (el archivo de mapeo va en el .aab).
 -keepattributes SourceFile,LineNumberTable

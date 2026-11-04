@@ -11,6 +11,7 @@ import { getRewards, createReward, updateReward, deleteReward } from '../../serv
 import { getProducts } from '../../services/products';
 import { MISSION_ACTIONS } from '../../constants/missionActions';
 import { limaTodayStr } from '../../utils/fechaLima';
+import { PACKS_STICKERS } from '../../constants/stickersWhatsapp';
 import { Pestanas } from '../../componentes/kit/Navegacion';
 import {
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin, PaginaCanjesAdmin,
@@ -254,6 +255,7 @@ export function RecompensasDelPanel() {
   return (
     <PaginaRecompensasAdmin
       pestanas={pestanas}
+      packsStickers={PACKS_STICKERS.map((p) => ({ valor: p.id, texto: `${p.nombre} (${p.cantidad} stickers)` }))}
       recompensas={(recompensas.datos || []).map(recompensaAdminDesdeFirestore)}
       productos={lista}
       subirImagen={subirImagen}

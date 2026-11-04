@@ -485,6 +485,16 @@ test('canjes: por entregar primero, cupones y vencidos', () => {
   assert.equal(c[2].whatsapp, 'https://wa.me/51987654321');
   assert.equal(c[3].whatsapp, '');
   assert.deepEqual(m2.resumenCanjes(c), { porEntregar: 1, entregados: 1, sinUsar: 0, usados: 1, total: 4 });
+  const st = m2.canjesDesde([
+    { id: 's1', entrega: 'stickers_whatsapp', packId: 'kapi', status: 'active' },
+    { id: 's2', entrega: 'stickers_whatsapp', packId: 'kapi', status: 'used', entregadoPor: 'app' },
+  ], '2026-11-04');
+  assert.deepEqual(st.map((x) => [x.estado, x.manual, x.digital, x.entregadoPor]), [['enLaApp', false, true, ''], ['entregado', false, true, 'desde la app']]);
+  const rs = m2.recompensaAdminDesdeFirestore({ id: 'r', tipo: 'stickers_whatsapp', packId: 'kapi', title: 'Stickers' });
+  assert.equal(m2.recompensaAdminAFirestore(rs).packId, 'kapi');
+  assert.equal(m2.recompensaAdminAFirestore({ ...rs, tipo: 'manual' }).packId, '');
+  assert.equal(m2.erroresDeRecompensa({ ...rs, packId: '' }).packId, 'Elige el pack de stickers.');
+  assert.equal(m2.beneficioDeRecompensa(rs), 'Stickers para WhatsApp, en la app de Walá');
 });
 
 test('fidelidad: referidos, misiones y retos', () => {

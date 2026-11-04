@@ -5024,6 +5024,9 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
 // ── Helper: genera un code aleatorio de cupón tipo 'WALA-XXXXXX' ────────────────
 // 6 caracteres alfanuméricos en mayúsculas (sin O/0/I/1 para evitar confusiones),
 // obtenidos de bytes criptográficamente seguros (crypto ya importado arriba).
+// Packs de stickers de WhatsApp que traen las apps (public/stickers/packs.json).
+const PACKS_STICKERS_WHATSAPP = ["kapi"];
+
 function generateCouponCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 símbolos, sin O/0/I/1
   const bytes = crypto.randomBytes(6);
@@ -5109,6 +5112,20 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
       }
       const u = userSnap.data();
 
+      // Stickers de WhatsApp: un pack conocido y una sola vez por persona.
+      const esStickers = reward.tipo === "stickers_whatsapp";
+      const packId = esStickers ? String(reward.packId || "") : "";
+      if (esStickers) {
+        if (!PACKS_STICKERS_WHATSAPP.includes(packId)) {
+          throw new functions.https.HttpsError("failed-precondition", "Este pack de stickers no está disponible.");
+        }
+        const ya = await t.get(db.collection("userCoupons")
+          .where("uid", "==", uid).where("entrega", "==", "stickers_whatsapp").where("packId", "==", packId).limit(1));
+        if (!ya.empty) {
+          throw new functions.https.HttpsError("already-exists", "Ya tienes estos stickers: añádelos a WhatsApp desde la app de Walá, en Mis cupones.");
+        }
+      }
+
       // Costo SERVER-AUTHORITATIVE: se toma del catálogo, no del cliente.
       const cost = Number(reward.cost);
       if (!Number.isFinite(cost) || cost <= 0) {
@@ -5172,6 +5189,11 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
           expiraEn: limaFechaEnDias(reward.vigenciaDias || 30),
         });
       }
+      if (esStickers) {
+        // Se entrega en la app de Android ("Añadir a WhatsApp"): la app avisa
+        // con stickersAgregadosSecure y el canje queda entregado.
+        Object.assign(cuponBase, { entrega: "stickers_whatsapp", packId, titulo: reward.title || "" });
+      }
       t.set(couponRef, cuponBase);
 
       return { success: true, coupon: { rewardId: String(rewardId), code } };
@@ -5217,6 +5239,8 @@ exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) 
       titulo: c.title || c.titulo || "",
       rewardId: c.rewardId || "",
       tipo: c.tipo || null,
+      entrega: c.entrega || null,
+      packId: c.packId || null,
       status: c.status || "active",
       orderId: c.orderId || null,
       expiraEn: c.expiraEn || null,
@@ -5233,6 +5257,26 @@ exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) 
     };
   }).sort((a, b) => (b.creadoMs || 0) - (a.creadoMs || 0));
   return { canjes };
+});
+
+// La app de Android añadió el pack a WhatsApp: el canje queda entregado. Solo
+// el dueño del cupón; repetirlo no hace nada (puede volver a añadirlo en otro
+// teléfono, el pack sigue siendo suyo).
+exports.stickersAgregadosSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const id = limpiarId(data && data.couponId);
+  if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta el cupón.");
+  const ref = db.collection("userCoupons").doc(id);
+  return db.runTransaction(async (t) => {
+    const s = await t.get(ref);
+    const c = s.exists ? s.data() || {} : null;
+    if (!c || c.uid !== uid || c.entrega !== "stickers_whatsapp") {
+      throw new functions.https.HttpsError("not-found", "Esos stickers no son tuyos.");
+    }
+    if (c.status === "used") return { entregado: true, yaEstaba: true };
+    t.update(ref, { status: "used", entregadoAt: FieldValue.serverTimestamp(), entregadoPor: "app" });
+    return { entregado: true };
+  });
 });
 
 // Marcar entregado (o deshacerlo) un canje que se entrega a mano.

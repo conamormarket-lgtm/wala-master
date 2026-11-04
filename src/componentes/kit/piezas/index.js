@@ -19,7 +19,7 @@ export { VentanaKapi } from './VentanaKapi';
 export { PanelBusqueda, useBusquedasRecientes, TextoResaltado, ChipsBusqueda, InvitacionBusqueda } from './PanelBusqueda';
 export { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from './Cuenta';
 export { TarjetaDireccion } from './TarjetaDireccion';
-export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
+export { TarjetaRecompensa, TarjetaCupon, TarjetaStickers, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
 export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from './Referidos';
 export { TarjetaCreacion, VersionesAnteriores } from './Creaciones';
 export { RecortarFoto } from './RecortarFoto';

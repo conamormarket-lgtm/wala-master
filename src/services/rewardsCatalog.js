@@ -24,7 +24,7 @@ const COLLECTION = 'rewardsCatalog';
 const CAMPOS = [
   'title', 'description', 'cost', 'value', 'active', 'order',
   'tipo', 'descuentoPct', 'descuentoMonto', 'topeDescuento',
-  'productId', 'productName', 'vigenciaDias', 'imageUrl',
+  'productId', 'productName', 'vigenciaDias', 'imageUrl', 'packId',
 ];
 
 export const getRewards = async () => {

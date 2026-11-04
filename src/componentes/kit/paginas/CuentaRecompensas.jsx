@@ -6,7 +6,7 @@ import { Aviso, EstadoVacio } from '../Feedback';
 import { Moneda } from '../Etiquetas';
 import { IconoWala } from '../IconosWala';
 import { CabezaCuenta, TarjetaCuenta, Estadistica } from '../piezas/Cuenta';
-import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
+import { TarjetaRecompensa, TarjetaCupon, TarjetaStickers, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
@@ -56,7 +56,7 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
     setAviso(null);
     try {
       const res = await onCanjear?.(r.id);
-      setAviso({ tipo: 'exito', titulo: r.titulo, codigo: res?.codigo });
+      setAviso({ tipo: 'exito', titulo: r.titulo, codigo: res?.codigo, stickers: r.stickers });
     } catch (err) {
       setAviso({ tipo: 'error', titulo: 'No pudimos canjearla', texto: mensajeDe(err, 'Inténtalo de nuevo en unos minutos. Tus monedas no se gastaron.') });
     }
@@ -78,7 +78,8 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
           accion={aviso.tipo === 'exito' && <Boton to={urlCupones} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver mis cupones</Texto></Boton>}
         >
           {aviso.tipo === 'exito'
-            ? (aviso.codigo ? <TextoResaltado resaltar={[aviso.codigo]}>{`Tu código es ${aviso.codigo}. Lo tienes en Mis cupones.`}</TextoResaltado> : 'Ya está en Mis cupones.')
+            ? aviso.stickers ? 'Están en Mis cupones: añádelos a WhatsApp desde la app de Walá para Android.'
+            : (aviso.codigo ? <TextoResaltado resaltar={[aviso.codigo]}>{`Tu código es ${aviso.codigo}. Lo tienes en Mis cupones.`}</TextoResaltado> : 'Ya está en Mis cupones.')
             : aviso.texto}
         </Aviso>
       )}
@@ -115,10 +116,12 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
  * Mis cupones: los disponibles primero; el código se copia con un toque.
  *  - cupones: [{ id, texto, codigo, origen, estado, vence, conAsesor }]
  *    (cuponDesdeFirestore)
+ *  - stickers: [{ id, nombre, cantidad, muestras, modo, agregado, procesando, error }]
+ *    (packs de WhatsApp canjeados, arriba) · onAgregarStickers(id) · urlPlayStore
  *  - cargando · error · onReintentar · onCopiar(codigo): promesa
  *  - urlRuleta, urlCatalogo: salidas del estado vacío
  */
-export function PaginaCupones({ cupones = [], cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo' }) {
+export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, urlPlayStore, cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo' }) {
   const ordenados = useMemo(() => [...cupones].sort((a, b) => Number(b.estado === 'activo') - Number(a.estado === 'activo')), [cupones]);
   const disponibles = cupones.filter((c) => c.estado === 'activo').length;
   return (
@@ -138,15 +141,24 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
         </Aviso>
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
-      ) : ordenados.length === 0 ? (
+      ) : ordenados.length === 0 && stickers.length === 0 ? (
         <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.</Texto>}>
           <Boton to={urlRuleta}><Texto>Ir a la ruleta</Texto></Boton>
           <Boton to={urlCatalogo} variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
         </EstadoVacio>
       ) : (
-        <ul className={s.cupones}>
-          {ordenados.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}
-        </ul>
+        <>
+          {stickers.length > 0 && (
+            <ul className={s.cupones}>
+              {stickers.map((st) => <li key={st.id}><TarjetaStickers {...st} urlPlayStore={urlPlayStore} onAgregar={() => onAgregarStickers?.(st.id)} /></li>)}
+            </ul>
+          )}
+          {ordenados.length > 0 && (
+            <ul className={s.cupones}>
+              {ordenados.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}
+            </ul>
+          )}
+        </>
       )}
     </>
   );

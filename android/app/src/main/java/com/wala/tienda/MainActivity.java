@@ -9,6 +9,7 @@ import androidx.core.splashscreen.SplashScreen;
 import androidx.core.splashscreen.SplashScreenViewProvider;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
+import com.wala.tienda.stickers.StickersWhatsappPlugin;
 
 public class MainActivity extends BridgeActivity {
 
@@ -25,6 +26,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen splash = SplashScreen.installSplashScreen(this);
+        // "Añadir a WhatsApp" de los stickers canjeados (Mis cupones).
+        registerPlugin(StickersWhatsappPlugin.class);
         super.onCreate(savedInstanceState);
 
         long inicio = SystemClock.uptimeMillis();

@@ -22,6 +22,7 @@ import { recompensaDesdeFirestore } from '../../componentes/kit/adaptadores';
 // Lo que gana el cliente, con el mismo texto que la Ruleta (textoPremio).
 const beneficioDe = (r) => {
   if (!r || !r.tipo || r.tipo === 'manual') return '';
+  if (r.tipo === 'stickers_whatsapp') return 'Stickers para WhatsApp · se añaden en la app de Walá';
   return textoPremio({
     tipo: r.tipo,
     nombre: r.title,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Copy, ArrowRight, Medal, Gem, CheckCircle2, Gift } from 'lucide-react';
+import { Check, Copy, ArrowRight, Medal, Gem, CheckCircle2, Gift, MessageCircle, Download } from 'lucide-react';
 import Boton from '../Boton';
 import { CostoMonedas, GananciaMonedas, Moneda } from '../Etiquetas';
 import { Sello } from '../Marca';
@@ -132,6 +132,52 @@ export function TarjetaCupon({ texto, codigo, origen, estado = 'activo', vence, 
           <p className={s.vence}><Texto>{estado === 'caducado' ? 'Venció el' : 'Válido hasta el'}</Texto> {vence}</p>
         )}
         {usable && conAsesor && <p className={s.vence}><Texto>Este cupón se canjea con un asesor.</Texto></p>}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Un pack de stickers de WhatsApp canjeado. Se añade desde la app de Android;
+ * en la web (o en una versión vieja de la app) lleva a Google Play.
+ *  - nombre · cantidad · muestras: [url] (unos cuantos stickers)
+ *  - modo: 'app' (se puede añadir aquí) | 'web' | 'actualizar' (app sin el botón)
+ *  - agregado: ya está en su WhatsApp · procesando · error: texto
+ *  - onAgregar() · urlPlayStore
+ */
+export function TarjetaStickers({ nombre, cantidad = 0, muestras = [], modo = 'web', agregado = false, procesando = false, error, onAgregar, urlPlayStore }) {
+  return (
+    <article className={s.stickers} data-componente="TarjetaStickers">
+      <div className={s.stickersMuestras} aria-hidden="true">
+        {muestras.slice(0, 4).map((src, i) => <img key={src} src={src} alt="" loading="lazy" style={{ '--i': i }} />)}
+      </div>
+      <div className={s.stickersCuerpo}>
+        <p className={s.cuponMeta}>
+          <span className={`${s.cuponEstado} ${s[agregado ? 'estado_usado' : 'estado_activo']}`}><Texto>{agregado ? 'En tu WhatsApp' : 'Tuyos'}</Texto></span>
+          <span className={s.cuponOrigen}><Texto>Stickers de WhatsApp</Texto></span>
+        </p>
+        <h3 className={s.cuponTexto}><Texto>{nombre}</Texto></h3>
+        <p className={s.vence}>
+          <Texto>
+            {modo === 'app'
+              ? (agregado ? `Ya están en tu WhatsApp. Si cambias de teléfono, vuelve a añadirlos desde aquí.` : `${cantidad} stickers para usar en tus chats.`)
+              : modo === 'actualizar'
+                ? 'Actualiza la app de Walá para añadirlos a WhatsApp.'
+                : 'Se añaden a WhatsApp desde la app de Walá para Android.'}
+          </Texto>
+        </p>
+        {error && <p className={s.stickersError} role="alert"><Texto>{error}</Texto></p>}
+        <div className={s.stickersAcciones}>
+          {modo === 'app' ? (
+            <Boton tamano="sm" variante={agregado ? 'contorno' : 'primario'} icono={<MessageCircle aria-hidden="true" />} cargando={procesando} onClick={onAgregar}>
+              <Texto>{agregado ? 'Añadir otra vez' : 'Añadir a WhatsApp'}</Texto>
+            </Boton>
+          ) : (
+            <Boton tamano="sm" icono={<Download aria-hidden="true" />} to={urlPlayStore} target="_blank" rel="noopener noreferrer">
+              <Texto>{modo === 'actualizar' ? 'Actualizar en Google Play' : 'Descargar en Google Play'}</Texto>
+            </Boton>
+          )}
+        </div>
       </div>
     </article>
   );

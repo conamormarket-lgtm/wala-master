@@ -771,6 +771,8 @@ export const recompensaDesdeFirestore = (r = {}, beneficio) => ({
   imagen: r.imageUrl || null,
   beneficio: beneficio || r.value || '',
   costo: Number(r.cost) || 0,
+  // Stickers de WhatsApp: se añaden desde la app (el aviso del canje lo dice).
+  stickers: r.tipo === 'stickers_whatsapp',
 });
 
 /**
