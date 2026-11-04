@@ -16,8 +16,8 @@ test('superadmin ve todo, también la configuración', () => {
   assert.ok(r.includes('/admin/resultados/clientes'));
 });
 
-test('solo inventario: el inicio y el inventario', () => {
-  assert.deepEqual(rutas(menuAdminPara(['manage_inventory'])), ['/admin', '/admin/inventario']);
+test('solo inventario: el inicio y productos (donde está el stock)', () => {
+  assert.deepEqual(rutas(menuAdminPara(['manage_inventory'])), ['/admin', '/admin/productos']);
 });
 
 test('diseño ve Resultados sin Clientes ni Opiniones', () => {
@@ -43,7 +43,7 @@ test('un grupo sin opciones no sale', () => {
 test('la barra inferior rellena con lo que el admin puede abrir', () => {
   assert.deepEqual(accesosAdminPara(['superadmin']).map((a) => a.id), ['inicio', 'pedidos', 'productos', 'resultados']);
   assert.deepEqual(accesosAdminPara(['manage_clients']).map((a) => a.id), ['inicio', 'resultados', 'reclamos', 'referidos']);
-  assert.deepEqual(accesosAdminPara(['manage_inventory']).map((a) => a.id), ['inicio', 'inventario']);
+  assert.deepEqual(accesosAdminPara(['manage_inventory']).map((a) => a.id), ['inicio', 'productos']);
 });
 
 test('la opción activa es la más larga que coincide', () => {
@@ -154,6 +154,9 @@ test('productos: personalización de antes y la foto', () => {
   assert.equal(m2.estadoDeStock(0), 'agotado');
   assert.equal(m2.estadoDeStock(3), 'ultimas');
   assert.equal(m2.estadoDeStock(4), 'disponible');
+  assert.equal(m2.estadoDeStock(null), 'sinLimite');
+  assert.equal(de({}).stock, null);
+  assert.equal(de({ inStock: 0 }).stock, 0);
 });
 
 test('ficha: un producto de antes sin variantes arma la Principal', () => {
@@ -802,4 +805,8 @@ test('historial: la versión actual de cada página, el stock y el CSV', () => {
   const mov = m2.movimientoInventarioDesde({ id: 'i', timestamp: Date.parse('2026-11-02T20:05:00Z'), productName: 'Polo "Kapi", talla M', oldStock: 5, newStock: 2 });
   assert.deepEqual([mov.cambio, mov.quien, m2.textoCambioStock(mov.cambio), m2.textoCambioStock(3)], [-3, 'Desconocido', '−3', '+3']);
   assert.equal(m2.csvInventario([mov]).split('\n')[1], '02/11/2026,15:05,Desconocido,"Polo ""Kapi"", talla M",5,2,-3');
+  const limite = m2.movimientoInventarioDesde({ oldStock: null, newStock: 3 });
+  assert.equal(limite.antes, null);
+  assert.equal(limite.cambio, 0);
+  assert.equal(m2.textoStock(limite.antes), 'Sin límite');
 });

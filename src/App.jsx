@@ -180,7 +180,6 @@ const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion')
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
-const AdminInventario = lazy(() => import('./pages/Tienda/admin/AdminInventario'));
 const RutasPrendasCrear = lazy(() => import('./pages/admin/RutasPrendasCrear'));
 const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
@@ -514,7 +513,7 @@ function App() {
                                       {/* Los packs de Crear viven ahora en Productos (chip "Packs de Crear"). */}
                                       <Route path="combos-crear" element={<Navigate to="/admin/productos?ver=packs" replace />} />
                                       <Route path="prendas-crear/*" element={<RutasPrendasCrear />} />
-                                      <Route path="inventario" element={<AdminInventario />} />
+                                      <Route path="inventario" element={<Navigate to="/admin/productos?ver=todos" replace />} />
                                       <Route path="plantillas-yoryo" element={<Navigate to="/admin/productos?ver=crear" replace />} />
                                       <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
                                       <Route path="productos/:id" element={<AdminProductoFormV2 />} />

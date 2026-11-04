@@ -87,7 +87,7 @@ export { PaginaCategorias } from './paginas/admin/Categorias';
 export { PaginaColecciones, PaginaAtributos, PaginaEnvios } from './paginas/admin/Catalogo';
 export { PaginaMarcas, PaginaProductosMarca } from './paginas/admin/Marcas';
 export { PaginaDestacados } from './paginas/admin/Destacados';
-export { PaginaProductos, PaginaInventario, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
+export { PaginaProductos, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
 export { PaginaFichaProducto } from './paginas/admin/Ficha';
 export { PaginaPersonalizables, PaginaPacks } from './paginas/admin/Crear';
 export { PasoAdmin } from './piezas/admin/Pasos';
@@ -158,5 +158,5 @@ export {
   PERMISOS_ADMIN, adminDesdeFirestore, adminAFirestore, erroresDeAdmin, textoPermisos, PAGINAS_FIJAS, paginasBloqueables, conBloqueo,
   textoConteoImagenes, textoResultadoImagenes, NOMBRES_IDIOMA, traduccionesPorIdioma,
   MENSAJE_PEDIDO_POR_DEFECTO, SECCIONES_WHATSAPP, whatsappDesdeMensajes, whatsappAMensajes, telefonoEscrito, erroresDeWhatsApp, mensajePedidoDeEjemplo,
-  cambioDisenoDesde, conVersionActual, nombreDePaginaGuardada, movimientoInventarioDesde, textoCambioStock, csvInventario,
+  cambioDisenoDesde, conVersionActual, nombreDePaginaGuardada, movimientoInventarioDesde, textoCambioStock, textoStock, csvInventario,
 } from './adaptadoresAdmin';

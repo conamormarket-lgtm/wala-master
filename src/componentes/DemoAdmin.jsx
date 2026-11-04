@@ -3,7 +3,7 @@ import { Archive, Eye, EyeOff, Trash2 } from 'lucide-react';
 import {
   MarcoAdmin, SinPermiso, CabezaAdmin, PaginaInicioAdmin, PaginaCategorias, InsigniaEstado, ESTADOS_ADMIN, AccionesLote,
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
-  PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
+  PaginaProductos, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaReclamos, reclamoDesdeFirestore,
@@ -103,7 +103,6 @@ const HECHAS = [
   ['/admin/envios', 'Envíos'],
   ['/admin/destacados', 'Destacados'],
   ['/admin/productos', 'Productos'],
-  ['/admin/inventario', 'Inventario'],
   ['/admin/publico-productos', 'Recomendar'],
 ];
 
@@ -898,12 +897,11 @@ function PanelDePrueba() {
           { id: 'retos', texto: 'Evidencias de retos', detalle: 'Fotos que mandaron los clientes', cuenta: vacio ? 0 : 4, to: '/admin/retos', icono: 'retos', tono: 'oro', permiso: ['manage_clients'] },
         ].filter((x) => puedeVer(x, p.permisos))}
         atajos={[
-          { to: '/admin/productos', texto: 'Productos', detalle: 'Crear, editar y ocultar', icono: 'productos', tono: 'degradado', permiso: ['manage_products'] },
+          { to: '/admin/productos', texto: 'Productos', detalle: 'Crear, editar y su stock', icono: 'productos', tono: 'degradado', permiso: ['manage_products', 'manage_inventory'] },
           { to: '/admin/resultados', texto: 'Resultados', detalle: 'Cómo va la tienda', icono: 'resultados', tono: 'oro', permiso: ['manage_design', 'manage_clients'] },
           { to: '/admin/categorias', texto: 'Categorías', detalle: 'Las burbujas de cada marca', icono: 'categorias', tono: 'degradado', permiso: ['manage_products'] },
           { to: '/admin/notificaciones', texto: 'Notificaciones', detalle: 'Ofertas y novedades', icono: 'notificaciones', tono: 'rosa', permiso: ['manage_design'] },
           { to: '/admin/fechas-importantes', texto: 'Fechas importantes', detalle: 'El calendario de campañas', icono: 'fechas', tono: 'rosa', permiso: ['manage_clients'] },
-          { to: '/admin/inventario', texto: 'Inventario', detalle: 'El stock de todo', icono: 'inventario', tono: 'degradado', permiso: ['manage_inventory'] },
         ].filter((x) => puedeVer(x, p.permisos))}
       />
     );
@@ -1097,6 +1095,11 @@ function PanelDePrueba() {
         productos={vacio ? [] : productos}
         categorias={CATEGORIAS_CORTAS}
         marcas={MARCAS_CORTAS}
+        colecciones={COLECCIONES_CORTAS}
+        tipos={TIPOS}
+        soloStock={!puedeVer({ permiso: ['manage_products'] }, p.permisos)}
+        urlHistorial="/admin/backups?ver=inventario"
+        onGuardarStock={async (x, n) => { await espera(500); fallar('No se guardó el stock (es una prueba).'); setProductos((ps) => ps.map((y) => (y.id === x.id ? { ...y, stock: n } : y))); }}
         vista={verDeRuta}
         onVista={(v) => navegar.current(v === 'tienda' ? '/admin/productos' : `/admin/productos?ver=${v}`)}
         onAbrir={(x) => (x.personalizable || x.pack ? toast({ tipo: 'info', titulo: 'Su ficha es de Crear (D2c)', texto: x.nombre, duracion: 2200 }) : navegar.current(`/admin/productos/${x.id}`))}
@@ -1151,18 +1154,6 @@ function PanelDePrueba() {
         )}
         urlBorrador={(id) => `/admin/productos/nuevo?draftId=${id}`}
         onDescartarBorrador={async (id) => { await espera(400); setBorradores((b) => b.filter((x) => x.id !== id)); }}
-      />
-    );
-  } else if (rutaSola === '/admin/inventario') {
-    pagina = (
-      <PaginaInventario
-        {...comunes}
-        productos={vacio ? [] : productos}
-        categorias={CATEGORIAS_CORTAS}
-        colecciones={COLECCIONES_CORTAS}
-        marcas={MARCAS_CORTAS}
-        tipos={TIPOS}
-        onGuardarStock={async (id, n) => { await espera(500); fallar('No se guardó el stock (es una prueba).'); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, stock: n } : x))); }}
       />
     );
   } else if (rutaSola === '/admin/publico-productos') {
@@ -1925,7 +1916,7 @@ function PanelDePrueba() {
       />
     );
   } else {
-    const productosD2 = ['/admin/productos', '/admin/inventario', '/admin/publico-productos'];
+    const productosD2 = ['/admin/productos', '/admin/publico-productos'];
     const grupo = productosD2.includes(dePaso?.item.to) ? 'D2 · Productos' : APARTADOS[dePaso?.grupo.id];
     pagina = (
       <>

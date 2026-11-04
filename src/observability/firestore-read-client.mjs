@@ -52,7 +52,6 @@ const routes = [
   "/admin/respuestas-encuesta",
   "/admin/encuesta-entregas",
   "/admin/combos-crear",
-  "/admin/inventario",
   "/admin/productos/nuevo",
   "/admin/categorias",
   "/admin/colecciones",

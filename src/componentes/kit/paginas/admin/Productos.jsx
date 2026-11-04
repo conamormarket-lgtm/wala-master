@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Archive, Copy, Download, Eye, EyeOff, FileClock, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import { Archive, Copy, Download, Eye, EyeOff, FileClock, History, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Wand2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
 import { Chip, Etiqueta } from '../../Etiquetas';
@@ -16,8 +16,8 @@ import s from './Productos.module.css';
 
 /*
  * Productos (D2a): la lista de /admin/productos (Tienda, Personalizables,
- * Packs de Crear y Todos), el inventario (/admin/inventario) y los datos
- * para recomendar regalos (/admin/publico-productos). Los productos llegan
+ * Packs de Crear y Todos), con el stock de cada uno (Inventario se unió aquí
+ * el 2026-11-04), y los datos para recomendar regalos (/admin/publico-productos). Los productos llegan
  * con productoAdminDesde; guardar, archivar y exportar son promesas del admin.
  */
 
@@ -46,6 +46,62 @@ function Marcas({ p, pieza }) {
   return hay.length ? <span className={s.marcas}>{hay}</span> : null;
 }
 
+/* ── El stock ──────────────────────────────────────────── */
+
+const ESTADOS_STOCK = {
+  agotado: { texto: 'Agotado', tono: 'peligro' },
+  ultimas: { texto: 'Últimas unidades', tono: 'aviso' },
+  disponible: { texto: 'Disponible', tono: 'exito' },
+  sinLimite: { texto: 'Sin límite', tono: 'neutro' },
+};
+const FILTRO_STOCK = [
+  { valor: 'agotado', texto: 'Agotados' },
+  { valor: 'ultimas', texto: 'Últimas unidades' },
+  { valor: 'disponible', texto: 'Disponibles' },
+  { valor: 'sinLimite', texto: 'Sin límite' },
+];
+/* Para ordenar: sin límite va después de cualquier número. */
+const stockParaOrden = (n) => (n === null || n === undefined ? Number.POSITIVE_INFINITY : n);
+
+/*
+ * El stock de una fila. Con onGuardar se cambia ahí mismo (se guarda solo un
+ * segundo después de dejar de escribir, y queda en el historial); sin él,
+ * solo se lee. Sin límite (sin número) no se cuenta como agotado: "Poner
+ * stock" le pone uno.
+ */
+function StockCelda({ p, onGuardar }) {
+  const [poner, setPoner] = useState(false);
+  const estado = estadoDeStock(p.stock);
+  const insignia = (estado === 'agotado' || estado === 'ultimas') && <InsigniaEstado estado={estado} estados={ESTADOS_STOCK} />;
+  if (!onGuardar) {
+    return (
+      <span className={s.stock}>
+        {p.stock === null ? <InsigniaEstado estado="sinLimite" estados={ESTADOS_STOCK} /> : <span className={l.numero}><span className={l.soloTarjeta}>Stock </span>{p.stock}</span>}
+        {insignia}
+      </span>
+    );
+  }
+  if (p.stock === null && !poner) {
+    return (
+      <span className={s.stock}>
+        <InsigniaEstado estado="sinLimite" estados={ESTADOS_STOCK} />
+        <button type="button" className={s.ponerStock} onClick={() => setPoner(true)}>Poner stock</button>
+      </span>
+    );
+  }
+  return (
+    <span className={s.stock}>
+      <NumeroEnLinea
+        valor={p.stock ?? 0}
+        etiqueta={`Stock de ${p.nombre}`}
+        // El primero desde "sin límite" se anota así, no como 0.
+        onGuardar={(n, antes) => onGuardar(p, n, p.stock === null ? null : antes)}
+      />
+      {insignia}
+    </span>
+  );
+}
+
 const VISTAS = [
   { id: 'tienda', texto: 'Tienda' },
   { id: 'crear', texto: 'Personalizables' },
@@ -72,6 +128,12 @@ const ESTADOS_LISTA = [
  *  - onExportar(ids | null) (CSV) · onQuitarPersonalizacionVieja(ids) → promesa con { ok, fallaron }
  *  - cuentas: { crear, packs } (sin ellas, se cuentan de `productos`)
  *  - borradores: [{ id, nombre, fecha }] (los guardados en este aparato) · urlBorrador(id) · onDescartarBorrador(id) → promesa
+ *  - colecciones · tipos ([{ id, nombre }]): filtros, como el de stock
+ *  - onGuardarStock(producto, nuevo, anterior) → promesa: el stock se cambia
+ *    en la fila (en Tienda y en Todos); anterior es null si no tenía límite
+ *  - urlHistorial: "Historial de stock" (los cambios anotados)
+ *  - soloStock: quien solo tiene permiso de inventario: la lista y el stock,
+ *    sin crear, editar, ocultar ni archivar
  */
 export function PaginaProductos({
   productos = [], categorias = [], marcas = [], cargando, error, onReintentar,
@@ -79,11 +141,12 @@ export function PaginaProductos({
   onAbrir, onIr, urlNuevo = '/admin/productos/nuevo', urlNuevoPersonalizable = '/admin/prendas-crear/nueva', urlNuevoPack = '/admin/productos?ver=packs&nuevo=1',
   onVisible, onVarios, onArchivar, onDuplicar, onExportar, onQuitarPersonalizacionVieja,
   borradores = [], urlBorrador, onDescartarBorrador, cuentas: cuentasCrear,
+  colecciones = [], tipos = [], onGuardarStock, urlHistorial, soloStock = false,
 }) {
   const toast = useToast();
   const [estado, setEstado] = useState('visibles');
   const [buscar, setBuscar] = useState('');
-  const [filtro, setFiltro] = useState({ categoria: '', marca: '' });
+  const [filtro, setFiltro] = useState({ categoria: '', marca: '', coleccion: '', tipo: '', stock: '' });
   const [orden, setOrden] = useState({ por: 'nombre', dir: 'asc' });
   const [elegidos, setElegidos] = useState([]);
   const [visibles, setVisibles] = useState(PASO);
@@ -91,9 +154,20 @@ export function PaginaProductos({
   const [pregunta, setPregunta] = useState(null); // { tipo, ids }
   const [menuNuevo, setMenuNuevo] = useState(null);
   const [trabajando, setTrabajando] = useState(false);
+  const [stockLocal, setStockLocal] = useState({}); // lo guardado aquí, hasta que llegue la lista
+  // El orden y el filtro de stock usan el stock con que llegó cada producto:
+  // si no, al guardar la fila se movería (o se iría) bajo el dedo.
+  const stockInicial = useRef(new Map());
+  productos.forEach((p) => { if (!stockInicial.current.has(p.id)) stockInicial.current.set(p.id, p.stock); });
+  const inicial = (p) => (stockInicial.current.has(p.id) ? stockInicial.current.get(p.id) : p.stock);
 
   const porCategoria = useMemo(() => new Map(categorias.map((c) => [c.id, c.nombre])), [categorias]);
-  const conCambios = useMemo(() => productos.map((p) => (p.id in cambios ? { ...p, oculto: !cambios[p.id] } : p)), [productos, cambios]);
+  const conCambios = useMemo(() => productos.map((p) => {
+    let x = p;
+    if (p.id in cambios) x = { ...x, oculto: !cambios[p.id] };
+    if (p.id in stockLocal) x = { ...x, stock: stockLocal[p.id] };
+    return x;
+  }), [productos, cambios, stockLocal]);
   const tienda = useMemo(() => conCambios.filter(esDeLaTienda), [conCambios]);
   const piezas = useMemo(() => piezasDeCombos(tienda), [tienda]);
   const cuentas = {
@@ -107,23 +181,32 @@ export function PaginaProductos({
 
   const q = normalizarBusqueda(buscar);
   const coincide = (p) => !q || normalizarBusqueda(`${p.nombre} ${nombresDe(p.categorias, porCategoria).join(' ')} ${p.precio}`).includes(q);
+  const base = useMemo(() => (vista === 'todos' ? conCambios : tienda.filter((p) => (
+    estado === 'visibles' ? !p.oculto
+      : estado === 'ocultos' ? p.oculto && !piezas.has(p.id)
+        : estado === 'piezas' ? piezas.has(p.id) : true
+  ))), [vista, conCambios, tienda, estado, piezas]);
   const filas = useMemo(() => {
-    const base = vista === 'todos' ? conCambios : tienda.filter((p) => (
-      estado === 'visibles' ? !p.oculto
-        : estado === 'ocultos' ? p.oculto && !piezas.has(p.id)
-          : estado === 'piezas' ? piezas.has(p.id) : true
-    ));
     const lista = base.filter((p) => coincide(p)
       && (!filtro.categoria || p.categorias.includes(filtro.categoria))
-      && (!filtro.marca || (filtro.marca === '__sin' ? !p.marcaId : p.marcaId === filtro.marca)));
+      && (!filtro.marca || (filtro.marca === '__sin' ? !p.marcaId : p.marcaId === filtro.marca))
+      && (!filtro.coleccion || (p.colecciones || []).includes(filtro.coleccion))
+      && (!filtro.tipo || p.tipo === filtro.tipo)
+      && (!filtro.stock || estadoDeStock(inicial(p)) === filtro.stock));
     const signo = orden.dir === 'desc' ? -1 : 1;
     const cmp = {
       nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
       precio: (a, b) => a.precio - b.precio,
-      stock: (a, b) => a.stock - b.stock,
+      stock: (a, b) => stockParaOrden(inicial(a)) - stockParaOrden(inicial(b)),
     }[orden.por] || (() => 0);
-    return [...lista].sort((a, b) => signo * cmp(a, b) || a.nombre.localeCompare(b.nombre, 'es'));
-  }, [vista, conCambios, tienda, estado, piezas, q, filtro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
+    return [...lista].sort((a, b) => signo * (cmp(a, b) || 0) || a.nombre.localeCompare(b.nombre, 'es'));
+  }, [base, q, filtro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Los agotados de lo que se ve (sin contar los sin límite): el aviso los lleva al filtro.
+  const agotados = base.filter((p) => p.stock !== null && p.stock <= 0).length;
+  const guardarStock = onGuardarStock && (async (p, n, antes) => {
+    await onGuardarStock(p, n, antes);
+    setStockLocal((m) => ({ ...m, [p.id]: n }));
+  });
 
   const reiniciar = () => { setElegidos([]); setVisibles(PASO); };
 
@@ -181,24 +264,25 @@ export function PaginaProductos({
     { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
     { id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo', celda: (p) => p.nombre },
     { id: 'etiquetas', titulo: 'Qué es', tarjeta: 'detalle', celda: (p) => <span className={s.marcas}>{etiquetasDeProducto(p).map((e) => <Etiqueta key={e} tono={/Oculto|Borrador|Reemplazado/.test(e) ? 'neutro' : 'violeta'}>{e}</Etiqueta>)}</span> },
+    { id: 'stock', titulo: 'Stock', ordenable: true, ancho: 170, alinear: 'fin', tarjeta: guardarStock ? 'control' : 'detalle', celda: (p) => <StockCelda p={p} onGuardar={guardarStock} /> },
   ] : [
     { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
     { id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo', celda: (p) => <>{p.nombre}<Marcas p={p} pieza={piezas.has(p.id)} /></> },
     { id: 'categoria', titulo: 'Categoría', tarjeta: 'detalle', celda: (p) => nombresDe(p.categorias, porCategoria).join(', ') || <span className={l.sub}>Sin categoría</span> },
     { id: 'precio', titulo: 'Precio', ordenable: true, ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <Precio p={p} /> },
-    { id: 'stock', titulo: 'Stock', ordenable: true, ancho: 90, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <span className={l.numero}><span className={l.soloTarjeta}>Stock </span>{p.stock}</span> },
+    { id: 'stock', titulo: 'Stock', ordenable: true, ancho: guardarStock ? 170 : 90, alinear: 'fin', tarjeta: guardarStock ? 'control' : 'detalle', celda: (p) => <StockCelda p={p} onGuardar={guardarStock} /> },
     {
       id: 'estado',
       titulo: 'En la tienda',
       ancho: 150,
       // Es un botón: en la tarjeta va abajo, no dentro del botón de la tarjeta.
       tarjeta: 'control',
-      celda: (p) => (
+      celda: (p) => (soloStock ? <InsigniaEstado estado={p.oculto ? 'oculto' : 'activo'}>{p.oculto ? 'Oculto' : 'Visible'}</InsigniaEstado> : (
         <button type="button" className={s.visible} onClick={() => alternarVisible(p)} aria-pressed={!p.oculto} title={p.oculto ? 'Mostrar en la tienda' : 'Ocultar de la tienda'}>
           {p.oculto ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
           <InsigniaEstado estado={p.oculto ? 'oculto' : 'activo'}>{p.oculto ? 'Oculto' : 'Visible'}</InsigniaEstado>
         </button>
-      ),
+      )),
     },
   ];
 
@@ -210,10 +294,14 @@ export function PaginaProductos({
       <CabezaAdmin
         icono="productos"
         titulo="Productos"
-        subtitulo="Lo que se vende en la tienda. Los personalizables y los packs de Crear tienen su pestaña."
+        subtitulo={soloStock
+          ? 'El stock de cada producto. Cambia el número y se guarda solo; cada cambio queda en el historial.'
+          : 'Lo que se vende en la tienda y su stock. Los personalizables y los packs de Crear tienen su pestaña.'}
         acciones={(
           <>
-            {enTienda && onExportar && <Boton variante="secundario" icono={<Download aria-hidden="true" />} onClick={() => exportar(null)}>Exportar CSV</Boton>}
+            {urlHistorial && <Boton variante="secundario" icono={<History aria-hidden="true" />} to={urlHistorial}>Historial de stock</Boton>}
+            {enTienda && !soloStock && onExportar && <Boton variante="secundario" icono={<Download aria-hidden="true" />} onClick={() => exportar(null)}>Exportar CSV</Boton>}
+            {!soloStock && (
             <Boton
               variante="secundario"
               icono={<MoreHorizontal aria-hidden="true" />}
@@ -222,14 +310,15 @@ export function PaginaProductos({
             >
               Crear otro
             </Boton>
+            )}
           </>
         )}
-        principal={{ texto: 'Nuevo producto', Icono: Plus, to: urlNuevo }}
+        principal={soloStock ? undefined : { texto: 'Nuevo producto', Icono: Plus, to: urlNuevo }}
       />
 
       <div className={`${s.vistas} ${l.desliza}`}>
         <Pestanas
-          opciones={VISTAS.map((v) => ({ ...v, texto: v.id === 'tienda' ? `${v.texto} · ${cuentas.todos}` : deCrear[v.id] !== undefined ? `${v.texto} · ${deCrear[v.id]}` : v.texto }))}
+          opciones={VISTAS.filter((v) => !soloStock || v.id === 'tienda' || v.id === 'todos').map((v) => ({ ...v, texto: v.id === 'tienda' ? `${v.texto} · ${cuentas.todos}` : deCrear[v.id] !== undefined ? `${v.texto} · ${deCrear[v.id]}` : v.texto }))}
           valor={vista}
           onChange={(v) => { reiniciar(); onVista?.(v); }}
           etiqueta="Qué productos"
@@ -241,7 +330,7 @@ export function PaginaProductos({
 
       {enLista && (
         <>
-          {enTienda && borradores.length > 0 && (
+          {enTienda && !soloStock && borradores.length > 0 && (
             <section className={s.borradores} aria-labelledby="productos-borradores">
               <h2 id="productos-borradores"><FileClock aria-hidden="true" /> Sin terminar en este aparato</h2>
               <ul>
@@ -256,7 +345,7 @@ export function PaginaProductos({
             </section>
           )}
 
-          {enTienda && viejos.length > 0 && onQuitarPersonalizacionVieja && (
+          {enTienda && !soloStock && viejos.length > 0 && onQuitarPersonalizacionVieja && (
             <div className={s.aviso}>
               <Aviso
                 tipo="aviso"
@@ -265,6 +354,18 @@ export function PaginaProductos({
                 accion={<Boton tamano="sm" variante="contorno" onClick={() => setPregunta({ tipo: 'viejo', ids: viejos.map((p) => p.id) })}>Quitarla</Boton>}
               >
                 El editor viejo y Yoryo ya no se usan en la tienda: ahora se personaliza en Crear.
+              </Aviso>
+            </div>
+          )}
+
+          {!cargando && !error && agotados > 0 && filtro.stock !== 'agotado' && (
+            <div className={s.aviso}>
+              <Aviso
+                tipo="aviso"
+                titulo={agotados === 1 ? 'Un producto está agotado' : `${agotados} productos están agotados`}
+                accion={<Boton tamano="sm" variante="contorno" onClick={() => { setFiltro((f) => ({ ...f, stock: 'agotado' })); reiniciar(); }}>Verlos</Boton>}
+              >
+                Con stock 0 no se pueden comprar. Los que no tienen límite no cuentan.
               </Aviso>
             </div>
           )}
@@ -284,6 +385,9 @@ export function PaginaProductos({
             filtros={[
               { id: 'categoria', etiqueta: 'Categoría', todos: 'Todas las categorías', valor: filtro.categoria, opciones: categorias.map((c) => ({ valor: c.id, texto: c.nombre })) },
               { id: 'marca', etiqueta: 'Marca', todos: 'Todas las marcas', valor: filtro.marca, opciones: [...marcas.map((m) => ({ valor: m.id, texto: m.nombre })), { valor: '__sin', texto: 'Sin marca' }] },
+              { id: 'stock', etiqueta: 'Stock', todos: 'Todo el stock', valor: filtro.stock, opciones: FILTRO_STOCK },
+              ...(colecciones.length ? [{ id: 'coleccion', etiqueta: 'Colección', todos: 'Todas las colecciones', valor: filtro.coleccion, opciones: colecciones.map((c) => ({ valor: c.id, texto: c.nombre })) }] : []),
+              ...(tipos.length ? [{ id: 'tipo', etiqueta: 'Tipo', todos: 'Todos los tipos', valor: filtro.tipo, opciones: tipos.map((t) => ({ valor: t.id, texto: t.nombre })) }] : []),
             ]}
             onFiltro={(id, v) => { setFiltro((f) => ({ ...f, [id]: v })); reiniciar(); }}
             total={cargando || error ? undefined : filas.length}
@@ -300,14 +404,14 @@ export function PaginaProductos({
             onReintentar={onReintentar}
             orden={orden}
             onOrden={setOrden}
-            onFila={onAbrir}
-            seleccion={enTienda ? elegidos : undefined}
-            onSeleccion={enTienda ? setElegidos : undefined}
-            vacio={q || filtro.categoria || filtro.marca
+            onFila={soloStock ? undefined : onAbrir}
+            seleccion={enTienda && !soloStock ? elegidos : undefined}
+            onSeleccion={enTienda && !soloStock ? setElegidos : undefined}
+            vacio={q || filtro.categoria || filtro.marca || filtro.coleccion || filtro.tipo || filtro.stock
               ? { titulo: 'Ningún producto coincide', texto: 'Prueba con otra palabra o quita los filtros.' }
               : estado === 'ocultos' ? { titulo: 'No hay productos ocultos', icono: <Eye aria-hidden="true" /> }
                 : { titulo: 'Todavía no hay productos', accion: <Boton to={urlNuevo} icono={<Plus aria-hidden="true" />}>Nuevo producto</Boton> }}
-            acciones={(p) => (vista === 'todos' ? [
+            acciones={soloStock ? undefined : (p) => (vista === 'todos' ? [
               { id: 'abrir', etiqueta: 'Abrir su ficha', Icono: Pencil, accion: () => onAbrir?.(p) },
             ] : [
               { id: 'editar', etiqueta: 'Editar', Icono: Pencil, accion: () => onAbrir?.(p) },
@@ -318,7 +422,7 @@ export function PaginaProductos({
           />
           <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={['producto', 'productos']} />
 
-          {enTienda && (
+          {enTienda && !soloStock && (
             <AccionesLote
               cantidad={elegidos.length}
               unidad={['elegido', 'elegidos']}
@@ -384,111 +488,6 @@ function Pronto({ texto }) {
   return (
     <div className={s.pronto}>
       <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Todavía no está en el kit" texto={texto} />
-    </div>
-  );
-}
-
-/* ── Inventario ────────────────────────────────────────── */
-
-const ESTADOS_STOCK = {
-  agotado: { texto: 'Agotado', tono: 'peligro' },
-  ultimas: { texto: 'Últimas unidades', tono: 'aviso' },
-  disponible: { texto: 'Disponible', tono: 'exito' },
-};
-
-/**
- * El inventario: el stock de cada producto, que se cambia ahí mismo (se
- * guarda solo un segundo después de dejar de escribir).
- *  - productos (productoAdminDesde) · categorias · colecciones · marcas · tipos ([{ id, nombre }])
- *  - cargando · error · onReintentar
- *  - onGuardarStock(id, nuevo, anterior) → promesa (en el admin, además, el registro del cambio)
- */
-export function PaginaInventario({ productos = [], categorias = [], colecciones = [], marcas = [], tipos = [], cargando, error, onReintentar, onGuardarStock }) {
-  // El orden y el filtro de stock usan el stock con que llegó cada producto:
-  // si no, al guardar la fila se movería (o se iría) bajo el dedo.
-  const stockInicial = useRef(new Map());
-  productos.forEach((p) => { if (!stockInicial.current.has(p.id)) stockInicial.current.set(p.id, p.stock); });
-  const inicial = (p) => stockInicial.current.get(p.id) ?? p.stock;
-  const [buscar, setBuscar] = useState('');
-  const [filtro, setFiltro] = useState({});
-  const [orden, setOrden] = useState({ por: 'stock', dir: 'asc' });
-  const [visibles, setVisibles] = useState(PASO);
-  const [stock, setStock] = useState({}); // lo guardado aquí, para el estado y el orden
-
-  const conStock = useMemo(() => productos.map((p) => (p.id in stock ? { ...p, stock: stock[p.id] } : p)), [productos, stock]);
-  const q = normalizarBusqueda(buscar);
-  const filas = useMemo(() => {
-    const lista = conStock.filter((p) => (!q || normalizarBusqueda(`${p.nombre} ${p.sku}`).includes(q))
-      && (!filtro.categoria || p.categorias.includes(filtro.categoria))
-      && (!filtro.coleccion || p.colecciones.includes(filtro.coleccion))
-      && (!filtro.marca || p.marcaId === filtro.marca)
-      && (!filtro.tipo || p.tipo === filtro.tipo)
-      && (!filtro.estado || estadoDeStock(inicial(p)) === filtro.estado));
-    const signo = orden.dir === 'desc' ? -1 : 1;
-    const cmp = orden.por === 'nombre' ? (a, b) => a.nombre.localeCompare(b.nombre, 'es') : (a, b) => inicial(a) - inicial(b);
-    return [...lista].sort((a, b) => signo * cmp(a, b) || a.nombre.localeCompare(b.nombre, 'es'));
-  }, [conStock, q, filtro, orden]);
-  const agotados = conStock.filter((p) => p.stock <= 0).length;
-  const opciones = (lista) => lista.map((x) => ({ valor: x.id, texto: x.nombre }));
-
-  return (
-    <div data-componente="PaginaInventario">
-      <CabezaAdmin icono="inventario" titulo="Inventario" subtitulo="El stock de cada producto. Cambia el número y se guarda solo; cada cambio queda en el historial." />
-      {!cargando && !error && agotados > 0 && filtro.estado !== 'agotado' && (
-        <div className={s.aviso}>
-          <Aviso tipo="aviso" titulo={agotados === 1 ? 'Un producto está agotado' : `${agotados} productos están agotados`} accion={<Boton tamano="sm" variante="contorno" onClick={() => setFiltro((f) => ({ ...f, estado: 'agotado' }))}>Verlos</Boton>}>
-            Con stock 0 no se pueden comprar.
-          </Aviso>
-        </div>
-      )}
-      <BarraFiltros
-        busqueda={buscar}
-        onBusqueda={(t) => { setBuscar(t); setVisibles(PASO); }}
-        placeholder="Buscar por nombre o SKU"
-        filtros={[
-          { id: 'estado', etiqueta: 'Stock', todos: 'Todo el stock', valor: filtro.estado || '', opciones: [{ valor: 'agotado', texto: 'Agotados' }, { valor: 'ultimas', texto: 'Últimas unidades' }, { valor: 'disponible', texto: 'Disponibles' }] },
-          { id: 'categoria', etiqueta: 'Categoría', todos: 'Todas las categorías', valor: filtro.categoria || '', opciones: opciones(categorias) },
-          { id: 'coleccion', etiqueta: 'Colección', todos: 'Todas las colecciones', valor: filtro.coleccion || '', opciones: opciones(colecciones) },
-          { id: 'marca', etiqueta: 'Marca', todos: 'Todas las marcas', valor: filtro.marca || '', opciones: opciones(marcas) },
-          { id: 'tipo', etiqueta: 'Tipo', todos: 'Todos los tipos', valor: filtro.tipo || '', opciones: opciones(tipos) },
-        ]}
-        onFiltro={(id, v) => { setFiltro((f) => ({ ...f, [id]: v })); setVisibles(PASO); }}
-        total={cargando || error ? undefined : filas.length}
-        unidad={['producto', 'productos']}
-      />
-      <TablaAdmin
-        etiqueta="Inventario"
-        columnas={[
-          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
-          { id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo', celda: (p) => <>{p.nombre}<span className={l.sub}>{p.sku ? `SKU ${p.sku}` : 'Sin SKU'}</span></> },
-          { id: 'precio', titulo: 'Precio', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <Precio p={p} /> },
-          { id: 'estado', titulo: 'Estado', ancho: 160, tarjeta: 'estado', celda: (p) => <InsigniaEstado estado={estadoDeStock(p.stock)} estados={ESTADOS_STOCK} /> },
-          {
-            id: 'stock',
-            titulo: 'Stock',
-            ordenable: true,
-            ancho: 210,
-            tarjeta: 'control',
-            celda: (p) => (
-              <NumeroEnLinea
-                valor={p.stock}
-                etiqueta={`Stock de ${p.nombre}`}
-                sufijo="uds"
-                onGuardar={async (n, antes) => { await onGuardarStock?.(p.id, n, antes); setStock((m) => ({ ...m, [p.id]: n })); }}
-              />
-            ),
-          },
-        ]}
-        filas={filas.slice(0, visibles)}
-        nombreDe={(p) => p.nombre}
-        cargando={cargando}
-        error={error}
-        onReintentar={onReintentar}
-        orden={orden}
-        onOrden={setOrden}
-        vacio={{ titulo: 'Ningún producto coincide', texto: 'Prueba con otra palabra o quita los filtros.' }}
-      />
-      <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={['producto', 'productos']} />
     </div>
   );
 }

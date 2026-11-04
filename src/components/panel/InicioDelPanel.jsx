@@ -17,12 +17,11 @@ const contar = async (coleccion, campo, valor) => {
 };
 
 const ATAJOS = [
-  { to: '/admin/productos', texto: 'Productos', detalle: 'Crear, editar y ocultar', icono: 'productos', tono: 'degradado', permiso: ['manage_products'] },
+  { to: '/admin/productos', texto: 'Productos', detalle: 'Crear, editar y su stock', icono: 'productos', tono: 'degradado', permiso: ['manage_products', 'manage_inventory'] },
   { to: '/admin/resultados', texto: 'Resultados', detalle: 'Cómo va la tienda', icono: 'resultados', tono: 'oro', permiso: [...DISENO, ...CLIENTES] },
   { to: '/admin/categorias', texto: 'Categorías', detalle: 'Las burbujas de cada marca', icono: 'categorias', tono: 'degradado', permiso: ['manage_products'] },
   { to: '/admin/notificaciones', texto: 'Notificaciones', detalle: 'Ofertas y novedades', icono: 'notificaciones', tono: 'rosa', permiso: DISENO },
   { to: '/admin/fechas-importantes', texto: 'Fechas importantes', detalle: 'El calendario de campañas', icono: 'fechas', tono: 'rosa', permiso: CLIENTES },
-  { to: '/admin/inventario', texto: 'Inventario', detalle: 'El stock de todo', icono: 'inventario', tono: 'degradado', permiso: ['manage_inventory'] },
 ];
 
 /*

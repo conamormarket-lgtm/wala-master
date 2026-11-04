@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { getMessage, setMessage } from '../../services/messages';
 import { createDocument, getCollection, setDocument } from '../../services/firebase/firestore';
 import { getInventoryLogs } from '../../services/inventoryLogs';
@@ -98,7 +99,9 @@ async function restaurarCopia(x) {
  */
 export function HistorialDelPanel() {
   const invalidar = useInvalidar();
-  const [pestana, setPestana] = useState('diseno');
+  // ?ver=inventario abre los cambios de stock (el botón de Productos lleva ahí).
+  const [searchParams] = useSearchParams();
+  const [pestana, setPestana] = useState(() => (searchParams.get('ver') === 'inventario' ? 'inventario' : 'diseno'));
 
   const copiasQ = useQuery({
     queryKey: COPIAS,

@@ -21,7 +21,9 @@ import {
 } from '../../pages/Crear/plantillasProducto';
 import GenerarFrenteEspalda from '../../pages/Tienda/admin/GenerarFrenteEspalda';
 import { PaginaFichaProducto } from '../../componentes/kit/paginas/admin/Ficha';
-import { fichaDesdeProducto, fichaAProducto, productoAdminDesde } from '../../componentes/kit/adaptadoresAdmin';
+import { fichaDesdeProducto, fichaAProducto, productoAdminDesde, puedeVer } from '../../componentes/kit/adaptadoresAdmin';
+import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
+import { logInventoryChange } from '../../services/inventoryLogs';
 import { sinError, useInvalidar } from './comun';
 
 // El editor de la descripción: las mismas fuentes y tamaños de AdminProductoFormV2.
@@ -85,7 +87,7 @@ export default function FichaDelPanel({ modo = 'producto' }) {
   const location = useLocation();
   const queryClient = useQueryClient();
   const invalidar = useInvalidar();
-  const { user } = useAuth();
+  const { user, adminPermissions } = useAuth();
   const params = new URLSearchParams(location.search);
   const urlDraftId = params.get('draftId');
   const urlBrandId = params.get('brandId') || '';
@@ -198,6 +200,11 @@ export default function FichaDelPanel({ modo = 'producto' }) {
     }
     const doc = fichaAProducto(conCopias, nuevo ? {} : producto || {}, { prendaBaseParaGuardar });
     await sinError(nuevo ? createProduct(doc, draftId) : updateProduct(id, doc));
+    // El stock cambiado aquí también queda en el historial (como en la lista).
+    const stockDe = (v) => (v === undefined || v === null || v === '' ? null : Number(v));
+    if (!nuevo && producto && stockDe(producto.inStock) !== stockDe(doc.inStock)) {
+      await logInventoryChange(id, doc.name || producto.name || id, stockDe(producto.inStock), stockDe(doc.inStock), user?.email || 'Admin');
+    }
     escribirBorradores(leerBorradores().filter((d) => d.draftId !== draftId));
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['admin-products'] }),
@@ -212,6 +219,10 @@ export default function FichaDelPanel({ modo = 'producto' }) {
 
   const marcaDe = (marcaId) => (marcasQ.data || []).find((m) => m.id === marcaId) || null;
   const desde = `${location.pathname}?pestana=plantillas`;
+
+  // La ficha es de quien edita productos: quien solo tiene inventario cambia
+  // el stock en la lista (/admin/productos ya le abre por eso).
+  if (!puedeVer({ permiso: ['manage_products'] }, adminPermissions || [])) return <SinPermiso permiso="Catálogo" />;
 
   return (
     <PaginaFichaProducto

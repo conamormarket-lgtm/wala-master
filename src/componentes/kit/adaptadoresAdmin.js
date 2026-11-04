@@ -15,10 +15,11 @@
  *  - diseño (manage_design): recepción, pagos, sorteos, enlaces, avisos,
  *    datos para recomendar, editar la tienda, destacados, WhatsApp,
  *    backups, Kapi y los juegos
- *  - productos (manage_products): el catálogo (menos inventario), las
- *    y las recompensas; landing pages y temas piden además
- *    manage_landing_pages
- *  - inventario (manage_inventory) · clientes (manage_clients): reclamos,
+ *  - productos (manage_products): el catálogo y las recompensas; landing
+ *    pages y temas piden además manage_landing_pages
+ *  - inventario (manage_inventory): Productos, solo para cambiar el stock
+ *    (Inventario se unió a Productos el 2026-11-04)
+ *  - clientes (manage_clients): reclamos,
  *    referidos, encuesta, popups, fechas, retos, misiones
  *  - Resultados: diseño o clientes; Clientes y Opiniones, solo clientes
  *  - Configuración: solo superadmin
@@ -27,6 +28,8 @@
  */
 const DISENO = ['manage_design'];
 const PRODUCTOS = ['manage_products'];
+// Productos también lleva el stock (Inventario se unió el 2026-11-04): quien solo tiene inventario lo cambia ahí.
+const PRODUCTOS_O_STOCK = ['manage_products', 'manage_inventory'];
 const CLIENTES = ['manage_clients'];
 
 export const MENU_ADMIN = [
@@ -45,8 +48,7 @@ export const MENU_ADMIN = [
   {
     id: 'catalogo', titulo: 'Catálogo', icono: 'catalogo', tono: 'degradado',
     items: [
-      { to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS },
-      { to: '/admin/inventario', texto: 'Inventario', icono: 'inventario', permiso: ['manage_inventory'] },
+      { to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS_O_STOCK },
       { to: '/admin/categorias', texto: 'Categorías', icono: 'categorias', permiso: PRODUCTOS },
       { to: '/admin/colecciones', texto: 'Colecciones', icono: 'colecciones', permiso: PRODUCTOS },
       { to: '/admin/marcas', texto: 'Marcas', icono: 'marcas', permiso: PRODUCTOS },
@@ -134,9 +136,8 @@ export function menuAdminPara(permisos, menu = MENU_ADMIN) {
 const ACCESOS = [
   { id: 'inicio', to: '/admin', texto: 'Inicio', icono: 'inicio', exacto: true },
   { id: 'pedidos', to: '/admin/recepcion-pedidos', texto: 'Pedidos', icono: 'pedidos', permiso: DISENO },
-  { id: 'productos', to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS },
+  { id: 'productos', to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS_O_STOCK },
   { id: 'resultados', to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: [...DISENO, ...CLIENTES] },
-  { id: 'inventario', to: '/admin/inventario', texto: 'Inventario', icono: 'inventario', permiso: ['manage_inventory'] },
   { id: 'reclamos', to: '/admin/libro-reclamaciones', texto: 'Reclamos', icono: 'reclamos', permiso: CLIENTES },
   { id: 'referidos', to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: CLIENTES },
 ];
@@ -410,7 +411,9 @@ export function productoAdminDesde(p = {}) {
     marcaId: p.brandId || '',
     destacado: p.featured === true,
     ordenDestacado: Number(p.featuredOrder) || 0,
-    stock: Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0,
+    // Sin inStock (o vacío) no hay límite: el servidor deja comprar cuantos sean
+    // (cartValidation). Antes se leía como 0 y salían "agotados" que se venden.
+    stock: p.inStock === undefined || p.inStock === null || p.inStock === '' ? null : (Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0),
     sku: p.sku || '',
     categorias: Array.isArray(p.categories) ? p.categories : (p.categoryId ? [p.categoryId] : []),
     colecciones: Array.isArray(p.collections) ? p.collections : [],
@@ -773,8 +776,8 @@ export function erroresDePack(k) {
   return e;
 }
 
-/** El estado del stock (Inventario): 0 agotado, hasta 3 últimas, más disponible. */
-export const estadoDeStock = (n) => (n <= 0 ? 'agotado' : n <= 3 ? 'ultimas' : 'disponible');
+/** El estado del stock: sin número, sin límite; 0 agotado, hasta 3 últimas, más disponible. */
+export const estadoDeStock = (n) => (n === null || n === undefined ? 'sinLimite' : n <= 0 ? 'agotado' : n <= 3 ? 'ultimas' : 'disponible');
 
 /** Busca sin tildes ni mayúsculas. */
 export function normalizarBusqueda(t) {
@@ -2947,7 +2950,7 @@ export const PERMISOS_ADMIN = [
   { valor: 'superadmin', texto: 'Super Admin', detalle: 'Todo, también el equipo y esta página.' },
   { valor: 'manage_design', texto: 'Diseño y pedidos', detalle: 'Pedidos y pagos, la tienda, campañas, WhatsApp y los juegos.' },
   { valor: 'manage_products', texto: 'Catálogo', detalle: 'Productos, categorías, marcas y recompensas.' },
-  { valor: 'manage_inventory', texto: 'Inventario', detalle: 'La tabla de inventario.' },
+  { valor: 'manage_inventory', texto: 'Inventario', detalle: 'El stock en Productos (sin crear ni editar).' },
   { valor: 'manage_clients', texto: 'Clientes', detalle: 'Reclamos, referidos, la encuesta, popups, fechas, retos y misiones.' },
   { valor: 'manage_landing_pages', texto: 'Landing pages', detalle: 'Con Catálogo: las landing pages y los temas.' },
 ];
@@ -3108,15 +3111,20 @@ export function conVersionActual(cambios = []) {
 /** "Página principal" · "La tienda" · el slug de una landing. */
 export const nombreDePaginaGuardada = (id) => PAGINAS_FIJAS.find((p) => p.id === id)?.nombre || `/${id}`;
 
-/** Un cambio de stock (inventoryLogs) → la lista. */
+/** Un cambio de stock (inventoryLogs) → la lista. null = sin límite (ni sube ni baja: cambia el límite). */
 export function movimientoInventarioDesde(log = {}) {
-  const antes = Number(log.oldStock) || 0;
-  const despues = Number(log.newStock) || 0;
+  const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v) || 0);
+  const antes = num(log.oldStock);
+  const despues = num(log.newStock);
   return {
     id: log.id, cuando: Number(log.timestamp) || 0, quien: log.userEmail || 'Desconocido',
-    producto: log.productName || 'Producto', productoId: log.productId || '', antes, despues, cambio: despues - antes,
+    producto: log.productName || 'Producto', productoId: log.productId || '', antes, despues,
+    cambio: antes === null || despues === null ? 0 : despues - antes,
   };
 }
+
+/** Un stock del historial: el número o "Sin límite". */
+export const textoStock = (n) => (n === null || n === undefined ? 'Sin límite' : String(n));
 
 /** "+3" · "−2" · "0". */
 export const textoCambioStock = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
@@ -3131,7 +3139,7 @@ export function csvInventario(movimientos = []) {
   const filas = movimientos.map((m) => [
     fecha(m.cuando, { year: 'numeric', month: '2-digit', day: '2-digit' }),
     fecha(m.cuando, { hour: '2-digit', minute: '2-digit', hour12: false }),
-    m.quien, m.producto, m.antes, m.despues, m.cambio,
+    m.quien, m.producto, textoStock(m.antes), textoStock(m.despues), m.cambio,
   ].map(celda).join(','));
   return [['Fecha', 'Hora', 'Usuario', 'Producto', 'Stock anterior', 'Stock nuevo', 'Cambio'].join(','), ...filas].join('\n');
 }

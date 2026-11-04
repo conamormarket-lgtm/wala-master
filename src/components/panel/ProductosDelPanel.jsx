@@ -18,8 +18,8 @@ import { logInventoryChange } from '../../services/inventoryLogs';
 import { quitarPersonalizacionVieja } from '../../services/personalizacionVieja';
 import { exportProducts } from '../../utils/exportProducts';
 import { SINONIMOS, publicoDe, edadMinimaDe, equipoDe, textoProducto } from '../../utils/giftRecommender.mjs';
-import { PaginaProductos, PaginaInventario, PaginaRecomendar } from '../../componentes/kit/paginas/admin/Productos';
-import { productoAdminDesde, categoriaDesdeFirestore } from '../../componentes/kit/adaptadoresAdmin';
+import { PaginaProductos, PaginaRecomendar } from '../../componentes/kit/paginas/admin/Productos';
+import { productoAdminDesde, categoriaDesdeFirestore, puedeVer } from '../../componentes/kit/adaptadoresAdmin';
 import { PersonalizablesDelPanel, PacksDelPanel } from './CrearDelPanel';
 import { sinError, useLectura, useInvalidar } from './comun';
 
@@ -52,11 +52,20 @@ const leerBorradores = () => { try { return JSON.parse(localStorage.getItem('wal
  * (updateProductField): nunca el producto entero desde la fila de la tabla.
  * Descartar un borrador borra sus fotos de Storage solo si ese producto nunca
  * se publicó (la regla P0 de AdminProductos).
+ * El stock (lo que era /admin/inventario) se cambia en la fila: escribe solo
+ * inStock y anota el cambio (logInventoryChange). Quien solo tiene permiso de
+ * inventario ve la lista para eso (soloStock), sin crear ni editar.
  */
 export default function ProductosDelPanel() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const vista = VISTAS.includes(searchParams.get('ver')) ? searchParams.get('ver') : 'tienda';
+  const { user, adminPermissions } = useAuth();
+  const permisos = adminPermissions || [];
+  const soloStock = !puedeVer({ permiso: ['manage_products'] }, permisos);
+  const colecciones = useLectura(['collections'], getCollections);
+  const tipos = useLectura(['productTypes'], getProductTypes);
+  const pedida = VISTAS.includes(searchParams.get('ver')) ? searchParams.get('ver') : 'tienda';
+  const vista = soloStock && (pedida === 'crear' || pedida === 'packs') ? 'tienda' : pedida;
   const productos = useLectura(['admin-products'], productosConOcultos);
   const categorias = useLectura(['admin-categories'], getCategories);
   const marcas = useLectura(['admin-brands'], getBrands);
@@ -76,9 +85,18 @@ export default function ProductosDelPanel() {
       productos={lista}
       categorias={nombres(categorias.datos)}
       marcas={nombres(marcas.datos)}
+      colecciones={nombres(colecciones.datos)}
+      tipos={nombres(tipos.datos)}
       cargando={productos.cargando}
       error={productos.error}
       onReintentar={productos.onReintentar}
+      soloStock={soloStock}
+      urlHistorial={puedeVer({ permiso: ['manage_design'] }, permisos) ? '/admin/backups?ver=inventario' : undefined}
+      onGuardarStock={async (p, nuevo, anterior) => {
+        await updateProductField(p.id, { inStock: nuevo });
+        await logInventoryChange(p.id, porId.get(p.id)?.name || p.nombre, anterior, nuevo, user?.email || 'Admin');
+        await invalidar(['admin-products'], ['products']);
+      }}
       vista={vista}
       onVista={(v) => navigate(v === 'tienda' ? '/admin/productos' : `/admin/productos?ver=${v}`)}
       personalizables={<PersonalizablesDelPanel />}
@@ -132,40 +150,6 @@ export default function ProductosDelPanel() {
         const quedan = leerBorradores().filter((d) => d.draftId !== id);
         try { localStorage.setItem('wala_drafts', JSON.stringify(quedan)); } catch { /* sin localStorage */ }
         setBorradores(quedan);
-      }}
-    />
-  );
-}
-
-/*
- * /admin/inventario (D2a): el stock de todo, sin los archivados. Guardar
- * escribe solo inStock y anota el cambio (logInventoryChange), como antes.
- */
-export function InventarioDelPanel() {
-  const { user } = useAuth();
-  const productos = useLectura(['admin-inventory-products'], productosConOcultos);
-  const categorias = useLectura(['categories'], getCategories);
-  const colecciones = useLectura(['collections'], getCollections);
-  const marcas = useLectura(['brands'], getBrands);
-  const tipos = useLectura(['productTypes'], getProductTypes);
-  const invalidar = useInvalidar();
-  const crudos = productos.datos || [];
-
-  return (
-    <PaginaInventario
-      productos={crudos.map(productoAdminDesde).filter(Boolean)}
-      categorias={nombres(categorias.datos)}
-      colecciones={nombres(colecciones.datos)}
-      marcas={nombres(marcas.datos)}
-      tipos={nombres(tipos.datos)}
-      cargando={productos.cargando}
-      error={productos.error}
-      onReintentar={productos.onReintentar}
-      onGuardarStock={async (id, nuevo, anterior) => {
-        await updateProductField(id, { inStock: nuevo });
-        const nombre = crudos.find((p) => p.id === id)?.name || id;
-        await logInventoryChange(id, nombre, anterior, nuevo, user?.email || 'Admin');
-        await invalidar(['admin-inventory-products'], ['admin-products'], ['products']);
       }}
     />
   );

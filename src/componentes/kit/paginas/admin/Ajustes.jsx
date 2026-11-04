@@ -11,7 +11,7 @@ import { PaginaListaAdmin } from './Lista';
 import { numeroWhatsApp, haceCuanto } from '../../adaptadores';
 import {
   SECCIONES_WHATSAPP, telefonoEscrito, erroresDeWhatsApp, mensajePedidoDeEjemplo,
-  nombreDePaginaGuardada, textoCambioStock, csvInventario,
+  nombreDePaginaGuardada, textoCambioStock, textoStock, csvInventario,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Ajustes.module.css';
@@ -198,7 +198,7 @@ export function PaginaHistorialAdmin({
           <>
             {secciones}
             <div className={s.fila}>
-              <p className={s.nota}>Cada cambio de stock hecho desde el inventario, con quién lo hizo.</p>
+              <p className={s.nota}>Cada cambio de stock hecho en Productos (en la lista o en la ficha), con quién lo hizo.</p>
               <Boton tamano="sm" variante="secundario" icono={<Download aria-hidden="true" />} disabled={!movimientos.length} onClick={() => descargar(csvInventario(movimientos), `inventario_${new Date().toISOString().slice(0, 10)}.csv`)}>Descargar CSV</Boton>
             </div>
           </>
@@ -215,14 +215,16 @@ export function PaginaHistorialAdmin({
         columnas={[
           { id: 'producto', titulo: 'Producto', tarjeta: 'titulo', celda: (m) => <>{m.producto}<span className={l.sub}>{m.quien}</span></> },
           { id: 'cuando', titulo: 'Cuándo', ancho: 190, tarjeta: 'detalle', ordenable: true, celda: (m) => fechaHora(m.cuando) },
-          { id: 'stock', titulo: 'Stock', ancho: 110, alinear: 'fin', tarjeta: 'detalle', celda: (m) => <span className={l.numero}>{m.antes} → {m.despues}</span> },
+          { id: 'stock', titulo: 'Stock', ancho: 110, alinear: 'fin', tarjeta: 'detalle', celda: (m) => <span className={l.numero}>{textoStock(m.antes)} → {textoStock(m.despues)}</span> },
           { id: 'cambio', titulo: 'Cambio', ancho: 120, tarjeta: 'estado', celda: (m) => (
-            <span className={m.cambio > 0 ? s.sube : m.cambio < 0 ? s.baja : s.igual}>{m.cambio > 0 ? 'Subió' : m.cambio < 0 ? 'Bajó' : 'Igual'} {textoCambioStock(m.cambio)}</span>
+            m.antes === null || m.despues === null
+              ? <span className={s.igual}>{m.antes === null ? 'Le puso límite' : 'Le quitó el límite'}</span>
+              : <span className={m.cambio > 0 ? s.sube : m.cambio < 0 ? s.baja : s.igual}>{m.cambio > 0 ? 'Subió' : m.cambio < 0 ? 'Bajó' : 'Igual'} {textoCambioStock(m.cambio)}</span>
           ) },
         ]}
         ordenes={{ cuando: (a, b) => a.cuando - b.cuando }}
         ordenInicial={{ por: 'cuando', dir: 'desc' }}
-        vacio={{ titulo: 'Todavía no hay cambios de stock', texto: 'Aparecen aquí cuando alguien cambia el stock desde el inventario.' }}
+        vacio={{ titulo: 'Todavía no hay cambios de stock', texto: 'Aparecen aquí cuando alguien cambia el stock en Productos.' }}
       />
     );
   }

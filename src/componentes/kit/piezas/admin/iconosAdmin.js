@@ -1,5 +1,5 @@
 import {
-  Home, Package, CreditCard, BookOpen, LayoutGrid, Shirt, Boxes, Tag, Layers, Store, SlidersHorizontal,
+  Home, Package, CreditCard, BookOpen, LayoutGrid, Shirt, Tag, Layers, Store, SlidersHorizontal,
   Truck, Target, BarChart3, Eye, Users, MessageCircle, Wrench, Share2, Gift, ListChecks,
   Trophy, Bell, CalendarHeart, ClipboardList, Megaphone, Ticket, Repeat, Link2, MessageSquare, PanelsTopLeft,
   Palette, Brush, Paintbrush, Star, PawPrint, SpellCheck, Disc3, FlaskConical, Settings, ShieldCheck,
@@ -18,7 +18,6 @@ export const ICONOS_ADMIN = {
   reclamos: BookOpen,
   catalogo: LayoutGrid,
   productos: Shirt,
-  inventario: Boxes,
   categorias: Tag,
   colecciones: Layers,
   marcas: Store,
