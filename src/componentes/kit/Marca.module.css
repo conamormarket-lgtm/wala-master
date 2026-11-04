@@ -52,6 +52,21 @@
   mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
 }
 
+/* A color, la W va blanca encima (como el logo de la cabecera y el de Cargando):
+   calada, de noche se veía el fondo oscuro por la W. Dos capas de máscara
+   (etiqueta + W) y dos de fondo (la W blanca sobre el degradado). */
+.iso_color {
+  background:
+    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat,
+    linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+  -webkit-mask:
+    url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat,
+    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
+  mask:
+    url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat,
+    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
+}
+
 .iso_blanco {
   background: #fff;
 }
