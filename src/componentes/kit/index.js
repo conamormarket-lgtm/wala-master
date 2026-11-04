@@ -3,7 +3,7 @@ export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMon
 export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoHex, Deslizador, normalizarHex } from './Formulario';
 export { default as ListaOpciones } from './ListaOpciones';
 export { PanelFlotante, enCelular } from './PanelFlotante';
-export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
+export { CampoFecha, CampoHora, Calendario, fechaEnTexto } from './Fecha';
 export { default as TarjetaProducto, TarjetaProductoEsqueleto, TarjetaDeCatalogo, soles } from './TarjetaProducto';
 export { Cabecera, Pestanas, Logo } from './Navegacion';
 export { BarraInferior } from './BarraInferior';

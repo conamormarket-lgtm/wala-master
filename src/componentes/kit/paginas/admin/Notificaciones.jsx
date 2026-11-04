@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BellRing, Copy, Plus, RefreshCw, Save, Send, Trash2, X, XCircle } from 'lucide-react';
+import { BellRing, Copy, Pencil, Plus, RefreshCw, Save, Send, Trash2, X, XCircle } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
-import { CampoFecha } from '../../Fecha';
+import { CampoFecha, CampoHora } from '../../Fecha';
+import { IsoWala } from '../../Marca';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, InsigniaEstado, SelectorProductos } from '../../piezas/admin/Datos';
@@ -44,7 +45,7 @@ const errorDe = (err) => err?.message || 'Vuelve a intentar.';
 function Notificacion({ titulo, texto, imagen }) {
   return (
     <div className={s.notif} aria-label="Vista previa de la notificación">
-      <span className={s.notifApp}><img src="/logo-wala-192.png" alt="" /> Walá · ahora</span>
+      <span className={s.notifApp}><IsoWala tamano={16} /> Walá · ahora</span>
       <span className={s.notifCuerpo}>
         <span><strong>{titulo || 'El título'}</strong>{texto || 'Escribe el mensaje…'}</span>
         {imagen && <img src={imagen} alt="" />}
@@ -180,8 +181,8 @@ function Automaticos({ config, cargando, error, onReintentar, onGuardar, onProba
             <li key={c.clave} className={[s.categoria, !datos.activos[c.clave] && s.apagada].filter(Boolean).join(' ')}>
               <Interruptor etiqueta={c.nombre} descripcion={c.detalle} activo={datos.activos[c.clave]} onChange={(v) => activo(c.clave, v)} />
               <div className={s.horas}>
-                <Campo etiqueta="Desde" type="time" value={datos.horarios[c.clave].desde} onChange={(e) => horario(c.clave, 'desde', e.target.value)} />
-                <Campo etiqueta="Hasta" type="time" value={datos.horarios[c.clave].hasta} error={malHorario.includes(c.clave) ? 'Termina antes de empezar.' : undefined} onChange={(e) => horario(c.clave, 'hasta', e.target.value)} />
+                <CampoHora etiqueta="Desde" valor={datos.horarios[c.clave].desde} onCambiar={(v) => horario(c.clave, 'desde', v)} />
+                <CampoHora etiqueta="Hasta" valor={datos.horarios[c.clave].hasta} error={malHorario.includes(c.clave) ? 'Termina antes de empezar.' : undefined} onCambiar={(v) => horario(c.clave, 'hasta', v)} />
               </div>
             </li>
           ))}
@@ -302,6 +303,27 @@ function Ofertas({ oferta: d, setOferta, horario, guardadas, onGuardarBorrador, 
       toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: errorDe(err) });
     }
   });
+  const cargar = (g) => {
+    const o = { ...OFERTA_VACIA, ...g, cuando: 'ahora' };
+    setOferta(o);
+    setErrores({});
+    return o;
+  };
+  const editarGuardada = (g) => {
+    cargar(g);
+    window.setTimeout(() => document.getElementById('oferta-titulo')?.focus(), 0);
+  };
+  // Enviar desde la lista: la carga y pide la misma confirmación que «Enviar ahora».
+  const enviarGuardada = (g) => {
+    const o = cargar(g);
+    const e = erroresDeOferta(o, Date.now(), false);
+    if (['titulo', 'mensaje', 'dia'].some((k) => e[k])) {
+      setErrores(e);
+      toast({ tipo: 'error', titulo: 'Le falta algo', texto: 'Revísala abajo y envíala desde ahí.' });
+      return;
+    }
+    setEnviar({ forzar: false });
+  };
   const mandar = async (forzar) => {
     try {
       const r = await onEnviar?.(d, { programadaIso: iso || null, forzar });
@@ -326,14 +348,15 @@ function Ofertas({ oferta: d, setOferta, horario, guardadas, onGuardarBorrador, 
       {guardadas.length > 0 && (
         <section className={s.seccion} aria-labelledby="ofertas-guardadas">
           <h2 id="ofertas-guardadas" className={s.subtitulo}>Guardadas</h2>
-          <p className={s.nota}>«Usar» la carga abajo para enviarla o programarla cuando quieras.</p>
+          <p className={s.nota}>«Enviar» la manda ya (te pide confirmar). «Editar» la carga abajo para cambiarla o programarla.</p>
           <ul className={s.guardadas}>
             {guardadas.map((g) => (
               <li key={g.id} className={[s.guardada, d.id === g.id && s.guardadaActiva].filter(Boolean).join(' ')}>
                 {g.imagen && <FotoCelda src={g.imagen} tamano={44} />}
                 <span className={s.guardadaTexto}><strong>{g.titulo}</strong><span>{g.mensaje}</span><span className={l.sub}>Para: {segmentoTexto(g.segmento).texto}</span></span>
                 <span className={s.guardadaAcciones}>
-                  <Boton tamano="sm" variante="secundario" onClick={() => { setOferta({ ...OFERTA_VACIA, ...g, cuando: 'ahora' }); setErrores({}); }}>{d.id === g.id ? 'En uso' : 'Usar'}</Boton>
+                  <Boton tamano="sm" icono={<Send aria-hidden="true" />} disabled={Boolean(ocupado)} onClick={() => enviarGuardada(g)}>Enviar</Boton>
+                  <Boton tamano="sm" variante="secundario" icono={<Pencil aria-hidden="true" />} onClick={() => editarGuardada(g)}>{d.id === g.id ? 'Editando' : 'Editar'}</Boton>
                   <Boton soloIcono tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} aria-label={`Borrar «${g.titulo}»`} onClick={() => setBorrar(g)} />
                 </span>
               </li>

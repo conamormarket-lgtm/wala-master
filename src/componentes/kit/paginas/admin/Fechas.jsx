@@ -20,6 +20,7 @@ import {
   estadoDePaquetes, diasDesdeTexto, idDeFestiva, normalizarBusqueda,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
+import { IsoWala } from '../../Marca';
 import s from './Fechas.module.css';
 
 /*
@@ -421,7 +422,7 @@ function VistaPrevia({ prueba: r, onCerrar }) {
   return (
     <section className={s.tarjeta} role="status" aria-label="Aviso de prueba enviado">
       <div className={s.notif}>
-        <span className={s.notifApp}><img src="/logo-wala-192.png" alt="" /> Walá · ahora</span>
+        <span className={s.notifApp}><IsoWala tamano={16} /> Walá · ahora</span>
         <span className={s.notifCuerpo}>
           <span><strong>{r.titulo}</strong>{r.cuerpo}</span>
           {r.imagen && <img src={r.imagen} alt="" />}
