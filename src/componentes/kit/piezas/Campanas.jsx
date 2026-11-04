@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Music2, MessageCircle, Link2 } from 'lucide-react';
+import { X, Music2, MessageCircle, Link2, ChevronRight, ShoppingBag, Ticket, Mail, Phone, Palette, Gift, Play } from 'lucide-react';
 import Boton from '../Boton';
 import { IconoWala } from '../IconosWala';
 import { Trazo } from '../Marca';
@@ -97,19 +97,40 @@ export function RedesEnlaces({ redes = [], onClic }) {
   );
 }
 
+/** El ícono de un botón según a dónde lleva (cuando no tiene miniatura). */
+export function iconoDeEnlace(url = '') {
+  const u = String(url || '').toLowerCase();
+  if (/wa\.me|whatsapp/.test(u)) return MessageCircle;
+  if (/instagram/.test(u)) return Instagram;
+  if (/tiktok/.test(u)) return Music2;
+  if (/facebook|fb\.com/.test(u)) return Facebook;
+  if (/youtube|youtu\.be/.test(u)) return Play;
+  if (u.startsWith('mailto:')) return Mail;
+  if (u.startsWith('tel:')) return Phone;
+  if (/sorteo|rifa|ruleta/.test(u)) return Ticket;
+  if (/\/crear|\/estudio/.test(u)) return Palette;
+  if (/regal/.test(u)) return Gift;
+  if (u.startsWith('/') || /wala\.pe/.test(u)) return ShoppingBag;
+  return Link2;
+}
+
 /**
  * Un botón de una página de enlaces, con el estilo que eligió el admin.
  *  - titulo · url · imagen (miniatura a la izquierda) · estilo (el style de
  *    estiloBotonStyle) · onClic
- * Si la miniatura no carga, queda el hueco (el texto sigue centrado).
+ * Sin miniatura (o si no carga), un ícono según a dónde lleva (iconoDeEnlace);
+ * a la derecha, una flecha que se mueve al pasar. El brillo solo sale al tocarlo.
  */
 export function BotonEnlace({ titulo, url, imagen, estilo, onClic }) {
   const [rota, setRota] = useState(false);
+  const Icono = iconoDeEnlace(url);
   return (
     <Enlace to={url} className={s.botonEnlace} style={estilo} onClick={onClic} data-componente="BotonEnlace">
-      {imagen && !rota ? <img {...atributosDeFoto(imagen, '96px')} alt="" className={s.botonImagen} onError={siFallaDeVerdad(() => setRota(true))} /> : <span className={s.botonHueco} aria-hidden="true" />}
+      {imagen && !rota
+        ? <img {...atributosDeFoto(imagen, '96px')} alt="" className={s.botonImagen} onError={siFallaDeVerdad(() => setRota(true))} />
+        : <span className={s.botonIcono} aria-hidden="true"><Icono /></span>}
       <span className={s.botonTexto}><Texto>{titulo}</Texto></span>
-      <span className={s.botonHueco} aria-hidden="true" />
+      <span className={s.botonFlecha} aria-hidden="true"><ChevronRight /></span>
     </Enlace>
   );
 }

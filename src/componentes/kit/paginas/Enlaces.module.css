@@ -17,6 +17,8 @@
 }
 
 .enlacesAvatar {
+  position: relative;
+  z-index: 1;
   width: 96px;
   height: 96px;
   border: 3px solid rgba(255, 255, 255, 0.7);
@@ -29,11 +31,33 @@
   object-fit: cover;
 }
 
+/* Arriba: la foto (o el sello de Walá) con garabatos alrededor. */
+.enlacesCabeza {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 200px;
+  height: 130px;
+  justify-self: center;
+}
+
+.enlacesGarabatos {
+  inset: -6px -10px;
+}
+
+.enlacesSello {
+  position: relative;
+  z-index: 1;
+}
+
 .enlacesTitulo {
   margin: 0;
   color: var(--enl-titulo);
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-family: var(--enl-fuente-titulo, inherit);
+  font-size: clamp(1.6rem, 6vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .enlacesTexto {
@@ -48,12 +72,36 @@
   margin-top: 0.5rem;
 }
 
+/* Los botones entran una vez, uno detrás de otro (no se repite). */
+.enlacesBotones > * {
+  animation: entrar 380ms var(--ease-signature, ease) both;
+}
+
+.enlacesBotones > :nth-child(2) { animation-delay: 60ms; }
+.enlacesBotones > :nth-child(3) { animation-delay: 120ms; }
+.enlacesBotones > :nth-child(4) { animation-delay: 180ms; }
+.enlacesBotones > :nth-child(n + 5) { animation-delay: 240ms; }
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enlacesBotones > * {
+    animation: none;
+  }
+}
+
 .creado,
 .creado:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   margin-top: 1.5rem;
+  padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--enl-titulo, #fff) 10%, transparent);
   color: var(--enl-texto);
   font-size: 0.85rem;
   text-decoration: none;
@@ -91,4 +139,11 @@
 
 .enlacesCompartir:active {
   transform: scale(0.95);
+}
+
+.creadoKapi {
+  width: 40px;
+  height: 40px;
+  margin: -10px 0 -6px;
+  object-fit: contain;
 }
