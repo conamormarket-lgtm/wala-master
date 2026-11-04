@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ExternalLink, Rocket, X } from 'lucide-react';
 import Boton from '../../Boton';
-import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
+import { Aviso, Confirmar, EstadoVacio, HojaInferior, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
@@ -11,7 +11,7 @@ import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, porOrden } from './celdas';
 import {
-  ESTADOS_REFERIDO, resumenReferidos, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
+  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
   TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, erroresDeRecompensa,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -30,60 +30,117 @@ const fechaHora = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: 'num
 /* ── Referidos ─────────────────────────────────────────── */
 
 /**
- * Referidos (/admin/referidos): los enlaces y las compras que salieron de
- * ellos. Nadie aprueba nada: quien refirió reclama sus monedas cuando el
- * pedido queda Finalizado en el ERP (5 %, 10 % si pasa de S/ 200); un Anulado no paga.
- *  - referidos: [referidoDesdeFirestore] · cargando · error · onReintentar
+ * Referidos (/admin/referidos): una fila por persona que comparte su enlace,
+ * con sus visitas dentro. Nadie aprueba nada: quien refirió reclama sus
+ * monedas cuando el pedido queda Finalizado en el ERP; un Anulado no paga.
+ *  - referidos: [referidoDesdeFirestore] (las cifras de arriba)
+ *  - personas: [referentesDesde] · cargando · error · onReintentar
  */
-export function PaginaReferidosAdmin({ referidos = [], cargando = false, error, onReintentar }) {
+export function PaginaReferidosAdmin({ referidos = [], personas = [], cargando = false, error, onReintentar }) {
   const [busqueda, setBusqueda] = useState('');
   const [estado, setEstado] = useState('');
   const [visibles, setVisibles] = useState(PASO);
+  const [abierta, setAbierta] = useState(null);
   const r = useMemo(() => resumenReferidos(referidos), [referidos]);
-  const filtrados = useMemo(() => {
+  const filtradas = useMemo(() => {
     const q = normalizarBusqueda(busqueda);
-    return referidos.filter((x) => (!estado || x.estado === estado) && (!q || normalizarBusqueda(`${x.codigo} ${x.quien} ${x.pedido}`).includes(q)));
-  }, [referidos, busqueda, estado]);
+    return personas.filter((p) => (!estado || p.estado === estado) && (!q || normalizarBusqueda(
+      `${p.codigo} ${p.nombre} ${p.visitas.map((v) => `${v.quien} ${v.pedido} ${v.enlace}`).join(' ')}`,
+    ).includes(q)));
+  }, [personas, busqueda, estado]);
+  const persona = abierta ? personas.find((p) => p.id === abierta) : null;
 
   return (
     <div className={s.pagina} data-componente="PaginaReferidosAdmin">
-      <CabezaAdmin icono="referidos" tono="rosa" titulo="Referidos" subtitulo="Los enlaces de referido y las compras que salieron de ellos." />
+      <CabezaAdmin icono="referidos" tono="rosa" titulo="Referidos" subtitulo="Quién comparte su enlace, quién entró por él y qué compró." />
       <Aviso tipo="info" compacto>
-        No hace falta aprobar nada: quien refirió reclama sus monedas cuando el pedido queda Finalizado en el ERP (5 % del total, 10 % si pasa de S/ 200). Un pedido Anulado no paga.
+        Cada persona que abre un enlace cuenta aparte. Una compra le paga a quien compartió el 5 % del total (10 % si pasa de S/ 200) cuando el pedido queda Finalizado en el ERP; un Anulado no paga. Si llegó por una invitación y crea su cuenta, recibe 10 monedas y su primera compra paga 15 o el %, lo que sea mayor.
       </Aviso>
       <FilaCifras etiqueta="Resumen de referidos">
-        <Cifra nombre="Enlaces" valor={entero(r.enlaces)} ayuda={`${entero(r.entraron)} los abrieron`} tono="violeta" cargando={cargando} />
+        <Cifra nombre="Comparten" valor={entero(r.personas)} ayuda={r.personas === 1 ? 'persona' : 'personas'} tono="violeta" cargando={cargando} />
+        <Cifra nombre="Abrieron" valor={entero(r.entraron)} ayuda={`${entero(r.cuentas)} ${r.cuentas === 1 ? 'cuenta nueva' : 'cuentas nuevas'}`} tono="rosa" cargando={cargando} />
         <Cifra nombre="Compraron" valor={entero(r.compraron)} tono="exito" cargando={cargando} />
-        <Cifra nombre="Monedas pagadas" valor={entero(r.pagadas)} ayuda="Ya reclamadas" tono="aviso" cargando={cargando} />
-        <Cifra nombre="Monedas por pagar" valor={entero(r.porPagar)} ayuda="Estimado, cuando se entreguen" tono="neutro" cargando={cargando} />
+        <Cifra nombre="Monedas pagadas" valor={entero(r.pagadas)} ayuda={r.porPagar ? `${entero(r.porPagar)} por pagar (estimado)` : 'Nada por pagar'} tono="aviso" cargando={cargando} />
       </FilaCifras>
       <BarraFiltros
         busqueda={busqueda}
         onBusqueda={(t) => { setBusqueda(t); setVisibles(PASO); }}
-        placeholder="Buscar por código, quién entró o pedido"
-        filtros={[{ id: 'estado', etiqueta: 'Estado', todos: 'Todos', opciones: Object.entries(ESTADOS_REFERIDO).map(([valor, e]) => ({ valor, texto: e.texto })), valor: estado }]}
+        placeholder="Buscar por nombre, código, quién entró o pedido"
+        filtros={[{ id: 'estado', etiqueta: 'Estado', todos: 'Todas', opciones: Object.entries(ESTADOS_REFERENTE).map(([valor, e]) => ({ valor, texto: e.texto })), valor: estado }]}
         onFiltro={(_, v) => { setEstado(v); setVisibles(PASO); }}
-        total={cargando || error ? undefined : filtrados.length}
-        unidad={['referido', 'referidos']}
+        total={cargando || error ? undefined : filtradas.length}
+        unidad={['persona', 'personas']}
       />
       <TablaAdmin
-        etiqueta="Referidos"
-        filas={filtrados.slice(0, visibles)}
-        nombreDe={(x) => x.codigo}
+        etiqueta="Personas que comparten"
+        filas={filtradas.slice(0, visibles)}
+        nombreDe={(p) => p.nombre || p.codigo}
         cargando={cargando}
         error={error}
         onReintentar={onReintentar}
-        vacio={referidos.length ? { titulo: 'Ningún referido coincide', texto: 'Prueba con otro estado o busca otra cosa.' } : { titulo: 'Todavía no hay referidos', texto: 'Cuando alguien comparta su enlace, aparece aquí.' }}
+        onFila={(p) => setAbierta(p.id)}
+        accionFila="Ver las visitas de"
+        vacio={personas.length ? { titulo: 'Nadie coincide', texto: 'Prueba con otro estado o busca otra cosa.' } : { titulo: 'Todavía no hay referidos', texto: 'Cuando alguien comparta su enlace, aparece aquí.' }}
         columnas={[
-          { id: 'codigo', titulo: 'Quién refirió', tarjeta: 'titulo', celda: (x) => <>{x.codigo || '—'}<span className={l.sub}>{fecha(x.creadoMs)}</span></> },
-          { id: 'enlace', titulo: 'Enlace', tarjeta: 'detalle', celda: (x) => x.enlace },
-          { id: 'quien', titulo: 'Quién entró', tarjeta: 'detalle', celda: (x) => x.quien || <span className={l.sub}>—</span> },
-          { id: 'pedido', titulo: 'Pedido', tarjeta: 'detalle', celda: (x) => (x.pedido ? <>{x.pedido}<span className={l.sub}>S/ {x.venta.toFixed(2)}</span></> : <span className={l.sub}>—</span>) },
-          { id: 'monedas', titulo: 'Monedas', alinear: 'fin', ancho: 130, tarjeta: 'detalle', celda: (x) => (x.monedas == null ? <span className={l.sub}>—</span> : <span className={l.numero}>{entero(x.monedas)}{x.estimado && <span className={l.sub}>estimado</span>}</span>) },
-          { id: 'estado', titulo: 'Estado', ancho: 170, tarjeta: 'estado', celda: (x) => <InsigniaEstado estado={x.estado} estados={ESTADOS_REFERIDO} /> },
+          { id: 'persona', titulo: 'Quién comparte', tarjeta: 'titulo', celda: (p) => <>{p.nombre || p.codigo}<span className={l.sub}>{p.nombre ? p.codigo : 'Sin perfil'}</span></> },
+          { id: 'abrieron', titulo: 'Abrieron', alinear: 'fin', ancho: 120, tarjeta: 'detalle', celda: (p) => <span className={l.numero}><span className={l.soloTarjeta}>Abrieron </span>{entero(p.abrieron)}{p.sinAbrir > 0 && <span className={l.sub}>{entero(p.sinAbrir)} sin abrir</span>}</span> },
+          { id: 'cuentas', titulo: 'Cuentas nuevas', alinear: 'fin', ancho: 130, tarjeta: 'detalle', celda: (p) => <span className={l.numero}><span className={l.soloTarjeta}>Cuentas nuevas </span>{entero(p.cuentas)}</span> },
+          { id: 'compraron', titulo: 'Compraron', alinear: 'fin', ancho: 130, tarjeta: 'detalle', celda: (p) => <span className={l.numero}><span className={l.soloTarjeta}>Compraron </span>{entero(p.compraron)}{p.compraron > 0 && <span className={l.sub}>S/ {p.ventas.toFixed(2)}</span>}</span> },
+          { id: 'monedas', titulo: 'Monedas', alinear: 'fin', ancho: 130, tarjeta: 'detalle', celda: (p) => (p.pagadas || p.porPagar ? <span className={l.numero}><span className={l.soloTarjeta}>Monedas </span>{entero(p.pagadas + p.porPagar)}{p.porPagar > 0 && <span className={l.sub}>{entero(p.porPagar)} estimado</span>}</span> : <span className={l.sub}><span className={l.soloTarjeta}>Monedas </span>—</span>) },
+          { id: 'ultimo', titulo: 'Última vez', ancho: 130, tarjeta: 'detalle', celda: (p) => <span className={l.sub}><span className={l.soloTarjeta}>Última vez </span>{fecha(p.ultimoMs)}</span> },
+          { id: 'estado', titulo: 'Estado', ancho: 150, tarjeta: 'estado', celda: (p) => <InsigniaEstado estado={p.estado} estados={ESTADOS_REFERENTE} /> },
         ]}
       />
-      <CargarMas visibles={Math.min(visibles, filtrados.length)} total={filtrados.length} paso={PASO} onMas={() => setVisibles((v) => v + PASO)} unidad={['referido', 'referidos']} />
+      <CargarMas visibles={Math.min(visibles, filtradas.length)} total={filtradas.length} paso={PASO} onMas={() => setVisibles((v) => v + PASO)} unidad={['persona', 'personas']} />
+
+      <HojaInferior abierta={Boolean(persona)} onCerrar={() => setAbierta(null)} titulo={persona ? persona.nombre || persona.codigo : ''} tamano="lg">
+        {persona && <VisitasDeReferente persona={persona} />}
+      </HojaInferior>
+    </div>
+  );
+}
+
+/** Dentro de la hoja: sus cifras y cada persona que entró por su enlace, de la más nueva a la más vieja. */
+function VisitasDeReferente({ persona: p }) {
+  return (
+    <div className={s.referente}>
+      <p className={l.sub}>
+        Código <code className={s.codigo}>{p.codigo}</code>
+        {' · '}{entero(p.abrieron)} {p.abrieron === 1 ? 'visita' : 'visitas'}
+        {' · '}{entero(p.compraron)} {p.compraron === 1 ? 'compra' : 'compras'}
+        {p.cuentas > 0 && <>{' · '}{entero(p.cuentas)} {p.cuentas === 1 ? 'cuenta nueva' : 'cuentas nuevas'}</>}
+      </p>
+      {p.visitas.length ? (
+        <ul className={s.visitas}>
+          {p.visitas.map((v) => (
+            <li key={v.id} className={s.visita}>
+              <div className={s.visitaQuien}>
+                <strong>{v.quien || 'Visitante sin cuenta'}</strong>
+                <span className={l.sub}>{v.enlace} · {fechaHora(v.creadoMs)}</span>
+              </div>
+              <div className={s.visitaPedido}>
+                {v.pedido ? (
+                  <>
+                    <span className={l.numero}>S/ {v.venta.toFixed(2)}</span>
+                    <span className={l.sub}>
+                      Pedido {v.pedido}
+                      {v.monedas != null && ` · ${entero(v.monedas)} monedas${v.estimado ? ' (estimado)' : ''}`}
+                    </span>
+                  </>
+                ) : <span className={l.sub}>Sin compra</span>}
+              </div>
+              <InsigniaEstado estado={v.estado} estados={ESTADOS_REFERIDO} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EstadoVacio titulo="Nadie entró todavía" texto="Compartió su enlace, pero nadie lo abrió." />
+      )}
+      {p.sinAbrir > 0 && (
+        <p className={l.sub}>
+          Además, {entero(p.sinAbrir)} {p.sinAbrir === 1 ? 'enlace' : 'enlaces'} del sistema anterior que nadie abrió (antes se guardaba uno cada vez que pulsaba compartir).
+        </p>
+      )}
     </div>
   );
 }

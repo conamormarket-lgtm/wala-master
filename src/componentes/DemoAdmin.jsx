@@ -9,7 +9,7 @@ import {
   PaginaPagos, configPagosDesde, PaginaReclamos, reclamoDesdeFirestore,
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
-  PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
+  PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, referentesDesde, misionDesdeFirestore, misionAFirestore,
   retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
   PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
@@ -383,6 +383,7 @@ const REFERIDOS_DEMO = [
   ['VALE', 'purchased', { visitanteNombre: 'Diego Fernández', orderId: 'WALA-01806', orderTotal: 75 }],
   ['ANA2026', 'ineligible', { linkId: 'x', visitanteNombre: 'Ana Pérez', orderId: 'WALA-01760', orderTotal: 60 }],
 ].map(([referrerCode, status, extra], i) => referidoDesdeFirestore({ id: `ref-${i}`, referrerCode, status, createdAt: Date.now() - 86400000 * (i * 3 + 1), tipo: 'tienda', ...(extra || {}) }, estimarDemo));
+const PERFILES_DEMO = { ANA2026: { nombre: 'Ana Pérez', uid: 'a' }, LUIS77: { nombre: 'Luis Torres', uid: 'l' } };
 const VERIFICACIONES_DEMO = [
   { valor: 'visit_catalogo_recompensas', texto: 'Visitó el Catálogo de Recompensas' }, { valor: 'visit_mis_cupones', texto: 'Visitó Mis Cupones' },
   { valor: 'visit_minijuegos', texto: 'Visitó Minijuegos' }, { valor: 'add_wishlist', texto: 'Agregó un favorito' }, { valor: 'bolitas_nivel', texto: 'Pasó un nivel de las Bolitas de Kapi' },
@@ -1410,7 +1411,7 @@ function PanelDePrueba() {
       </MarcoResultados>
     );
   } else if (ruta === '/admin/referidos') {
-    pagina = <PaginaReferidosAdmin referidos={vacio ? [] : REFERIDOS_DEMO} cargando={con('cargando')} error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined} onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))} />;
+    pagina = <PaginaReferidosAdmin referidos={vacio ? [] : REFERIDOS_DEMO} personas={vacio ? [] : referentesDesde(REFERIDOS_DEMO, PERFILES_DEMO)} cargando={con('cargando')} error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined} onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))} />;
   } else if (ruta === '/admin/recompensas') {
     pagina = (
       <PaginaRecompensasAdmin

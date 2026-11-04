@@ -481,7 +481,20 @@ test('fidelidad: referidos, misiones y retos', () => {
     m2.referidoDesdeFirestore({ id: 'c', status: 'claimed', referrerCode: 'ANA1', productId: 'x', orderId: 'P2', orderTotal: 100, earnedCoins: 7 }, estimar),
   ];
   assert.deepEqual(r.map((x) => [x.enlace, x.quien, x.monedas, x.estimado]), [['Enlace anterior', '', null, false], ['Invitación', 'Luis', 30, true], ['Producto x', 'Visitante sin cuenta', 7, false]]);
-  assert.deepEqual(m2.resumenReferidos(r), { enlaces: 3, entraron: 2, compraron: 2, pagadas: 7, porPagar: 30 });
+  assert.deepEqual(m2.resumenReferidos(r), { personas: 1, entraron: 2, sinAbrir: 1, cuentas: 0, compraron: 2, pagadas: 7, porPagar: 30 });
+  const nuevos = [
+    ...r,
+    m2.referidoDesdeFirestore({ id: 'd', status: 'registered', referrerCode: 'BETO', tipo: 'invitacion', invitadoUid: 'u9', clickedAt: { seconds: 200 } }, estimar),
+    m2.referidoDesdeFirestore({ id: 'e', status: 'clicked', referrerCode: 'BETO', tipo: 'producto', productId: 'p1', clickedAt: { seconds: 300 } }, estimar, (id) => (id === 'p1' ? 'Polo Kapi' : '')),
+    m2.referidoDesdeFirestore({ id: 'f', status: 'sent', referrerCode: 'CARLA' }, estimar),
+  ];
+  const g = m2.referentesDesde(nuevos, { ANA1: { nombre: 'Ana Pérez', uid: 'u1' } });
+  assert.deepEqual(g.map((x) => [x.codigo, x.nombre, x.abrieron, x.sinAbrir, x.cuentas, x.compraron, x.ventas, x.estado]), [
+    ['ANA1', 'Ana Pérez', 2, 1, 0, 2, 400, 'compraron'],
+    ['BETO', '', 2, 0, 1, 0, 0, 'visitas'],
+    ['CARLA', '', 0, 1, 0, 0, 0, 'sinVisitas'],
+  ]);
+  assert.deepEqual(g[1].visitas.map((v) => v.enlace), ['Polo Kapi', 'Invitación']);
   const mi = m2.misionDesdeFirestore({ id: 'm', title: 'Visita', rewardPoints: '5', active: false });
   assert.equal(mi.activa, false);
   assert.deepEqual(m2.misionAFirestore({ ...mi, nombre: ' Visita ', monedas: '8' }), { title: 'Visita', description: '', rewardPoints: 8, order: 0, active: false, actionKey: '' });

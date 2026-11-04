@@ -1765,15 +1765,21 @@ export const ESTADOS_REFERIDO = {
  * Un referido para la lista. estimar(total, referido) → monedas
  * (estimateReferralReward de services/referrals, la misma fórmula que paga el servidor).
  */
-export function referidoDesdeFirestore(doc = {}, estimar = () => 0) {
-  const ms = msDeTs(doc.createdAt);
+export function referidoDesdeFirestore(doc = {}, estimar = () => 0, nombreProducto = () => '') {
+  const ms = msDeTs(doc.clickedAt) || msDeTs(doc.createdAt);
   const conPedido = Boolean(doc.orderId);
   const reclamado = doc.status === 'claimed';
   return {
     id: doc.id,
     creadoMs: ms,
     codigo: doc.referrerCode || '',
-    enlace: doc.tipo === 'invitacion' ? 'Invitación' : doc.productId ? `Producto ${doc.productId}` : doc.linkId || !doc.tipo ? 'Enlace anterior' : 'Tienda',
+    enlace: doc.tipo === 'invitacion' ? 'Invitación'
+      : doc.productId ? (nombreProducto(doc.productId) || `Producto ${doc.productId}`)
+        : doc.linkId || !doc.tipo ? 'Enlace anterior' : 'Tienda',
+    // Del sistema anterior: un registro por cada vez que alguien pulsó
+    // compartir, aunque nadie lo abriera.
+    anterior: Boolean(doc.linkId) || !doc.tipo,
+    cuentaNueva: Boolean(doc.invitadoUid) || doc.status === 'registered',
     quien: doc.status === 'sent' ? '' : (doc.visitanteNombre || 'Visitante sin cuenta'),
     pedido: doc.orderId || '',
     venta: Number(doc.orderTotal) || 0,
@@ -1783,16 +1789,69 @@ export function referidoDesdeFirestore(doc = {}, estimar = () => 0) {
   };
 }
 
-/** Las cifras de arriba: enlaces, cuántos compraron, monedas ya pagadas y por pagar (estimadas). */
+/** Monedas ya reclamadas y las que faltan (estimadas) de unos referidos. */
+const monedasDe = (l) => ({
+  pagadas: l.filter((r) => r.estado === 'claimed').reduce((a, r) => a + (r.monedas || 0), 0),
+  porPagar: l.filter((r) => r.estimado && r.estado !== 'ineligible').reduce((a, r) => a + (r.monedas || 0), 0),
+});
+
+/**
+ * Las cifras de arriba: cuántas personas comparten, cuántas visitas tuvieron
+ * (sin los enlaces del sistema anterior que nadie abrió), cuentas nuevas,
+ * compras y monedas.
+ */
 export function resumenReferidos(referidos = []) {
   const l = lista(referidos);
   return {
-    enlaces: l.length,
+    personas: new Set(l.map((r) => r.codigo || '—')).size,
     entraron: l.filter((r) => r.estado !== 'sent').length,
+    sinAbrir: l.filter((r) => r.estado === 'sent').length,
+    cuentas: l.filter((r) => r.cuentaNueva).length,
     compraron: l.filter((r) => r.pedido).length,
-    pagadas: l.filter((r) => r.estado === 'claimed').reduce((a, r) => a + (r.monedas || 0), 0),
-    porPagar: l.filter((r) => r.estimado && r.estado !== 'ineligible').reduce((a, r) => a + (r.monedas || 0), 0),
+    ...monedasDe(l),
   };
+}
+
+export const ESTADOS_REFERENTE = {
+  compraron: { texto: 'Con compras', tono: 'exito' },
+  visitas: { texto: 'Con visitas', tono: 'violeta' },
+  sinVisitas: { texto: 'Sin visitas', tono: 'neutro', ayuda: 'Compartió, pero nadie abrió su enlace' },
+};
+
+/**
+ * Una fila por persona que comparte (su código de referido), con sus
+ * visitas dentro. perfiles: { CODIGO: { nombre, uid } } de portal_clientes_users.
+ * Los enlaces del sistema anterior que nadie abrió solo se cuentan
+ * (sinAbrir): no son visitas. Primero los que trajeron compras, después los
+ * que tuvieron más visitas, después lo más reciente.
+ */
+export function referentesDesde(referidos = [], perfiles = {}) {
+  const grupos = new Map();
+  for (const r of lista(referidos)) {
+    const codigo = r.codigo || '—';
+    if (!grupos.has(codigo)) grupos.set(codigo, { codigo, todos: [] });
+    grupos.get(codigo).todos.push(r);
+  }
+  return [...grupos.values()].map(({ codigo, todos }) => {
+    const visitas = todos.filter((r) => r.estado !== 'sent').sort((a, b) => (b.creadoMs || 0) - (a.creadoMs || 0));
+    const compras = todos.filter((r) => r.pedido);
+    const perfil = perfiles[codigo] || {};
+    return {
+      id: codigo,
+      codigo,
+      nombre: perfil.nombre || '',
+      uid: perfil.uid || '',
+      visitas,
+      abrieron: visitas.length,
+      sinAbrir: todos.length - visitas.length,
+      cuentas: todos.filter((r) => r.cuentaNueva).length,
+      compraron: compras.length,
+      ventas: compras.reduce((a, r) => a + (r.venta || 0), 0),
+      ...monedasDe(todos),
+      ultimoMs: Math.max(0, ...todos.map((r) => r.creadoMs || 0)),
+      estado: compras.length ? 'compraron' : visitas.length ? 'visitas' : 'sinVisitas',
+    };
+  }).sort((a, b) => b.compraron - a.compraron || b.abrieron - a.abrieron || b.ultimoMs - a.ultimoMs);
 }
 
 /*

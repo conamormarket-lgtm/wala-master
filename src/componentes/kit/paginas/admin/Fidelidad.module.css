@@ -27,6 +27,63 @@
   overflow-wrap: anywhere;
 }
 
+/* Referidos: la hoja con las visitas de una persona. */
+.referente {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.visitas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.visita {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--color-surface);
+}
+
+.visita + .visita {
+  border-top: 1px solid var(--color-border);
+}
+
+.visitaQuien,
+.visitaPedido {
+  display: grid;
+  min-width: 0;
+}
+
+.visitaQuien strong {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.visitaPedido {
+  justify-items: end;
+  text-align: end;
+}
+
+@media (max-width: 560px) {
+  .visita {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .visitaPedido {
+    grid-column: 1;
+    justify-items: start;
+    text-align: start;
+  }
+}
+
 .revisar {
   display: flex;
   flex-wrap: wrap;

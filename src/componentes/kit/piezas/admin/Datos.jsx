@@ -73,7 +73,7 @@ const esControl = (el) => Boolean(el.closest('button, a, input, label, [role="me
  *    stock o unas opciones, va debajo de la tarjeta, a todo el ancho)
  *  - filas · idDe(fila) (fila.id) · nombreDe(fila): para los textos de ayuda
  *  - cargando · error (texto) + onReintentar · vacio: { titulo, texto, icono, accion }
- *  - onFila(fila): tocar la fila o la tarjeta (casi siempre, editar)
+ *  - onFila(fila): tocar la fila o la tarjeta (casi siempre, editar) · accionFila: lo que dice su botón a los lectores de pantalla ("Editar")
  *  - acciones(fila) → items de MenuContextual ([{ id, etiqueta, Icono, peligro, accion }])
  *    en "⋯" (y con el clic derecho en la tabla)
  *  - seleccion: [ids] + onSeleccion(ids): las casillas (sin onSeleccion, no hay)
@@ -82,7 +82,7 @@ const esControl = (el) => Boolean(el.closest('button, a, input, label, [role="me
  */
 export function TablaAdmin({
   columnas = [], filas = [], idDe = (f) => f.id, nombreDe = (f) => String(idDe(f)),
-  cargando = false, error, onReintentar, vacio, onFila, acciones, seleccion = [], onSeleccion, orden, onOrden, etiqueta = 'Lista',
+  cargando = false, error, onReintentar, vacio, onFila, acciones, seleccion = [], onSeleccion, orden, onOrden, etiqueta = 'Lista', accionFila = 'Editar',
 }) {
   const [menu, setMenu] = useState(null);
   const elegibles = Boolean(onSeleccion);
@@ -209,7 +209,7 @@ export function TablaAdmin({
           return (
             <li key={id} className={[s.tarjeta, elegida && s.filaElegida, controles.length && s.tarjetaConControles].filter(Boolean).join(' ')}>
               {elegibles && <CasillaFila activo={elegida} onChange={(si) => alternar(id, si)} etiqueta={`Elegir ${nombreDe(f)}`} />}
-              <Cuerpo {...(onFila ? { type: 'button', onClick: () => onFila(f), 'aria-label': `Editar ${nombreDe(f)}` } : {})} className={[s.tarjetaCuerpo, !onFila && s.tarjetaQuieta].filter(Boolean).join(' ')}>
+              <Cuerpo {...(onFila ? { type: 'button', onClick: () => onFila(f), 'aria-label': `${accionFila} ${nombreDe(f)}` } : {})} className={[s.tarjetaCuerpo, !onFila && s.tarjetaQuieta].filter(Boolean).join(' ')}>
                 {foto && <span className={s.tarjetaFoto}>{foto.celda(f)}</span>}
                 <span className={s.tarjetaTextos}>
                   {titulo && <strong className={s.tarjetaTitulo}>{titulo.celda(f)}</strong>}

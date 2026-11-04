@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { collection, query, getDocs, orderBy, deleteField } from '../../services/firebase/observed';
+import { collection, query, getDocs, orderBy, where, deleteField } from '../../services/firebase/observed';
 import { db } from '../../services/firebase/config';
 import { getCollection, getDocument, createDocument, updateDocument, deleteDocument, setDocument } from '../../services/firebase/firestore';
 import { estimateReferralReward } from '../../services/referrals';
@@ -13,7 +13,7 @@ import {
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin,
 } from '../../componentes/kit/paginas/admin/Fidelidad';
 import {
-  referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore, retoDesdeFirestore, retoAFirestore,
+  referidoDesdeFirestore, referentesDesde, misionDesdeFirestore, misionAFirestore, retoDesdeFirestore, retoAFirestore,
   retoActivoDesde, evidenciaDesde, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, productoAdminDesde,
 } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
@@ -30,7 +30,31 @@ import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
 /* ── Referidos ─────────────────────────────────────────── */
 
-/** /admin/referidos: los enlaces del más nuevo al más viejo, con el estimado de estimateReferralReward. */
+/** El nombre completo de un perfil, sin correos. */
+const nombreDePerfil = (p = {}) => [p.displayName, p.clienteNombre, p.name, p.nombre]
+  .map((v) => String(v ?? '').trim())
+  .find((v) => v && !v.includes('@')) || '';
+
+/**
+ * Quién es el dueño de cada código: portal_clientes_users por referralCode,
+ * de 30 en 30 (el máximo de un "in"). Si falla, la lista sale con los códigos.
+ */
+async function perfilesDeCodigos(codigos) {
+  const perfiles = {};
+  for (let i = 0; i < codigos.length; i += 30) {
+    const snap = await getDocs(query(collection(db, 'portal_clientes_users'), where('referralCode', 'in', codigos.slice(i, i + 30))));
+    snap.docs.forEach((d) => {
+      const p = d.data() || {};
+      perfiles[p.referralCode] = { uid: d.id, nombre: nombreDePerfil(p) };
+    });
+  }
+  return perfiles;
+}
+
+/**
+ * /admin/referidos: una fila por persona que comparte, con sus visitas
+ * dentro (el estimado de monedas es estimateReferralReward).
+ */
 export function ReferidosDelPanel() {
   const referidos = useQuery({
     queryKey: ['adminReferrals'],
@@ -39,13 +63,26 @@ export function ReferidosDelPanel() {
       return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     },
   });
-  const lista = useMemo(
-    () => (referidos.data || []).map((r) => referidoDesdeFirestore(r, estimateReferralReward)),
+  const codigos = useMemo(
+    () => [...new Set((referidos.data || []).map((r) => r.referrerCode).filter(Boolean))].sort(),
     [referidos.data],
   );
+  const perfiles = useQuery({
+    queryKey: ['adminReferrals-perfiles', codigos],
+    queryFn: () => perfilesDeCodigos(codigos),
+    enabled: codigos.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+  const productos = useLectura(['admin-referidos-productos'], () => getProducts([], null, null, { includeHidden: true }), { staleTime: 5 * 60 * 1000 });
+  const lista = useMemo(() => {
+    const nombres = new Map((productos.datos || []).map((p) => [p.id, p.name]));
+    return (referidos.data || []).map((r) => referidoDesdeFirestore(r, estimateReferralReward, (id) => nombres.get(id)));
+  }, [referidos.data, productos.datos]);
+  const personas = useMemo(() => referentesDesde(lista, perfiles.data || {}), [lista, perfiles.data]);
   return (
     <PaginaReferidosAdmin
       referidos={lista}
+      personas={personas}
       cargando={referidos.isLoading}
       error={referidos.error ? referidos.error.message || 'No se pudieron cargar los referidos.' : undefined}
       onReintentar={() => referidos.refetch()}
