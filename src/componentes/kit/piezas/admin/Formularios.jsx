@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, ImagePlus, Link2, Plus, RefreshCw, Save, Trash2, Upload, X } from 'lucide-react';
+import { AlertCircle, Check, ImagePlus, Link2, Plus, RefreshCw, Save, Trash2, Upload, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar } from '../../Feedback';
 import { Campo } from '../../Formulario';
@@ -414,6 +414,41 @@ export function ElegirUno({ opciones = [], valor, sugerido, onElegir, etiqueta, 
             onClick={() => onElegir?.(elegida ? null : o.valor)}
           >
             {o.texto}
+          </button>
+        );
+      })}
+    </span>
+  );
+}
+
+/**
+ * Elegir una entre muestras que se ven (temas, degradados, texturas): un
+ * cuadro con la muestra y, en las grandes, su nombre debajo. La elegida lleva
+ * el borde violeta y el visto.
+ *  - opciones: [{ valor, nombre, estilo (el style del cuadro), contenido }]
+ *  - valor · onElegir(valor) · etiqueta (para lectores)
+ *  - tamano: 'grande' (con nombre, en rejilla) | 'chica' (solo el cuadro)
+ */
+export function ElegirMuestra({ opciones = [], valor, onElegir, etiqueta, tamano = 'grande' }) {
+  return (
+    <span className={[s.elegirMuestra, tamano === 'grande' && s.elegirMuestraGrande].filter(Boolean).join(' ')} role="group" aria-label={etiqueta} data-componente="ElegirMuestra">
+      {opciones.map((o) => {
+        const elegida = valor !== null && valor !== undefined && String(valor) === String(o.valor);
+        return (
+          <button
+            key={o.valor}
+            type="button"
+            className={[s.muestraOpcion, elegida && s.muestraOpcionElegida].filter(Boolean).join(' ')}
+            aria-pressed={elegida}
+            aria-label={o.nombre}
+            title={o.nombre}
+            onClick={() => onElegir?.(o.valor)}
+          >
+            <span className={s.muestraOpcionCuadro} style={o.estilo}>
+              {o.contenido}
+              {elegida && <span className={s.muestraOpcionVisto} aria-hidden="true"><Check /></span>}
+            </span>
+            {tamano === 'grande' && o.nombre && <span className={s.muestraOpcionNombre}>{o.nombre}</span>}
           </button>
         );
       })}

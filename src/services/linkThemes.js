@@ -199,7 +199,7 @@ export const TEMAS = [
   },
   {
     id: 'wala-lavanda',
-    nombre: 'Lavanda',
+    nombre: 'Walá lavanda',
     diseno: {
       buttonStyle: 'solid', cornerRoundness: 16, buttonShadow: 'soft',
       buttonColor: '#7c3aed', buttonTextColor: '#ffffff',

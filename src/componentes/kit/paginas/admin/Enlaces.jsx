@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ExternalLink, Eye, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, useToast } from '../../Feedback';
-import { Campo } from '../../Formulario';
+import { Campo, Deslizador } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, InsigniaEstado, ListaOrdenable } from '../../piezas/admin/Datos';
-import { HojaEdicion, GrupoCampos, CampoImagen, CampoColor, ElegirUno, BarraGuardar } from '../../piezas/admin/Formularios';
+import { HojaEdicion, GrupoCampos, CampoImagen, CampoColor, ElegirUno, ElegirMuestra, BarraGuardar } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras } from '../../piezas/admin/Metricas';
 import { FotoCelda } from './celdas';
 import { PaginaEnlaces } from '../Enlaces';
@@ -28,6 +28,9 @@ import s from './Enlaces.module.css';
 const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
 const errorDe = (err) => err?.message || 'Vuelve a intentar.';
 const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// ¿El diseño de ahora es este tema? (fondo y botones; la alineación no cuenta).
+const mismoTema = (t, d) => JSON.stringify(t.background) === JSON.stringify(d.background)
+  && t.buttonStyle === d.buttonStyle && t.buttonColor === d.buttonColor && t.buttonTextColor === d.buttonTextColor;
 const ESTADOS = { activo: { texto: 'Activa', tono: 'exito' }, borrador: { texto: 'Borrador', tono: 'neutro' } };
 
 /**
@@ -298,25 +301,28 @@ export function PaginaEnlaceAdmin({
           {pestana === 'diseno' && (
             <>
               <GrupoCampos titulo="Un tema" ayuda="Elige uno y después ajusta los colores a tu gusto.">
-                <div className={s.temas}>
-                  {TEMAS.map((t) => (
-                    <button key={t.id} type="button" className={s.tema} onClick={() => cambiar('diseno', { ...d.diseno, ...t.diseno, textAlign: d.diseno.textAlign })} aria-label={`Usar el tema ${t.nombre}`}>
-                      <span className={s.temaMuestra} style={construirFondoStyle(t.diseno.background)}>
+                <ElegirMuestra
+                  etiqueta="Temas"
+                  // El que coincide con el diseño de ahora sale elegido.
+                  valor={TEMAS.find((t) => mismoTema(t.diseno, d.diseno))?.id}
+                  onElegir={(id) => { const t = TEMAS.find((x) => x.id === id); if (t) cambiar('diseno', { ...d.diseno, ...t.diseno, textAlign: d.diseno.textAlign }); }}
+                  opciones={TEMAS.map((t) => ({
+                    valor: t.id,
+                    nombre: t.nombre,
+                    estilo: construirFondoStyle(t.diseno.background),
+                    contenido: (
+                      <>
                         <span className={s.temaPunto} style={{ background: t.diseno.titleColor }} />
                         <span className={s.temaBarra} style={estiloBotonStyle(t.diseno)} />
-                      </span>
-                      <span className={s.temaNombre}>{t.nombre}</span>
-                    </button>
-                  ))}
-                </div>
+                      </>
+                    ),
+                  }))}
+                />
               </GrupoCampos>
               <GrupoCampos titulo="Los botones">
                 <ElegirUno etiqueta="Estilo" opciones={[{ valor: 'solid', texto: 'Lleno' }, { valor: 'glass', texto: 'Vidrio' }, { valor: 'outline', texto: 'Solo borde' }]} valor={d.diseno.buttonStyle} onElegir={(v) => v && diseno({ buttonStyle: v })} />
                 <ElegirUno etiqueta="Sombra" opciones={[{ valor: 'none', texto: 'Sin sombra' }, { valor: 'soft', texto: 'Suave' }, { valor: 'strong', texto: 'Fuerte' }, { valor: 'hard', texto: 'Marcada' }]} valor={d.diseno.buttonShadow} onElegir={(v) => v && diseno({ buttonShadow: v })} />
-                <label className={s.rango}>
-                  <span>Esquinas redondeadas <strong>{d.diseno.cornerRoundness} px</strong></span>
-                  <input type="range" min={0} max={40} value={d.diseno.cornerRoundness} onChange={(e) => diseno({ cornerRoundness: Number(e.target.value) })} />
-                </label>
+                <Deslizador etiqueta="Esquinas redondeadas" valor={Number(d.diseno.cornerRoundness) || 0} min={0} max={40} formato={(v) => `${v} px`} onChange={(v) => diseno({ cornerRoundness: v })} />
                 <div className={s.dos}>
                   <CampoColor etiqueta="Botón" valor={d.diseno.buttonColor} onCambiar={(v) => diseno({ buttonColor: v })} />
                   <CampoColor etiqueta="Texto del botón" valor={d.diseno.buttonTextColor} onCambiar={(v) => diseno({ buttonTextColor: v })} />
@@ -334,16 +340,12 @@ export function PaginaEnlaceAdmin({
                 <ElegirUno etiqueta="Fondo" opciones={[{ valor: 'color', texto: 'Color' }, { valor: 'gradient', texto: 'Degradado' }, { valor: 'pattern', texto: 'Textura' }, { valor: 'image', texto: 'Imagen' }]} valor={d.diseno.background.type} onElegir={(v) => v && tipoFondo(v)} />
                 {d.diseno.background.type === 'color' && <CampoColor etiqueta="Color de fondo" valor={d.diseno.background.value} onCambiar={(v) => fondo({ value: v })} />}
                 {d.diseno.background.type === 'gradient' && (
-                  <span className={s.muestras} role="group" aria-label="Degradados">
-                    {GRADIENTES.map((g) => <button key={g.id} type="button" title={g.nombre} aria-label={g.nombre} aria-pressed={d.diseno.background.value === g.value} className={s.muestra} style={{ background: g.value }} onClick={() => fondo({ value: g.value })} />)}
-                  </span>
+                  <ElegirMuestra tamano="chica" etiqueta="Degradados" valor={GRADIENTES.find((g) => g.value === d.diseno.background.value)?.id} onElegir={(id) => fondo({ value: GRADIENTES.find((g) => g.id === id)?.value })} opciones={GRADIENTES.map((g) => ({ valor: g.id, nombre: g.nombre, estilo: { background: g.value } }))} />
                 )}
                 {d.diseno.background.type === 'pattern' && (
                   <>
                     <CampoColor etiqueta="Color de la textura" valor={d.diseno.background.color} onCambiar={(v) => fondo({ color: v })} />
-                    <span className={s.muestras} role="group" aria-label="Texturas">
-                      {PATRONES.map((p) => <button key={p.id} type="button" title={p.nombre} aria-label={p.nombre} aria-pressed={d.diseno.background.value === p.id} className={s.muestra} style={p.build(d.diseno.background.color || '#4B0055')} onClick={() => fondo({ value: p.id })} />)}
-                    </span>
+                    <ElegirMuestra tamano="chica" etiqueta="Texturas" valor={d.diseno.background.value} onElegir={(id) => fondo({ value: id })} opciones={PATRONES.map((p) => ({ valor: p.id, nombre: p.nombre, estilo: p.build(d.diseno.background.color || '#4B0055') }))} />
                   </>
                 )}
                 {d.diseno.background.type === 'image' && <CampoImagen etiqueta="Imagen de fondo" valor={d.diseno.background.value} onCambiar={(url) => fondo({ value: url })} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'backgrounds' }))} forma="ancho" />}

@@ -106,37 +106,9 @@
 }
 
 /* Diseño */
-.temas {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-  gap: 0.5rem;
-}
 
-.tema {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.35rem;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: var(--color-surface);
-  font: inherit;
-  cursor: pointer;
-}
 
-.tema:hover,
-.tema:focus-visible {
-  border-color: var(--violet-500);
-  outline: none;
-}
 
-.temaMuestra {
-  display: grid;
-  place-items: center;
-  gap: 0.35rem;
-  height: 4rem;
-  padding: 0.5rem;
-  border-radius: 10px;
-}
 
 .temaPunto {
   width: 0.9rem;
@@ -149,42 +121,11 @@
   height: 0.8rem;
 }
 
-.temaNombre {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-align: center;
-}
 
-.rango {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.88rem;
-}
 
-.rango input {
-  width: 100%;
-  margin: 0;
-  accent-color: var(--violet-600);
-}
 
-.muestras {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
 
-.muestra {
-  width: 2.6rem;
-  height: 2.6rem;
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  cursor: pointer;
-}
 
-.muestra[aria-pressed='true'] {
-  border-color: var(--violet-600);
-  box-shadow: 0 0 0 2px var(--violet-200);
-}
 
 /* El celular de la vista previa */
 .telefono {

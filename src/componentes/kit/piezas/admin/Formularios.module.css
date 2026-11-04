@@ -507,3 +507,90 @@
 .listaSumar > :first-child {
   flex: 1 1 12rem;
 }
+
+/* ── ElegirMuestra: temas, degradados y texturas ─────────── */
+.elegirMuestra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.elegirMuestraGrande {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+}
+
+.muestraOpcion {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida, 0.15s) ease, transform var(--dur-rapida, 0.15s) ease;
+}
+
+.muestraOpcion:hover {
+  border-color: var(--violet-300);
+  transform: translateY(-1px);
+}
+
+.muestraOpcion:focus-visible {
+  outline: none;
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+}
+
+.muestraOpcionElegida,
+.muestraOpcionElegida:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.16);
+}
+
+.muestraOpcionCuadro {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0.4rem;
+  border-radius: 10px;
+}
+
+.elegirMuestraGrande .muestraOpcionCuadro {
+  height: 4rem;
+}
+
+.muestraOpcionVisto {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.muestraOpcionVisto svg {
+  width: 12px;
+  height: 12px;
+}
+
+.muestraOpcionNombre {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .muestraOpcion {
+    transition: none;
+  }
+}
