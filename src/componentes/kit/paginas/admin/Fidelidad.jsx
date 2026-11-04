@@ -421,8 +421,10 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
  *  - subirImagen(blob, { alAvanzar }) → url · cargando · error · onReintentar
  *  - onGuardar(datos, id?) · onEliminar(id)
  */
-export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar }) {
+export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden }) {
   const tipoTexto = (v) => TIPOS_RECOMPENSA.find((x) => x.valor === v)?.texto || v;
+  const queDa = (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</>;
+  const estadoDe = (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado>;
   return (
     <PaginaListaAdmin
       cabeza={{ icono: 'recompensas', tono: 'rosa', titulo: 'Recompensas', subtitulo: 'Lo que tus clientes canjean con sus monedas en «Mi cuenta».' }}
@@ -443,10 +445,37 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subir
         { id: 'nombre', titulo: 'Recompensa', tarjeta: 'titulo', celda: (r) => <>{r.nombre}{r.descripcion && <span className={l.sub}>{r.descripcion}</span>}</> },
         // Lo que cuesta se dice con su palabra: un número de monedas solo se lee como lo que se gana.
         { id: 'cuesta', titulo: 'Cuesta', ancho: 130, alinear: 'fin', tarjeta: 'detalle', celda: (r) => <span className={l.numero}>{entero(r.cuesta)} monedas</span> },
-        { id: 'da', titulo: 'Da', tarjeta: 'detalle', celda: (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</> },
-        { id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (r) => r.orden },
-        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado> },
+        { id: 'da', titulo: 'Da', tarjeta: 'detalle', celda: queDa },
+        ...(onGuardarOrden ? [] : [{ id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (r) => r.orden }]),
+        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: estadoDe },
       ]}
+      // Con onGuardarOrden la lista se arrastra (como Marcas y Categorías): el
+      // orden de aquí es el del catálogo de «Mi cuenta».
+      ordenable={onGuardarOrden ? {
+        etiqueta: 'Orden de las recompensas',
+        onGuardar: onGuardarOrden,
+        cabecera: (
+          <span className={s.filaRecompensa}>
+            <span>Foto</span>
+            <span>Recompensa</span>
+            <span className={s.filaCuesta}>Cuesta</span>
+            <span className={s.filaDa}>Da</span>
+            <span className={s.filaEstado}>Estado</span>
+          </span>
+        ),
+        fila: (r) => (
+          <span className={s.filaRecompensa}>
+            <FotoCelda src={r.imagen} tamano={40} />
+            <span className={s.filaTextos}>
+              <strong>{r.nombre}</strong>
+              {r.descripcion && <span className={l.sub}>{r.descripcion}</span>}
+            </span>
+            <span className={`${s.filaCuesta} ${l.numero}`}>{entero(r.cuesta)} monedas</span>
+            <span className={s.filaDa}>{queDa(r)}</span>
+            <span className={s.filaEstado}>{estadoDe(r)}</span>
+          </span>
+        ),
+      } : undefined}
       ordenes={{ orden: porOrden }}
       ordenInicial={{ por: 'orden', dir: 'asc' }}
       vacio={{ titulo: 'Todavía no hay recompensas', texto: 'El catálogo que ven tus clientes en «Mi cuenta» se llena con las que actives aquí.' }}
@@ -459,7 +488,8 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subir
         titulos: { nuevo: 'Nueva recompensa', editar: 'Editar recompensa' },
         textoGuardar: { nuevo: 'Crear recompensa' },
         vacio: ({ registros }) => ({
-          nombre: '', descripcion: '', cuesta: 0, nota: '', orden: registros.length, activa: true, tipo: 'manual',
+          // Una nueva va al final.
+          nombre: '', descripcion: '', cuesta: 0, nota: '', orden: registros.reduce((x, r) => Math.max(x, (Number(r.orden) || 0) + 1), 0), activa: true, tipo: 'manual',
           descuentoPct: 0, descuentoMonto: 0, topeDescuento: 0, productoId: '', productoNombre: '', vigenciaDias: 30, imagen: '',
         }),
         desde: (r) => ({ ...r }),
@@ -475,9 +505,10 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subir
                 <Campo etiqueta="Descripción" multilinea={3} placeholder="Una línea de qué es" value={datos.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
                 <CampoImagen etiqueta="Imagen (opcional)" valor={datos.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} recorte="cuadrado" forma="cuadro" />
               </GrupoCampos>
-              <GrupoCampos titulo="Cuánto cuesta" columnas={2}>
+              <GrupoCampos titulo="Cuánto cuesta" columnas={onGuardarOrden ? 1 : 2}>
                 <Campo etiqueta="Cuesta" type="number" inputMode="numeric" min={0} sufijo="monedas" value={datos.cuesta} onChange={(e) => cambiar('cuesta', e.target.value)} />
-                <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />
+                {/* Con la lista para arrastrar, el orden no se escribe. */}
+                {!onGuardarOrden && <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />}
               </GrupoCampos>
               <GrupoCampos titulo="Qué da" ayuda={datos.tipo === 'manual' ? 'El cliente recibe un código y lo canjea con un asesor (envíos, algo físico…).' : 'Al canjearla se genera un cupón que el cliente aplica solo, en el carrito.'}>
                 <Campo etiqueta="Tipo" opciones={TIPOS_RECOMPENSA} value={datos.tipo} onChange={(e) => cambiar('tipo', e.target.value)} />

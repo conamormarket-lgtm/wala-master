@@ -84,6 +84,61 @@
   }
 }
 
+/* Recompensas: la fila de la lista para arrastrar, con las columnas de la tabla. */
+.filaRecompensa {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.4fr) 110px minmax(0, 1fr) 100px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.filaTextos {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.filaTextos strong {
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filaCuesta {
+  font-size: 0.9rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.filaDa {
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+/* En el celular: la foto a la izquierda y, en renglones, lo demás. */
+@container pagina-admin (max-width: 720px) {
+  .filaRecompensa {
+    grid-template-columns: 40px minmax(0, 1fr);
+    row-gap: 0.15rem;
+  }
+
+  .filaRecompensa > :first-child {
+    grid-row: 1 / span 4;
+    align-self: start;
+  }
+
+  .filaCuesta,
+  .filaDa,
+  .filaEstado {
+    grid-column: 2;
+    font-size: 0.82rem;
+    text-align: left;
+  }
+}
+
 .revisar {
   display: flex;
   flex-wrap: wrap;

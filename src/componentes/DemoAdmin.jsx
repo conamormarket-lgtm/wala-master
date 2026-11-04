@@ -802,7 +802,7 @@ function PanelDePrueba() {
   const [festivas, setFestivas] = useState(FESTIVAS_DEMO);
   const [diasAviso, setDiasAviso] = useState([7, 1]);
   const [paquetes, setPaquetes] = useState(PAQUETES_DEMO);
-  const [recompensas, guardarRecompensaCruda, eliminarRecompensa] = useListaDemo(RECOMPENSAS_DEMO, falla);
+  const [recompensas, guardarRecompensaCruda, eliminarRecompensa, setRecompensas] = useListaDemo(RECOMPENSAS_DEMO, falla);
   const [retos, guardarRetoCrudo, eliminarReto] = useListaDemo(RETOS_DEMO, falla);
   const [retoActivo, setRetoActivo] = useState(() => retoActivoDesde(RETOS_DEMO[0], new Date(Date.now() - 86400000 * 2)));
   const [evidencias, setEvidencias] = useState(() => [
@@ -1421,6 +1421,11 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+        onGuardarOrden={async (ids) => {
+          await espera(600);
+          if (falla) throw new Error('Sin conexión con el servidor (es una prueba).');
+          setRecompensas((l) => l.map((r) => ({ ...r, orden: ids.indexOf(r.id) + 1 })));
+        }}
       />
     );
   } else if (rutaSola === '/admin/whatsapp') {
