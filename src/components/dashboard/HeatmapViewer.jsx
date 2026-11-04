@@ -373,7 +373,12 @@ export default function HeatmapViewer({
   origen = 'todos',
   soloDisenoActual: soloDisenoActualProp = false,
   onCambiarDiseno = null,
+  // 'kit': dentro de la página del kit (Resultados › Mapa de calor): sin su
+  // panel lila, sin los orbes ni su título (la página ya los tiene) y con los
+  // colores del sistema, que también siguen el modo noche.
+  variante = null,
 }) {
+  const enKit = variante === 'kit';
   // Modo controlado = los datos llegan filtrados desde fuera (DashHeatmap).
   const controlled = dataProp != null;
 
@@ -1088,15 +1093,16 @@ export default function HeatmapViewer({
 
   return (
     <motion.section
-      className={styles.wrapper}
+      className={`${styles.wrapper} ${enKit ? styles.wrapperKit : ''}`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Orbes difuminados de fondo */}
-      <div className={styles.blobA} aria-hidden="true" />
-      <div className={styles.blobB} aria-hidden="true" />
+      {!enKit && <div className={styles.blobA} aria-hidden="true" />}
+      {!enKit && <div className={styles.blobB} aria-hidden="true" />}
 
+      {!enKit && (
       <motion.header className={styles.header} variants={itemVariants}>
         <div>
           <h2 className={styles.title}><T>Mapa de calor</T></h2>
@@ -1115,6 +1121,7 @@ export default function HeatmapViewer({
           </div>
         )}
       </motion.header>
+      )}
 
       {loading && (
         <motion.div className={styles.stateBox} variants={itemVariants}>

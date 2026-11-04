@@ -1006,3 +1006,172 @@
     transition: none;
   }
 }
+
+
+/* ════════════════════════════════════════════════════════════════
+   Variante "kit" (Resultados › Mapa de calor del panel nuevo): las
+   tarjetas, cajas y controles con los colores y radios del sistema, sin
+   vidrio ni degradados. Las variables de texto de este archivo apuntan a
+   las del kit, así el modo noche también se ve bien.
+   ════════════════════════════════════════════════════════════════ */
+.wrapperKit {
+  --gris-texto-principal: var(--color-text);
+  --gris-texto-secundario: var(--color-text-muted);
+  overflow: visible;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.wrapperKit .pageCards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  gap: 0.6rem;
+}
+
+.wrapperKit .pageCard {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  color: var(--color-text-muted);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.wrapperKit .pageCard:hover {
+  border-color: var(--violet-300);
+  background: var(--color-surface);
+  box-shadow: 0 10px 22px -18px rgba(91, 33, 182, 0.55);
+  transform: translateY(-1px);
+}
+
+.wrapperKit .pageCardActive,
+.wrapperKit .pageCardActive:hover {
+  border-color: var(--violet-400);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+}
+
+.wrapperKit .pageCardActive::before {
+  height: 3px;
+  background: var(--primary-color);
+}
+
+.wrapperKit .pageCardName {
+  color: var(--color-text);
+}
+
+.wrapperKit .pageCardCount {
+  font-family: var(--fuente-marca, inherit);
+  font-weight: 900;
+  color: var(--primary-color);
+}
+
+.wrapperKit .pageCardCountLabel {
+  color: var(--color-text-muted);
+}
+
+.wrapperKit .pageCardTrack,
+.wrapperKit .rankTrack {
+  background: var(--color-border);
+}
+
+.wrapperKit .pageCardFill,
+.wrapperKit .rankFill {
+  background: var(--primary-color);
+}
+
+.wrapperKit .pageCardRoute {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+/* La vista previa y el panel del costado: las tarjetas del kit. */
+.wrapperKit .canvasCard,
+.wrapperKit .sideCard {
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.wrapperKit .controlSelect {
+  min-height: 40px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.wrapperKit .controlSelect:hover {
+  border-color: var(--violet-300);
+}
+
+.wrapperKit .controlSelect:focus-visible {
+  outline: none;
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+}
+
+.wrapperKit .controlLabel {
+  color: var(--color-text-muted);
+}
+
+.wrapperKit .themeToggle {
+  background: var(--color-hover, rgba(124, 58, 237, 0.06));
+}
+
+.wrapperKit .themeBtn {
+  color: var(--color-text-muted);
+}
+
+.wrapperKit .themeBtn:hover {
+  color: var(--color-text);
+}
+
+.wrapperKit .themeBtnActive,
+.wrapperKit .themeBtnActive:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.wrapperKit .stateBox {
+  border: 1px dashed var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.wrapperKit .canvasFrame {
+  border-color: var(--color-border);
+  border-radius: 14px;
+}
+
+.wrapperKit .sideTitle,
+.wrapperKit .rankLabel,
+.wrapperKit .seleccionTexto {
+  color: var(--color-text);
+}
+
+.wrapperKit .sideHint,
+.wrapperKit .sideEmpty,
+.wrapperKit .rankPct,
+.wrapperKit .canvasNotes {
+  color: var(--color-text-muted);
+}
+
+.wrapperKit .verMas,
+.wrapperKit .notaBoton {
+  color: var(--primary-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrapperKit .pageCard {
+    transition: none;
+  }
+}
