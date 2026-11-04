@@ -58,7 +58,7 @@ const productoDeBorrador = (form = {}) => ({
   categories: Array.isArray(form.categories) ? form.categories : form.category ? [form.category] : [],
 });
 
-const conMarcas = (lista = []) => lista.map((x) => ({ id: x.id, nombre: x.name || x.id, marcas: Array.isArray(x.brandIds) ? x.brandIds : [] }));
+const conMarcas = (lista = []) => lista.map((x) => ({ id: x.id, nombre: x.name || x.id, marcas: Array.isArray(x.brandIds) ? x.brandIds : [], ...(x.productType && { tipo: String(x.productType) }) }));
 const leer = (servicio) => async () => sinError(servicio());
 
 /*
@@ -196,6 +196,9 @@ export default function FichaDelPanel({ modo = 'producto' }) {
       const actual = await sinError(getDocument('productos_wala', id));
       conCopias.prenda = { ...conCopias.prenda, plantillas: actual?.prendaBase?.plantillas || [] };
     }
+    // El tipo lo pone su categoría (Categorías); sin tipo en ella, se queda el que tenía.
+    const tipoDeCategoria = (categoriasQ.data || []).find((c) => c.id === datos.categoria)?.productType;
+    if (tipoDeCategoria) conCopias.tipo = String(tipoDeCategoria);
     const doc = fichaAProducto(conCopias, nuevo ? {} : producto || {}, { prendaBaseParaGuardar });
     await sinError(nuevo ? createProduct(doc, draftId) : updateProduct(id, doc));
     // El stock cambiado aquí también queda en el historial (como en la lista).

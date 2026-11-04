@@ -172,6 +172,8 @@ export function categoriaDesdeFirestore(doc = {}) {
     imagen: doc.imageUrl || '',
     orden: Number.isFinite(Number(doc.order)) ? Number(doc.order) : 0,
     marcas: Array.isArray(doc.brandIds) ? doc.brandIds : [],
+    // El tipo de producto (productTypes): lo heredan sus productos (2026-11-04).
+    tipo: doc.productType ? String(doc.productType) : '',
   };
 }
 
@@ -182,7 +184,42 @@ export function categoriaAFirestore(c = {}) {
     order: Number(c.orden) || 0,
     imageUrl: c.imagen || '',
     brandIds: Array.isArray(c.marcas) ? [...new Set(c.marcas)] : [],
+    productType: c.tipo || '',
   };
+}
+
+/**
+ * La categoría que manda en un producto (la primera de `categories`, o
+ * `categoryId`): de ella toma su tipo.
+ */
+export const categoriaPrincipalDe = (p = {}) => (Array.isArray(p.categories) && p.categories.length ? p.categories[0] : p.categoryId) || '';
+
+/**
+ * Los productos a los que hay que cambiarles el tipo al guardar la categoría
+ * `id` con `tipo` ('' = sin tipo): los que la tienen de principal y no lo
+ * tienen ya. → [{ id, productType }]
+ */
+export function tiposParaSincronizar(productos = [], id, tipo = '') {
+  const actual = (p) => (p.productType && typeof p.productType === 'object' ? p.productType.id : p.productType) || '';
+  return productos
+    .filter((p) => p && p.deleted !== true && categoriaPrincipalDe(p) === id && actual(p) !== (tipo || ''))
+    .map((p) => ({ id: p.id, productType: tipo || '' }));
+}
+
+/**
+ * El tipo que sugiere una categoría sin tipo: el que más tienen sus productos
+ * (los de antes lo ponían a mano). Map id → tipo.
+ */
+export function tiposSugeridosDeCategorias(productos = []) {
+  const cuentas = new Map();
+  productos.forEach((p) => {
+    const c = categoriaPrincipalDe(p);
+    const t = (p.productType && typeof p.productType === 'object' ? p.productType.id : p.productType) || '';
+    if (!c || !t || p.deleted === true) return;
+    if (!cuentas.has(c)) cuentas.set(c, new Map());
+    cuentas.get(c).set(t, (cuentas.get(c).get(t) || 0) + 1);
+  });
+  return new Map([...cuentas].map(([c, m]) => [c, [...m].sort((a, b) => b[1] - a[1])[0][0]]));
 }
 
 /**

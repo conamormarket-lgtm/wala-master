@@ -176,7 +176,9 @@ export function PacksDelPanel({ nuevoInicial = false } = {}) {
       onVer={(k) => navigate(`/combo/${k.id}`)}
       // guardarComboCrear y archivarComboCrear ya lanzan si no se guardó.
       onGuardar={async (datos, id) => {
-        await guardarComboCrear(id || null, conFotos(packAGuardar(datos)));
+        // El tipo del pack: el de su categoría (lo que la tienda filtra por «Tipo»).
+        const cat = (categorias.datos || []).find((c) => c.id === datos.categoria);
+        await guardarComboCrear(id || null, { ...conFotos(packAGuardar(datos)), productType: cat?.productType || '' });
         await refrescar();
       }}
       onArchivar={async (id) => { await archivarComboCrear(id, { publicadoAntes: (combos.datos || []).find((c) => c.id === id)?.publicado === true }); await refrescar(); }}

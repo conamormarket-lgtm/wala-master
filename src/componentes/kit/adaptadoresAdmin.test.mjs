@@ -57,11 +57,11 @@ test('la opción activa es la más larga que coincide', () => {
 
 test('categorías: de Firestore y de vuelta, con los mismos campos', () => {
   const c = categoriaDesdeFirestore({ id: 'x', name: 'Hoodies', order: '3', imageUrl: 'u', brandIds: ['a'] });
-  assert.deepEqual(c, { id: 'x', nombre: 'Hoodies', imagen: 'u', orden: 3, marcas: ['a'] });
+  assert.deepEqual(c, { id: 'x', nombre: 'Hoodies', imagen: 'u', orden: 3, marcas: ['a'], tipo: '' });
   assert.deepEqual(categoriaAFirestore({ ...c, nombre: '  Hoodies ', marcas: ['a', 'a', 'b'] }), {
-    name: 'Hoodies', order: 3, imageUrl: 'u', brandIds: ['a', 'b'],
+    name: 'Hoodies', order: 3, imageUrl: 'u', brandIds: ['a', 'b'], productType: '',
   });
-  assert.deepEqual(categoriaDesdeFirestore({ id: 'y' }), { id: 'y', nombre: '', imagen: '', orden: 0, marcas: [] });
+  assert.deepEqual(categoriaDesdeFirestore({ id: 'y' }), { id: 'y', nombre: '', imagen: '', orden: 0, marcas: [], tipo: '' });
 });
 
 test('ordenar una parte sin mover lo demás', () => {
@@ -851,4 +851,20 @@ test('papelera: personalizarEn, premios, piezas en la papelera, borrar y restaur
   assert.deepEqual(m2.borrablesDePapelera(lista, lista.map((x) => x.id)).sort(), ['combo', 'pieza']);
   // Restaurar el combo trae su pieza.
   assert.deepEqual(m2.restaurablesDePapelera(lista, ['combo']).sort(), ['combo', 'pieza']);
+});
+
+test('tipo por categoría: quién cambia al guardar y qué se sugiere', () => {
+  const productos = [
+    { id: 'a', categories: ['polos'], productType: 'prenda' },
+    { id: 'b', categories: ['polos'] },
+    { id: 'c', categoryId: 'polos', productType: 'accesorio' },
+    { id: 'd', categories: ['tazas', 'polos'] },
+    { id: 'e', categories: ['polos'], deleted: true },
+    { id: 'f', categories: ['polos'], productType: { id: 'prenda' } },
+  ];
+  assert.deepEqual(m2.tiposParaSincronizar(productos, 'polos', 'prenda'), [{ id: 'b', productType: 'prenda' }, { id: 'c', productType: 'prenda' }]);
+  assert.deepEqual(m2.tiposParaSincronizar(productos, 'polos', '').map((x) => x.id), ['a', 'c', 'f']);
+  assert.equal(m2.tiposSugeridosDeCategorias(productos).get('polos'), 'prenda');
+  assert.equal(m2.categoriaAFirestore({ nombre: 'Polos', tipo: 'prenda' }).productType, 'prenda');
+  assert.equal(m2.categoriaDesdeFirestore({ id: 'x', productType: 'prenda' }).tipo, 'prenda');
 });

@@ -36,7 +36,7 @@ function Bloque({ children, hidden = false }) {
 /**
  * La ficha.
  *  - inicial: los datos (fichaDesdeProducto) · nuevo · cargando · error · onReintentar
- *  - marcas: [{ id, nombre, logo, whatsapp }] · categorias, colecciones, tipos,
+ *  - marcas: [{ id, nombre, logo, whatsapp }] · categorias (con tipo: el que heredan), colecciones, tipos,
  *    personajes, etiquetas: [{ id, nombre, marcas }] (sin marcas = de todas)
  *  - onCrear(lista, { nombre, marcaId }) → promesa con { id, nombre }
  *  - equipos: los nombres que ya usan otros productos (el Equipo se elige o se escribe uno nuevo)
@@ -266,19 +266,17 @@ export function PaginaFichaProducto({
                   try { const r = await onCrear('categoria', { nombre: v, marcaId: datos.marcaId }); cambiar('categoria', r.id); toast({ tipo: 'exito', titulo: `Categoría creada: ${r.nombre}` }); } catch (err) { toast({ tipo: 'error', titulo: 'No se creó la categoría', texto: err?.message }); }
                 }}
               />
-              <Campo
-                id={idCampo('tipo')}
-                etiqueta="Tipo de producto"
-                opciones={[{ valor: '', texto: 'Sin tipo' }, ...tipos.map((x) => ({ valor: x.id, texto: x.nombre }))]}
-                creable={Boolean(onCrear)}
-                value={datos.tipo}
-                ayuda="El filtro «Tipo de producto» de la tienda."
-                onChange={async (e) => {
-                  const v = e.target.value;
-                  if (!v || tipos.some((x) => x.id === v)) { cambiar('tipo', v); return; }
-                  try { const r = await onCrear('tipo', { nombre: v }); cambiar('tipo', r.id); } catch (err) { toast({ tipo: 'error', titulo: 'No se creó el tipo', texto: err?.message }); }
-                }}
-              />
+              {/* El tipo ya no se elige aquí: lo pone su categoría (Categorías) y lo toman todos sus productos. */}
+              <div className={s.tipoDeCategoria}>
+                <span className={s.etiqueta}>Tipo de producto</span>
+                {(() => {
+                  const cat = categorias.find((c) => c.id === datos.categoria);
+                  const tipo = tipos.find((t) => t.id === (cat?.tipo || ''));
+                  if (!datos.categoria) return <p className={s.tipoNota}>Elige su categoría: el tipo sale de ahí.</p>;
+                  if (tipo) return <p><strong>{tipo.nombre}</strong><span className={s.tipoNota}>{` · lo pone «${cat.nombre}». Se cambia en Categorías.`}</span></p>;
+                  return <p className={s.tipoNota}>{`«${cat?.nombre || 'Su categoría'}» todavía no tiene tipo: elígelo en Categorías y lo toman todos sus productos.`}</p>;
+                })()}
+              </div>
             </div>
             <ElegirVarios id={idCampo('colecciones')} etiqueta="Colecciones" opciones={opciones(colecciones, true)} valor={datos.colecciones} onCambiar={(v) => cambiar('colecciones', v)} onCrear={crear('coleccion')} />
             <ElegirVarios id={idCampo('personajes')} etiqueta="Personajes" opciones={opciones(personajes, false)} valor={datos.personajes} onCambiar={(v) => cambiar('personajes', v)} onCrear={crear('personaje')} />

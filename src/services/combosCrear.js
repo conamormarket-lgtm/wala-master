@@ -73,6 +73,8 @@ export const guardarComboCrear = async (id, form) => {
     brandId,
     // La categoría: la página de la marca muestra un carrusel por categoría.
     ...(Array.isArray(form.categories) && { categories: form.categories.filter(Boolean) }),
+    // El tipo de producto lo pone su categoría (Categorías); null lo quita.
+    ...(form.productType !== undefined && { productType: form.productType || null }),
     esComboCrear: true,
     // `visible` no es el interruptor de un combo (se arma en /combo/:id y se
     // ofrece con comboCrear.publicado): sale en la tienda solo con enTienda.

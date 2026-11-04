@@ -36,7 +36,9 @@ export const createCategory = async (data) => {
     order: typeof data.order === 'number' ? data.order : 0,
     // Una categoría puede ser compartida por varias marcas (p. ej. "Ropa")
     // sin duplicar documentos ni romper los filtros por categoryId.
-    brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : []
+    brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : [],
+    // El tipo de producto de la categoría (productTypes): sus productos lo heredan.
+    ...(data.productType ? { productType: String(data.productType) } : {}),
   });
 };
 
@@ -53,6 +55,8 @@ export const updateCategory = async (id, data) => {
   if (data.brandIds !== undefined) {
     payload.brandIds = Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : [];
   }
+  // '' lo quita (updateDocument lo pasa a deleteField).
+  if (data.productType !== undefined) payload.productType = data.productType ? String(data.productType) : '';
   return await updateDocument(COLLECTION, id, payload);
 };
 
