@@ -2261,8 +2261,9 @@ export function siguienteElegido(paquetes = [], borrado = {}) {
 
 /** "Paquete elegido" · "2 borradores" · "Sin paquete". */
 export function estadoDePaquetes(paquetes = []) {
-  if (!paquetes.length) return { estado: 'sin', texto: 'Sin paquete' };
-  if (paquetes.some((p) => p.elegido)) return { estado: 'elegido', texto: paquetes.length > 1 ? `Elegido (de ${paquetes.length})` : 'Paquete elegido' };
+  // Sin paquete no es "pendiente": le llegan las ideas automáticas del buscador de regalos.
+  if (!paquetes.length) return { estado: 'sin', texto: 'Ideas automáticas' };
+  if (paquetes.some((p) => p.elegido)) return { estado: 'elegido', texto: paquetes.length > 1 ? `Paquete del equipo (de ${paquetes.length})` : 'Paquete del equipo' };
   return { estado: 'borrador', texto: paquetes.length === 1 ? '1 borrador' : `${paquetes.length} borradores` };
 }
 

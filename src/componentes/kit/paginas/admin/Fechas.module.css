@@ -527,3 +527,17 @@
   background: rgba(139, 92, 246, 0.16);
   color: var(--violet-200, #ddd0fe);
 }
+
+/* La hoja de una fecha: "(opcional)" junto al título y los dos botones juntos. */
+.opcional {
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.paquetesBotones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}

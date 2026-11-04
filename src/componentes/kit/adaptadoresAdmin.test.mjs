@@ -585,7 +585,8 @@ test('fechas importantes: el mes, las fechas de clientes y los paquetes', () => 
   assert.deepEqual(m2.cambiosAlElegir(deF, 'b'), [{ id: 'a', elegido: false }, { id: 'b', elegido: true }]);
   assert.equal(m2.siguienteElegido(deF, deF[0]), 'b');
   assert.equal(m2.siguienteElegido(deF, deF[1]), null);
-  assert.equal(m2.estadoDePaquetes(deF).texto, 'Elegido (de 2)');
+  assert.equal(m2.estadoDePaquetes(deF).texto, 'Paquete del equipo (de 2)');
+  assert.equal(m2.estadoDePaquetes([]).texto, 'Ideas automáticas');
   assert.equal(m2.estadoDePaquetes([deF[1]]).texto, '1 borrador');
   assert.deepEqual(m2.paqueteAFirestore(deF[0].productos, f, true), { userId: 'u', recipientId: 'r', eventId: 'e', eventType: 'Cumpleaños', products: [{ id: 'p', name: 'Taza', price: 30, image: '' }], status: 'pending_notification', isSelected: true });
 

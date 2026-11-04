@@ -441,10 +441,11 @@ function VistaPrevia({ prueba: r, onCerrar }) {
 
 /* ── Fechas de los clientes y sus paquetes ─────────────── */
 
+// Sin paquete del equipo, al cliente le llegan las ideas automáticas (no es trabajo pendiente).
 const ESTADOS_PAQUETE = {
-  elegido: { texto: 'Paquete elegido', tono: 'exito' },
+  elegido: { texto: 'Paquete del equipo', tono: 'exito' },
   borrador: { texto: 'Borrador', tono: 'neutro' },
-  sin: { texto: 'Sin paquete', tono: 'aviso' },
+  sin: { texto: 'Ideas automáticas', tono: 'violeta', ayuda: 'Ideas según sus gustos, sin hacer nada' },
 };
 
 function FechasDeClientes({ fechas, paquetes, cargando, error, onReintentar, productos, sugerirProductos, onGuardarPaquete, onElegirPaquete, onEliminarPaquete }) {
@@ -463,7 +464,8 @@ function FechasDeClientes({ fechas, paquetes, cargando, error, onReintentar, pro
       && (!q || normalizarBusqueda(`${f.persona} ${f.cliente} ${f.evento} ${f.relacion}`).includes(q)));
   }, [conPaquetes, busqueda, ventana, paquete]);
   const semana = conPaquetes.filter((f) => fechaEnVentana(f, '7')).length;
-  const sinPaquete = conPaquetes.filter((f) => fechaEnVentana(f, '30') && f.estado === 'sin').length;
+  const mes = conPaquetes.filter((f) => fechaEnVentana(f, '30'));
+  const mesConPaquete = mes.filter((f) => f.estado !== 'sin').length;
   const filtrar = (v, p = '') => { setVentana(v); setPaquete(p); setVisibles(PASO); };
   const elegida = abierta && conPaquetes.find((f) => f.id === abierta);
 
@@ -472,7 +474,7 @@ function FechasDeClientes({ fechas, paquetes, cargando, error, onReintentar, pro
       <FilaCifras etiqueta="Resumen de las fechas de clientes">
         <Cifra nombre="Fechas anotadas" valor={entero(conPaquetes.length)} ayuda={`de ${entero(new Set(fechas.map((f) => f.clienteId)).size)} clientes`} cargando={cargando} activo={!ventana && !paquete} onClick={() => filtrar('')} />
         <Cifra nombre="Próximos 7 días" valor={entero(semana)} tono="violeta" cargando={cargando} activo={ventana === '7' && !paquete} onClick={() => filtrar('7')} />
-        <Cifra nombre="En 30 días sin paquete" valor={entero(sinPaquete)} ayuda="Para armarles uno" tono="aviso" cargando={cargando} activo={ventana === '30' && paquete === 'sin'} onClick={() => filtrar('30', 'sin')} />
+        <Cifra nombre="Próximos 30 días" valor={entero(mes.length)} ayuda={mesConPaquete ? `${entero(mesConPaquete)} con paquete del equipo; el resto, ideas automáticas` : 'Todas con ideas automáticas'} tono="aviso" cargando={cargando} activo={ventana === '30' && !paquete} onClick={() => filtrar('30')} />
       </FilaCifras>
       <BarraFiltros
         busqueda={busqueda}
@@ -480,7 +482,7 @@ function FechasDeClientes({ fechas, paquetes, cargando, error, onReintentar, pro
         placeholder="Buscar por persona, cliente o fecha"
         filtros={[
           { id: 'ventana', etiqueta: 'Cuándo', todos: 'Todas', opciones: FILTROS_FECHAS_CLIENTES, valor: ventana },
-          { id: 'paquete', etiqueta: 'Paquete', todos: 'Con y sin paquete', opciones: Object.entries(ESTADOS_PAQUETE).map(([valor, e]) => ({ valor, texto: e.texto })), valor: paquete },
+          { id: 'paquete', etiqueta: 'Regalo', todos: 'Todos los regalos', opciones: Object.entries(ESTADOS_PAQUETE).map(([valor, e]) => ({ valor, texto: e.texto })), valor: paquete },
         ]}
         onFiltro={(id, v) => { if (id === 'ventana') setVentana(v); else setPaquete(v); setVisibles(PASO); }}
         total={cargando || error ? undefined : filtradas.length}
@@ -502,7 +504,7 @@ function FechasDeClientes({ fechas, paquetes, cargando, error, onReintentar, pro
           { id: 'fecha', titulo: 'Fecha', tarjeta: 'detalle', celda: (f) => <>{f.evento}<span className={l.sub}>{f.fecha}</span></> },
           { id: 'cuando', titulo: 'Cuándo', ancho: 130, tarjeta: 'detalle', celda: (f) => <>{cuandoFecha(f.dias) || '—'}{f.cumple ? <span className={l.sub}>{aniosTexto(f)}</span> : null}</> },
           { id: 'cliente', titulo: 'Cliente', tarjeta: 'detalle', celda: (f) => <span className={s.correo}>{f.cliente}</span> },
-          { id: 'paquete', titulo: 'Paquete', ancho: 160, tarjeta: 'estado', celda: (f) => <InsigniaEstado estado={f.estado} estados={ESTADOS_PAQUETE}>{f.texto}</InsigniaEstado> },
+          { id: 'paquete', titulo: 'Regalo', ancho: 190, tarjeta: 'estado', celda: (f) => <InsigniaEstado estado={f.estado} estados={ESTADOS_PAQUETE}>{f.texto}</InsigniaEstado> },
         ]}
       />
       <CargarMas visibles={Math.min(visibles, filtradas.length)} total={filtradas.length} paso={PASO} onMas={() => setVisibles((v) => v + PASO)} unidad={['fecha', 'fechas']} />
@@ -548,6 +550,12 @@ function FichaFecha({ fecha: f, productos, sugerirProductos, onGuardarPaquete, o
     const ideas = (await sugerirProductos?.(f)) || [];
     setArmando((a) => ({ ...a, productos: ideas.length ? ideas : a.productos, sinIdeas: ideas.length === 0 }));
   };
+  // Un paquete nuevo ya lleno con las 3 mejores ideas: se revisa y se guarda.
+  const armarConIdeas = async () => {
+    setArmando({ productos: [], cargandoIdeas: true });
+    const ideas = (await sugerirProductos?.(f).catch(() => [])) || [];
+    setArmando({ productos: ideas, sinIdeas: ideas.length === 0 });
+  };
   const guardar = async () => {
     setGuardando(true);
     const ok = await intentar(() => onGuardarPaquete?.(armando.productos, f, armando.id), armando.id ? 'Paquete guardado' : 'Paquete creado');
@@ -560,7 +568,7 @@ function FichaFecha({ fecha: f, productos, sugerirProductos, onGuardarPaquete, o
     return (
       <div className={s.ficha}>
         <GrupoCampos titulo={`Productos del paquete (${armando.productos.length})`} ayuda={f.gustos.length ? `Le gusta: ${listaTexto(f.gustos)}.` : 'No contó sus gustos.'}>
-          {sugerirProductos && <Boton tamano="sm" variante="secundario" icono={<Sparkles aria-hidden="true" />} onClick={sugerir}>Sugerir con sus gustos</Boton>}
+          {sugerirProductos && <Boton tamano="sm" variante="secundario" icono={<Sparkles aria-hidden="true" />} cargando={armando.cargandoIdeas} onClick={sugerir}>Sugerir con sus gustos</Boton>}
           {armando.sinIdeas && <Aviso tipo="aviso" compacto>No encontramos productos que vayan con lo que le gusta. Búscalos abajo.</Aviso>}
           {armando.productos.length ? (
             <ul className={s.productos}>
@@ -602,10 +610,13 @@ function FichaFecha({ fecha: f, productos, sugerirProductos, onGuardarPaquete, o
       </dl>
 
       <div className={s.paquetesCabeza}>
-        <h3 className={s.subtitulo}>Paquetes de regalo</h3>
-        <Boton tamano="sm" icono={<Plus aria-hidden="true" />} onClick={() => setArmando({ productos: [] })}>Crear paquete</Boton>
+        <h3 className={s.subtitulo}>Paquete del equipo <span className={s.opcional}>(opcional)</span></h3>
+        <span className={s.paquetesBotones}>
+          {sugerirProductos && <Boton tamano="sm" icono={<Sparkles aria-hidden="true" />} onClick={armarConIdeas}>Armar con las ideas</Boton>}
+          <Boton tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} onClick={() => setArmando({ productos: [] })}>Elegir productos</Boton>
+        </span>
       </div>
-      <p className={s.nota}>El elegido es el que se le ofrece al cliente cuando se acerca la fecha. Si es el primero de la fecha, sale elegido.</p>
+      <p className={s.nota}>Sin hacer nada, en «Fechas importantes» y en el aviso de 7 días y 1 día antes el cliente ve ideas de regalo según sus gustos. Un paquete del equipo es para cuidar una fecha en especial: el elegido le sale primero y las ideas no repiten sus productos.</p>
       {f.paquetes.length ? (
         <ul className={s.paquetes}>
           {f.paquetes.map((p, i) => (
@@ -628,7 +639,7 @@ function FichaFecha({ fecha: f, productos, sugerirProductos, onGuardarPaquete, o
           ))}
         </ul>
       ) : (
-        <EstadoVacio titulo="Sin paquetes todavía" texto="Arma uno con sus gustos o eligiendo productos de la tienda." />
+        <EstadoVacio titulo="Le llegan las ideas automáticas" texto="No hace falta armar nada. Si quieres elegir tú el regalo, «Armar con las ideas» lo llena con las 3 mejores para que lo revises." />
       )}
       <Confirmar
         abierta={Boolean(borrar)}
