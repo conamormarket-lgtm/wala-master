@@ -524,6 +524,10 @@ test('fidelidad: referidos, misiones y retos', () => {
   assert.deepEqual(m2.misionAFirestore({ ...mi, nombre: ' Visita ', monedas: '8' }), { title: 'Visita', description: '', rewardPoints: 8, order: 0, active: false, actionKey: '' });
   const re = m2.retoDesdeFirestore({ id: 'r', title: 'Tres deseos', actionType: 'add_wishlist', goal: 3, rewardCoins: 20 });
   assert.equal(m2.recompensaDeReto(re), '20 monedas');
+  assert.equal(m2.retoAFirestore({ ...re, accion: 'manual_evidencia', meta: 5 }).goal, 1);
+  assert.equal(m2.textoAccionReto('add_wishlist'), 'Agregar a la Lista de Deseos (cuenta solo)');
+  assert.equal(m2.textoAccionReto('manual_story'), 'Con evidencia');
+  assert.equal(m2.textoAccionReto('compra'), 'compra (no cuenta solo)');
   assert.deepEqual(m2.retoAFirestore({ ...re, tipo: 'kapi_double_3d', meta: 0 }), { title: 'Tres deseos', description: '', actionType: 'add_wishlist', goal: 1, rewardCoins: 0, rewardType: 'kapi_double_3d' });
   const act = m2.retoActivoDesde(re, new Date('2026-11-02T10:00:00Z'));
   assert.equal(act.challengeId, 'r');

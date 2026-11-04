@@ -1891,6 +1891,21 @@ export const RECOMPENSAS_RETO = [
   { valor: 'kapi_double_3d', texto: 'Doble monedas al alimentar a Kapi (3 días)' },
 ];
 
+/*
+ * Qué cuenta en un reto. La tienda solo reporta sola "agregar a la Lista de
+ * Deseos" (WishlistContext → recordChallengeEventSecure); lo demás se cumple
+ * con evidencia: un actionType que empieza con 'manual_' hace que la ventana
+ * de Kapi pida el enlace (retoDesdePerfil) y el admin lo aprueba.
+ */
+export const ACCIONES_RETO = [
+  { valor: 'add_wishlist', texto: 'Agregar a la Lista de Deseos (cuenta solo)' },
+  { valor: 'manual_evidencia', texto: 'Con evidencia: manda un enlace y tú lo apruebas' },
+];
+export const esRetoConEvidencia = (accion) => String(accion || '').startsWith('manual_');
+/** El texto de "Qué cuenta"; uno viejo que no está en la lista sale con su id. */
+export const textoAccionReto = (accion) => ACCIONES_RETO.find((a) => a.valor === accion)?.texto
+  || (esRetoConEvidencia(accion) ? 'Con evidencia' : accion ? `${accion} (no cuenta solo)` : '—');
+
 export const recompensaDeReto = (r = {}) => (r.tipo === 'kapi_double_3d' || r.rewardType === 'kapi_double_3d'
   ? 'Doble monedas al alimentar a Kapi (3 días)'
   : `${enteroPE(r.monedas ?? r.rewardCoins)} monedas`);
@@ -1912,7 +1927,8 @@ export function retoAFirestore(r = {}) {
     title: String(r.nombre || '').trim(),
     description: String(r.descripcion || '').trim(),
     actionType: String(r.accion || '').trim(),
-    goal: Math.max(1, Number(r.meta) || 1),
+    // Con evidencia se aprueba una vez: la meta es 1.
+    goal: esRetoConEvidencia(r.accion) ? 1 : Math.max(1, Number(r.meta) || 1),
     rewardCoins: r.tipo === 'kapi_double_3d' ? 0 : Number(r.monedas) || 0,
     rewardType: r.tipo === 'kapi_double_3d' ? 'kapi_double_3d' : 'main',
   };

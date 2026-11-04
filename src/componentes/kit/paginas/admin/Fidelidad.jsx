@@ -11,7 +11,8 @@ import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, porOrden } from './celdas';
 import {
-  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, ESTADOS_CANJE, resumenCanjes, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
+  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, ESTADOS_CANJE, resumenCanjes, RECOMPENSAS_RETO, recompensaDeReto,
+  ACCIONES_RETO, esRetoConEvidencia, textoAccionReto,
   TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, erroresDeRecompensa,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -331,12 +332,12 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
           error={error}
           onReintentar={onReintentar}
           unidad={['reto', 'retos']}
-          buscarEn={(r) => `${r.nombre} ${r.accion}`}
+          buscarEn={(r) => `${r.nombre} ${textoAccionReto(r.accion)}`}
           placeholder="Buscar un reto"
           columnas={[
             { id: 'nombre', titulo: 'Reto', tarjeta: 'titulo', celda: (r) => <>{r.nombre}{activo?.challengeId === r.id && <span className={l.sub}>Es el de esta semana</span>}</> },
-            { id: 'accion', titulo: 'Qué cuenta', tarjeta: 'detalle', celda: (r) => <code className={s.codigo}>{r.accion}</code> },
-            { id: 'meta', titulo: 'Meta', ancho: 80, alinear: 'fin', tarjeta: 'detalle', celda: (r) => r.meta },
+            { id: 'accion', titulo: 'Cómo se cumple', tarjeta: 'detalle', celda: (r) => textoAccionReto(r.accion) },
+            { id: 'meta', titulo: 'Meta', ancho: 80, alinear: 'fin', tarjeta: 'detalle', celda: (r) => (esRetoConEvidencia(r.accion) ? <span className={l.sub}>—</span> : r.meta) },
             { id: 'recompensa', titulo: 'Da', tarjeta: 'detalle', celda: (r) => recompensaDeReto(r) },
           ]}
           vacio={{ titulo: 'Todavía no hay retos', texto: 'Crea el primero y actívalo para esta semana.' }}
@@ -349,11 +350,11 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
             nuevo: 'Nuevo reto',
             titulos: { nuevo: 'Nuevo reto', editar: 'Editar reto' },
             textoGuardar: { nuevo: 'Crear reto' },
-            vacio: () => ({ nombre: '', descripcion: '', accion: '', meta: 1, monedas: 10, tipo: 'main' }),
+            vacio: () => ({ nombre: '', descripcion: '', accion: 'manual_evidencia', meta: 1, monedas: 10, tipo: 'main' }),
             desde: (r) => ({ ...r }),
             validar: (d) => ({
               nombre: String(d.nombre).trim() ? undefined : 'Escribe el título del reto.',
-              accion: String(d.accion).trim() ? undefined : 'Escribe qué acción cuenta (su id, como add_wishlist).',
+              accion: String(d.accion).trim() ? undefined : 'Elige cómo se cumple el reto.',
               descripcion: String(d.descripcion).trim() ? undefined : 'Escribe una descripción corta.',
             }),
             campos: ({ datos, cambiar, errores, idDe }) => (
@@ -362,9 +363,23 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
                   <Campo id={idDe('nombre')} etiqueta="Título" placeholder="Ej. Agrega 3 productos a tus deseos" value={datos.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
                   <Campo id={idDe('descripcion')} etiqueta="Descripción corta" multilinea={3} value={datos.descripcion} error={errores.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
                 </GrupoCampos>
-                <GrupoCampos titulo="Qué cuenta" columnas={2}>
-                  <Campo id={idDe('accion')} etiqueta="Acción (id)" placeholder="Ej. add_wishlist" value={datos.accion} error={errores.accion} onChange={(e) => cambiar('accion', e.target.value)} />
-                  <Campo etiqueta="Meta (cuántas veces)" type="number" inputMode="numeric" min={1} value={datos.meta} onChange={(e) => cambiar('meta', e.target.value)} />
+                <GrupoCampos
+                  titulo="Cómo se cumple"
+                  columnas={esRetoConEvidencia(datos.accion) ? 1 : 2}
+                  ayuda={esRetoConEvidencia(datos.accion)
+                    ? 'En la ventana de Kapi el cliente pega el enlace de su foto o historia. Lo revisas en «Evidencias» y, al aprobarlo, se le paga.'
+                    : 'Cuenta sola cada vez que agrega un producto a su Lista de Deseos, hasta llegar a la meta.'}
+                >
+                  <Campo
+                    id={idDe('accion')}
+                    etiqueta="Cómo se comprueba"
+                    // Uno viejo con otra acción sigue en la lista para no perderlo.
+                    opciones={ACCIONES_RETO.some((a) => a.valor === datos.accion) || !datos.accion ? ACCIONES_RETO : [...ACCIONES_RETO, { valor: datos.accion, texto: textoAccionReto(datos.accion) }]}
+                    value={datos.accion}
+                    error={errores.accion}
+                    onChange={(e) => cambiar('accion', e.target.value)}
+                  />
+                  {!esRetoConEvidencia(datos.accion) && <Campo etiqueta="Meta (cuántos productos)" type="number" inputMode="numeric" min={1} value={datos.meta} onChange={(e) => cambiar('meta', e.target.value)} />}
                 </GrupoCampos>
                 <GrupoCampos titulo="Lo que da" columnas={2}>
                   <Campo etiqueta="Recompensa" opciones={RECOMPENSAS_RETO} value={datos.tipo} onChange={(e) => cambiar('tipo', e.target.value)} />
@@ -420,7 +435,7 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
             <h2>{activo.title}</h2>
             {activo.description && <p>{activo.description}</p>}
             <dl className={s.datos}>
-              <div><dt>Qué cuenta</dt><dd><code className={s.codigo}>{activo.actionType}</code> · meta {activo.goal}</dd></div>
+              <div><dt>Cómo se cumple</dt><dd>{textoAccionReto(activo.actionType)}{!esRetoConEvidencia(activo.actionType) && ` · meta ${activo.goal}`}</dd></div>
               <div><dt>Da</dt><dd>{recompensaDeReto(activo)}</dd></div>
               <div><dt>Empezó</dt><dd>{fechaHora(Date.parse(activo.startedAt))}</dd></div>
               <div><dt>Vence</dt><dd>{fechaHora(Date.parse(activo.expiresAt))}{quedan && <span className={l.sub}>{quedan}</span>}</dd></div>

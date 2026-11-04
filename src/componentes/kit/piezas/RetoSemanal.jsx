@@ -61,7 +61,9 @@ export function RetoSemanal({ titulo, descripcion, recompensa, progreso = 0, met
         <Aviso compacto tipo="exito"><Texto>¡Reto completado! Ya te dimos el premio.</Texto></Aviso>
       ) : (
         <>
-          <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta="Tu avance" />
+          {conEvidencia
+            ? <p className={s.descripcion}><Texto>Cuando lo hagas, pega aquí el enlace de tu foto o historia. Lo revisamos y te damos el premio.</Texto></p>
+            : <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta="Tu avance" />}
           {conEvidencia && (
             <form className={s.evidencia} onSubmit={enviar}>
               <Campo

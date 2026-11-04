@@ -137,7 +137,7 @@ export {
   MAX_DIAS_RECONSTRUIR, ultimosDias, diasEntreClaves, tramosDeDias, ayudaDeRango, filasDeCalidad,
   segunOrigen, traficoPorDia, seguimientoDePedidos, listasDePaginas, claveAnonimaCorta, listasDeUso, nombreDePais, listasDeNavegador,
   ESTADOS_REFERIDO, ESTADOS_REFERENTE, referidoDesdeFirestore, resumenReferidos, referentesDesde, ESTADOS_CANJE, canjeDesde, canjesDesde, resumenCanjes, misionDesdeFirestore, misionAFirestore,
-  RECOMPENSAS_RETO, recompensaDeReto, retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde,
+  RECOMPENSAS_RETO, recompensaDeReto, ACCIONES_RETO, esRetoConEvidencia, textoAccionReto, retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde,
   TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, erroresDeRecompensa,
   semanasDelMes, mesVecino, fechaClienteDesde, cuandoFecha, FILTROS_FECHAS_CLIENTES, fechaEnVentana, paqueteDesdeFirestore, paqueteAFirestore,
   paquetesDeFecha, cambiosAlElegir, siguienteElegido, estadoDePaquetes, diasDesdeTexto, idDeFestiva,

@@ -1959,15 +1959,23 @@ exports.rotateWeeklyChallenge = onSchedule({
  * Callable Function: Enviar evidencia manual para el reto (ej. link a story, foto)
  */
 exports.submitChallengeEvidence = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
-  }
-  const { evidenceUrl, challengeId, evidenceType } = data;
-  if (!evidenceUrl || !challengeId) {
+  // Una cuenta de verdad (no la sesión anónima), un enlace http(s) y el reto
+  // activo de esta semana: antes se aceptaba cualquier texto para cualquier reto.
+  const uid = requireCuentaReal(context);
+  const { evidenceUrl, challengeId, evidenceType } = data || {};
+  const url = String(evidenceUrl || "").trim();
+  if (!url || !challengeId) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos de la evidencia.");
   }
+  if (url.length > 1000 || !/^https?:\/\/\S+$/i.test(url)) {
+    throw new functions.https.HttpsError("invalid-argument", "Pega un enlace que empiece con https://");
+  }
+  const activoSnap = await db.collection("globals").doc("activeChallenge").get();
+  const activo = activoSnap.exists ? activoSnap.data() || {} : null;
+  if (!activo || activo.challengeId !== challengeId || (activo.expiresAt && Date.parse(activo.expiresAt) < Date.now())) {
+    throw new functions.https.HttpsError("failed-precondition", "Ese reto ya no está activo.");
+  }
 
-  const uid = context.auth.uid;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const userDoc = await userRef.get();
   const userName = userDoc.exists ? userDoc.data().displayName : "Usuario";
@@ -1976,7 +1984,7 @@ exports.submitChallengeEvidence = functions.https.onCall(async (data, context) =
     userId: uid,
     userName: userName,
     challengeId,
-    evidenceUrl,
+    evidenceUrl: url,
     evidenceType: evidenceType || "image",
     status: "pending",
     submittedAt: FieldValue.serverTimestamp()
