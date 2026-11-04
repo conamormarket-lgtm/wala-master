@@ -173,6 +173,74 @@ export function estiloBotonStyle(diseno) {
 // Cada tema es un objeto `diseno` COMPLETO. El editor los pinta como tarjetas;
 // al hacer clic se copian al formulario (y luego se pueden ajustar los colores).
 export const TEMAS = [
+  // Los de Walá primero: los colores de la marca (violeta, rosa, el naranja de
+  // Kapi) y la letra de la tienda (sin fontFamily, el título va con la de marca).
+  {
+    id: 'wala-noche',
+    nombre: 'Walá noche',
+    diseno: {
+      buttonStyle: 'solid', cornerRoundness: 16, buttonShadow: 'soft',
+      buttonColor: '#ffffff', buttonTextColor: '#5b21b6',
+      titleColor: '#ffffff', textColor: '#e9d5ff',
+      background: { type: 'gradient', value: 'linear-gradient(165deg, #2e1065 0%, #1a0b2e 60%, #12051f 100%)' },
+      fontFamily: '',
+    },
+  },
+  {
+    id: 'wala-violeta',
+    nombre: 'Walá violeta',
+    diseno: {
+      buttonStyle: 'glass', cornerRoundness: 18, buttonShadow: 'soft',
+      buttonColor: '#ffffff', buttonTextColor: '#ffffff',
+      titleColor: '#ffffff', textColor: '#fdf4ff',
+      background: { type: 'gradient', value: 'linear-gradient(140deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%)' },
+      fontFamily: '',
+    },
+  },
+  {
+    id: 'wala-lavanda',
+    nombre: 'Lavanda',
+    diseno: {
+      buttonStyle: 'solid', cornerRoundness: 16, buttonShadow: 'soft',
+      buttonColor: '#7c3aed', buttonTextColor: '#ffffff',
+      titleColor: '#2e1065', textColor: '#5b21b6',
+      background: { type: 'pattern', value: 'puntos', color: '#f5f3ff' },
+      fontFamily: '',
+    },
+  },
+  {
+    id: 'wala-rosa',
+    nombre: 'Rosa Walá',
+    diseno: {
+      buttonStyle: 'outline', cornerRoundness: 30, buttonShadow: 'none',
+      buttonColor: '#db2777', buttonTextColor: '#db2777',
+      titleColor: '#831843', textColor: '#9d174d',
+      background: { type: 'gradient', value: 'linear-gradient(160deg, #fdf2f8 0%, #fce7f3 100%)' },
+      fontFamily: '',
+    },
+  },
+  {
+    id: 'wala-kapi',
+    nombre: 'Kapi caramelo',
+    diseno: {
+      buttonStyle: 'solid', cornerRoundness: 20, buttonShadow: 'soft',
+      buttonColor: '#c2410c', buttonTextColor: '#fff7ed',
+      titleColor: '#7c2d12', textColor: '#9a3412',
+      background: { type: 'gradient', value: 'linear-gradient(160deg, #fff7ed 0%, #ffedd5 100%)' },
+      fontFamily: '',
+    },
+  },
+  {
+    id: 'wala-dorado',
+    nombre: 'Dorado',
+    diseno: {
+      buttonStyle: 'solid', cornerRoundness: 14, buttonShadow: 'soft',
+      buttonColor: '#fbbf24', buttonTextColor: '#1c1917',
+      titleColor: '#fde68a', textColor: '#e7e5e4',
+      background: { type: 'gradient', value: 'linear-gradient(165deg, #292524 0%, #1c1917 100%)' },
+      fontFamily: '',
+    },
+  },
   {
     id: 'noche',
     nombre: 'Noche',
