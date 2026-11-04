@@ -35,8 +35,9 @@ Font.whitelist = ['arial', 'courier', 'garamond', 'tahoma', 'times-new-roman', '
 Quill.register(Font, true);
 const MODULOS_QUILL = {
   toolbar: [
-    [{ font: Font.whitelist }],
-    [{ size: Size.whitelist }],
+    // false: "sin elegir" (si no, la barra mostraba la primera, 8px o Arial, aunque el texto no la tenga).
+    [{ font: [false, ...Font.whitelist] }],
+    [{ size: [false, ...Size.whitelist] }],
     ['bold', 'italic', 'underline', 'strike'],
     [{ color: [] }, { background: [] }],
     [{ list: 'ordered' }, { list: 'bullet' }],
@@ -254,7 +255,9 @@ export default function FichaDelPanel({ modo = 'producto' }) {
         const form = { ...fichaAProducto(datos), category: datos.categoria || '' };
         escribirBorradores([...leerBorradores().filter((d) => d.draftId !== draftId), { draftId, form, updatedAt: new Date().toISOString() }]);
       } : undefined}
-      descripcion={(valor, onCambiar) => <ReactQuill theme="snow" value={valor || ''} onChange={onCambiar} modules={MODULOS_QUILL} />}
+      // Solo lo que escribe una persona: al abrir, Quill pasa un texto plano a su
+      // formato (<p>…</p>) y avisaba "Cambios sin guardar" sin haber tocado nada.
+      descripcion={(valor, onCambiar) => <ReactQuill theme="snow" value={valor || ''} onChange={(html, _cambio, origen) => { if (origen === 'user') onCambiar(html); }} modules={MODULOS_QUILL} placeholder="Cuenta qué es, de qué está hecho y para quién es." />}
       extraGaleria={prenda ? undefined : (variante, agregar) => (
         <GenerarFrenteEspalda
           variante={{ id: variante.id, imageUrl: variante.foto, images: variante.galeria, thumbnailCrop: variante.encuadre, imagesCrops: variante.encuadres }}

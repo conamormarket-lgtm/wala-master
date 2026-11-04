@@ -57,6 +57,273 @@
   gap: 0.4rem;
 }
 
+/*
+ * El editor de la descripción (Quill, lo trae el conector): con la caja de
+ * los campos del kit. Quill mide su texto al 100% de una caja que no cuenta
+ * la barra, y se salía de la tarjeta: aquí es una columna que crece.
+ */
+.descripcion :global(.quill) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  transition: border-color var(--dur-media, 0.2s) ease, box-shadow var(--dur-media, 0.2s) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .descripcion :global(.quill):hover {
+    border-color: var(--violet-300);
+  }
+}
+
+.descripcion :global(.quill):focus-within {
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+}
+
+.descripcion :global(.ql-toolbar.ql-snow) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 12.5px 12.5px 0 0;
+  background: var(--color-hover, rgba(124, 58, 237, 0.04));
+  font-family: inherit;
+}
+
+/* Cada grupo de botones, separado por una rayita. */
+.descripcion :global(.ql-toolbar.ql-snow .ql-formats) {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.descripcion :global(.ql-toolbar.ql-snow .ql-formats:last-child) {
+  border-right: 0;
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 8px;
+  transition: background-color 120ms ease;
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button:hover),
+.descripcion :global(.ql-snow.ql-toolbar button:focus-visible),
+.descripcion :global(.ql-snow.ql-toolbar button.ql-active),
+.descripcion :global(.ql-snow.ql-toolbar .ql-picker-label:hover) {
+  background: var(--primary-light);
+}
+
+/* Los íconos de Quill toman el color del texto (y el violeta al usarse). */
+.descripcion :global(.ql-snow .ql-stroke) {
+  stroke: var(--color-text-muted);
+}
+
+.descripcion :global(.ql-snow .ql-fill),
+.descripcion :global(.ql-snow .ql-stroke.ql-fill) {
+  fill: var(--color-text-muted);
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button:hover .ql-stroke),
+.descripcion :global(.ql-snow.ql-toolbar button.ql-active .ql-stroke),
+.descripcion :global(.ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke),
+.descripcion :global(.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke),
+.descripcion :global(.ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-stroke) {
+  stroke: var(--primary-color);
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button:hover .ql-fill),
+.descripcion :global(.ql-snow.ql-toolbar button.ql-active .ql-fill) {
+  fill: var(--primary-color);
+}
+
+/* Fuente y tamaño: botones con su nombre, no los selects grises de Quill. */
+.descripcion :global(.ql-snow .ql-picker) {
+  height: 32px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-font) {
+  width: 8.2rem;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-size) {
+  width: 5.6rem;
+}
+
+.descripcion :global(.ql-snow .ql-picker-label) {
+  display: flex;
+  align-items: center;
+  padding: 0 1.6rem 0 0.6rem;
+  border: 1px solid transparent !important;
+  border-radius: 8px;
+  transition: background-color 120ms ease;
+}
+
+.descripcion :global(.ql-snow .ql-picker-label svg) {
+  right: 0.35rem;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-expanded .ql-picker-label) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+/* Lo que se elige: un panel del kit, con sombra suave y que entra. */
+.descripcion :global(.ql-snow .ql-picker-options) {
+  z-index: 20;
+  max-height: 16rem;
+  margin-top: 6px;
+  padding: 0.3rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 16px 34px -18px rgba(20, 18, 28, 0.55);
+  animation: opcionesEntran 140ms ease-out both;
+}
+
+.descripcion :global(.ql-snow .ql-picker-item) {
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  color: var(--color-text);
+}
+
+.descripcion :global(.ql-snow .ql-picker-item:hover),
+.descripcion :global(.ql-snow .ql-picker-item.ql-selected) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+/* Los colores: una grilla de muestras redondas. */
+.descripcion :global(.ql-snow .ql-color-picker),
+.descripcion :global(.ql-snow .ql-icon-picker) {
+  width: 32px;
+}
+
+.descripcion :global(.ql-snow .ql-color-picker .ql-picker-label),
+.descripcion :global(.ql-snow .ql-icon-picker .ql-picker-label) {
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.descripcion :global(.ql-snow .ql-color-picker .ql-picker-label svg),
+.descripcion :global(.ql-snow .ql-icon-picker .ql-picker-label svg) {
+  position: static;
+  margin: 0;
+}
+
+.descripcion :global(.ql-snow .ql-color-picker .ql-picker-options) {
+  width: 196px;
+  padding: 0.5rem;
+}
+
+.descripcion :global(.ql-snow .ql-color-picker .ql-picker-item) {
+  width: 18px;
+  height: 18px;
+  margin: 2px;
+  padding: 0;
+  border: 1px solid var(--borde-muestra, rgba(0, 0, 0, 0.12)) !important;
+  border-radius: 50%;
+}
+
+/* Los nombres de las fuentes y los tamaños (Quill solo trae los suyos). */
+.descripcion :global(.ql-snow .ql-picker.ql-font .ql-picker-label::before),
+.descripcion :global(.ql-snow .ql-picker.ql-font .ql-picker-item::before) {
+  content: 'Fuente' !important;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-font .ql-picker-label[data-value]::before),
+.descripcion :global(.ql-snow .ql-picker.ql-font .ql-picker-item[data-value]::before) {
+  content: attr(data-value) !important;
+  text-transform: capitalize;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-size .ql-picker-label::before),
+.descripcion :global(.ql-snow .ql-picker.ql-size .ql-picker-item::before) {
+  content: 'Normal' !important;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before),
+.descripcion :global(.ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before) {
+  content: attr(data-value) !important;
+}
+
+/* El texto: con la letra y el aire de la página. */
+.descripcion :global(.ql-container.ql-snow) {
+  height: auto;
+  border: 0;
+  border-radius: 0 0 12.5px 12.5px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.descripcion :global(.ql-editor) {
+  min-height: 9.5rem;
+  padding: 0.9rem 1rem 1rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.descripcion :global(.ql-editor.ql-blank::before) {
+  left: 1rem;
+  right: 1rem;
+  color: var(--color-text-muted);
+  font-style: normal;
+}
+
+/* El cuadrito para poner un enlace: también del kit. */
+.descripcion :global(.ql-snow .ql-tooltip) {
+  z-index: 20;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 16px 34px -18px rgba(20, 18, 28, 0.55);
+  color: var(--color-text);
+}
+
+.descripcion :global(.ql-snow .ql-tooltip input[type="text"]) {
+  height: 32px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.descripcion :global(.ql-snow .ql-tooltip a.ql-action),
+.descripcion :global(.ql-snow .ql-tooltip a.ql-remove) {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+@keyframes opcionesEntran {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .descripcion :global(.ql-snow .ql-picker-options) {
+    animation: none;
+  }
+}
+
 .cargando {
   display: grid;
   gap: 0.8rem;
