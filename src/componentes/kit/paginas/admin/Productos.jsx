@@ -544,6 +544,9 @@ function CampoEquipo({ p, sugerido, onGuardar }) {
  *  - equipos: los conocidos (para sugerir al escribir)
  *  - cargando · error · onReintentar · onGuardar(id, campos) → promesa (null quita el campo)
  *  - onAceptarSugerencias(ids) → promesa · onMarcarTodos(ids, publico) → promesa
+ *    (las dos pueden devolver { ok, fallaron }: el aviso dice lo que se guardó)
+ *  - "Aceptar sugerencias" solo con algo que sugerir (lo punteado que falta);
+ *    sin nada, un aviso dice por qué (el nombre no dice para quién es)
  */
 export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe = () => ({}), equipos = [], cargando, error, onReintentar, onGuardar, onAceptarSugerencias, onMarcarTodos }) {
   const toast = useToast();
@@ -579,22 +582,35 @@ export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe
       toast({ tipo: 'error', titulo: 'No se guardó', texto: err?.message || 'Vuelve a intentar.' });
     }
   };
+  // Lo punteado que falta en cada uno: lo que guardaría "Aceptar sugerencias".
+  const sugeridoDe = (p) => {
+    const sug = sugerenciaDe(p) || {};
+    return {
+      ...(!p.publico && sug.publico ? { publico: sug.publico } : {}),
+      ...(p.edadMinima == null && sug.edadMinima != null ? { edadMinima: sug.edadMinima } : {}),
+      ...(!p.equipo && sug.equipo ? { equipo: sug.equipo } : {}),
+    };
+  };
+  const conSugerencia = filas.filter((p) => Object.keys(sugeridoDe(p)).length);
+  const avisoGuardado = (res, total, titulo, texto) => {
+    const ok = res && Number.isFinite(res.ok) ? res.ok : total;
+    const fallaron = res && Number.isFinite(res.fallaron) ? res.fallaron : 0;
+    toast(fallaron
+      ? { tipo: 'aviso', titulo: `${ok} guardados; ${fallaron} no se pudieron`, texto: 'Vuelve a intentar con los que faltan.' }
+      : { tipo: 'exito', titulo: titulo(ok), texto });
+  };
   const confirmar = async () => {
-    const ids = filas.map((p) => p.id);
     try {
       if (pregunta.tipo === 'sugerencias') {
-        await onAceptarSugerencias?.(ids);
-        const nuevos = {};
-        filas.forEach((p) => {
-          const sug = sugerenciaDe(p) || {};
-          nuevos[p.id] = { ...(locales[p.id] || {}), ...(p.publico ? {} : sug.publico ? { publico: sug.publico } : {}), ...(p.edadMinima == null && sug.edadMinima != null ? { edadMinima: sug.edadMinima } : {}), ...(!p.equipo && sug.equipo ? { equipo: sug.equipo } : {}) };
-        });
-        setLocales((m) => ({ ...m, ...nuevos }));
-        toast({ tipo: 'exito', titulo: 'Sugerencias guardadas', texto: `${ids.length} productos` });
+        const ids = conSugerencia.map((p) => p.id);
+        const res = await onAceptarSugerencias?.(ids);
+        setLocales((m) => ({ ...m, ...Object.fromEntries(conSugerencia.map((p) => [p.id, { ...(m[p.id] || {}), ...sugeridoDe(p) }])) }));
+        avisoGuardado(res, ids.length, (n) => `${n} ${n === 1 ? 'sugerencia guardada' : 'sugerencias guardadas'}`, 'Lo que ya estaba puesto no cambió.');
       } else {
-        await onMarcarTodos?.(ids, pregunta.publico);
+        const ids = filas.map((p) => p.id);
+        const res = await onMarcarTodos?.(ids, pregunta.publico);
         setLocales((m) => ({ ...m, ...Object.fromEntries(ids.map((id) => [id, { ...(m[id] || {}), publico: pregunta.publico }])) }));
-        toast({ tipo: 'exito', titulo: `${ids.length} productos marcados`, texto: PUBLICOS.find((x) => x.valor === pregunta.publico)?.texto });
+        avisoGuardado(res, ids.length, (n) => `${n} ${n === 1 ? 'producto marcado' : 'productos marcados'}`, PUBLICOS.find((x) => x.valor === pregunta.publico)?.texto);
       }
     } catch (err) {
       toast({ tipo: 'error', titulo: 'No se guardó', texto: err?.message || 'Vuelve a intentar.' });
@@ -626,7 +642,9 @@ export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe
       />
       {filas.length > 1 && (onMarcarTodos || onAceptarSugerencias) && (
         <div className={s.loteRecomendar}>
-          {onAceptarSugerencias && filtro === 'faltan' && <Boton tamano="sm" variante="secundario" icono={<Sparkles aria-hidden="true" />} onClick={() => setPregunta({ tipo: 'sugerencias' })}>Aceptar sugerencias</Boton>}
+          {onAceptarSugerencias && filtro === 'faltan' && (conSugerencia.length
+            ? <Boton tamano="sm" variante="secundario" icono={<Sparkles aria-hidden="true" />} onClick={() => setPregunta({ tipo: 'sugerencias' })}>Aceptar {conSugerencia.length === 1 ? 'la sugerencia' : `${conSugerencia.length} sugerencias`}</Boton>
+            : <p className={s.sinSugerencias}>Para estos no hay sugerencias: su nombre no dice para quién es. Elígelo en cada uno o márcalos todos juntos.</p>)}
           {onMarcarTodos && (
             <p className={s.marcarTodos}>
               Marcar los {filas.length} como:
@@ -655,7 +673,7 @@ export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe
       <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={['producto', 'productos']} />
       <Confirmar
         abierta={Boolean(pregunta)}
-        titulo={pregunta?.tipo === 'sugerencias' ? `¿Guardar las sugerencias de ${filas.length} productos?` : `¿Marcar los ${filas.length} como «${PUBLICOS.find((x) => x.valor === pregunta?.publico)?.texto}»?`}
+        titulo={pregunta?.tipo === 'sugerencias' ? `¿Guardar las sugerencias de ${conSugerencia.length} ${conSugerencia.length === 1 ? 'producto' : 'productos'}?` : `¿Marcar los ${filas.length} como «${PUBLICOS.find((x) => x.valor === pregunta?.publico)?.texto}»?`}
         texto={pregunta?.tipo === 'sugerencias' ? 'Se guarda lo punteado que falta en cada uno. Lo que ya está puesto no cambia.' : 'Se cambia «Para quién» en todos los de la lista, también los que ya lo tenían.'}
         confirmar="Guardar"
         onConfirmar={confirmar}
