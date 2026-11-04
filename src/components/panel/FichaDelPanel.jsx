@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import ReactQuill, { Quill } from 'react-quill';
+import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { createProduct, updateProduct, getProduct, getProducts, generateProductId } from '../../services/products';
@@ -26,25 +26,22 @@ import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
 import { logInventoryChange } from '../../services/inventoryLogs';
 import { sinError, useInvalidar } from './comun';
 
-// El editor de la descripción: las mismas fuentes y tamaños de AdminProductoFormV2.
-const Size = Quill.import('attributors/style/size');
-Size.whitelist = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
-Quill.register(Size, true);
-const Font = Quill.import('attributors/style/font');
-Font.whitelist = ['arial', 'courier', 'garamond', 'tahoma', 'times-new-roman', 'verdana', 'impact', 'roboto', 'open-sans', 'montserrat', 'lato'];
-Quill.register(Font, true);
+/*
+ * El editor de la descripción: solo lo que se ve igual en la web y en la app
+ * de Android (rich-text.ts: párrafos, títulos, listas, negrita y cursiva).
+ * Fuente, tamaño, color, subrayado y enlaces salieron el 2026-11-04: la app
+ * no los muestra, la web los pintaba sin respetar el diseño ni el modo noche,
+ * y ninguna descripción los usaba. `formats` también los quita al pegar.
+ */
 const MODULOS_QUILL = {
   toolbar: [
-    // false: "sin elegir" (si no, la barra mostraba la primera, 8px o Arial, aunque el texto no la tenga).
-    [{ font: [false, ...Font.whitelist] }],
-    [{ size: [false, ...Size.whitelist] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ color: [] }, { background: [] }],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['link'],
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic'],
+    [{ list: 'bullet' }, { list: 'ordered' }],
     ['clean'],
   ],
 };
+const FORMATOS_QUILL = ['header', 'bold', 'italic', 'list'];
 
 // Cómo empieza el nombre del archivo según dónde se sube (los de siempre:
 // la página de un combo busca "_frente-espalda." y el taller, "crear_").
@@ -257,7 +254,7 @@ export default function FichaDelPanel({ modo = 'producto' }) {
       } : undefined}
       // Solo lo que escribe una persona: al abrir, Quill pasa un texto plano a su
       // formato (<p>…</p>) y avisaba "Cambios sin guardar" sin haber tocado nada.
-      descripcion={(valor, onCambiar) => <ReactQuill theme="snow" value={valor || ''} onChange={(html, _cambio, origen) => { if (origen === 'user') onCambiar(html); }} modules={MODULOS_QUILL} placeholder="Cuenta qué es, de qué está hecho y para quién es." />}
+      descripcion={(valor, onCambiar) => <ReactQuill theme="snow" value={valor || ''} onChange={(html, _cambio, origen) => { if (origen === 'user') onCambiar(html); }} modules={MODULOS_QUILL} formats={FORMATOS_QUILL} placeholder="Cuenta qué es, de qué está hecho y para quién es." />}
       extraGaleria={prenda ? undefined : (variante, agregar) => (
         <GenerarFrenteEspalda
           variante={{ id: variante.id, imageUrl: variante.foto, images: variante.galeria, thumbnailCrop: variante.encuadre, imagesCrops: variante.encuadres }}
