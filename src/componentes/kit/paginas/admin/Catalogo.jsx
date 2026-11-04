@@ -10,6 +10,7 @@ import { ATRIBUTOS, mismoNombre } from '../../adaptadoresAdmin';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, MarcasCelda, NumeroCelda, ElegirMarcas, porNombre, porOrden } from './celdas';
 import s from './Lista.module.css';
+import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../../../../constants/envio';
 
 /*
  * Las listas simples del catálogo (D1), sobre PaginaListaAdmin:
@@ -248,10 +249,21 @@ const textoDias = (d) => (!d ? 'Sin plazo' : d === 1 ? '1 día' : `${d} días`);
  *  - zonas: [{ id, nombre, departamento, costo, dias, orden, activa }] (zonaDesdeFirestore)
  *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id)
  */
+/*
+ * Zonas de envío NO están operativas: el checkout de la web y de la app cobra
+ * el envío fijo de src/constants/envio.js (S/ 15, gratis desde S/ 200) y solo
+ * lee shippingZones un cobro de varios vendedores que nadie llama. Hasta
+ * conectarlas (checkout, carrito, servidor y la app de Android) la página lo
+ * dice arriba y en el formulario.
+ */
+const FIJO = `S/ ${ENVIO_ESTANDAR} a todo el país y gratis desde S/ ${ENVIO_GRATIS_DESDE}`;
+const NO_OPERATIVA = `Por ahora el envío es fijo: ${FIJO}. Lo que pongas aquí se guarda, pero no cambia lo que se cobra hasta que se conecte con el checkout.`;
+
 export function PaginaEnvios({ zonas = [], cargando, error, onReintentar, onGuardar, onEliminar }) {
   return (
     <PaginaListaAdmin
       cabeza={{ icono: 'envios', titulo: 'Zonas de envío', subtitulo: 'El costo y el tiempo de entrega por departamento.' }}
+      antes={<Aviso tipo="aviso" titulo="Todavía no está operativa">{NO_OPERATIVA}</Aviso>}
       registros={zonas}
       cargando={cargando}
       error={error}
@@ -309,6 +321,7 @@ export function PaginaEnvios({ zonas = [], cargando, error, onReintentar, onGuar
         limpiar: (d) => ({ ...d, nombre: d.nombre.trim(), departamento: d.departamento.trim(), costo: Number(d.costo) || 0, dias: Math.round(Number(d.dias) || 0), orden: Number(d.orden) || 0 }),
         campos: ({ datos, cambiar, errores, idDe }) => (
           <>
+            <Aviso tipo="aviso" compacto titulo="Todavía no está operativa">{`El checkout cobra ${FIJO}; esta zona no cambia ese precio.`}</Aviso>
             <GrupoCampos titulo="Zona">
               <Campo id={idDe('nombre')} etiqueta="Nombre" placeholder="Ej. Lima Metropolitana" value={datos.nombre} error={errores.nombre} maxLength={60} onChange={(e) => cambiar('nombre', e.target.value)} />
               <Campo id={idDe('departamento')} etiqueta="Departamento" placeholder="Ej. Lima" value={datos.departamento} onChange={(e) => cambiar('departamento', e.target.value)} />
