@@ -111,15 +111,15 @@ const VISTAS = [
 ];
 
 /*
- * Los chips de Tienda no se pisan: un producto es visible, oculto o pieza de
- * combo (las piezas no se cuentan en los otros dos), y Todos es la suma. Las
- * cuentas siguen a la búsqueda y a los filtros: dicen cuántos verías.
+ * Los chips de Tienda: Todos, Visibles y Ocultos miran solo si se ve en la
+ * tienda (Visibles + Ocultos = Todos). "Piezas de combo" es aparte y se suma
+ * al que esté elegido (Ocultos + Piezas = las piezas ocultas). Las cuentas
+ * siguen a la búsqueda y a los filtros: dicen cuántos verías.
  */
 const ESTADOS_LISTA = [
   { id: 'todos', texto: 'Todos' },
   { id: 'visibles', texto: 'Visibles' },
   { id: 'ocultos', texto: 'Ocultos' },
-  { id: 'piezas', texto: 'Piezas de combo' },
 ];
 
 /**
@@ -156,6 +156,7 @@ export function PaginaProductos({
 }) {
   const toast = useToast();
   const [estado, setEstado] = useState('todos');
+  const [soloPiezas, setSoloPiezas] = useState(false);
   const [buscar, setBuscar] = useState('');
   const [filtro, setFiltro] = useState({ categoria: '', marca: '', coleccion: '', tipo: '', stock: '' });
   const [orden, setOrden] = useState({ por: 'nombre', dir: 'asc' });
@@ -181,15 +182,14 @@ export function PaginaProductos({
   }), [productos, cambios, stockLocal]);
   const tienda = useMemo(() => conCambios.filter(esDeLaTienda), [conCambios]);
   const piezas = useMemo(() => piezasDeCombos(tienda), [tienda]);
-  const enEstado = (p, e) => (e === 'visibles' ? !p.oculto && !piezas.has(p.id)
-    : e === 'ocultos' ? p.oculto && !piezas.has(p.id)
-      : e === 'piezas' ? piezas.has(p.id) : true);
+  const enEstado = (p, e) => (e === 'visibles' ? !p.oculto : e === 'ocultos' ? p.oculto : true);
+  const enElegidos = (p) => enEstado(p, estado) && (!soloPiezas || piezas.has(p.id));
   const deCrear = cuentasCrear || { crear: productos.filter((p) => p.personalizable).length, packs: productos.filter((p) => p.pack).length };
   const viejos = tienda.filter((p) => p.personalizacionVieja);
 
   const q = normalizarBusqueda(buscar);
   const coincide = (p) => !q || normalizarBusqueda(`${p.nombre} ${nombresDe(p.categorias, porCategoria).join(' ')} ${p.precio}`).includes(q);
-  const base = useMemo(() => (vista === 'todos' ? conCambios : tienda.filter((p) => enEstado(p, estado))), [vista, conCambios, tienda, estado, piezas]); // eslint-disable-line react-hooks/exhaustive-deps
+  const base = useMemo(() => (vista === 'todos' ? conCambios : tienda.filter(enElegidos)), [vista, conCambios, tienda, estado, soloPiezas, piezas]); // eslint-disable-line react-hooks/exhaustive-deps
   const pasaFiltros = (p) => coincide(p)
     && (!filtro.categoria || p.categorias.includes(filtro.categoria))
     && (!filtro.marca || (filtro.marca === '__sin' ? !p.marcaId : p.marcaId === filtro.marca))
@@ -198,9 +198,11 @@ export function PaginaProductos({
     && (!filtro.stock || estadoDeStock(inicial(p)) === filtro.stock);
   // Los de la tienda que pasan la búsqueda y los filtros: de ahí salen las cuentas de los chips.
   const tiendaFiltrada = useMemo(() => tienda.filter(pasaFiltros), [tienda, q, filtro]); // eslint-disable-line react-hooks/exhaustive-deps
-  const cuentas = Object.fromEntries(ESTADOS_LISTA.map((e) => [e.id, tiendaFiltrada.filter((p) => enEstado(p, e.id)).length]));
+  // Cada chip cuenta lo que verías al tocarlo (con Piezas de combo, solo las piezas).
+  const cuentas = Object.fromEntries(ESTADOS_LISTA.map((e) => [e.id, tiendaFiltrada.filter((p) => enEstado(p, e.id) && (!soloPiezas || piezas.has(p.id))).length]));
+  cuentas.piezas = tiendaFiltrada.filter((p) => enEstado(p, estado) && piezas.has(p.id)).length;
   const filas = useMemo(() => {
-    const lista = vista === 'todos' ? conCambios.filter(pasaFiltros) : tiendaFiltrada.filter((p) => enEstado(p, estado));
+    const lista = vista === 'todos' ? conCambios.filter(pasaFiltros) : tiendaFiltrada.filter(enElegidos);
     const signo = orden.dir === 'desc' ? -1 : 1;
     const cmp = {
       nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
@@ -208,7 +210,7 @@ export function PaginaProductos({
       stock: (a, b) => stockParaOrden(inicial(a)) - stockParaOrden(inicial(b)),
     }[orden.por] || (() => 0);
     return [...lista].sort((a, b) => signo * (cmp(a, b) || 0) || a.nombre.localeCompare(b.nombre, 'es'));
-  }, [vista, conCambios, tiendaFiltrada, estado, q, filtro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [vista, conCambios, tiendaFiltrada, estado, soloPiezas, q, filtro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
   // Los agotados de lo que se ve (sin contar los sin límite): el aviso los lleva al filtro.
   const agotados = base.filter((p) => p.stock !== null && p.stock <= 0).length;
   const guardarStock = onGuardarStock && (async (p, n, antes) => {
@@ -386,6 +388,9 @@ export function PaginaProductos({
               {ESTADOS_LISTA.map((e) => (
                 <Chip key={e.id} tamano="sm" activo={estado === e.id} cuenta={cargando ? undefined : cuentas[e.id]} onClick={() => { setEstado(e.id); reiniciar(); }}>{e.texto}</Chip>
               ))}
+              {/* Aparte: se suma al de antes (las piezas visibles, ocultas o todas). */}
+              <span className={s.separadorChips} aria-hidden="true" />
+              <Chip tamano="sm" activo={soloPiezas} cuenta={cargando ? undefined : cuentas.piezas} onClick={() => { setSoloPiezas((v) => !v); reiniciar(); }}>Piezas de combo</Chip>
             </div>
           )}
 
@@ -420,7 +425,7 @@ export function PaginaProductos({
             onSeleccion={enTienda && !soloStock ? setElegidos : undefined}
             vacio={q || filtro.categoria || filtro.marca || filtro.coleccion || filtro.tipo || filtro.stock
               ? { titulo: 'Ningún producto coincide', texto: 'Prueba con otra palabra o quita los filtros.' }
-              : estado === 'ocultos' ? { titulo: 'No hay productos ocultos', icono: <Eye aria-hidden="true" /> }
+              : estado === 'ocultos' ? { titulo: soloPiezas ? 'No hay piezas de combo ocultas' : 'No hay productos ocultos', icono: <Eye aria-hidden="true" /> }
                 : { titulo: 'Todavía no hay productos', accion: <Boton to={urlNuevo} icono={<Plus aria-hidden="true" />}>Nuevo producto</Boton> }}
             acciones={soloStock ? undefined : (p) => (vista === 'todos' ? [
               { id: 'abrir', etiqueta: 'Abrir su ficha', Icono: Pencil, accion: () => onAbrir?.(p) },

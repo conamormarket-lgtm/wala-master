@@ -184,6 +184,15 @@
   white-space: nowrap;
 }
 
+/* Entre Todos/Visibles/Ocultos y "Piezas de combo", que va aparte. */
+.separadorChips {
+  align-self: center;
+  width: 1px;
+  height: 1.3rem;
+  margin: 0 0.25rem;
+  background: var(--color-border);
+}
+
 /* Datos para recomendar: por qué no hay "Aceptar sugerencias". */
 .sinSugerencias {
   flex: 1 1 18rem;
