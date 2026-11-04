@@ -52,19 +52,36 @@
   mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
 }
 
-/* A color, la W va blanca encima (como el logo de la cabecera y el de Cargando):
-   calada, de noche se veía el fondo oscuro por la W. Dos capas de máscara
-   (etiqueta + W) y dos de fondo (la W blanca sobre el degradado). */
+/* La etiqueta lleva la forma con el degradado; la W, encima en su propia capa
+   blanca (dos capas con su máscara cada una, como logoForma/logoHuecos): una
+   sola máscara con las dos imágenes mezclaba sus bordes y la W salía borrosa. */
 .iso_color {
-  background:
-    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat,
-    linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
-  -webkit-mask:
-    url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat,
-    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
-  mask:
-    url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat,
-    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
+  position: relative;
+  /* La forma va en ::before, así la W (hija) no queda recortada por su máscara. */
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.iso_color::before,
+.isoW {
+  content: '';
+  position: absolute;
+  inset: 0;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+.iso_color::before {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+  -webkit-mask-image: url('/assets/marca/splash-etiqueta.webp');
+  mask-image: url('/assets/marca/splash-etiqueta.webp');
+}
+
+.isoW {
+  background: #fff;
+  -webkit-mask-image: url('/assets/marca/splash-etiqueta-w.webp');
+  mask-image: url('/assets/marca/splash-etiqueta-w.webp');
 }
 
 .iso_blanco {
