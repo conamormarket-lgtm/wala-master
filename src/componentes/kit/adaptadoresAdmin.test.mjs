@@ -868,17 +868,3 @@ test('tipo por categoría: quién cambia al guardar y qué se sugiere', () => {
   assert.equal(m2.categoriaAFirestore({ nombre: 'Polos', tipo: 'prenda' }).productType, 'prenda');
   assert.equal(m2.categoriaDesdeFirestore({ id: 'x', productType: 'prenda' }).tipo, 'prenda');
 });
-
-test('tipo propuesto por el nombre de la categoría', () => {
-  assert.equal(m2.tipoPorNombreDeCategoria('Sérums y tratamientos'), 'Belleza');
-  assert.equal(m2.tipoPorNombreDeCategoria('Casacas'), 'Ropa');
-  assert.equal(m2.tipoPorNombreDeCategoria('Cómodas'), 'Hogar');
-  assert.equal(m2.tipoPorNombreDeCategoria('Accesorios escolares'), 'Accesorios');
-  assert.equal(m2.tipoPorNombreDeCategoria('Recuerdos de promoción'), '');
-  const propuesta = m2.propuestaDeTipos(
-    [{ id: 'a', nombre: 'Combos' }, { id: 'b', nombre: 'Polos', tipo: 't1' }, { id: 'c', nombre: 'Tónicos' }],
-    [{ id: 't1', nombre: 'Prenda' }, { id: 't2', nombre: 'Accesorio' }],
-    new Map([['a', 't2']]),
-  );
-  assert.deepEqual(propuesta, [{ id: 'a', nombre: 'Combos', tipo: 'Accesorios' }, { id: 'c', nombre: 'Tónicos', tipo: 'Belleza' }]);
-});

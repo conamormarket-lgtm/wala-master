@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { getCollections, createCollection, updateCollection, deleteCollection } from '../../services/collections';
 import { getBrands } from '../../services/brands';
 import { getProducts } from '../../services/products';
+// La misma lectura (y clave) que Categorías: comparten la caché.
+import { getCategories } from '../../services/categories';
 import { getProductTypes, createProductType, updateProductType, deleteProductType } from '../../services/productTypes';
 import { getTags, createTag, updateTag, deleteTag } from '../../services/tags';
 import { getCharacters, createCharacter, updateCharacter, deleteCharacter } from '../../services/characters';
@@ -57,25 +59,38 @@ const SERVICIOS_ATRIBUTO = {
 };
 const productosConOcultos = () => getProducts([], null, null, { includeHidden: true });
 
-export function AtributosDelPanel() {
+/*
+ * Atributos del catálogo: etiquetas y personajes. Con soloTipos (lo que
+ * muestra Categorías › Tipos de producto), solo los tipos, con cuántas
+ * categorías usa cada uno.
+ */
+export function AtributosDelPanel({ soloTipos = false, cabeza, arriba }) {
   const tipos = useLectura(SERVICIOS_ATRIBUTO.tipos.clave, getProductTypes);
   const etiquetas = useLectura(SERVICIOS_ATRIBUTO.etiquetas.clave, getTags);
   const personajes = useLectura(SERVICIOS_ATRIBUTO.personajes.clave, getCharacters);
   const marcas = useLectura(['admin-brands'], getBrands);
   const productos = useLectura(['admin-products-attribute-usage'], productosConOcultos);
+  const categorias = useLectura(['admin-categories'], getCategories, { enabled: soloTipos });
   const invalidar = useInvalidar();
   const listas = { tipos, etiquetas, personajes };
 
   const atributos = useMemo(() => Object.fromEntries(Object.entries(listas).map(([tipo, l]) => {
     const usos = usosDeAtributo(productos.datos || [], tipo);
-    return [tipo, (l.datos || []).map((d) => atributoDesdeFirestore(d, usos))];
-  })), [tipos.datos, etiquetas.datos, personajes.datos, productos.datos]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Un tipo lo usan sobre todo las categorías (sus productos lo heredan).
+    const deCategorias = {};
+    if (tipo === 'tipos' && soloTipos) (categorias.datos || []).forEach((c) => { if (c.productType) deCategorias[c.productType] = (deCategorias[c.productType] || 0) + 1; });
+    return [tipo, (l.datos || []).map((d) => ({ ...atributoDesdeFirestore(d, usos), ...(tipo === 'tipos' && soloTipos && { categorias: deCategorias[d.id] || 0 }) }))];
+  })), [tipos.datos, etiquetas.datos, personajes.datos, productos.datos, categorias.datos, soloTipos]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const refrescar = (tipo) => invalidar(SERVICIOS_ATRIBUTO[tipo].clave, SERVICIOS_ATRIBUTO[tipo].publica, ['admin-products-attribute-usage']);
+  const refrescar = (tipo) => invalidar(SERVICIOS_ATRIBUTO[tipo].clave, SERVICIOS_ATRIBUTO[tipo].publica, ['admin-products-attribute-usage'], ['admin-categories']);
   const todas = [tipos, etiquetas, personajes, marcas, productos];
 
   return (
     <PaginaAtributos
+      // Los tipos de producto viven en Categorías › Tipos (2026-11-04).
+      listas={soloTipos ? ['tipos'] : ['etiquetas', 'personajes']}
+      cabeza={cabeza}
+      arriba={arriba}
       atributos={atributos}
       marcas={(marcas.datos || []).map(marcaAdminDesdeFirestore)}
       cargando={todas.some((l) => l.cargando)}

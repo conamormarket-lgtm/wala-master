@@ -120,15 +120,18 @@ const PESTANAS_ATRIBUTOS = [{ id: 'tipos', texto: 'Tipos' }, { id: 'etiquetas', 
  *  - onQuitarSinUsar(tipo, ids) → promesa con { quitados, fallaron }: los que
  *    no están en ningún producto de una vez (pregunta antes, con sus nombres).
  *    Solo con la lista y los usos ya leídos: mientras cargan, todo parece "sin usar"
- *  - tipoInicial ('tipos')
+ *  - tipoInicial ('tipos') · listas: qué pestañas (las tres; con una sola, sin pestañas)
+ *  - cabeza: otra cabeza (Tipos vive en Categorías) · arriba: un nodo antes de todo
+ *  - Los tipos pueden traer `categorias` (cuántas los usan): con alguna no se eliminan
  */
-export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, onQuitarSinUsar, tipoInicial = 'tipos' }) {
+export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, onQuitarSinUsar, tipoInicial, listas = ['tipos', 'etiquetas', 'personajes'], cabeza, arriba }) {
   const toast = useToast();
-  const [tipo, setTipo] = useState(tipoInicial);
+  const [tipo, setTipo] = useState(tipoInicial && listas.includes(tipoInicial) ? tipoInicial : listas[0]);
   const [preguntar, setPreguntar] = useState(false);
   const a = ATRIBUTOS[tipo];
   const registros = atributos[tipo] || [];
-  const sinUsar = !cargando && !error ? registros.filter((r) => !r.usos) : [];
+  // Sin usar: en ningún producto y, los tipos, en ninguna categoría.
+  const sinUsar = !cargando && !error ? registros.filter((r) => !r.usos && !r.categorias) : [];
   const nombres = sinUsar.map((r) => r.nombre).sort((x, y) => x.localeCompare(y, 'es'));
   const quitar = async () => {
     setPreguntar(false);
@@ -144,21 +147,23 @@ export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, 
     }
   };
   const opcionesMarca = useMemo(() => [...marcas.map((m) => ({ valor: m.id, texto: m.nombre })), { valor: '__todas', texto: 'De todas las marcas' }], [marcas]);
-  const pestanas = PESTANAS_ATRIBUTOS.map((p) => ({ ...p, texto: `${p.texto}${atributos[p.id] ? ` · ${atributos[p.id].length}` : ''}` }));
+  const pestanas = PESTANAS_ATRIBUTOS.filter((p) => listas.includes(p.id)).map((p) => ({ ...p, texto: `${p.texto}${atributos[p.id] ? ` · ${atributos[p.id].length}` : ''}` }));
+  const conCategorias = registros.some((r) => r.categorias !== undefined);
   return (
     <PaginaListaAdmin
       key={tipo}
-      cabeza={{ icono: 'atributos', titulo: 'Atributos del catálogo', subtitulo: 'Las listas que se eligen en cada producto y salen como filtros en la tienda.' }}
+      cabeza={cabeza || { icono: 'atributos', titulo: 'Atributos del catálogo', subtitulo: 'Las etiquetas y los personajes que se eligen en cada producto y salen como filtros en la tienda.' }}
       antes={(
         <>
-          <div className={s.desliza}><Pestanas opciones={pestanas} valor={tipo} onChange={setTipo} etiqueta="Qué lista" /></div>
+          {arriba}
+          {pestanas.length > 1 && <div className={s.desliza}><Pestanas opciones={pestanas} valor={tipo} onChange={setTipo} etiqueta="Qué lista" /></div>}
           {onQuitarSinUsar && sinUsar.length > 0 && (
             <Aviso
               tipo="info"
               titulo={sinUsar.length === 1 ? `1 ${a.singular} no está en ningún producto` : `${sinUsar.length} ${a.plural} no están en ningún producto`}
               accion={<Boton tamano="sm" variante="contorno" icono={<Trash2 aria-hidden="true" />} onClick={() => setPreguntar(true)}>Quitar los sin usar</Boton>}
             >
-              No salen en ningún filtro de la tienda. {tipo === 'etiquetas' ? 'Quitarlas' : 'Quitarlos'} deja la lista más corta para elegir en cada producto.
+              {tipo === 'tipos' ? 'Ninguna categoría ni producto los usa. Quitarlos deja la lista más corta al elegir el tipo de una categoría.' : `No salen en ningún filtro de la tienda. ${tipo === 'etiquetas' ? 'Quitarlas' : 'Quitarlos'} deja la lista más corta para elegir en cada producto.`}
             </Aviso>
           )}
           <Confirmar
@@ -190,6 +195,7 @@ export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, 
       columnas={[
         { id: 'nombre', titulo: 'Nombre', ordenable: true, tarjeta: 'titulo', celda: (r) => r.nombre },
         ...(a.conMarcas ? [{ id: 'marcas', titulo: 'Marcas', tarjeta: 'detalle', celda: (r) => <MarcasCelda ids={r.marcas} marcas={marcas} global /> }] : []),
+        ...(conCategorias ? [{ id: 'categorias', titulo: 'Categorías', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (r) => (r.categorias ? <NumeroCelda nombre="Categorías:" valor={r.categorias} /> : <span className={s.sub}>Ninguna</span>) }] : []),
         {
           id: 'usos',
           titulo: 'Productos',
@@ -205,7 +211,8 @@ export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, 
       vacio={{ texto: a.ayuda }}
       textos={{ creado: `${a.titulo}: creado`, guardado: 'Cambios guardados', eliminado: 'Eliminado' }}
       eliminar={{
-        bloqueado: (r) => (r.usos ? `Está en ${r.usos} producto${r.usos === 1 ? '' : 's'}. Quítalo de esos productos primero.` : null),
+        bloqueado: (r) => (r.categorias ? `Lo usa${r.categorias === 1 ? ' 1 categoría' : `n ${r.categorias} categorías`}. Cámbiales el tipo primero.`
+          : r.usos ? `Está en ${r.usos} producto${r.usos === 1 ? '' : 's'}. Quítalo de esos productos primero.` : null),
         texto: () => 'No está en ningún producto. No se puede deshacer.',
       }}
       onGuardar={(d, id) => onGuardar?.(tipo, d, id)}
@@ -215,6 +222,7 @@ export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, 
         titulos: { nuevo: `${tipo === 'etiquetas' ? 'Nueva' : 'Nuevo'} ${a.singular}`, editar: `Editar ${a.singular}` },
         subtitulo: (r) => (r ? `${r.nombre}${r.usos ? ` · en ${r.usos} producto${r.usos === 1 ? '' : 's'}` : ''}` : a.ayuda),
         textoGuardar: { nuevo: 'Crear' },
+        // Los tipos se eligen en cada categoría (sus productos lo toman).
         vacio: () => ({ nombre: '', marcas: [] }),
         desde: (r) => ({ nombre: r.nombre, marcas: [...r.marcas] }),
         validar: (d, { id, registros: lista }) => {
