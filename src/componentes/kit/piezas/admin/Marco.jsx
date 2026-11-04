@@ -46,7 +46,8 @@ export function useEsconderPrincipal(si) {
 
 /**
  * El marco de toda página de /admin.
- *  - grupos: [{ id, titulo, icono, tono, suelto, items: [{ to, texto, icono, exacto, cuenta, fuera }] }]
+ *  - grupos: [{ id, titulo, icono, tono, suelto, items: [{ to, texto, icono, exacto, cuenta, fuera, claves }] }]
+ *    (`claves`: más palabras con las que la encuentra el buscador)
  *    (`suelto`: sus opciones van sin el título del grupo, como Inicio)
  *  - activo: la ruta actual ('/admin/categorias')
  *  - accesos: los de la barra inferior (accesosAdminPara(permisos))
@@ -123,7 +124,7 @@ function MenuAdmin({ grupos, actual, usuario, onCerrarSesion, urlTienda, onNaveg
 
   const q = normalizarBusqueda(buscar);
   const encontrados = q
-    ? grupos.flatMap((g) => g.items.filter((it) => normalizarBusqueda(`${it.texto} ${g.titulo}`).includes(q)).map((it) => ({ grupo: g, item: it })))
+    ? grupos.flatMap((g) => g.items.filter((it) => normalizarBusqueda(`${it.texto} ${g.titulo} ${it.claves || ''}`).includes(q)).map((it) => ({ grupo: g, item: it })))
     : null;
   const esActual = (it) => actual?.item === it;
 

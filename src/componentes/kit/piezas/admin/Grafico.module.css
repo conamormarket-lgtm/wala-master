@@ -3,6 +3,8 @@
  * sobre #ffffff; noche #9b7bf5 / #1fa774 sobre #1e1b2e. */
 .grafico {
   display: grid;
+  /* Arriba: si la tarjeta de al lado es más alta (ColumnasMetricas las estira), el gráfico no flota al medio. */
+  align-content: start;
   gap: 0.6rem;
   min-width: 0;
   margin: 0;

@@ -13,18 +13,17 @@ test('superadmin ve todo, también la configuración', () => {
   const r = rutas(menuAdminPara(['superadmin']));
   assert.ok(r.includes('/admin/configuracion'));
   assert.ok(r.includes('/admin/landing-pages'));
-  assert.ok(r.includes('/admin/resultados/clientes'));
+  assert.ok(r.includes('/admin/resultados'));
 });
 
 test('solo inventario: el inicio y productos (donde está el stock)', () => {
   assert.deepEqual(rutas(menuAdminPara(['manage_inventory'])), ['/admin', '/admin/productos']);
 });
 
-test('diseño ve Resultados sin Clientes ni Opiniones', () => {
+test('diseño ve Resultados (una sola entrada: Clientes y Opiniones los filtra la página)', () => {
   const r = rutas(menuAdminPara(['manage_design']));
   assert.ok(r.includes('/admin/resultados'));
-  assert.ok(!r.includes('/admin/resultados/clientes'));
-  assert.ok(!r.includes('/admin/resultados/opiniones'));
+  assert.ok(!r.some((x) => x.startsWith('/admin/resultados/')));
   assert.ok(!r.includes('/admin/configuracion'));
 });
 
@@ -50,7 +49,7 @@ test('la opción activa es la más larga que coincide', () => {
   const menu = menuAdminPara(['superadmin']);
   assert.equal(opcionActiva(menu, '/admin').item.to, '/admin');
   assert.equal(opcionActiva(menu, '/admin/resultados').item.to, '/admin/resultados');
-  assert.equal(opcionActiva(menu, '/admin/resultados/clientes').item.to, '/admin/resultados/clientes');
+  assert.equal(opcionActiva(menu, '/admin/resultados/clientes').item.to, '/admin/resultados');
   assert.equal(opcionActiva(menu, '/admin/sorteos/abc').item.to, '/admin/sorteos');
   assert.equal(opcionActiva(menu, '/admin/productos/nuevo').item.to, '/admin/productos');
 });

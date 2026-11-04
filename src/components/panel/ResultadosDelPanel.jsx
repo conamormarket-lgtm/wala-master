@@ -12,6 +12,7 @@ import {
 import { CLAVE_ENLACES_ROTOS } from '../../pages/admin/dashboard/EnlacesRotos';
 import { cosasPorMejorar } from '../../pages/admin/resultados/cosasPorMejorar.mjs';
 import { PESTANAS, DESTINOS, BASE_RESULTADOS } from '../../pages/admin/resultados/rutas';
+import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
 import {
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados,
 } from '../../componentes/kit/paginas/admin/Resultados';
@@ -112,6 +113,7 @@ export default function ResultadosDelPanel() {
   const { periodo, marco } = useMarcoResultados(filtros, analitica);
   const ruta = pathname.replace(/\/+$/, '');
   const actual = pestanas.find((p) => (p.end ? ruta === p.to : ruta === p.to || ruta.startsWith(`${p.to}/`))) || pestanas[0];
+  const sinPermiso = !conClientes && PESTANAS.some((p) => p.soloClientes && (ruta === p.to || ruta.startsWith(`${p.to}/`)));
 
   return (
     <MarcoResultados
@@ -123,7 +125,8 @@ export default function ResultadosDelPanel() {
       pestana={actual?.to}
       onPestana={(to) => navigate({ pathname: to, search: filtros.filtersSearch })}
     >
-      <Outlet context={{ filtros, analitica, periodo }} />
+      {/* Clientes y Opiniones piden el permiso de clientes (el menú ya no las separa). */}
+      {sinPermiso ? <SinPermiso permiso="Clientes" /> : <Outlet context={{ filtros, analitica, periodo }} />}
     </MarcoResultados>
   );
 }

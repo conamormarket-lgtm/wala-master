@@ -58,14 +58,14 @@ export const MENU_ADMIN = [
     ],
   },
   {
-    id: 'resultados', titulo: 'Resultados', icono: 'resultados', tono: 'oro',
+    // Una sola entrada (como Inicio): sus secciones son las pestañas de la página
+    // (antes estaban también aquí, repetidas). `claves`: lo encuentra el buscador.
+    id: 'resultados', titulo: 'Resultados', icono: 'resultados', tono: 'oro', suelto: true,
     items: [
-      { to: '/admin/resultados', texto: 'Resumen', icono: 'resultados', permiso: [...DISENO, ...CLIENTES], exacto: true },
-      { to: '/admin/resultados/productos', texto: 'Productos más vistos', icono: 'productos', permiso: [...DISENO, ...CLIENTES] },
-      { to: '/admin/resultados/visitantes', texto: 'Visitantes', icono: 'visitantes', permiso: [...DISENO, ...CLIENTES] },
-      { to: '/admin/resultados/clientes', texto: 'Clientes', icono: 'clientes', permiso: CLIENTES },
-      { to: '/admin/resultados/opiniones', texto: 'Opiniones', icono: 'opiniones', permiso: CLIENTES },
-      { to: '/admin/resultados/tecnico', texto: 'Detalle técnico', icono: 'tecnico', permiso: [...DISENO, ...CLIENTES] },
+      {
+        to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: [...DISENO, ...CLIENTES],
+        claves: 'resumen métricas ventas productos más vistos visitantes clientes carritos abandonados cumpleaños opiniones encuestas detalle técnico mapa de calor',
+      },
     ],
   },
   {
