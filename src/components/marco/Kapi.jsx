@@ -12,6 +12,7 @@ import { KapiFlotante } from '../../componentes/kit/piezas/Flotantes';
 import { sinKapiFlotante } from './kapiFlotante';
 import { VentanaKapi } from '../../componentes/kit/piezas/VentanaKapi';
 import { kapiDesdePerfil, retoDesdePerfil } from '../../componentes/kit/adaptadores';
+import { retoVisto, marcarRetoVisto, EVENTO_RETO_VISTO } from '../../utils/retoVisto';
 
 // Marca del navegador (compatibilidad); la que manda es userProfile.kapiTutorialVisto.
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
@@ -90,6 +91,19 @@ export default function Kapi() {
     }
     window.dispatchEvent(new CustomEvent('weekly-challenge-completed'));
   }, [user, userProfile, activeWeeklyChallenge, retoCompletado]);
+
+  // Reto nuevo sin abrir: el puntito de aviso. Abrir la ventana (o verlo en
+  // Mi cuenta › Misiones) lo marca como visto.
+  const [, setRetoVistoTick] = useState(0);
+  useEffect(() => {
+    const alVer = () => setRetoVistoTick((n) => n + 1);
+    window.addEventListener(EVENTO_RETO_VISTO, alVer);
+    return () => window.removeEventListener(EVENTO_RETO_VISTO, alVer);
+  }, []);
+  useEffect(() => {
+    if (abierta && user && activeWeeklyChallenge) marcarRetoVisto(user.uid, activeWeeklyChallenge.challengeId);
+  }, [abierta, user, activeWeeklyChallenge]);
+  const retoSinVer = Boolean(user && activeWeeklyChallenge && !retoCompletado && !retoVisto(user.uid, activeWeeklyChallenge.challengeId));
 
   const tutorialVisto = () => Boolean(userProfile?.kapiTutorialVisto) || tutorialEnNavegador();
   const marcarTutorialVisto = () => {
@@ -173,7 +187,7 @@ export default function Kapi() {
   const felicidad = disenoNum('felicidad', 0, 100) ?? kapi.felicidad;
   const estadoReal = kapi.alimentado ? 'feliz' : felicidad < 40 ? 'triste' : 'hambre';
   const estado = ESTADOS_DISENO[diseno('kapi')] || estadoReal;
-  const aviso = !kapi.alimentado || !tutorialVisto();
+  const aviso = !kapi.alimentado || !tutorialVisto() || retoSinVer;
 
   const alimentar = async (boton) => {
     // Se mide ya: al acreditarse, el botón se cambia por "¡Kapi está lleno!".

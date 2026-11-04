@@ -7,6 +7,7 @@ import { Moneda } from '../Etiquetas';
 import { IconoWala } from '../IconosWala';
 import { CabezaCuenta, TarjetaCuenta, Estadistica } from '../piezas/Cuenta';
 import { TarjetaRecompensa, TarjetaCupon, TarjetaStickers, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
+import { RetoSemanal } from '../piezas/RetoSemanal';
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
@@ -177,9 +178,11 @@ export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, 
  *  - onCompletar(id): promesa → { recompensa } (completeMission); si falla,
  *    se muestra el mensaje del servidor (los de Firebase en crudo no)
  *  - urlCatalogo
+ *  - reto: props de RetoSemanal (retoDesdePerfil + onEnviar), o nada sin reto activo
  */
 export function PaginaMisiones({
   monedas = 0, xp = 0, niveles = NIVELES, racha = {}, misiones = [], fecha, cargando = false, error = false, onReintentar, onCompletar, urlCatalogo = '/cuenta/catalogo',
+  reto,
 }) {
   const [aviso, setAviso] = useState(null);
   const hechas = misiones.filter((m) => m.completada).length;
@@ -222,6 +225,12 @@ export function PaginaMisiones({
       </div>
       <NivelCuenta xp={xp} niveles={niveles} />
       {aviso && <Aviso tipo={aviso.tipo} onCerrar={() => setAviso(null)}>{aviso.texto}</Aviso>}
+      {reto && (
+        <>
+          <CabezaCuenta nivel={2} titulo={<Texto>Reto de la semana</Texto>} subtitulo={<Texto>Uno para todos, de lunes a lunes. También lo tienes en la ventana de Kapi.</Texto>} />
+          <RetoSemanal {...reto} />
+        </>
+      )}
       <CabezaCuenta
         nivel={2}
         titulo={<Texto>Misiones de hoy</Texto>}

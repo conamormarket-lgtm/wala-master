@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
 import { dailyCheckIn, getDailyMissions, completeMission } from '../../services/loyalty';
 import { TIERS } from '../../constants/tiers';
@@ -6,7 +7,8 @@ import { MISSION_ACTIONS } from '../../constants/missionActions';
 import { trackMissionComplete } from '../../services/analytics/tracker';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { PaginaMisiones } from '../../componentes/kit/paginas/CuentaRecompensas';
-import { misionDesdeServidor, nivelesDesdeTiers } from '../../componentes/kit/adaptadores';
+import { misionDesdeServidor, nivelesDesdeTiers, retoDesdePerfil } from '../../componentes/kit/adaptadores';
+import { marcarRetoVisto } from '../../utils/retoVisto';
 
 /*
  * Misiones diarias (/cuenta/misiones), paso 6 de la migración: PaginaMisiones
@@ -33,7 +35,7 @@ const fechaLegible = (iso) => {
 };
 
 export default function MisionesDeCuenta() {
-  const { user, userProfile, reloadProfile } = useAuth();
+  const { user, userProfile, reloadProfile, activeWeeklyChallenge } = useAuth();
   const [misiones, setMisiones] = useState([]);
   const [fecha, setFecha] = useState(null);
   const [checkIn, setCheckIn] = useState(null); // { streak, reward }
@@ -88,10 +90,25 @@ export default function MisionesDeCuenta() {
   };
 
   const tarjetas = useMemo(() => misiones.map((m) => misionDesdeServidor(m, MISSION_ACTIONS)), [misiones]);
+
+  // El reto de la semana, el mismo de la ventana de Kapi; verlo aquí apaga su aviso.
+  const retoBase = retoDesdePerfil(activeWeeklyChallenge, userProfile);
+  useEffect(() => {
+    if (retoBase && user?.uid) marcarRetoVisto(user.uid, activeWeeklyChallenge.challengeId);
+  }, [Boolean(retoBase), user?.uid, activeWeeklyChallenge?.challengeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reto = retoBase && {
+    ...retoBase,
+    onEnviar: (url) => httpsCallable(getFunctions(), 'submitChallengeEvidence')({
+      evidenceUrl: url,
+      challengeId: activeWeeklyChallenge.challengeId,
+      evidenceType: 'link',
+    }),
+  };
   const reward = Number(checkIn?.reward) || 0;
 
   return (
     <PaginaMisiones
+      reto={reto || undefined}
       monedas={Number(userProfile?.monedas) || 0}
       xp={Number(userProfile?.xp) || 0}
       niveles={NIVELES}
