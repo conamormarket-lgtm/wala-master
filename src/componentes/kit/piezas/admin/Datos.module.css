@@ -761,48 +761,132 @@
   border-color: var(--violet-400);
 }
 
-/* La barrita de guardar: debajo del número, encima de la fila siguiente. */
-.enLineaBarra {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 5;
+/* El ancla del globo: el recuadro del número (la caja recorta lo que sale). */
+.enLineaAncla {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
+}
+
+/* El globo de guardar: encima del número, con su flecha apuntándolo. Entra
+   creciendo desde la flecha y sale igual de rápido (sin bucles ni brillos). */
+.enLineaGlobo {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  z-index: 6;
+  display: grid;
+  gap: 0.6rem;
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.7rem 0.75rem 0.65rem;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
-  box-shadow: 0 10px 24px -12px rgba(20, 18, 28, 0.45);
-  white-space: nowrap;
+  box-shadow: 0 12px 28px -14px rgba(20, 18, 28, 0.5), 0 2px 6px -2px rgba(20, 18, 28, 0.12);
+  /* Crece desde la flecha, que apunta al centro del número (la caja mide ~130 px). */
+  transform-origin: calc(100% - 60px) calc(100% + 8px);
+  animation: globoEntra 160ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.enLineaBarra button {
+/* La flecha: un cuadrado girado con el mismo borde, apuntando al número. */
+.enLineaGlobo::after {
+  content: '';
+  position: absolute;
+  right: 54px;
+  bottom: -6px;
+  width: 11px;
+  height: 11px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transform: rotate(45deg);
+}
+
+.enLineaGloboSale {
+  animation: globoSale 140ms ease-in both;
+}
+
+@keyframes globoEntra {
+  from { opacity: 0; transform: translateY(4px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes globoSale {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(3px) scale(0.94); }
+}
+
+.enLineaGloboTexto {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.enLineaGloboTexto > svg {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 1px;
+  color: var(--primary-color);
+}
+
+.enLineaGloboTexto strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.enLineaGloboTexto span span {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.enLineaGloboBotones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.enLineaGloboBotones button {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   height: 30px;
-  padding: 0 0.6rem;
-  border: 0;
-  border-radius: 9px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 800;
   cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-.enLineaBarra button:disabled {
+.enLineaGloboBotones button:disabled {
   cursor: default;
   opacity: 0.7;
 }
 
-.enLineaBarra svg {
-  width: 0.95rem;
-  height: 0.95rem;
+.enLineaGloboBotones svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.enLineaCancelar {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.enLineaCancelar:hover:not(:disabled) {
+  border-color: var(--violet-400);
+  color: var(--primary-color);
 }
 
 .enLineaGuardar {
+  border: 1px solid var(--primary-color);
   background: var(--primary-color);
   color: #fff;
 }
@@ -811,22 +895,16 @@
   background: var(--primary-hover, var(--primary-color));
 }
 
-.enLineaDeshacer {
-  width: 30px;
-  justify-content: center;
-  padding: 0 !important;
-  background: transparent;
-  color: var(--color-text-muted);
-}
-
-.enLineaDeshacer:hover:not(:disabled) {
-  background: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.enLineaBarra button:focus-visible {
+.enLineaGloboBotones button:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enLineaGlobo,
+  .enLineaGloboSale {
+    animation-duration: 1ms;
+  }
 }
 
 .enLineaCaja button {

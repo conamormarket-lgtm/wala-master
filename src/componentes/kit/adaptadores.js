@@ -1114,7 +1114,7 @@ const esRelleno = (u) => !u || String(u).includes('placeholder');
  * Mismos enlaces que CartItem: el combo de Crear a /combo/:id?mio=, una
  * creación a /creacion/:designId, lo demás a /producto/:id.
  */
-export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}) {
+export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta, noDisponible } = {}) {
   const custom = item.customization || null;
   const piezasCrear = custom?.tipo === 'comboCrear' ? custom.piezas || [] : null;
   // Un cuadro, mousepad o tomatodo hecho con el personalizador anterior (oct.
@@ -1171,6 +1171,7 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
     seleccionado: item.selected !== false,
     url,
     avisoPersonalizacion: editorAnterior ? 'Este diseño se hizo con el editor anterior. Quítalo y vuelve a crearlo en Crear para poder pagarlo.' : undefined,
+    noDisponible: noDisponible || undefined,
     detalles,
     combo: Boolean(item.isComboProduct || piezasCrear),
     piezas,

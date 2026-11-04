@@ -210,12 +210,13 @@ export function SeguimientoPedido({
  *  - personalizado: "Con tu diseño"
  *  - seleccionado + onSeleccionar(bool): la casilla de "comprar esta vez";
  *    sin marcar, la fila se apaga y dice que no se cobra
+ *  - noDisponible: el texto de por qué ya no se puede comprar (se ve apagado)
  *  - incompleto: 'color' | 'talla' | 'color y talla' · urlElegir
  *  - srcSet: copias de la foto en varios tamaños (la fila mide 84px)
  */
 export function ItemCarrito({
   imagen, srcSet, nombre: nombreOriginal, variante, precio, precioAntes, personalizado = false, url, detalles = [], combo = false, piezas = [],
-  seleccionado, onSeleccionar, incompleto, urlElegir, urlEditar, avisoPersonalizacion,
+  seleccionado, onSeleccionar, incompleto, urlElegir, urlEditar, avisoPersonalizacion, noDisponible,
   cantidad: cantidadControlada, onCantidad, onQuitar, cantidadInicial = 1,
 }) {
   const nombre = useTexto(nombreOriginal);
@@ -226,7 +227,7 @@ export function ItemCarrito({
   const conCasilla = typeof seleccionado === 'boolean';
   const foto = <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} como="div" className={s.itemImgCaja} src={imagen} srcSet={srcSet} sizes="96px" relleno="8px" />;
   return (
-    <div className={[s.item, conCasilla && s.itemConCasilla, seleccionado === false && s.itemApagado].filter(Boolean).join(' ')} data-componente="ItemCarrito">
+    <div className={[s.item, conCasilla && s.itemConCasilla, (seleccionado === false || noDisponible) && s.itemApagado].filter(Boolean).join(' ')} data-componente="ItemCarrito">
       {conCasilla && (
         <label className={s.itemCasilla}>
           <input type="checkbox" checked={seleccionado} onChange={(e) => onSeleccionar?.(e.target.checked)} />
@@ -257,7 +258,9 @@ export function ItemCarrito({
         {personalizado && <Etiqueta tono="violeta" icono={<Sparkles aria-hidden="true" />}><Texto>Con tu diseño</Texto></Etiqueta>}
         {avisoPersonalizacion && <p className={s.itemFalta}><Texto>{avisoPersonalizacion}</Texto></p>}
         {urlEditar && <Boton to={urlEditar} variante="fantasma" tamano="sm"><Texto>Editar personalización</Texto></Boton>}
-        {incompleto && !avisoPersonalizacion && (
+        {/* Ya no se puede comprar (papelera, borrado, oculto o sin una de sus prendas): solo quitarlo. */}
+        {noDisponible && <p className={s.itemFalta}><AlertTriangle aria-hidden="true" /> <Texto>{noDisponible}</Texto> <Texto>Quítalo para poder pagar lo demás.</Texto></p>}
+        {incompleto && !avisoPersonalizacion && !noDisponible && (
           <p className={s.itemFalta}><AlertTriangle aria-hidden="true" /> <Texto>{`Falta elegir ${incompleto}`}</Texto>{urlElegir && <> · <Enlace to={urlElegir}><Texto>Elegir ahora</Texto></Enlace></>}</p>
         )}
         {seleccionado === false && <p className={s.itemVariante}><Texto>No se cobra en esta compra.</Texto></p>}

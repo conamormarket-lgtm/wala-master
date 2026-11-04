@@ -27,7 +27,8 @@ const sumar = (items, f) => items.reduce((a, it) => a + f(it), 0);
  * si a algún producto le falta el color o la talla.
  *  - items: [{ id, imagen, nombre, variante, detalles, combo, piezas, precio,
  *    precioAntes, cantidad, personalizado, url, seleccionado (true si no se
- *    dice), incompleto, urlElegir }] (props de ItemCarrito)
+ *    dice), incompleto, urlElegir, noDisponible }] (props de ItemCarrito;
+ *    noDisponible frena el pago hasta quitarlo, con "Quitar los que ya no están")
  *  - onCantidad(id, n), onQuitar(id), onSeleccionar(id, bool),
  *    onSeleccionarTodo(bool), onQuitarSeleccionados(), onVaciar()
  *  - onPagar, onSeguirComprando
@@ -71,12 +72,15 @@ export function PaginaCarrito({
   }, [items, metaEnvio, costoEnvio]);
   const conSeleccion = Boolean(onSeleccionar);
   const todos = elegidos.length === items.length;
-  const faltan = elegidos.filter((it) => it.incompleto);
+  const faltan = elegidos.filter((it) => it.incompleto && !it.noDisponible);
+  const noEstan = items.filter((it) => it.noDisponible);
+  const noEstanElegidos = elegidos.filter((it) => it.noDisponible);
   const textoFalta = faltan.length ? (new Set(faltan.map((it) => it.incompleto)).size > 1 ? 'color o talla' : faltan[0].incompleto) : '';
   const conArticulo = { color: 'el color', talla: 'la talla', personalización: 'la personalización' }[textoFalta] || 'el color o la talla';
   let textoBoton = `Ir a pagar (${elegidos.length})`;
   if (pendiente) textoBoton = 'Esperando la confirmación…';
   else if (!elegidos.length) textoBoton = 'Elige algún producto';
+  else if (noEstanElegidos.length) textoBoton = 'Quita lo que ya no está';
   else if (faltan.length) textoBoton = `Falta elegir ${textoFalta}`;
   const preguntas = {
     vaciar: { texto: pendiente ? '¿Cancelar el pedido y vaciar el carrito?' : '¿Vaciar el carrito?', boton: pendiente ? 'Sí, cancelar' : 'Sí, vaciar', accion: onVaciar },
@@ -124,6 +128,15 @@ export function PaginaCarrito({
               {pendiente && (
                 <Aviso tipo="aviso" titulo="Tu pedido está esperando el pago" icono={<Clock aria-hidden="true" />}>
                   {`Lo enviaste por WhatsApp (código ${pendiente.codigo}). Cuando el asesor confirme el pago, este carrito se vacía solo.`}
+                </Aviso>
+              )}
+              {noEstan.length > 0 && (
+                <Aviso
+                  tipo="error"
+                  compacto
+                  accion={onQuitar && <Boton tamano="sm" variante="contorno" icono={<Trash2 aria-hidden="true" />} onClick={() => noEstan.forEach((it) => onQuitar(it.id))}><Texto>{noEstan.length === 1 ? 'Quitarlo' : 'Quitar los que ya no están'}</Texto></Boton>}
+                >
+                  <Texto>{noEstan.length === 1 ? `«${noEstan[0].nombre}» ya no está disponible.` : `${noEstan.length} productos ya no están disponibles.`}</Texto> <Texto>{noEstan.length === 1 ? 'Quítalo para poder pagar lo demás.' : 'Quítalos para poder pagar lo demás.'}</Texto>
                 </Aviso>
               )}
               {faltan.length > 0 && (
@@ -177,7 +190,7 @@ export function PaginaCarrito({
                 cupones={cupones}
                 onPagar={onPagar}
                 textoBoton={textoBoton}
-                deshabilitado={Boolean(pendiente) || !elegidos.length || faltan.length > 0}
+                deshabilitado={Boolean(pendiente) || !elegidos.length || faltan.length > 0 || noEstanElegidos.length > 0}
                 {...(notaPago ? { nota: notaPago } : {})}
               />
             </div>

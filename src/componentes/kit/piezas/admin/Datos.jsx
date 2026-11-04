@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, GripVertical, Loader2, MoreHorizontal, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
+import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Check, GripVertical, Loader2, MoreHorizontal, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../Feedback';
 import { Buscador, Campo } from '../../Formulario';
@@ -500,8 +500,9 @@ export function SelectorProductos({ productos = [], yaEstan = [], onElegir, acci
 
 /**
  * Un número que se cambia ahí mismo (el stock de Productos). No se guarda
- * solo: al cambiarlo (escribiendo o con − y +) sale debajo una barrita con
- * "Guardar" y deshacer; Enter guarda y Esc deshace. Muestra guardando,
+ * solo: al cambiarlo (escribiendo o con − y +) aparece encima un globo con
+ * flecha ("¿Guardar 12? Antes: 10" · Cancelar · Guardar) que entra y sale con
+ * una transición corta; Enter guarda y Esc cancela. Muestra guardando,
  * guardado o el error con Reintentar. Lo negativo o vacío no se guarda.
  *  - valor · onGuardar(nuevo, anterior) → promesa · etiqueta (para lectores)
  *  - min (0) · sufijo ("uds")
@@ -515,6 +516,10 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, min = 0, sufijo 
   const [guardado, setGuardado] = useState(Number(valor) || 0);
   const listo = useRef(null);
   const entrada = useRef(null);
+  // El globo se queda un momento al irse, para su salida.
+  const [globo, setGlobo] = useState(false);
+  const [saliendo, setSaliendo] = useState(false);
+  const salida = useRef(null);
 
   const n = Number.parseInt(texto, 10);
   const valido = Number.isFinite(n) && n >= min;
@@ -528,7 +533,15 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, min = 0, sufijo 
       setGuardado(Number(valor) || 0);
     }
   }, [valor]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => () => window.clearTimeout(listo.current), []);
+  useEffect(() => () => { window.clearTimeout(listo.current); window.clearTimeout(salida.current); }, []);
+  const abierto = pendiente || estado === 'guardando';
+  useEffect(() => {
+    window.clearTimeout(salida.current);
+    if (abierto) { setGlobo(true); setSaliendo(false); return; }
+    if (!globo) return;
+    setSaliendo(true);
+    salida.current = window.setTimeout(() => { setGlobo(false); setSaliendo(false); }, 140);
+  }, [abierto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const guardar = async () => {
     if (!valido || estado === 'guardando') return;
@@ -554,6 +567,7 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, min = 0, sufijo 
   const actual = () => Number.parseInt(textoRef.current, 10) || 0;
   return (
     <span className={s.enLinea} data-componente="NumeroEnLinea">
+      <span className={s.enLineaAncla}>
       <span className={[s.enLineaCaja, pendiente && s.enLineaCambiado, error && s.enLineaError].filter(Boolean).join(' ')}>
         <button type="button" onClick={() => cambiar(String(Math.max(min, actual() - 1)))} aria-label={`Restar uno: ${etiqueta}`}>−</button>
         <input
@@ -573,6 +587,25 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, min = 0, sufijo 
         />
         <button type="button" onClick={() => cambiar(String(actual() + 1))} aria-label={`Sumar uno: ${etiqueta}`}>+</button>
       </span>
+      {globo && (
+        <span className={[s.enLineaGlobo, saliendo && s.enLineaGloboSale].filter(Boolean).join(' ')} role="group" aria-label={`Cambio sin guardar: ${etiqueta}`}>
+          <span className={s.enLineaGloboTexto}>
+            <AlertCircle aria-hidden="true" />
+            <span>
+              <strong>{error ? 'No se guardó' : `¿Guardar ${valido ? n : guardado}?`}</strong>
+              <span>{error || `Antes: ${guardado}`}</span>
+            </span>
+          </span>
+          <span className={s.enLineaGloboBotones}>
+            <button type="button" className={s.enLineaCancelar} onClick={deshacer} disabled={estado === 'guardando'} title="Cancelar (Esc)">Cancelar</button>
+            <button type="button" className={s.enLineaGuardar} onClick={guardar} disabled={estado === 'guardando'} title="Guardar (Enter)">
+              {estado === 'guardando' && <Loader2 className={s.girar} aria-hidden="true" />}
+              {estado === 'guardando' ? 'Guardando' : error ? 'Reintentar' : 'Guardar'}
+            </button>
+          </span>
+        </span>
+      )}
+      </span>
       {sufijo && <span className={s.enLineaSufijo}>{sufijo}</span>}
       <span className={s.enLineaEstado} aria-live="polite">
         {estado === 'guardado' && <Check className={s.enLineaListo} aria-label="Guardado" />}
@@ -582,17 +615,6 @@ export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, min = 0, sufijo 
           </button>
         )}
       </span>
-      {(pendiente || estado === 'guardando') && (
-        <span className={s.enLineaBarra} role="group" aria-label={`Cambio sin guardar: ${etiqueta}`}>
-          <button type="button" className={s.enLineaGuardar} onClick={guardar} disabled={estado === 'guardando'} title="Guardar (Enter)">
-            {estado === 'guardando' ? <Loader2 className={s.girar} aria-hidden="true" /> : <Check aria-hidden="true" />}
-            {estado === 'guardando' ? 'Guardando' : error ? 'Reintentar' : 'Guardar'}
-          </button>
-          <button type="button" className={s.enLineaDeshacer} onClick={deshacer} disabled={estado === 'guardando'} aria-label="Deshacer el cambio" title="Deshacer (Esc)">
-            <X aria-hidden="true" />
-          </button>
-        </span>
-      )}
     </span>
   );
 }
