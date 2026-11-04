@@ -5025,7 +5025,7 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
 // 6 caracteres alfanuméricos en mayúsculas (sin O/0/I/1 para evitar confusiones),
 // obtenidos de bytes criptográficamente seguros (crypto ya importado arriba).
 // Packs de stickers de WhatsApp que traen las apps (public/stickers/packs.json).
-const PACKS_STICKERS_WHATSAPP = ["kapi"];
+const PACKS_STICKERS_WHATSAPP = ["kapi", "adicto"];
 
 function generateCouponCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 símbolos, sin O/0/I/1

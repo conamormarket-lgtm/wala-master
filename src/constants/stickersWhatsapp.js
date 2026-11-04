@@ -16,6 +16,12 @@ export const PACKS_STICKERS = [
     cantidad: 13,
     muestras: ['kapi_02.webp', 'kapi_03.webp', 'kapi_04.webp', 'kapi_12.webp'],
   },
+  {
+    id: 'adicto',
+    nombre: 'Adicto, el gatito de Kapi',
+    cantidad: 13,
+    muestras: ['adicto_02.webp', 'adicto_05.webp', 'adicto_10.webp', 'adicto_12.webp'],
+  },
 ];
 
 export const packStickers = (id) => PACKS_STICKERS.find((p) => p.id === id) || null;
