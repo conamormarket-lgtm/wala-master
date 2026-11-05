@@ -12,7 +12,7 @@
  *  - hielo: movimientos que faltan para que se derrita (0, libre)
  *
  * Un movimiento lleva todas las bolitas de arriba del mismo color que quepan
- * (no una sola). Los niveles salen siempre iguales para el mismo número (o el
+ * (no una sola), menos las «?», que esperan a quedar arriba. Los niveles salen siempre iguales para el mismo número (o el
  * mismo día, en el reto) y el solucionador comprueba que tengan solución.
  */
 
@@ -137,24 +137,32 @@ export const tuboListo = (tubo, capacidad = CAPACIDAD) => tubo.length === capaci
 /** ¿El tubo sigue tras su cortina? */
 export const cerrado = (estado, i) => estado.cortinas?.[i] != null;
 
-/** Cuántas bolitas de arriba se moverían juntas (mismo color, sin hielo). */
-export function tramo(tubo) {
+/**
+ * Cuántas bolitas de arriba se moverían juntas: las del mismo color, sin
+ * hielo y a la vista. Una «?» no se mueve con las de encima aunque sea del
+ * mismo color (si no, se movía y delataba su color antes de tiempo); se ve
+ * al quedar arriba y ahí se mueve.
+ *  - conOcultas: la regla de antes (las «?» del mismo color también iban),
+ *    solo para comprobar partidas de las apps que todavía la usan.
+ */
+export function tramo(tubo, { conOcultas = false } = {}) {
   let k = 0;
   const color = arriba(tubo)?.c;
   for (let j = tubo.length - 1; j >= 0; j -= 1) {
     if (tubo[j].c !== color || tubo[j].hielo > 0) break;
+    if (!conOcultas && tubo[j].oculta && j !== tubo.length - 1) break;
     k += 1;
   }
   return k;
 }
 
 /** ¿Se puede mover de `de` a `a`? (abiertos, algo que mover sin hielo, cabe, y vacío o del mismo color) */
-export function puedeMover(estado, de, a) {
+export function puedeMover(estado, de, a, regla) {
   if (de == null || a == null || de === a) return false;
   if (cerrado(estado, de) || cerrado(estado, a)) return false;
   const origen = estado.tubos[de];
   const destino = estado.tubos[a];
-  if (!origen?.length || !destino || !tramo(origen) || destino.length >= estado.capacidad) return false;
+  if (!origen?.length || !destino || !tramo(origen, regla) || destino.length >= estado.capacidad) return false;
   return !destino.length || arriba(destino).c === arriba(origen).c;
 }
 
@@ -177,9 +185,9 @@ function asentar(tubos, cortinas, capacidad, derretir) {
  * Mueve de `de` a `a` (sin mirar las reglas: antes, puedeMover).
  * Devuelve el estado nuevo; `movidas` dice cuántas bolitas viajaron.
  */
-export function mover(estado, de, a) {
+export function mover(estado, de, a, regla) {
   const tubos = estado.tubos.map((t) => [...t]);
-  const n = Math.min(tramo(tubos[de]), estado.capacidad - tubos[a].length);
+  const n = Math.min(tramo(tubos[de], regla), estado.capacidad - tubos[a].length);
   tubos[a].push(...tubos[de].splice(tubos[de].length - n, n));
   return { ...asentar(tubos, estado.cortinas, estado.capacidad, true), movidas: n };
 }
@@ -454,6 +462,17 @@ export const LIMITES_PARTIDA = { movimientos: 600, tubos: 6 };
  *  - partida: { movimientos: [[de, a]…], tubos: cuántos se agregaron }
  */
 export function comprobarPartida(armado, partida) {
+  const r = repetirPartida(armado, partida);
+  // Las apps que todavía mueven las «?» con las de encima (la regla de antes):
+  // su partida también vale si resuelve con esa regla.
+  if (!r.ok && (r.motivo === 'regla' || r.motivo === 'sin_resolver')) {
+    const antes = repetirPartida(armado, partida, { conOcultas: true });
+    if (antes.ok) return antes;
+  }
+  return r;
+}
+
+function repetirPartida(armado, partida, regla) {
   const movs = partida?.movimientos;
   const tubos = partida?.tubos ?? 0;
   if (!Array.isArray(movs) || !movs.length || movs.length > LIMITES_PARTIDA.movimientos) return { ok: false, motivo: 'movimientos' };
@@ -462,8 +481,8 @@ export function comprobarPartida(armado, partida) {
   for (let k = 0; k < tubos; k += 1) estado = agregarTubo(estado);
   for (const m of movs) {
     if (!Array.isArray(m) || m.length !== 2 || !m.every(Number.isInteger)) return { ok: false, motivo: 'formato' };
-    if (!puedeMover(estado, m[0], m[1])) return { ok: false, motivo: 'regla' };
-    estado = mover(estado, m[0], m[1]);
+    if (!puedeMover(estado, m[0], m[1], regla)) return { ok: false, motivo: 'regla' };
+    estado = mover(estado, m[0], m[1], regla);
   }
   return resuelto(estado) ? { ok: true, movimientos: movs.length } : { ok: false, motivo: 'sin_resolver' };
 }

@@ -11,15 +11,39 @@ import {
 const b = (c, extra = {}) => ({ id: `${c}-${Math.random().toString(36).slice(2, 8)}`, c, oculta: false, hielo: 0, ...extra });
 const estadoDe = (tubos, cortinas = tubos.map(() => null)) => ({ capacidad: CAPACIDAD, tubos, cortinas });
 
-/** Juega la solución con las reglas públicas: cada paso tiene que ser válido y el final, resuelto. */
+/**
+ * Juega la solución: cada paso tiene que ser válido y el final, resuelto. El
+ * que arma los niveles planea moviendo las «?» con las de encima (la regla de
+ * antes, que no se cambia para que los niveles sigan saliendo iguales), así
+ * que su solución se juega con esa regla.
+ */
 function jugar(estado, solucion) {
   let s = estado;
+  const regla = { conOcultas: true };
   for (const [de, a] of solucion) {
-    assert.ok(puedeMover(s, de, a), `movimiento inválido ${de}→${a}`);
-    s = mover(s, de, a);
+    assert.ok(puedeMover(s, de, a, regla), `movimiento inválido ${de}→${a}`);
+    s = mover(s, de, a, regla);
   }
   return s;
 }
+
+test('una «?» no se mueve con las de encima aunque sea del mismo color', () => {
+  const s = estadoDe([[b(0), b(1, { oculta: true }), b(1)], [], []]);
+  assert.equal(tramo(s.tubos[0]), 1);
+  assert.equal(tramo(s.tubos[0], { conOcultas: true }), 2);
+  const t = mover(s, 0, 1);
+  assert.deepEqual([t.movidas, t.tubos[0].length, t.tubos[0][1].oculta], [1, 2, false]); // ya arriba, se ve
+  // Y se puede mover después, a su par.
+  assert.ok(puedeMover(t, 0, 1));
+});
+
+test('comprobarPartida acepta la regla de antes (las apps que todavía mueven las «?» juntas)', () => {
+  const armado = { estado: estadoDe([[b(1), b(1, { oculta: true }), b(1)], [b(1)], []]) };
+  // Con la regla de antes, un movimiento lleva 3 y completa el tubo 1.
+  assert.equal(comprobarPartida(armado, { movimientos: [[0, 1]] }).ok, true);
+  // Con la nueva, la «?» se queda; ya arriba se ve y el segundo movimiento lleva las dos.
+  assert.equal(comprobarPartida(armado, { movimientos: [[0, 1], [0, 1]] }).ok, true);
+});
 
 test('un movimiento lleva todo el tramo de arriba del mismo color que quepa', () => {
   const s = estadoDe([[b(0), b(1), b(1), b(1)], [b(1)], []]);
