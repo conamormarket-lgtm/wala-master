@@ -108,7 +108,7 @@ export function iconoDeEnlace(url = '') {
   if (u.startsWith('mailto:')) return Mail;
   if (u.startsWith('tel:')) return Phone;
   if (/sorteo|rifa|ruleta/.test(u)) return Ticket;
-  if (/\/crear|\/estudio/.test(u)) return Palette;
+  if (/\/crear|\/estudio|\/personalizar/.test(u)) return Palette;
   if (/regal/.test(u)) return Gift;
   if (u.startsWith('/') || /wala\.pe/.test(u)) return ShoppingBag;
   return Link2;
