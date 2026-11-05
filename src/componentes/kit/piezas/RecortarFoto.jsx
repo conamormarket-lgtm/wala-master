@@ -13,7 +13,8 @@ const limitar = (v, a, b) => Math.min(b, Math.max(a, v));
  *  - forma 'circulo' | 'cuadrado': antes de subirla (foto de perfil, foto de
  *    una persona en Fechas importantes). Se arrastra para moverla y se hace
  *    zoom con la barra, con dos dedos o con la rueda. Sale un JPG cuadrado de
- *    `tamano` px (el círculo es solo la guía). onListo(blob).
+ *    `tamano` px (el círculo es solo la guía); si la imagen tiene partes
+ *    transparentes, un PNG (para que no salgan en negro). onListo(blob).
  *  - forma 'libre': una imagen del diseño (el estudio). Un recuadro sobre la
  *    imagen entera que se mueve y se ajusta desde sus esquinas, "Quitar bordes
  *    transparentes" y "Restablecer"; Enter aplica y Esc cancela. Sale un PNG
@@ -22,6 +23,17 @@ const limitar = (v, a, b) => Math.min(b, Math.max(a, v));
  *  - abierta · src · onListo: promesa (mientras, "Guardando…") · onCancelar ·
  *    titulo, texto
  */
+/** ¿Quedó algún píxel transparente en el lienzo recortado? (de 4 en 4: alcanza y es rápido) */
+function hayTransparencia(ctx, tamano) {
+  try {
+    const { data } = ctx.getImageData(0, 0, tamano, tamano);
+    for (let i = 3; i < data.length; i += 16) if (data[i] < 250) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export function RecortarFoto(props) {
   return props.forma === 'libre' ? <RecortarLibre {...props} /> : <RecortarFija {...props} />;
 }
@@ -107,7 +119,10 @@ function RecortarFija({
     lienzo.height = tamano;
     const ctx = lienzo.getContext('2d');
     ctx.drawImage(imagen.current, -izq / escala, -arr / escala, lado / escala, lado / escala, 0, 0, tamano, tamano);
-    const blob = await new Promise((r) => { lienzo.toBlob(r, 'image/jpeg', 0.92); });
+    // Con partes transparentes (un PNG de Kapi, un logo) sale PNG: en JPG lo
+    // transparente se volvía negro. Una foto sin transparencia sigue en JPG (pesa menos).
+    const conTransparencia = hayTransparencia(ctx, tamano);
+    const blob = await new Promise((r) => { lienzo.toBlob(r, conTransparencia ? 'image/png' : 'image/jpeg', 0.92); });
     setGuardando(true);
     try { await onListo?.(blob); } finally { setGuardando(false); }
   };
