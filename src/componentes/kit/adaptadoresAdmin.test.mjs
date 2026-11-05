@@ -834,6 +834,11 @@ test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () 
   assert.deepEqual(m2.adminAFirestore({ correo: 'a@b.c', nombre: 'A', permisos: ['clientes', 'pedidos'] }).datos.permissions, ['pedidos', 'clientes']);
   // Un registro que no salió del panel (como el de hack_test_2026: solo { monedas }).
   assert.deepEqual([m2.adminDesdeFirestore({ id: 'x@gmail.com', monedas: 999 }).raro, m2.adminDesdeFirestore({ id: 'x@gmail.com', monedas: 999 }).sinPermisos], [true, true]);
+  // Las cuentas principales (claim admin) van primero; si también están en la lista, una sola fila.
+  const eq = m2.equipoConPrincipales([m2.adminDesdeFirestore({ id: 'b@x.pe', email: 'b@x.pe', name: 'B', permissions: ['catalogo'] }), m2.adminDesdeFirestore({ id: 'yo@x.pe', email: 'yo@x.pe', name: 'Yo', permissions: ['superadmin'] })],
+    [{ uid: 'u1', correo: 'yo@x.pe', nombre: 'Yo' }, { uid: 'u2', correo: 'jefa@x.pe', nombre: '' }, { uid: 'u3', correo: 'vieja@x.pe', deshabilitada: true }]);
+  assert.deepEqual(eq.map((r) => [r.correo, Boolean(r.principal)]), [['yo@x.pe', true], ['jefa@x.pe', true], ['b@x.pe', false]]);
+  assert.deepEqual([eq[1].id, eq[1].nombre, eq[1].permisos], ['principal:u2', 'jefa', ['superadmin']]);
   // Cada grupo del menú es un permiso, con sus secciones.
   assert.deepEqual(m2.PERMISOS_ADMIN.map((p) => p.valor), ['superadmin', 'pedidos', 'catalogo', 'inventario', 'resultados', 'clientes', 'campanas', 'diseno', 'ajustes']);
   assert.ok(m2.PERMISOS_ADMIN.find((p) => p.valor === 'catalogo').detalle.includes('Destacados'));

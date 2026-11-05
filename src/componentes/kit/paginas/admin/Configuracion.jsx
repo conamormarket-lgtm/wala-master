@@ -255,7 +255,7 @@ export function PaginaConfiguracionAdmin({
         placeholder="Buscar por nombre o correo"
         filtros={[{ id: 'permiso', etiqueta: 'Permiso', todos: 'Todos', opciones: PERMISOS_ADMIN, filtrar: (r, v) => r.permisos.includes(v) }]}
         columnas={[
-          { id: 'nombre', titulo: 'Persona', tarjeta: 'titulo', celda: (r) => <span className={s.persona}><span>{r.nombre}<span className={l.sub}>{r.correo}</span></span>{esYo(r) && <Etiqueta tono="violeta">Tú</Etiqueta>}{(r.raro || r.sinPermisos) && <Etiqueta tono={r.raro ? 'peligro' : 'aviso'}>{r.raro ? 'Revisar' : 'Sin permisos'}</Etiqueta>}</span> },
+          { id: 'nombre', titulo: 'Persona', tarjeta: 'titulo', celda: (r) => <span className={s.persona}><span>{r.nombre}<span className={l.sub}>{r.correo}</span></span>{esYo(r) && <Etiqueta tono="violeta">Tú</Etiqueta>}{r.principal && <Etiqueta tono="exito">Cuenta principal</Etiqueta>}{(r.raro || r.sinPermisos) && <Etiqueta tono={r.raro ? 'peligro' : 'aviso'}>{r.raro ? 'Revisar' : 'Sin permisos'}</Etiqueta>}</span> },
           { id: 'permisos', titulo: 'Permisos', tarjeta: 'detalle', celda: (r) => textoPermisos(r.permisos) },
           { id: 've', titulo: 'Ve', ancho: 140, alinear: 'fin', tarjeta: 'detalle', celda: (r) => (r.permisos.includes('superadmin')
             ? 'Todo'
@@ -265,7 +265,7 @@ export function PaginaConfiguracionAdmin({
         textos={{ creado: 'Persona agregada', guardado: 'Permisos guardados', eliminado: 'Ya no entra al panel' }}
         eliminar={{
           texto: (r) => `${r.nombre} deja de entrar al panel. Su cuenta de cliente sigue igual.`,
-          bloqueado: (r) => (esYo(r) ? 'No puedes quitarte a ti mismo: pídeselo a otro Super Admin.' : null),
+          bloqueado: (r) => (r.principal ? 'Es una cuenta principal: es admin por la marca de su cuenta de Google, no por esta lista. Se cambia desde Firebase.' : esYo(r) ? 'No puedes quitarte a ti mismo: pídeselo a otro Super Admin.' : null),
         }}
         onGuardar={onGuardarAdmin}
         onEliminar={onEliminarAdmin}
@@ -275,6 +275,7 @@ export function PaginaConfiguracionAdmin({
           textoGuardar: { nuevo: 'Agregar', editar: 'Guardar permisos' },
           vacio: () => ({ correo: '', nombre: '', permisos: [] }),
           desde: (r) => ({ correo: r.correo, nombre: r.nombre, permisos: r.permisos }),
+          bloqueado: (r) => (r.principal ? 'Es una cuenta principal: es admin por la marca de su cuenta de Google, no por esta lista. Se cambia desde Firebase.' : null),
           validar: (d, { id, registros }) => erroresDeAdmin(d, { id, registros, yo }),
           campos: ({ datos: d, cambiar, errores, idDe, id }) => {
             const superadmin = d.permisos.includes('superadmin');

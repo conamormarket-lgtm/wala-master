@@ -5399,6 +5399,38 @@ exports.embudoPopupsSecure = functions.https.onCall(async (data, context) => {
   return { embudos };
 });
 
+/*
+ * Las cuentas principales del panel (Configuración › Equipo): las que tienen
+ * la marca de admin en la cuenta (claim `admin: true`, la fuente de verdad que
+ * leen las reglas y el servidor). No están en adminRoles, así que la lista del
+ * equipo no las veía. Solo para admins; solo lee (Auth en tandas de 1000).
+ */
+exports.cuentasPrincipalesSecure = functions.https.onCall(async (_data, context) => {
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver el equipo.");
+  }
+  const cuentas = [];
+  let pagina;
+  do {
+    const r = await auth.listUsers(1000, pagina);
+    r.users.forEach((u) => {
+      const c = u.customClaims || {};
+      if (c.admin === true) {
+        cuentas.push({
+          uid: u.uid,
+          correo: String(u.email || "").toLowerCase(),
+          nombre: u.displayName || "",
+          rol: c.role || "superadmin",
+          deshabilitada: Boolean(u.disabled),
+          ultimoIngreso: u.metadata && u.metadata.lastSignInTime ? new Date(u.metadata.lastSignInTime).toISOString() : null,
+        });
+      }
+    });
+    pagina = r.pageToken;
+  } while (pagina);
+  return { cuentas };
+});
+
 exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) => {
   if (!(await callerIsAdmin(context))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los canjes.");

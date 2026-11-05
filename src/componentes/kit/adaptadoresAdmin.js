@@ -3341,6 +3341,33 @@ export function adminDesdeFirestore(doc = {}) {
   };
 }
 
+/**
+ * El equipo con las cuentas principales (cuentasPrincipalesSecure: la marca de
+ * admin en la cuenta). Van primero, como Super Admin y con `principal` (no se
+ * editan ni se quitan desde aquí); si además están en adminRoles, una sola fila.
+ *  - admins: [adminDesdeFirestore] · principales: [{ uid, correo, nombre, deshabilitada }]
+ */
+export function equipoConPrincipales(admins = [], principales = []) {
+  const porCorreo = new Map(admins.map((a) => [a.correo, a]));
+  const filas = principales
+    .filter((p) => p && p.correo && !p.deshabilitada)
+    .map((p) => {
+      const ya = porCorreo.get(p.correo);
+      porCorreo.delete(p.correo);
+      return {
+        ...(ya || {}),
+        id: ya?.id || `principal:${p.uid}`,
+        correo: p.correo,
+        nombre: ya?.nombre || String(p.nombre || '').trim() || p.correo.split('@')[0],
+        permisos: ['superadmin'],
+        principal: true,
+        sinPermisos: false,
+        raro: false,
+      };
+    });
+  return [...filas, ...admins.filter((a) => porCorreo.has(a.correo))];
+}
+
 /** La hoja → setAdminRole(correo, datos). Super Admin va solo: ya lo abre todo. */
 export function adminAFirestore(d = {}) {
   const correo = correoLimpio(d.correo);

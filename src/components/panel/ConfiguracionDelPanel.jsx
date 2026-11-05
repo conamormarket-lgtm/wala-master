@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAdminRoles, setAdminRole, deleteAdminRole } from '../../services/adminRoles';
 import { getLockedPages, saveLockedPages } from '../../services/lockedPages';
 import { getLandingPages } from '../../pages/Tienda/services/landingPages';
 import { reconvertirImagenesAWebp, contarImagenesPorConvertir, AMBITO_DISENO, AMBITO_PRODUCTOS } from '../../services/imagenesWebp';
 import { PaginaConfiguracionAdmin } from '../../componentes/kit/paginas/admin/Configuracion';
-import { adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo } from '../../componentes/kit/adaptadoresAdmin';
+import { adminDesdeFirestore, adminAFirestore, equipoConPrincipales, paginasBloqueables, conBloqueo } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useInvalidar } from './comun';
 
 /*
@@ -42,11 +43,20 @@ export default function ConfiguracionDelPanel() {
   const invalidar = useInvalidar();
 
   const adminsQ = useQuery({ queryKey: ADMINS, queryFn: getAdminRoles, enabled: esSuperadmin });
+  // Las cuentas principales (la marca de admin en la cuenta): no están en adminRoles.
+  const principalesQ = useQuery({
+    queryKey: ['admin-cuentas-principales'],
+    queryFn: async () => (await httpsCallable(getFunctions(), 'cuentasPrincipalesSecure')({})).data?.cuentas || [],
+    enabled: esSuperadmin,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
   const bloqueadasQ = useQuery({ queryKey: BLOQUEADAS, queryFn: getLockedPages, enabled: esSuperadmin });
   const landingsQ = useQuery({ queryKey: LANDINGS, queryFn: getLandingPages, enabled: esSuperadmin });
 
   // La lista y las páginas se copian en la página: los mismos objetos entre render y render.
-  const admins = useMemo(() => (adminsQ.data || []).map(adminDesdeFirestore), [adminsQ.data]);
+  // Si no se pueden leer las principales, la lista sale igual (sin ellas).
+  const admins = useMemo(() => equipoConPrincipales((adminsQ.data || []).map(adminDesdeFirestore), principalesQ.data || []), [adminsQ.data, principalesQ.data]);
   const paginas = useMemo(() => paginasBloqueables(landingsQ.data || [], bloqueadasQ.data || []), [landingsQ.data, bloqueadasQ.data]);
 
   const errorDe = (q, texto) => (q.error ? q.error.message || texto : undefined);
