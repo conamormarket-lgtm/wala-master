@@ -4,7 +4,8 @@
   container-type: inline-size;
   width: clamp(270px, min(84vw, 52vh), 460px);
   aspect-ratio: 1;
-  margin: 0 auto;
+  /* Arriba, el lugar del puntero (sobresale un 4,5 % de la rueda): que no pise lo de encima. */
+  margin: clamp(14px, 4.5%, 22px) auto 0;
 }
 
 .disco {
