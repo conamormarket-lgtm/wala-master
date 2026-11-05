@@ -689,7 +689,6 @@
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
-  max-width: 300px;
   height: 44px;
   padding: 0 0.5rem 0 0.9rem;
   border: 1.5px solid transparent;
@@ -703,12 +702,22 @@
     box-shadow var(--dur-media) var(--ease-signature);
 }
 
+/* Ancho: compacto y crece un poco al enfocarlo. Va con :where (sin peso)
+   para que la clase de quien lo usa mande también enfocado; si no, un
+   buscador a todo el ancho se encogía a 380px al escribir. */
+:where(.buscador) {
+  max-width: 300px;
+}
+
+:where(.buscador:focus-within) {
+  max-width: 380px;
+}
+
 .buscador:hover {
   border-color: var(--violet-200);
 }
 
 .buscador:focus-within {
-  max-width: 380px;
   border-color: var(--violet-500);
   background: var(--color-surface);
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
