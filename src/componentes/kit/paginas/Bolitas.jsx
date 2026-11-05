@@ -565,11 +565,14 @@ export function PaginaBolitas({
                       <div>
                         <p className={s.mundoLinea}>
                           <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
-                          {' · '}
-                          {marcaMundo
-                            ? <MarcaBolitas marca={marcaMundo} onClick={() => onClicMarca?.({ marcaId: marcaMundo.id, destino: 'marca' })} />
-                            : <Texto>{infoMundo(mundo).nombre}</Texto>}
+                          {!marcaMundo && <>{' · '}<Texto>{infoMundo(mundo).nombre}</Texto></>}
                         </p>
+                        {/* La marca del mundo, en su sello (lleva a su tienda). */}
+                        {marcaMundo && (
+                          <div className={s.mundoMarca}>
+                            <MarcaBolitas marca={marcaMundo} tamano="sello" onClick={() => onClicMarca?.({ marcaId: marcaMundo.id, destino: 'marca' })} />
+                          </div>
+                        )}
                         <p className={s.nivelTitulo}>
                           {p.nivel.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
                           <TextoResaltado resaltar={[numero]}>{p.nivel.jefe ? `Nivel ${numero} · Jefe` : `Nivel ${numero}`}</TextoResaltado>

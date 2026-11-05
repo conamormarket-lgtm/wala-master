@@ -5,6 +5,10 @@ import { premiosDeHoy, textoPremio, sortearPremio, esCupon, normalizarConfig } f
 import { volarMonedasGanadas } from '../utils/animations';
 import { DAILY_WORDS, PALABRAS_FIJAS, VALID_GUESSES } from '../data/wordleDictionary';
 import JUEGOS from './demo/juegos.json';
+import MARCAS_DEMO from './demo/marcas.json';
+
+// Los mundos con la marca de cada uno (estado «Mundos con marca»).
+const MARCAS_MUNDOS_DEMO = MARCAS_DEMO.slice(0, 4).map((m) => ({ id: m.id, nombre: m.name, logo: m.logoUrl, url: `/${m.slug}` }));
 
 /*
  * Los minijuegos por dentro en la Tienda de prueba: la Palabra del día
@@ -45,7 +49,7 @@ export const ESTADOS_JUEGOS = {
   '/ball-sort': [
     ['casi', 'Casi resuelto (2 jugadas)'], ['racha2', 'Racha 2 (el próximo abre cofre)'], ['mapa', 'El mapa del mundo'],
     ['nivel12', 'Nivel 12 (ocultas)'], ['nivel20', 'Nivel 20 (jefe)'], ['nivel25', 'Nivel 25 (cortina)'], ['nivel45', 'Nivel 45 (hielo)'],
-    ['nivel150', 'Nivel 150'], ['retoHecho', 'Reto de hoy hecho'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando'],
+    ['nivel150', 'Nivel 150'], ['marcas', 'Mundos con marca'], ['retoHecho', 'Reto de hoy hecho'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando'],
   ],
 };
 
@@ -105,6 +109,7 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
         vistaInicial={estados.includes('mapa') ? 'mapa' : 'juego'}
         hoy={hoy}
         ranking={sesion ? RANKING_BOLITAS : { ...RANKING_BOLITAS, yo: {} }}
+        marcasMundos={estados.includes('marcas') ? MARCAS_MUNDOS_DEMO : []}
         progreso={{
           nivel,
           estrellas,

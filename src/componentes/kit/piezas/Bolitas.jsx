@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone, PawPrint } from 'lucide-react';
+import { ChevronRight, Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone, PawPrint } from 'lucide-react';
 import { Estallido } from '../Efectos';
 import { Destello } from '../Marca';
 import { Pestanas } from '../Navegacion';
@@ -60,7 +60,8 @@ export function EstrellasNivel({ valor = 0, tamano = 'sm', animar = false }) {
 /**
  * Una marca en el juego: su logo (o la inicial) y su nombre. Con `url`, es un
  * enlace a su tienda (onClick avisa, para las métricas).
- *  - marca: { nombre, logo, url } · tamano: 'sm' | 'md'
+ *  - marca: { nombre, logo, url } · tamano: 'sm' | 'md' | 'sello' (la marca del
+ *    mundo: el logo entero en un cuadro blanco, el nombre y una flecha a su tienda)
  */
 export function MarcaBolitas({ marca, tamano = 'sm', onClick }) {
   if (!marca) return null;
@@ -70,6 +71,7 @@ export function MarcaBolitas({ marca, tamano = 'sm', onClick }) {
         ? <img src={marca.logo} alt="" className={s.marcaLogo} loading="lazy" />
         : <span className={s.marcaInicial} aria-hidden="true">{marca.nombre?.charAt(0)}</span>}
       <span className={s.marcaNombre}>{marca.nombre}</span>
+      {tamano === 'sello' && marca.url && <ChevronRight className={s.marcaFlecha} aria-hidden="true" />}
     </>
   );
   const clase = [s.marca, s[`marca_${tamano}`]].join(' ');

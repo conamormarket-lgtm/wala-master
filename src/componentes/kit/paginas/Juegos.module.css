@@ -257,6 +257,11 @@
   font-weight: 600;
 }
 
+/* El sello de la marca del mundo, entre «Mundo 2» y el nivel. */
+.mundoMarca {
+  margin: 0.35rem 0 0.45rem;
+}
+
 .coronaTitulo {
   width: 18px;
   height: 18px;
