@@ -92,6 +92,12 @@ const PRECIO_VACIO = { min: '', max: '' };
 // El <section> del catálogo del kit no lleva ref: se busca por su id.
 const idDelCatalogo = (section) => section?.settings?.anchorId || 'catalogo';
 
+// Destacados y categorías: lo que el admin ordena y edita a cada rato. Se
+// pintan con lo guardado y se confirman con Firestore si tiene más de 30 s, al
+// abrir la página y al volver a la pestaña (con el admin en otra pestaña, el
+// cambio se ve sin recargar). Son una consulta chica cada una.
+const AL_DIA_CON_EL_ADMIN = { staleTime: 30 * 1000, refetchOnMount: true, refetchOnWindowFocus: true };
+
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
 
@@ -431,13 +437,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       return data;
     },
     enabled: needsSection('product_grid', 'sidebar_catalog', 'category_grid', 'categories_nav', 'featured_products', 'featured_carousel'),
-    // Lo guardado en el navegador se pinta enseguida, pero con su fecha real: si
-    // tiene más de 5 minutos se vuelve a pedir al abrir la página. Antes contaba
-    // como recién leído y un cambio del admin tardaba hasta ~2 h en verse.
+    // Lo guardado en el navegador se pinta enseguida, pero con su fecha real: con
+    // más de 30 s se vuelve a pedir al abrir la página y al volver a la pestaña.
+    // Antes contaba como recién leído y un cambio del admin tardaba hasta ~2 h.
     initialData: getCachedCategories(),
     initialDataUpdatedAt: getCachedCategoriesAt,
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true,
+    ...AL_DIA_CON_EL_ADMIN,
   });
 
   // ── MARCA DE LA PÁGINA (Fase 1 multimarca) ────────────────────────
@@ -514,11 +519,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       return data;
     },
     enabled: needsSection('featured_products', 'featured_carousel'),
-    // Como las categorías: lo guardado, con su fecha; más de 5 minutos, se vuelve a pedir.
+    // Como las categorías: lo guardado se pinta al instante y, con más de 30 s,
+    // se pide lo nuevo (también al volver a la pestaña): el orden que se cambia
+    // en Admin › Destacados se ve al recargar o al volver a la tienda.
     initialData: pageBrandId ? undefined : getCachedFeaturedProducts(),
     initialDataUpdatedAt: pageBrandId ? undefined : getCachedFeaturedProductsAt,
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true,
+    ...AL_DIA_CON_EL_ADMIN,
   });
 
   const seccionesViejo = useLoViejo('secciones');
