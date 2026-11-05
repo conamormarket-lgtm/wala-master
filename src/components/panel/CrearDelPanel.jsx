@@ -178,7 +178,20 @@ export function PacksDelPanel({ nuevoInicial = false } = {}) {
       onGuardar={async (datos, id) => {
         // El tipo del pack: el de su categoría (lo que la tienda filtra por «Tipo»).
         const cat = (categorias.datos || []).find((c) => c.id === datos.categoria);
-        await guardarComboCrear(id || null, { ...conFotos(packAGuardar(datos)), productType: cat?.productType || '' });
+        const pack = conFotos(packAGuardar(datos));
+        // Publicado con una pieza en borrador, oculta o en la papelera, salía en la
+        // tienda pero al abrirlo decía "no disponible" (y el servidor lo rechaza).
+        if (pack.publicado) {
+          const noSeVenden = (pack.piezas || []).filter((pz) => {
+            const doc = pz.fija ? talCualPorId.get(pz.prendaId) : prendaPorId.get(pz.prendaId);
+            return !doc || doc.deleted === true || doc.visible === false;
+          });
+          if (noSeVenden.length) {
+            const nombres = [...new Set(noSeVenden.map((pz) => pz.nombre || 'una pieza'))].join(', ');
+            throw new Error(`No se puede publicar: ${nombres} está en borrador, oculto o en la papelera. Publícalo primero o guarda el pack como borrador.`);
+          }
+        }
+        await guardarComboCrear(id || null, { ...pack, productType: cat?.productType || '' });
         await refrescar();
       }}
       onArchivar={async (id) => { await archivarComboCrear(id, { publicadoAntes: (combos.datos || []).find((c) => c.id === id)?.publicado === true }); await refrescar(); }}

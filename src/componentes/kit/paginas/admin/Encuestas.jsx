@@ -650,3 +650,69 @@ export function RespuestasEncuesta({
     </div>
   );
 }
+
+/**
+ * Las reseñas que dejan los clientes en la ficha de cada producto
+ * (product_reviews). Antes no se veían en ningún lado del admin y no había
+ * cómo quitar una falsa o repetida (las reglas ya dejaban borrarlas a un admin).
+ *  - resenas: [{ id, producto, productoUrl, estrellas, comentario, nombre, fecha (ms), fotos: [url] }]
+ *  - cargando · error · onReintentar · onBorrar(id) → promesa
+ */
+export function PaginaResenasProductos({ resenas = [], cargando, error, onReintentar, onBorrar }) {
+  const toast = useToast();
+  const [visibles, setVisibles] = useState(30);
+  const [borrar, setBorrar] = useState(null);
+  const total = resenas.length;
+  const promedio = total ? Math.round((resenas.reduce((n, r) => n + (Number(r.estrellas) || 0), 0) / total) * 10) / 10 : 0;
+  const confirmarBorrar = async () => {
+    try {
+      await onBorrar(borrar.id);
+      toast({ tipo: 'exito', titulo: 'Reseña borrada', texto: borrar.producto || undefined });
+      setBorrar(null);
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se borró', texto: err?.message || 'Vuelve a intentar.' });
+    }
+  };
+  if (error) return <Aviso tipo="error" titulo="No se pudieron leer las reseñas" accion={onReintentar ? <Boton tamano="sm" variante="secundario" onClick={onReintentar}>Reintentar</Boton> : undefined}>{error}</Aviso>;
+  return (
+    <div data-componente="PaginaResenasProductos">
+      <FilaCifras>
+        <Cifra nombre="Reseñas" valor={total} cargando={cargando} />
+        <Cifra nombre="Promedio" valor={total ? `${promedio} ★` : '—'} tono="aviso" cargando={cargando} />
+      </FilaCifras>
+      <BloqueMetrica titulo="Lo que escriben en cada producto" ayuda="Todas, de la más nueva a la más vieja. Borrar una la quita de la ficha del producto.">
+        {cargando ? <EsqueletoTexto lineas={4} /> : total ? (
+          <ul className={s.comentarios}>
+            {resenas.slice(0, visibles).map((x) => (
+              <li key={x.id} className={s.comentario}>
+                <span className={s.comentarioCabeza}>
+                  <span className={s.estrellas} aria-label={`${x.estrellas} de 5 estrellas`}>{estrellasTexto(x.estrellas)}</span>
+                  <span className={s.nota}>
+                    {x.productoUrl ? <a href={x.productoUrl} target="_blank" rel="noreferrer">{x.producto || 'Producto'}</a> : (x.producto || 'Producto sin nombre')}
+                    {x.fecha ? ` · ${fecha(x.fecha)}` : ''}
+                  </span>
+                </span>
+                {x.comentario && <p>{x.comentario}</p>}
+                {x.fotos?.length > 0 && <span className={s.nota}>{x.fotos.length} foto{x.fotos.length === 1 ? '' : 's'}: {x.fotos.map((u, i) => <a key={u} href={u} target="_blank" rel="noreferrer">{i ? ', ' : ''}ver {i + 1}</a>)}</span>}
+                <span className={s.comentarioCabeza}>
+                  <span className={s.nota}>{x.nombre || 'Anónimo'}</span>
+                  {onBorrar && <Boton tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} onClick={() => setBorrar(x)}>Borrar</Boton>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : <SinDatos>Todavía nadie dejó una reseña.</SinDatos>}
+        <CargarMas visibles={Math.min(visibles, total)} total={total} paso={30} onMas={() => setVisibles((v) => v + 30)} unidad={['reseña', 'reseñas']} />
+      </BloqueMetrica>
+      <Confirmar
+        abierta={Boolean(borrar)}
+        titulo="¿Borrar esta reseña?"
+        texto={borrar ? `Se quita de la ficha de ${borrar.producto || 'ese producto'}. No se puede deshacer.` : ''}
+        confirmar="Borrar"
+        peligro
+        onConfirmar={confirmarBorrar}
+        onCancelar={() => setBorrar(null)}
+      />
+    </div>
+  );
+}

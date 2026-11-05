@@ -61,7 +61,9 @@ import {
   STORE_PAGE_SIZE,
   getCachedProducts,
   getCachedCategories,
-  getCachedFeaturedProducts
+  getCachedCategoriesAt,
+  getCachedFeaturedProducts,
+  getCachedFeaturedProductsAt
 } from '../../services/products';
 import { getMessage } from '../../services/messages';
 import { SECTION_TYPES, getDefaultSettings } from './services/storefront';
@@ -429,7 +431,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       return data;
     },
     enabled: needsSection('product_grid', 'sidebar_catalog', 'category_grid', 'categories_nav', 'featured_products', 'featured_carousel'),
-    initialData: getCachedCategories()
+    // Lo guardado en el navegador se pinta enseguida, pero con su fecha real: si
+    // tiene más de 5 minutos se vuelve a pedir al abrir la página. Antes contaba
+    // como recién leído y un cambio del admin tardaba hasta ~2 h en verse.
+    initialData: getCachedCategories(),
+    initialDataUpdatedAt: getCachedCategoriesAt,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   });
 
   // ── MARCA DE LA PÁGINA (Fase 1 multimarca) ────────────────────────
@@ -506,7 +514,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       return data;
     },
     enabled: needsSection('featured_products', 'featured_carousel'),
-    initialData: pageBrandId ? undefined : getCachedFeaturedProducts()
+    // Como las categorías: lo guardado, con su fecha; más de 5 minutos, se vuelve a pedir.
+    initialData: pageBrandId ? undefined : getCachedFeaturedProducts(),
+    initialDataUpdatedAt: pageBrandId ? undefined : getCachedFeaturedProductsAt,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   });
 
   const seccionesViejo = useLoViejo('secciones');

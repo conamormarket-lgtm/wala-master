@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
@@ -6,7 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getBrands } from '../../services/brands';
 import { getCategories, getProduct, getProductsByCategory } from '../../services/products';
 import { catalogoPorId, idsDeItemsIncompletos, queLeFalta } from '../../utils/cartValidation';
-import { idsParaRevisar, motivoNoDisponible } from '../../utils/carritoDisponible.mjs';
+import { idsParaRevisar, motivoNoDisponible, preciosCambiados } from '../../utils/carritoDisponible.mjs';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import { tieneCuenta } from '../../utils/rutaPrivada';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../../constants/envio';
@@ -29,8 +30,9 @@ export default function CarritoDeTienda() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
-    items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart,
+    items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart, actualizarPrecios,
   } = useCart();
+  const toast = useGlobalToast();
   const { user, userProfile } = useAuth();
   const [abajo, setAbajo] = useState(false);
   const verAbajo = useCallback(() => setAbajo(true), []);
@@ -61,6 +63,18 @@ export default function CarritoDeTienda() {
     idsRevisar.forEach((id, i) => { if (revisados[i] !== undefined) m.set(id, revisados[i]); });
     return m;
   }, [idsRevisar, revisados]);
+
+  // Si el admin cambió un precio, la línea toma el nuevo y se avisa (antes el
+  // pago se rechazaba con "el precio cambió" y había que quitar el producto).
+  const cambiosDePrecio = useMemo(() => preciosCambiados(items, productosRevisados), [items, productosRevisados]);
+  useEffect(() => {
+    if (!cambiosDePrecio.length) return;
+    actualizarPrecios(cambiosDePrecio);
+    const c = cambiosDePrecio[0];
+    toast.info(cambiosDePrecio.length === 1
+      ? `El precio de ${c.nombre || 'un producto'} cambió a S/ ${c.price.toFixed(2)}. Ya está actualizado.`
+      : `Cambió el precio de ${cambiosDePrecio.length} productos. Ya están actualizados.`);
+  }, [cambiosDePrecio, actualizarPrecios, toast]);
 
   const filas = useMemo(() => items.map((item) => {
     const fila = itemCarritoDesde(item, { catalogo, falta: incompletos.has(item.id) ? queLeFalta(item, catalogo) : undefined, noDisponible: motivoNoDisponible(item, productosRevisados) });

@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import { getPrendasBase } from '../../services/prendasBase';
+import { getPrendaBase, getPrendasBase } from '../../services/prendasBase';
 import { getCombosCrear } from '../../services/combosCrear';
 import { getBrands } from '../../services/brands';
 import { getDesignsByUser } from '../../services/designs';
@@ -109,7 +109,31 @@ export default function CrearDeTienda() {
   const tarjetasBorrador = useMemo(() => agruparCombos(borradores, creaciones), [borradores, creaciones]);
 
   const prendasBase = prendasQ.data || SIN_NADA;
-  const prendaPorId = useMemo(() => new Map(prendasBase.map((p) => [p.id, p])), [prendasBase]);
+  // Las piezas "va tal cual" de los packs son productos de la tienda, no prendas
+  // de Crear: sin leerlas, comboCrearDesde no las encontraba y el pack no salía
+  // aquí (el reloj de Yoryo). Misma clave que el combo (useComboCrear).
+  const idsFijas = useMemo(() => [...new Set((combosQ.data || SIN_NADA)
+    .flatMap((c) => (c.piezas || []).filter((p) => p.fija === true).map((p) => p.prendaId)))], [combosQ.data]);
+  const fijasQ = useQueries({
+    queries: idsFijas.map((id) => ({
+      queryKey: ['prenda-base', id],
+      queryFn: async () => {
+        const { data, error } = await getPrendaBase(id);
+        if (error) throw new Error(error);
+        return data;
+      },
+    })),
+  });
+  // useQueries da un arreglo nuevo en cada dibujo: la clave cambia solo si cambian los datos.
+  const claveFijas = fijasQ.map((q) => `${q.data?.id || ''}:${q.dataUpdatedAt}`).join('|');
+  const fijas = useMemo(() => fijasQ.map((q) => q.data).filter(Boolean),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [claveFijas]);
+  const prendaPorId = useMemo(() => new Map([
+    ...prendasBase.map((p) => [p.id, p]),
+    // Solo las que se venden: oculta o en la papelera, el pack no se puede armar.
+    ...fijas.filter((p) => p.deleted !== true && (p.visible !== false || isAdmin)).map((p) => [p.id, p]),
+  ]), [prendasBase, fijas, isAdmin]);
   // Las tarjetas de prendas y combos llevan su botón al estudio o al combo.
   const conIr = (t) => ({ ...t, onAgregar: () => navigate(t.url) });
   const prendas = prendasBase.map(prendaCrearDesdeProducto).map(conIr);

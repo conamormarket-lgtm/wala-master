@@ -766,6 +766,18 @@ export const getFeaturedProducts = async (brandId = null) => {
 
 export const getCachedFeaturedProducts = () => readCache(CACHE_KEYS.featured);
 
+/** Cuándo se guardó una caché (ms), para initialDataUpdatedAt: sin él React Query la daba por recién leída. */
+const cachedAtDe = (key) => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+    return parsed && Number.isFinite(parsed.cachedAt) ? parsed.cachedAt : undefined;
+  } catch (e) {
+    return undefined;
+  }
+};
+export const getCachedFeaturedProductsAt = () => cachedAtDe(CACHE_KEYS.featured);
+export const getCachedCategoriesAt = () => cachedAtDe(CACHE_KEYS.categories);
+
 export const clearProductCaches = () => {
   productCacheGeneration += 1;
   productReads.clear();

@@ -44,3 +44,38 @@ export function motivoNoDisponible(item = {}, productos = new Map()) {
   }
   return '';
 }
+
+/**
+ * El precio de catálogo, con la regla del servidor (functions/catalogPricing.js):
+ * la oferta cuenta solo si es mayor que 0 y menor que el precio.
+ */
+export function precioDeCatalogo(p) {
+  const price = Number(p?.price);
+  const raw = p?.salePrice;
+  const conOferta = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '');
+  const sale = conOferta ? Number(raw) : NaN;
+  if (Number.isFinite(sale) && sale > 0 && sale < price) return sale;
+  return Number.isFinite(price) ? price : null;
+}
+
+/**
+ * Las líneas cuyo precio cambió en el catálogo: [{ id, price, regularPrice }].
+ * Solo las que el servidor cobra a precio de catálogo (sin personalizar, sin
+ * combo ni pack); antes el pago se rechazaba con "el precio cambió… Actualiza
+ * tu carrito" y no había cómo actualizarlo sin quitar el producto.
+ */
+export function preciosCambiados(items = [], productos = new Map()) {
+  const cambios = [];
+  for (const item of items) {
+    if (!item || item.customization || item.isComboProduct) continue;
+    const id = String(item.productId || '');
+    const p = productos.get(id);
+    if (!p || p.deleted === true) continue;
+    const precio = precioDeCatalogo(p);
+    if (precio === null || !(precio > 0)) continue;
+    if (Math.abs(precio - Number(item.price)) <= 0.01) continue;
+    const regular = Number(p.price);
+    cambios.push({ id: item.id, price: precio, regularPrice: regular > precio ? regular : null, antes: Number(item.price) || 0, nombre: item.productName || '' });
+  }
+  return cambios;
+}

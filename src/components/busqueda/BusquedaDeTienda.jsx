@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import EditableSection from '../admin/EditableSection';
 import { searchProductsFirestore } from '../../services/search';
+import { esProductoDeTienda } from '../../utils/enTienda.mjs';
 import { getDocument } from '../../services/firebase/firestore';
 import { getCategories } from '../../services/products';
 import { getBrand, getBrands } from '../../services/brands';
@@ -81,9 +82,11 @@ export default function BusquedaDeTienda() {
     });
   }, [termino, busqueda.hayMas, busqueda.cargando, busqueda.cursor]);
 
-  // Lo que se muestra: sin los ocultos y, con ?brand=, solo esa marca.
+  // Lo que se muestra: lo que se vende en la tienda (esProductoDeTienda, como el
+  // servicio; antes `visible !== false` escondía los packs de Crear con «También
+  // en la tienda», que se guardan con visible:false) y, con ?brand=, solo esa marca.
   const encontrados = useMemo(() => busqueda.items.filter((p) => (
-    p.visible !== false && (!marcaId || p.brandId === marcaId)
+    esProductoDeTienda(p) && (!marcaId || p.brandId === marcaId)
   )), [busqueda.items, marcaId]);
   const hayResultados = encontrados.length > 0;
 

@@ -208,6 +208,8 @@ const AdminMarcasViejo = () => {
       storeSubtitle: brand.storeSubtitle || '',
       storeEmpty: brand.storeEmpty || '',
       topeMonedasPct: pctMonedasDeMarca(brand),
+      // Solo para avisar: el formulario de antes no sabe del tope en monedas por producto.
+      topeEnMonedas: brand.topeMonedasTipo === 'monedas' && Number(brand.topeMonedasCantidad) >= 0 && brand.topeMonedasCantidad !== '' ? Number(brand.topeMonedasCantidad) : null,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -559,6 +561,11 @@ const AdminMarcasViejo = () => {
                 onChange={(e) => setForm((f) => ({ ...f, topeMonedasPct: e.target.value === '' ? '' : Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) }))}
                 className={styles.input}
               />
+              {form.topeEnMonedas != null && (
+                <small role="alert" style={{ color: '#b45309', fontSize: '0.8rem', marginTop: '0.3rem', display: 'block', fontWeight: 600 }}>
+                  Esta marca usa un tope de {form.topeEnMonedas} monedas por producto (lo que cobra el servidor), no este %. Se cambia en la página nueva de Marcas.
+                </small>
+              )}
               <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
                 {Number(form.topeMonedasPct) === 0 && form.topeMonedasPct !== ''
                   ? 'Sus productos no se pueden pagar con monedas.'

@@ -10,6 +10,11 @@
   background: var(--color-surface);
 }
 
+.tarjetasArriba {
+  display: grid;
+  gap: 0.6rem;
+}
+
 .whatsappTextos {
   display: grid;
   flex: 1 1 14rem;

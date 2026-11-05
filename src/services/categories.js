@@ -1,4 +1,13 @@
 import { getCollection, getDocument, createDocument, updateDocument, deleteDocument } from './firebase/firestore';
+import { clearProductCaches } from './products';
+
+// Tras cambiar una categoría se borra la copia del navegador (la tienda la
+// pinta al abrir): si no, el admin seguía viendo la vieja en su tienda.
+const yLimpiar = async (promesa) => {
+  const res = await promesa;
+  if (!res?.error) clearProductCaches();
+  return res;
+};
 
 const COLLECTION = 'tienda_categories';
 
@@ -30,7 +39,7 @@ export const getCategory = async (id) => {
  * @param {{ name: string, order: number }} data
  */
 export const createCategory = async (data) => {
-  return await createDocument(COLLECTION, {
+  return yLimpiar(createDocument(COLLECTION, {
     name: data.name || '',
     imageUrl: data.imageUrl || '',
     order: typeof data.order === 'number' ? data.order : 0,
@@ -39,7 +48,7 @@ export const createCategory = async (data) => {
     brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : [],
     // El tipo de producto de la categoría (productTypes): sus productos lo heredan.
     ...(data.productType ? { productType: String(data.productType) } : {}),
-  });
+  }));
 };
 
 /**
@@ -57,12 +66,12 @@ export const updateCategory = async (id, data) => {
   }
   // '' lo quita (updateDocument lo pasa a deleteField).
   if (data.productType !== undefined) payload.productType = data.productType ? String(data.productType) : '';
-  return await updateDocument(COLLECTION, id, payload);
+  return yLimpiar(updateDocument(COLLECTION, id, payload));
 };
 
 /**
  * Eliminar categoría
  */
 export const deleteCategory = async (id) => {
-  return await deleteDocument(COLLECTION, id);
+  return yLimpiar(deleteDocument(COLLECTION, id));
 };

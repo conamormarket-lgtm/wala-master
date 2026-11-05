@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Boxes, LayoutTemplate, MessageCircle, MoreHorizontal, PackageMinus, PackagePlus, Plus, Sparkles, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Boxes, LayoutTemplate, MessageCircle, MessageSquareText, MoreHorizontal, PackageMinus, PackagePlus, Plus, Sparkles, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, useToast } from '../../Feedback';
 import { Campo, Deslizador } from '../../Formulario';
@@ -55,6 +55,49 @@ function TarjetaWhatsApp({ config, cargando, url }) {
 }
 
 /**
+ * El mensaje de toda la tienda (/tienda) cuando no hay productos: el que usa
+ * una marca con su «Mensaje sin productos» vacío. Antes no se podía editar.
+ *  - valor · cargando · onGuardar(texto) → promesa
+ */
+function TarjetaMensajeTienda({ valor = '', cargando, onGuardar }) {
+  const toast = useToast();
+  const [texto, setTexto] = useState(valor);
+  const [guardando, setGuardando] = useState(false);
+  useEffect(() => { setTexto(valor); }, [valor]);
+  const cambio = texto.trim() !== String(valor || '').trim();
+  const guardar = async () => {
+    setGuardando(true);
+    try {
+      await onGuardar(texto.trim());
+      toast({ tipo: 'exito', titulo: 'Mensaje guardado', texto: texto.trim() ? undefined : 'Sin texto: se ve el de siempre.' });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se guardó', texto: err?.message || 'Vuelve a intentar.' });
+    } finally {
+      setGuardando(false);
+    }
+  };
+  return (
+    <div className={s.whatsapp}>
+      <Sello tamano={40} tono="oro"><MessageSquareText /></Sello>
+      <div className={s.whatsappTextos}>
+        <strong>Mensaje si la tienda no tiene productos</strong>
+        {cargando ? <EsqueletoTexto lineas={1} /> : (
+          <Campo
+            id="mensaje-tienda-vacia"
+            etiqueta="Mensaje de toda la tienda"
+            placeholder="Vacío: «Estamos preparando novedades. Revisa de nuevo en unos días.»"
+            value={texto}
+            ayuda="El de /tienda y el de cada marca que no tiene uno propio."
+            onChange={(e) => setTexto(e.target.value)}
+          />
+        )}
+      </div>
+      <Boton tamano="sm" variante="secundario" onClick={guardar} cargando={guardando} disabled={cargando || !cambio}>Guardar</Boton>
+    </div>
+  );
+}
+
+/**
  * La lista de marcas con su hoja de edición.
  *  - marcas: [{ id, nombre, slug, logo, orden, whatsapp, mensajeVacio, topeMonedas, tipoTope, monedasPorProducto, fondo, textura, opacidad }] (marcaDesdeFirestore)
  *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id) · subirImagen
@@ -64,11 +107,14 @@ function TarjetaWhatsApp({ config, cargando, url }) {
  *  - whatsapp: { principal, multimarca, fabrica } · cargandoWhatsapp · urlWhatsapp (ahí se cambia)
  *  - onProductos(marca) (sus productos) · onDisenar(marca) (su página con el editor)
  *  - onAplicarPlantilla() → promesa con el resultado en texto · onQuitarRepetidas() → igual
+ *  - mensajeTienda · cargandoMensajeTienda · onGuardarMensajeTienda(texto) → promesa
+ *    (el mensaje de toda la tienda sin productos; sin onGuardar… no sale)
  */
 export function PaginaMarcas({
   marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen, muestraDe,
   whatsapp = { principal: '', multimarca: false, fabrica: '' }, cargandoWhatsapp, urlWhatsapp,
   onProductos, onDisenar, onAplicarPlantilla, onQuitarRepetidas, onGuardarOrden,
+  mensajeTienda = '', cargandoMensajeTienda, onGuardarMensajeTienda,
 }) {
   const toast = useToast();
   const [menu, setMenu] = useState(null);
@@ -109,7 +155,12 @@ export function PaginaMarcas({
             </Boton>
           ) : undefined,
         }}
-        antes={urlWhatsapp ? <TarjetaWhatsApp config={whatsapp} cargando={cargandoWhatsapp} url={urlWhatsapp} /> : undefined}
+        antes={urlWhatsapp || onGuardarMensajeTienda ? (
+          <div className={s.tarjetasArriba}>
+            {urlWhatsapp && <TarjetaWhatsApp config={whatsapp} cargando={cargandoWhatsapp} url={urlWhatsapp} />}
+            {onGuardarMensajeTienda && <TarjetaMensajeTienda valor={mensajeTienda} cargando={cargandoMensajeTienda} onGuardar={onGuardarMensajeTienda} />}
+          </div>
+        ) : undefined}
         registros={marcas}
         cargando={cargando}
         error={error}

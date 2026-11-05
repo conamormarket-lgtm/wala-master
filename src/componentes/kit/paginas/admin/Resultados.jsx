@@ -487,13 +487,14 @@ export function PaginaClientesResultados({
 const ENCUESTAS = [
   { id: 'entregas', texto: 'Cómo les fue con su pedido' },
   { id: 'suscripcion', texto: 'Encuesta de regalos' },
+  { id: 'resenas', texto: 'Reseñas de productos' },
 ];
 
 /**
  * Opiniones: elegir la encuesta y, debajo, su pantalla (children). Las dos
  * encuestas se rehacen en el kit en D5 ("encuestas"); hasta entonces el
  * conector pone las de hoy (AdminEncuestaEntregas, AdminRespuestasEncuesta) embebidas.
- *  - encuesta ('entregas' | 'suscripcion') · onEncuesta(id) · children
+ *  - encuesta ('entregas' | 'suscripcion' | 'resenas') · onEncuesta(id) · children
  */
 export function PaginaOpinionesResultados({ encuesta = 'entregas', onEncuesta, children }) {
   return (

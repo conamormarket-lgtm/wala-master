@@ -258,6 +258,13 @@ test('ficha: un producto normal sin stock cargado se abre y se guarda sin límit
   assert.equal(m2.fichaAProducto({ ...f, stock: '0' }, original).inStock, 0);
   assert.equal(m2.fichaAProducto({ ...f, stock: 7 }, original).inStock, 7);
   assert.equal(m2.fichaDesdeProducto({ ...original, inStock: 0 }).stock, 0);
+  // Lo que la ficha no muestra se guarda como estaba.
+  const conOcultos = { ...original, customizable: true, customizationViews: [{ id: 'cv' }], variantDisplayBehavior: 'both', behaviorImpressionsThreshold: 5, productCliparts: [{ id: 'c' }], vendors: ['v'] };
+  const g = m2.fichaAProducto(m2.fichaDesdeProducto(conOcultos), conOcultos);
+  assert.deepEqual([g.customizable, g.customizationViews, g.variantDisplayBehavior, g.behaviorImpressionsThreshold, g.productCliparts, g.vendors],
+    [true, [{ id: 'cv' }], 'both', 5, [{ id: 'c' }], ['v']]);
+  const nuevo = m2.fichaAProducto(m2.fichaDesdeProducto(null), {});
+  assert.deepEqual([nuevo.customizable, nuevo.customizationViews, 'variantDisplayBehavior' in nuevo], [false, [], false]);
 });
 
 test('crear: la ficha de un personalizable guarda su prendaBase y su stock sin límite', () => {

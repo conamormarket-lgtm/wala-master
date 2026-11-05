@@ -1,6 +1,7 @@
 import { collection, query, where, orderBy, limit, startAfter, getDocs } from './firebase/observed.js';
 import { db } from './firebase/config';
-import { getProducts, getCachedProducts, normalizeSearchText, normalizeProductForRead, esProductoDeTienda } from './products';
+import { getProducts, getCachedProducts, getCategories, normalizeSearchText, normalizeProductForRead, esProductoDeTienda } from './products';
+import { getCollection } from './firebase/firestore';
 
 const COLLECTION = 'productos_wala';
 
@@ -40,17 +41,54 @@ function matchesFacets(p, f = {}) {
   return true;
 }
 
-function matchesTerm(p, term) {
+// ── Los nombres de etiquetas, personajes, tipos, categorías y marcas ─────────
+// El producto guarda esos campos como ids de documento: buscar "anime" no
+// encontraba lo etiquetado "Anime" (comparaba contra el id). Se leen una vez
+// cada 10 minutos (colecciones chicas y públicas) y se traduce id → nombre.
+// Las marcas van directo a tienda_brands: brands.js arrastra el storefront.
+const NOMBRES_TTL_MS = 10 * 60 * 1000;
+let nombresCache = null; // { at, promesa }
+export function nombresDeAtributos() {
+  if (nombresCache && Date.now() - nombresCache.at < NOMBRES_TTL_MS) return nombresCache.promesa;
+  const promesa = Promise.all([
+    getCollection('tags', []),
+    getCollection('characters', []),
+    getCollection('productTypes', []),
+    getCollection('tienda_brands', []),
+    getCategories(),
+  ]).then((resultados) => {
+    const mapa = new Map();
+    resultados.forEach((r) => (r?.data || []).forEach((d) => {
+      const nombre = d?.name || d?.nombre || d?.title;
+      if (d?.id && nombre) mapa.set(String(d.id), String(nombre));
+    }));
+    return mapa;
+  }).catch(() => new Map());
+  nombresCache = { at: Date.now(), promesa };
+  return promesa;
+}
+const nombreDe = (nombres, id) => (nombres && nombres.get(String(id))) || '';
+
+// ¿Lo escrito nombra una etiqueta, personaje, tipo, categoría o marca?
+const nombraAtributo = (q, nombres) => {
+  // Desde 3 letras: "de" o "la" no cuentan como nombre de nada.
+  const words = q.split(' ').filter((w) => w.length >= 3);
+  if (!words.length || !nombres || !nombres.size) return false;
+  return [...nombres.values()].some((n) => {
+    const nn = normalizeSearchText(n);
+    return words.some((w) => nn.split(' ').some((pal) => pal.startsWith(w)));
+  });
+};
+
+function matchesTerm(p, term, nombres = null) {
   if (!term) return true;
   const words = normalizeSearchText(term).split(' ').filter(Boolean);
+  const ids = [p.brandId, p.productType, ...(p.tags || []), ...(p.characters || []), ...(p.categories || [])].filter(Boolean);
   const searchable = normalizeSearchText([
     p.name,
     p.description,
-    p.brandId,
-    p.productType,
-    ...(p.tags || []),
-    ...(p.characters || []),
-    ...(p.categories || []),
+    ...ids,
+    ...ids.map((id) => nombreDe(nombres, id)),
   ].filter(Boolean).join(' '));
   return words.every((word) => searchable.includes(word));
 }
@@ -78,8 +116,9 @@ function facetCounts(items, key) {
  * @returns {Promise<{ items: object[], total: number, page: number, pageSize: number, totalPages: number, facets: object }>}
  */
 export async function searchCatalog({ term = '', facets = {}, sort = 'newest', page = 1, pageSize = 24, fresh = false } = {}) {
-  const all = (await fetchAll({ fresh })).filter(esProductoDeTienda);
-  let results = all.filter((p) => matchesTerm(p, term) && matchesFacets(p, facets));
+  const [catalogo, nombres] = await Promise.all([fetchAll({ fresh }), term ? nombresDeAtributos() : null]);
+  const all = catalogo.filter(esProductoDeTienda);
+  let results = all.filter((p) => matchesTerm(p, term, nombres) && matchesFacets(p, facets));
   if (SORTERS[sort]) results = results.slice().sort(SORTERS[sort]);
 
   const total = results.length;
@@ -164,6 +203,14 @@ export async function searchProductsFirestore({ term = '', mode = 'token', curso
     return memoryFallback({ term, pageSize, cursor });
   }
 
+  // Si lo escrito es el nombre de una etiqueta, personaje, tipo, categoría o
+  // marca, se busca en memoria: las palabras de búsqueda de Firestore salen del
+  // nombre del producto y de ids, y se perdían los que solo tienen la etiqueta.
+  const nombres = await nombresDeAtributos();
+  if (cursor == null && nombraAtributo(q, nombres)) {
+    return memoryFallback({ term, pageSize, cursor: null });
+  }
+
   try {
     let qry;
     if (mode === 'token') {
@@ -202,7 +249,7 @@ export async function searchProductsFirestore({ term = '', mode = 'token', curso
 
     const items = snap.docs
       .map((d) => normalizeProductForRead({ id: d.id, ...d.data() }))
-      .filter((p) => esProductoDeTienda(p) && matchesTerm(p, q));
+      .filter((p) => esProductoDeTienda(p) && matchesTerm(p, q, nombres));
 
     const lastDoc = snap.docs[snap.docs.length - 1] || null;
     return {
@@ -238,11 +285,13 @@ export async function searchProductsFirestore({ term = '', mode = 'token', curso
 // ¿Casa el producto con lo escrito? El nombre y la marca mandan; la descripción
 // NO entra: hace que salgan productos cuyo título no tiene nada que ver y las
 // sugerencias parecen aleatorias.
-const casaSugerencia = (p, q) => {
+const casaSugerencia = (p, q, nombres = null) => {
   const nombre = normalizeSearchText(p.name);
   if (nombre.includes(q)) return true;
-  if (normalizeSearchText(p.brandId).includes(q)) return true;
-  return (p.tags || []).some((t) => normalizeSearchText(t).includes(q));
+  if (normalizeSearchText(p.brandId).includes(q) || normalizeSearchText(nombreDe(nombres, p.brandId)).includes(q)) return true;
+  // Etiquetas y personajes por su nombre (se guardan como id).
+  return [...(p.tags || []), ...(p.characters || [])]
+    .some((t) => normalizeSearchText(t).includes(q) || normalizeSearchText(nombreDe(nombres, t)).includes(q));
 };
 
 // Ordena de más a menos pertinente: primero lo que EMPIEZA por lo escrito,
@@ -283,8 +332,9 @@ export async function getSearchSuggestions(term, opts = {}) {
   if (q.length < 2) return vacio;
 
   let all;
+  let nombres = null;
   try {
-    all = await fetchAll();
+    [all, nombres] = await Promise.all([fetchAll(), nombresDeAtributos()]);
   } catch (e) {
     // El panel es un extra: si el catálogo no se puede leer, el buscador de
     // toda la vida (Enter -> /buscar) sigue funcionando.
@@ -292,7 +342,7 @@ export async function getSearchSuggestions(term, opts = {}) {
   }
 
   const casan = all
-    .filter((p) => esProductoDeTienda(p) && casaSugerencia(p, q))
+    .filter((p) => esProductoDeTienda(p) && casaSugerencia(p, q, nombres))
     .sort(porPertinencia(q));
 
   // Las categorías viven en `categories` (array); las marcas, en `brandId`.

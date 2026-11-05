@@ -7,13 +7,14 @@ import { getPerfilesPorUid } from '../../services/adminProductInterest';
 import { getUserAnalytics } from '../../services/adminAnalytics';
 import { recomendarSimilares } from '../../services/analytics/productInterest.mjs';
 import { useProducts } from '../../hooks/useProducts';
-import { getCollection } from '../../services/firebase/firestore';
+import { getCollection, deleteDocument } from '../../services/firebase/firestore';
+import { getProduct } from '../../services/products';
 import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 import { getSurveyConfig, saveSurveyConfig, configEntregaPanel, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import { configConHistorial } from '../../services/encuestaHistorial.mjs';
 import { embudoEncuesta, EMBUDO_DESDE } from '../../services/surveyResponses.mjs';
 import { PaginaClientesResultados, PaginaOpinionesResultados } from '../../componentes/kit/paginas/admin/Resultados';
-import { RespuestasEntregas, RespuestasEncuesta } from '../../componentes/kit/paginas/admin/Encuestas';
+import { RespuestasEntregas, RespuestasEncuesta, PaginaResenasProductos } from '../../componentes/kit/paginas/admin/Encuestas';
 import { configConPregunta } from '../../componentes/kit/adaptadoresAdmin';
 import useLoViejo from '../../hooks/useLoViejo';
 import { sinError } from './comun';
@@ -312,6 +313,45 @@ function EncuestaRegalosDelPanel({ desde, hasta, previo }) {
  * de Resultados (D5e). Cada encuesta lee sus datos solo mientras se ve,
  * como las pantallas de antes.
  */
+const msDeFecha = (f) => (typeof f?.toMillis === 'function' ? f.toMillis() : typeof f?.seconds === 'number' ? f.seconds * 1000 : Number(new Date(f)) || 0);
+
+/** Las reseñas de product_reviews con el nombre de su producto, de la más nueva a la más vieja. */
+async function leerResenas() {
+  const crudas = await sinError(getCollection('product_reviews', [], { field: 'createdAt', direction: 'desc' }));
+  const ids = [...new Set((crudas || []).map((r) => r.productId).filter(Boolean))];
+  const productos = new Map(await Promise.all(ids.map(async (id) => [id, (await getProduct(id)).data || null])));
+  return (crudas || []).map((r) => ({
+    id: r.id,
+    producto: productos.get(r.productId)?.name || '',
+    productoUrl: r.productId ? `/producto/${r.productId}` : '',
+    estrellas: Number(r.rating) || 0,
+    comentario: String(r.comment || ''),
+    nombre: r.userName || '',
+    fecha: msDeFecha(r.createdAt),
+    fotos: Array.isArray(r.imageUrls) ? r.imageUrls.filter(Boolean) : [],
+  }));
+}
+
+/** Resultados › Opiniones › Reseñas de productos: verlas y borrar las que no sirven. */
+function ResenasDelPanel() {
+  const queryClient = useQueryClient();
+  const q = useQuery({ queryKey: ['admin-resenas-productos'], queryFn: leerResenas, staleTime: 60 * 1000 });
+  return (
+    <PaginaResenasProductos
+      resenas={q.data || []}
+      cargando={q.isLoading}
+      error={q.error ? q.error.message || 'No se pudieron leer.' : undefined}
+      onReintentar={() => q.refetch()}
+      onBorrar={async (id) => {
+        await sinError(deleteDocument('product_reviews', id));
+        await queryClient.invalidateQueries({ queryKey: ['admin-resenas-productos'] });
+        // La ficha del producto las lee con su propia clave.
+        await queryClient.invalidateQueries({ queryKey: ['product-reviews'] });
+      }}
+    />
+  );
+}
+
 export function OpinionesDelPanel() {
   const { filtros, periodo } = useOutletContext();
   const [encuesta, setEncuesta] = useState('entregas');
@@ -337,7 +377,7 @@ export function OpinionesDelPanel() {
 
   return (
     <PaginaOpinionesResultados encuesta={encuesta} onEncuesta={setEncuesta}>
-      {encuesta === 'entregas' ? (
+      {encuesta === 'resenas' ? <ResenasDelPanel /> : encuesta === 'entregas' ? (
         <EntregasDelPanel
           desdeMs={startDateMs}
           hastaMs={endDateMs}

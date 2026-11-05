@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings, dedupeBrandLandings } from '../../services/brands';
-import { getMessage } from '../../services/messages';
+import { getMessage, setMessage } from '../../services/messages';
 import { getProducts, getProductsByBrand, setProductBrand } from '../../services/products';
 import { tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
 import { PaginaMarcas, PaginaProductosMarca } from '../../componentes/kit/paginas/admin/Marcas';
@@ -38,7 +38,14 @@ export default function MarcasDelPanel() {
   const navigate = useNavigate();
   const marcas = useLectura(['admin-brands'], getBrands);
   const invalidar = useInvalidar();
-  const refrescar = () => invalidar(['admin-brands'], ['brands']);
+  // tienda-page-brand: la página de cada marca lee su «Mensaje sin productos» con esa clave.
+  const refrescar = () => invalidar(['admin-brands'], ['brands'], ['tienda-page-brand']);
+
+  // El mensaje de toda la tienda sin productos (messages/store_empty_message, lo lee TiendaPage).
+  const mensajeTienda = useQuery({
+    queryKey: ['admin-store-empty-message'],
+    queryFn: async () => String((await getMessage('store_empty_message')).data || ''),
+  });
 
   const whatsapp = useQuery({
     queryKey: ['admin-whatsapp-marcas-config'],
@@ -89,6 +96,12 @@ export default function MarcasDelPanel() {
       whatsapp={whatsapp.data || { principal: '', multimarca: false, fabrica: WHATSAPP_FABRICA }}
       cargandoWhatsapp={whatsapp.isLoading}
       urlWhatsapp="/admin/whatsapp"
+      mensajeTienda={mensajeTienda.data || ''}
+      cargandoMensajeTienda={mensajeTienda.isLoading}
+      onGuardarMensajeTienda={async (texto) => {
+        await sinError(setMessage('store_empty_message', texto));
+        await invalidar(['admin-store-empty-message'], ['store-messages']);
+      }}
       onProductos={(m) => navigate(`/admin/marcas/${m.id}/productos`)}
       onDisenar={(m) => navigate(`/${m.slug}?editar`)}
       onAplicarPlantilla={async () => {

@@ -790,8 +790,17 @@ export function fichaAProducto(f, original = {}, { prendaBaseParaGuardar } = {})
     mainSizes: [],
     defaultVariantId: principal?.id || '',
     hasVariants: !f.esCombo && variantes.length > 0,
-    customizable: false,
-    customizationViews: [],
+    // Lo que la ficha no muestra se guarda como estaba. Antes guardar apagaba la
+    // personalización de antes (eso lo hace a propósito "Quitar la personalización
+    // de antes" en Productos), borraba las fotos por color de customizationViews
+    // que la galería todavía lee y devolvía a su valor por defecto la foto de la
+    // tarjeta (variantDisplayBehavior), los cliparts y los vendedores.
+    customizable: !prenda && original.customizable === true,
+    customizationViews: !prenda && Array.isArray(original.customizationViews) ? original.customizationViews : [],
+    ...(original.variantDisplayBehavior !== undefined && { variantDisplayBehavior: original.variantDisplayBehavior }),
+    ...(original.behaviorImpressionsThreshold !== undefined && { behaviorImpressionsThreshold: original.behaviorImpressionsThreshold }),
+    ...(Array.isArray(original.productCliparts) && { productCliparts: original.productCliparts }),
+    ...(Array.isArray(original.vendors) && { vendors: original.vendors }),
     esPrendaBase: prenda,
     ...(prenda && { prendaBase: prendaBaseParaGuardar ? prendaBaseParaGuardar(f.prenda, variantes) : f.prenda }),
     personalizarEn: prenda ? '' : f.personalizarEn || '',
