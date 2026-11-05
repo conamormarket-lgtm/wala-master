@@ -4,12 +4,15 @@ import { useSearchParams } from 'react-router-dom';
 import { getMessage, setMessage } from '../../services/messages';
 import { createDocument, getCollection, setDocument } from '../../services/firebase/firestore';
 import { getInventoryLogs } from '../../services/inventoryLogs';
+import { getBrands } from '../../services/brands';
+import { getLandingPages } from '../../pages/Tienda/services/landingPages';
 import { getLockedPages } from '../../services/lockedPages';
 import { saveStorefrontConfig } from '../../pages/Tienda/services/storefront';
 import { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from '../../componentes/kit/paginas/admin/Ajustes';
 import {
   whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
 } from '../../componentes/kit/adaptadoresAdmin';
+import { useAuth } from '../../contexts/AuthContext';
 import { sinError, useLectura, useInvalidar } from './comun';
 
 /*
@@ -28,16 +31,21 @@ const errorDe = (q, texto) => (q.error ? q.error.message || texto : undefined);
 
 const WHATSAPP = ['admin-whatsapp-numbers'];
 // Las que lee whatsappDesdeMensajes (los mensajes de Crear y Mi cuenta ya no los lee nadie).
+// El de los pedidos y multimarca se cambiaban en Marcas: ahora, aquí.
 const CLAVES_WHATSAPP = [
+  'whatsapp_number_principal', 'whatsapp_multimarca',
   'whatsapp_number_tienda', 'whatsapp_number_crear', 'whatsapp_number_cuenta',
   'whatsapp_text_tienda', 'whatsapp_mostrar_en_acceso', 'whatsapp_number',
 ];
+// Las marcas (la misma lista que el botón y el checkout, ['brands']).
+const leerMarcas = async () => (await getBrands()).data || [];
 
 /**
  * /admin/whatsapp: los mensajes (messages) en ['admin-whatsapp-numbers'] →
  * whatsappDesdeMensajes. Guardar con setMessage de cada clave de
  * whatsappAMensajes e invalidar también lo que lee la tienda: el botón
- * flotante, el checkout y "¿Problemas para pagar?" de Mi cuenta.
+ * flotante, el checkout, "¿Problemas para pagar?" de Mi cuenta y la tarjeta
+ * de Marcas. Las marcas con el WhatsApp de su asesor salen en «Así queda».
  */
 export function WhatsAppDelPanel() {
   const invalidar = useInvalidar();
@@ -48,16 +56,22 @@ export function WhatsAppDelPanel() {
     if (fallo) return fallo;
     return { data: whatsappDesdeMensajes(Object.fromEntries(CLAVES_WHATSAPP.map((k, i) => [k, valores[i]?.data ?? '']))) };
   });
+  const marcasQ = useQuery({ queryKey: ['brands'], queryFn: leerMarcas, staleTime: 15 * 60 * 1000 });
+  const marcas = useMemo(() => (marcasQ.data || [])
+    .filter((b) => String(b?.whatsappNumber || '').trim())
+    .map((b) => ({ nombre: b.name || b.slug, numero: b.whatsappNumber.trim() })), [marcasQ.data]);
   return (
     <PaginaWhatsAppAdmin
       // useQuery da el mismo objeto entre render y render: la página no pierde lo que se escribe.
       config={lectura.datos}
+      marcas={marcas}
+      urlMarcas="/admin/marcas"
       cargando={lectura.cargando}
       error={lectura.error}
       onReintentar={lectura.onReintentar}
       onGuardar={async (c) => {
         await Promise.all(Object.entries(whatsappAMensajes(c)).map(([k, v]) => sinError(setMessage(k, v))));
-        await invalidar(WHATSAPP, ['whatsapp-numbers-config'], ['whatsapp-config-checkout'], ['whatsapp_number_cuenta']);
+        await invalidar(WHATSAPP, ['whatsapp-numbers-config'], ['whatsapp-config-checkout'], ['whatsapp_number_cuenta'], ['admin-whatsapp-marcas-config']);
       }}
     />
   );
@@ -74,7 +88,7 @@ const MOVIMIENTOS = ['admin-inventory-logs'];
  * saveStorefrontConfig; después anota su propia copia en storeConfigLogs, así
  * la más nueva sigue siendo la puesta.
  */
-async function restaurarCopia(x) {
+async function restaurarCopia(x, correo) {
   if (!x?.config) throw new Error('Esta copia no tiene diseño guardado.');
   // Como el editor: una página bloqueada no se guarda.
   const bloqueadas = await getLockedPages();
@@ -88,6 +102,7 @@ async function restaurarCopia(x) {
     config: x.config,
     timestamp: new Date().toISOString(),
     user: 'Admin',
+    userEmail: correo || '',
     description: `Restaurada desde el historial (Página: ${x.pagina})`,
   }));
 }
@@ -99,6 +114,7 @@ async function restaurarCopia(x) {
  */
 export function HistorialDelPanel() {
   const invalidar = useInvalidar();
+  const { user } = useAuth();
   // ?ver=inventario abre los cambios de stock (el botón de Productos lleva ahí).
   const [searchParams] = useSearchParams();
   const [pestana, setPestana] = useState(() => (searchParams.get('ver') === 'inventario' ? 'inventario' : 'diseno'));
@@ -111,6 +127,15 @@ export function HistorialDelPanel() {
   const movimientosQ = useQuery({ queryKey: MOVIMIENTOS, queryFn: getInventoryLogs, enabled: pestana === 'inventario' });
 
   const cambios = useMemo(() => conVersionActual((copiasQ.data || []).map(cambioDisenoDesde)), [copiasQ.data]);
+  // Los nombres de las páginas de marca y de las landings (si no, sale /slug).
+  const marcasQ = useQuery({ queryKey: ['brands'], queryFn: leerMarcas, staleTime: 15 * 60 * 1000 });
+  const landingsQ = useQuery({ queryKey: ['admin-landing-pages'], queryFn: getLandingPages, staleTime: 5 * 60 * 1000 });
+  const nombresPaginas = useMemo(() => {
+    const n = {};
+    (landingsQ.data || []).forEach((p) => { const t = p.title || p.nombre; if (t) { n[p.id] = t; if (p.slug) n[p.slug] = t; } });
+    (marcasQ.data || []).forEach((b) => { if (b?.slug && b.name) n[b.slug] = b.name; });
+    return n;
+  }, [marcasQ.data, landingsQ.data]);
   const movimientos = useMemo(() => (movimientosQ.data || []).map(movimientoInventarioDesde), [movimientosQ.data]);
 
   return (
@@ -118,11 +143,12 @@ export function HistorialDelPanel() {
       pestana={pestana}
       onPestana={setPestana}
       cambios={cambios}
+      nombresPaginas={nombresPaginas}
       cargando={copiasQ.isLoading}
       error={errorDe(copiasQ, 'No se pudieron cargar las copias.')}
       onReintentar={() => copiasQ.refetch()}
       onRestaurar={async (x) => {
-        await restaurarCopia(x);
+        await restaurarCopia(x, user?.email);
         // La config de esa página (home incluida) y lo de storeConfig/homePage (cabecera, cuenta, buscador).
         await invalidar(COPIAS, ['storefront-config', x.pagina], ['store-config-custom']);
       }}

@@ -2,14 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Boxes, LayoutTemplate, MessageCircle, MoreHorizontal, PackageMinus, PackagePlus, Plus, Sparkles, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, useToast } from '../../Feedback';
-import { Campo, Deslizador, Interruptor } from '../../Formulario';
+import { Campo, Deslizador } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import TarjetaProducto from '../../TarjetaProducto';
 import { MenuContextual } from '../../piezas/MenuContextual';
 import { Sello } from '../../Marca';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, AccionesLote, CargarMas, InsigniaEstado } from '../../piezas/admin/Datos';
-import { HojaEdicion, GrupoCampos, CampoImagen, CampoColor, ElegirUno } from '../../piezas/admin/Formularios';
+import { GrupoCampos, CampoImagen, CampoColor, ElegirUno } from '../../piezas/admin/Formularios';
 import { normalizarBusqueda, slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO } from '../../adaptadoresAdmin';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, NumeroCelda, porNombre, porOrden } from './celdas';
@@ -30,13 +30,11 @@ const soloTelefono = (t) => String(t || '').replace(/[^\d\s\-()+]/g, '');
 const telefonoLegible = (t) => String(t || '').replace(/^\+51(\d{3})(\d{3})(\d{3})$/, '+51 $1 $2 $3');
 const VACIA = { nombre: '', slug: '', logo: '', orden: 0, whatsapp: '', mensajeVacio: '', topeMonedas: TOPE_MONEDAS_POR_DEFECTO, tipoTope: 'pct', monedasPorProducto: '', fondo: '#ffffff', textura: '', opacidad: 100 };
 
-/* Pedidos por WhatsApp: el número de toda la tienda y si cada marca recibe los suyos. */
-function TarjetaWhatsApp({ config, cargando, onGuardar }) {
-  const toast = useToast();
-  const [abierta, setAbierta] = useState(false);
-  const [datos, setDatos] = useState(config);
-  const abrir = () => { setDatos({ principal: config.principal || '', multimarca: Boolean(config.multimarca) }); setAbierta(true); };
-  const sucio = abierta && (datos.principal !== (config.principal || '') || datos.multimarca !== Boolean(config.multimarca));
+/*
+ * Pedidos por WhatsApp: a qué número llegan y si cada marca recibe los suyos.
+ * Se cambia en Ajustes › WhatsApp (urlWhatsapp), con los demás números.
+ */
+function TarjetaWhatsApp({ config, cargando, url }) {
   const numero = config.principal || config.fabrica;
   return (
     <div className={s.whatsapp}>
@@ -51,38 +49,7 @@ function TarjetaWhatsApp({ config, cargando, onGuardar }) {
           </span>
         )}
       </div>
-      <Boton tamano="sm" variante="secundario" onClick={abrir} disabled={cargando}>Cambiar</Boton>
-      <HojaEdicion
-        abierta={abierta}
-        titulo="Pedidos por WhatsApp"
-        subtitulo="A qué número llega la confirmación de cada pedido."
-        onCerrar={() => setAbierta(false)}
-        sucio={sucio}
-        onGuardar={async () => {
-          await onGuardar?.({ principal: datos.principal.trim(), multimarca: datos.multimarca });
-          toast({ tipo: 'exito', titulo: 'WhatsApp guardado' });
-          setAbierta(false);
-        }}
-      >
-        <GrupoCampos titulo="Número principal">
-          <Campo
-            etiqueta="Todo a Walá"
-            inputMode="tel"
-            placeholder={config.fabrica}
-            value={datos.principal}
-            ayuda={`Vacío: el de fábrica, ${config.fabrica}.`}
-            onChange={(e) => setDatos((d) => ({ ...d, principal: soloTelefono(e.target.value) }))}
-          />
-        </GrupoCampos>
-        <GrupoCampos titulo="Multimarca">
-          <Interruptor
-            etiqueta="Cada marca a su asesor"
-            descripcion="Apagado: todo se confirma al número principal. Encendido: los productos de cada marca van al WhatsApp de su asesor (el de la marca; sin él, el principal)."
-            activo={datos.multimarca}
-            onChange={(v) => setDatos((d) => ({ ...d, multimarca: v }))}
-          />
-        </GrupoCampos>
-      </HojaEdicion>
+      <Boton tamano="sm" variante="secundario" to={url} disabled={cargando}>Cambiar en WhatsApp</Boton>
     </div>
   );
 }
@@ -94,13 +61,13 @@ function TarjetaWhatsApp({ config, cargando, onGuardar }) {
  *  - onGuardarOrden(ids) → promesa: todas, en el orden nuevo. Con él, la lista
  *    se arrastra (como Categorías) y una nueva va al final sola
  *  - muestraDe(marcaId) → props de TarjetaProducto de uno de sus productos (la vista previa) o null
- *  - whatsapp: { principal, multimarca, fabrica } · cargandoWhatsapp · onGuardarWhatsapp(config)
+ *  - whatsapp: { principal, multimarca, fabrica } · cargandoWhatsapp · urlWhatsapp (ahí se cambia)
  *  - onProductos(marca) (sus productos) · onDisenar(marca) (su página con el editor)
  *  - onAplicarPlantilla() → promesa con el resultado en texto · onQuitarRepetidas() → igual
  */
 export function PaginaMarcas({
   marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen, muestraDe,
-  whatsapp = { principal: '', multimarca: false, fabrica: '' }, cargandoWhatsapp, onGuardarWhatsapp,
+  whatsapp = { principal: '', multimarca: false, fabrica: '' }, cargandoWhatsapp, urlWhatsapp,
   onProductos, onDisenar, onAplicarPlantilla, onQuitarRepetidas, onGuardarOrden,
 }) {
   const toast = useToast();
@@ -142,7 +109,7 @@ export function PaginaMarcas({
             </Boton>
           ) : undefined,
         }}
-        antes={onGuardarWhatsapp ? <TarjetaWhatsApp config={whatsapp} cargando={cargandoWhatsapp} onGuardar={onGuardarWhatsapp} /> : undefined}
+        antes={urlWhatsapp ? <TarjetaWhatsApp config={whatsapp} cargando={cargandoWhatsapp} url={urlWhatsapp} /> : undefined}
         registros={marcas}
         cargando={cargando}
         error={error}

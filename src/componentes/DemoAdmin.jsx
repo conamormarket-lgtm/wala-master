@@ -817,7 +817,7 @@ function PanelDePrueba() {
     { id: 'demo-papelera-1', nombre: 'Polo clásico (temporada pasada)', imagen: '', que: 'Tienda', seFue: Date.now() - 28 * 864e5, seBorra: Date.now() + 2 * 864e5, dias: 2, visibleAntes: true, usadoPor: [], usos: [], necesita: [] },
     { id: 'demo-papelera-2', nombre: 'Taza Kapi navideña', imagen: '', que: 'Tienda', seFue: Date.now() - 3 * 864e5, seBorra: Date.now() + 27 * 864e5, dias: 27, visibleAntes: false, usadoPor: ['Combo Navidad'], usos: [{ id: 'demo-combo-navidad', nombre: 'Combo Navidad', enPapelera: false }], necesita: [] },
   ]);
-  const [whatsapp, setWhatsapp] = useState(WHATSAPP);
+  const [whatsapp] = useState(WHATSAPP);
   const [borradores, setBorradores] = useState(BORRADORES);
   const [crudos, setCrudos] = useState(CRUDOS);
   const [prendasCrudas, setPrendasCrudas] = useState(PRENDAS_CRUDAS);
@@ -984,7 +984,7 @@ function PanelDePrueba() {
         subirImagen={subir}
         muestraDe={(id) => MUESTRAS[id] || null}
         whatsapp={whatsapp}
-        onGuardarWhatsapp={async (c) => { await espera(600); fallar(); setWhatsapp((w) => ({ ...w, ...c })); }}
+        urlWhatsapp="/admin/whatsapp"
         onProductos={(m) => navegar.current(`/admin/marcas/${m.id}/productos`)}
         onDisenar={(m) => toast({ tipo: 'info', titulo: 'En el admin abriría su página con el editor', texto: `/${m.slug}?editar`, duracion: 2500 })}
         onAplicarPlantilla={async () => { await espera(1200); fallar(); return '8 conservadas por estar editadas a mano, 0 creadas.'; }}
@@ -1461,6 +1461,7 @@ function PanelDePrueba() {
         error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
         onReintentar={comunes.onReintentar}
         config={whatsappDemo}
+        marcas={[{ nombre: 'Daida Hogar', numero: '+51953055306' }, { nombre: 'Yoryo', numero: '+51936558073' }]}
         onGuardar={async (c) => { await espera(600); fallar(); setWhatsappDemo(whatsappDesdeMensajes(whatsappAMensajes(c))); }}
       />
     );
@@ -1470,6 +1471,7 @@ function PanelDePrueba() {
         pestana={historialPestana}
         onPestana={setHistorialPestana}
         cambios={vacio ? [] : conVersionActual(copias)}
+        nombresPaginas={{ yoryo: 'Yoryo', lumi: 'Lumi', daidahogar: 'Daida Hogar' }}
         cargando={con('cargando')}
         error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
         onReintentar={comunes.onReintentar}

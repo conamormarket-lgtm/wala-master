@@ -31,11 +31,100 @@
   display: none;
 }
 
-/* WhatsApp */
+/* WhatsApp: el formulario y, al lado (abajo en el celular), cómo queda. */
 .whatsapp {
   display: grid;
-  gap: 1rem;
-  max-width: 44rem;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .whatsapp {
+    grid-template-columns: minmax(0, 44rem) minmax(16rem, 22rem);
+  }
+
+  .resumen {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.columna {
+  display: grid;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+/* Crear / Mi cuenta: el interruptor y, si va, su número. */
+.otro {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.resumen {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.resumenTitulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.resumenLista {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resumenLista li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.75rem;
+  align-items: baseline;
+}
+
+.resumenDonde {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+}
+
+.resumenNumero {
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.resumenSin {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.resumenNota {
+  grid-column: 2;
+  justify-self: end;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.resumenMarcas {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .enlace {
@@ -112,4 +201,81 @@
 
 .igual {
   color: var(--color-text-muted);
+}
+
+/* Las páginas guardadas: una tarjeta por página, con su copia puesta y las anteriores. */
+.paginasGuardadas {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+  .paginasGuardadas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.paginaGuardada {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.paginaCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.paginaNombre {
+  display: grid;
+  min-width: 0;
+}
+
+.paginaNombre h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.copias {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.copia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+  background: var(--color-surface-2);
+}
+
+.copiaTexto {
+  display: grid;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+
+.verAnteriores {
+  justify-self: start;
+}
+
+.girado {
+  transform: rotate(180deg);
 }

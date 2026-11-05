@@ -239,7 +239,8 @@ export function PaginaListaAdmin({
             orden={orden}
             onOrden={setOrden}
             onFila={formulario ? abrir : undefined}
-            acciones={acciones}
+            // Sin editar, más acciones ni eliminar, la fila no lleva el «⋯» (salía un menú vacío).
+            acciones={formulario || masAcciones || onEliminar ? acciones : undefined}
           />
           <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={unidad} />
         </>

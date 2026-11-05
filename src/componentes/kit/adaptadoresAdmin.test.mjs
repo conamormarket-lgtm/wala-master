@@ -862,7 +862,14 @@ test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () 
 
 test('whatsapp: los números, el general, los errores y el mensaje del pedido', () => {
   const c = m2.whatsappDesdeMensajes({ whatsapp_number: '+51 900 000 001', whatsapp_number_crear: ' 987 654 321 ', whatsapp_mostrar_en_acceso: 'si' });
-  assert.deepEqual(c, { tienda: '+51 900 000 001', crear: '987 654 321', cuenta: '', mensajePedido: m2.MENSAJE_PEDIDO_POR_DEFECTO, enAcceso: true });
+  assert.deepEqual(c, { pedidos: '', multimarca: false, tienda: '+51 900 000 001', crear: '987 654 321', cuenta: '', mensajePedido: m2.MENSAJE_PEDIDO_POR_DEFECTO, enAcceso: true });
+  // El mismo número que la tienda, escrito de otra forma = usa el de la tienda.
+  const igual = m2.whatsappDesdeMensajes({ whatsapp_number_tienda: '912881722', whatsapp_number_crear: '+51 912 881 722', whatsapp_number_cuenta: '51912881722', whatsapp_number_principal: ' 999 888 777 ', whatsapp_multimarca: 'true' });
+  assert.deepEqual([igual.crear, igual.cuenta, igual.pedidos, igual.multimarca], ['', '', '999 888 777', true]);
+  assert.deepEqual([m2.whatsappAMensajes(igual).whatsapp_number_principal, m2.whatsappAMensajes(igual).whatsapp_multimarca, m2.whatsappAMensajes(igual).whatsapp_number_crear], ['999 888 777', 'true', '']);
+  const r = m2.resumenWhatsApp({ ...igual, pedidos: '', enAcceso: false }, [{ nombre: 'Yoryo', numero: '+51936558073' }, { nombre: 'Lumi', numero: '' }]);
+  assert.deepEqual(r.filas.map((f) => [f.id, f.numero]), [['pedidos', m2.WHATSAPP_PEDIDOS_FABRICA], ['tienda', '912881722'], ['crear', '912881722'], ['cuenta', '912881722'], ['acceso', null], ['nunca', null]]);
+  assert.deepEqual([r.filas[0].nota, r.marcas.length], ['el de fábrica · los de Yoryo, a su asesor', 1]);
   const g = m2.whatsappAMensajes({ ...c, enAcceso: false });
   assert.deepEqual([g.whatsapp_number, g.whatsapp_number_tienda, g.whatsapp_mostrar_en_acceso, 'whatsapp_text_crear' in g], ['+51 900 000 001', '+51 900 000 001', 'no', false]);
   // Mi cuenta vacío se guarda con el de la tienda (respaldo de "¿Problemas para pagar?").
@@ -885,6 +892,11 @@ test('historial: la versión actual de cada página, el stock y el CSV', () => {
   assert.deepEqual(m2.conVersionActual(cambios).map((x) => x.actual), [true, true, false]);
   assert.equal(m2.nombreDePaginaGuardada('home'), 'Página principal');
   assert.equal(m2.nombreDePaginaGuardada('promo-navidad'), '/promo-navidad');
+  assert.equal(m2.nombreDePaginaGuardada('yoryo', { yoryo: 'Yoryo' }), 'Yoryo');
+  assert.deepEqual([m2.rutaDePaginaGuardada('home'), m2.rutaDePaginaGuardada('footer'), m2.rutaDePaginaGuardada('yoryo')], ['/', null, '/yoryo']);
+  const grupos = m2.paginasDelHistorial(m2.conVersionActual(cambios));
+  assert.deepEqual(grupos.map((g) => [g.pagina, g.puesta.id, g.anteriores.map((x) => x.id)]), [['tienda', 'a', ['c']], ['home', 'b', []]]);
+  assert.deepEqual([cambios[0].quien, m2.cambioDisenoDesde({ description: 'Restaurada desde el historial', userEmail: 'a@x.pe' }).restaurada], ['', true]);
   const mov = m2.movimientoInventarioDesde({ id: 'i', timestamp: Date.parse('2026-11-02T20:05:00Z'), productName: 'Polo "Kapi", talla M', oldStock: 5, newStock: 2 });
   assert.deepEqual([mov.cambio, mov.quien, m2.textoCambioStock(mov.cambio), m2.textoCambioStock(3)], [-3, 'Desconocido', '−3', '+3']);
   assert.equal(m2.csvInventario([mov]).split('\n')[1], '02/11/2026,15:05,Desconocido,"Polo ""Kapi"", talla M",5,2,-3');

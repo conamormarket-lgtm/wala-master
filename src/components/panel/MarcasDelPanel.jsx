@@ -2,15 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings, dedupeBrandLandings } from '../../services/brands';
-import { getMessage, setMessage } from '../../services/messages';
+import { getMessage } from '../../services/messages';
 import { getProducts, getProductsByBrand, setProductBrand } from '../../services/products';
 import { tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
 import { PaginaMarcas, PaginaProductosMarca } from '../../componentes/kit/paginas/admin/Marcas';
-import { marcaDesdeFirestore, marcaAFirestore, marcaAdminDesdeFirestore, productoAdminDesde } from '../../componentes/kit/adaptadoresAdmin';
+import { marcaDesdeFirestore, marcaAFirestore, marcaAdminDesdeFirestore, productoAdminDesde, WHATSAPP_PEDIDOS_FABRICA as WHATSAPP_FABRICA } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
-// El número de fábrica de "Todo a WALA" (el mismo de AdminMarcas).
-const WHATSAPP_FABRICA = '+51924426791';
 
 // CampoImagen pide la carpeta: el logo y la textura van donde iban.
 const CARPETAS = { logos: subirA('brands/logos', 'logo'), fondos: subirA('brands/backgrounds', 'fondo') };
@@ -90,13 +88,7 @@ export default function MarcasDelPanel() {
       muestraDe={muestraDe}
       whatsapp={whatsapp.data || { principal: '', multimarca: false, fabrica: WHATSAPP_FABRICA }}
       cargandoWhatsapp={whatsapp.isLoading}
-      onGuardarWhatsapp={async (c) => {
-        await Promise.all([
-          sinError(setMessage('whatsapp_number_principal', String(c.principal || '').trim())),
-          sinError(setMessage('whatsapp_multimarca', c.multimarca ? 'true' : 'false')),
-        ]);
-        await invalidar(['admin-whatsapp-marcas-config']);
-      }}
+      urlWhatsapp="/admin/whatsapp"
       onProductos={(m) => navigate(`/admin/marcas/${m.id}/productos`)}
       onDisenar={(m) => navigate(`/${m.slug}?editar`)}
       onAplicarPlantilla={async () => {
