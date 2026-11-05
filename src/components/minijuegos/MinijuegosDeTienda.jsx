@@ -60,7 +60,7 @@ export default function MinijuegosDeTienda() {
   }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Las reglas de la ruleta (cómo se gana el giro), las mismas que su página.
-  const { data: configRuleta } = useQuery({ queryKey: ['ruleta-config'], queryFn: getRuletaConfig, staleTime: 10 * 60 * 1000 });
+  const { data: configRuleta, isLoading: cargandoRuleta } = useQuery({ queryKey: ['ruleta-config'], queryFn: getRuletaConfig, staleTime: 10 * 60 * 1000 });
   const elegibilidad = getRuletaEligibility(userProfile, configRuleta?.reglas);
   const forzarRuleta = diseno('ruleta');
   const ruleta = forzarRuleta ? {
@@ -77,6 +77,7 @@ export default function MinijuegosDeTienda() {
     empezada: elegibilidad.haEmpezado,
     pendienteAnterior: elegibilidad.esPendienteAnterior,
     porDias: Boolean(elegibilidad.porDias),
+    siempre: configRuleta?.reglas?.modoDesbloqueo === 'siempre',
     dias: disenoNum('dias', 0, 7) ?? elegibilidad.days,
   };
 
@@ -91,7 +92,8 @@ export default function MinijuegosDeTienda() {
   const ahora = Date.now();
   const { juegos, listos } = juegosDelArcade({
     sesion,
-    cargando,
+    // Hasta saber la regla de la ruleta, sus textos podrían ser de otra.
+    cargando: cargando || cargandoRuleta,
     palabraHecha,
     kapiReclamado,
     kapiDoble,

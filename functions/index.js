@@ -3811,14 +3811,23 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
 
       // ── Escrituras ──
       const texto = textoPremio(elegido);
+      // Con los 7 días, un giro de la semana pasada (de la regla de lunes a
+      // domingo) queda gastado: si el admin vuelve a esa regla, no se gira de más.
+      const gastarPendiente = config.reglas.modoDesbloqueo === "dias7";
       const porDias = String(semanaPremio).startsWith("dias7");
+      const cuentaAntes = (u.weeklyClaimsData && u.weeklyClaimsData.ruleta) || null;
       const updates = {
         // Con los 7 días la marca es la semana en que se giró (por si el admin
-        // vuelve a la regla de lunes a domingo, no se gira dos veces esa semana).
+        // pasa a «una por semana» o «lunes a domingo», no se gira dos veces esa semana).
         lastRuletaSpinWeek: porDias ? limaWeekStartStr() : semanaPremio,
-        // Todo giro empieza la cuenta de los próximos 7 días desde cero.
+        ...(gastarPendiente ? { ruletaDisponibleDe: null } : {}),
+        // La cuenta de los 7 días: con esa regla, el giro la vuelve a 0. Con
+        // las otras, se gasta el giro guardado (si tenía) pero los días que
+        // llevaba se conservan, por si el admin vuelve a los 7 días.
         weeklyClaimsData: Object.assign({ weekStart: limaWeekStartStr(), daysClaimed: [] }, u.weeklyClaimsData || {}, {
-          ruleta: { dias: 0, listo: false, listoDesde: null },
+          ruleta: config.reglas.modoDesbloqueo === "dias7"
+            ? { dias: 0, listo: false, listoDesde: null }
+            : { dias: Math.max(0, Math.floor(Number(cuentaAntes && cuentaAntes.dias) || 0)), listo: false, listoDesde: null },
         }),
         // Conteo por premio: sostiene el tope `maxPorUsuario` sin tener que
         // consultar ruletaWins dentro de la transacción.

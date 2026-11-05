@@ -44,7 +44,7 @@ export function juegosDelArcade({
   const kapiReclamado = sesion && kapi;
   const bolitasHechas = sesion && bolitas;
   const ruleta = sesion ? ruletaPerfil : {};
-  const { desbloqueada = false, girada = false, perdida = false, empezada = false, pendienteAnterior = false, porDias = false } = ruleta;
+  const { desbloqueada = false, girada = false, perdida = false, empezada = false, pendienteAnterior = false, porDias = false, siempre = false } = ruleta;
   const dias = Math.max(0, Math.min(7, Number(ruleta.dias) || 0));
   const esperaDiaria = hasta.manana ? { hasta: hasta.manana, texto: 'Disponible de nuevo en' } : undefined;
   // Botón según la sesión: sin sesión todos llevan a entrar.
@@ -87,14 +87,17 @@ export function juegosDelArcade({
       id: 'ruleta',
       ...banner(banners.ruleta),
       titulo: 'La Ruleta de Kapi',
-      descripcion: porDias ? 'Alimenta a Kapi 7 días, cuando quieras, y gira la ruleta para ganar premios.' : 'Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles.',
+      descripcion: siempre ? 'Un giro gratis cada semana para ganar monedas y cupones.'
+        : porDias ? 'Alimenta a Kapi 7 días, cuando quieras, y gira la ruleta para ganar premios.' : 'Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles.',
       estado: desbloqueada ? { texto: 'Giro disponible', tono: 'violeta', punto: true }
         : girada ? { texto: 'Girada', tono: 'exito' }
           : perdida ? { texto: 'Semana perdida', tono: 'peligro' }
             : { texto: 'Bloqueada', tono: 'neutro' },
       recompensa: { texto: porDias ? 'Premio cada 7 días' : 'Premio semanal', icono: 'regalo' },
-      racha: { dias, de: 7 },
-      nota: porDias ? (!desbloqueada ? { tipo: 'bloqueo', texto: `Llevas ${dias} de 7 días. No tienen que ser seguidos.` } : undefined)
+      // Una por semana sin condición: no hay días que contar.
+      racha: siempre ? undefined : { dias, de: 7 },
+      nota: siempre ? (girada ? { tipo: 'hecho', texto: 'Ya giraste esta semana. Vuelve el próximo lunes.' } : undefined)
+        : porDias ? (!desbloqueada ? { tipo: 'bloqueo', texto: `Llevas ${dias} de 7 días. No tienen que ser seguidos.` } : undefined)
         : pendienteAnterior ? { tipo: 'buena', texto: '¡Tienes un giro pendiente de la semana pasada!' }
         : !desbloqueada ? {
           tipo: girada ? 'hecho' : 'bloqueo',
@@ -104,7 +107,7 @@ export function juegosDelArcade({
         } : undefined,
       // Bloqueada por la racha, lo que falta no es tiempo sino días.
       espera: girada ? (hasta.lunes ? { hasta: hasta.lunes, texto: 'Vuelve el lunes, en' } : undefined)
-        : !desbloqueada && !perdida && dias < 7
+        : !desbloqueada && !perdida && !siempre && dias < 7
           ? (porDias ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} con Kapi`
             : empezada ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} de racha` : 'Alimenta a Kapi cada día para desbloquearla')
           : undefined,

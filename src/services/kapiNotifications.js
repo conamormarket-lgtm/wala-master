@@ -1,5 +1,6 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { getRuletaConfig } from './firebase/ruleta';
 
 export const scheduleKapiNotifications = async (userProfile) => {
   if (!userProfile) return;
@@ -122,9 +123,16 @@ export const scheduleKapiNotifications = async (userProfile) => {
     let extraTitle = "¡Kapi tiene hambre! 🍖";
     let extraBody = "Alimenta a Kapi hoy para mantenerlo feliz y sumar monedas.";
 
+    // Cada regla de la ruleta, su aviso (la que puso el admin).
+    const modoRuleta = (await getRuletaConfig().catch(() => null))?.reglas?.modoDesbloqueo || 'dias7';
     // 7 días con Kapi, cuando sea: los avisos siguen la cuenta de la persona.
     const cuentaRuleta = userProfile?.weeklyClaimsData?.ruleta;
-    if (cuentaRuleta) {
+    if (modoRuleta === 'siempre') {
+      if (currentDayOfWeek === 1) {
+        extraTitle = "Nueva semana 🎰";
+        extraBody = "Ya puedes girar La Ruleta de Kapi esta semana.";
+      }
+    } else if (modoRuleta === 'dias7' && cuentaRuleta) {
       const faltan = 7 - (Number(cuentaRuleta.dias) || 0);
       if (cuentaRuleta.listo) {
         extraTitle = "Tu giro te espera 🎰";
