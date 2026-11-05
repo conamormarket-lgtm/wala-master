@@ -758,6 +758,10 @@ test('juegos: la palabra del día y las bolitas', () => {
   // De 6 a 8 no se busca en el diccionario (el juego acepta cualquier intento de ese largo).
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'Navidad' }, [], null, () => false).palabra, undefined);
   assert.equal(m2.palabraLimpia('niño'), 'NIÑO');
+  assert.equal(m2.bloqueoPalabra({ estado: 'paso' }, 0), 'Ese día ya pasó: queda como se jugó.');
+  assert.equal(m2.bloqueoPalabra({ estado: 'hoy' }, 0), null);
+  assert.match(m2.bloqueoPalabra({ estado: 'hoy' }, 3), /jugaron 3 personas/);
+  assert.equal(m2.bloqueoPalabra({ estado: 'programada' }, 9), null);
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'ZZZZZ' }, [], null, (w) => w === 'FELIZ').palabra, 'No está en el diccionario del juego: nadie podría escribirla. Prueba con otra.');
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'feliz' }, [], null, (w) => w === 'FELIZ').palabra, undefined);
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'feliz dia' }).palabra, 'Solo letras, sin espacios.');

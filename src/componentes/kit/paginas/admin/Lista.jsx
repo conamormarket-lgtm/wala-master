@@ -39,6 +39,7 @@ const PASO = 50;
  *      validar(datos, { id, registros }) → { campo: 'mensaje' } (vacío: está bien)
  *      limpiar(datos) → lo que llega a onGuardar (recortar textos, pasar a número)
  *      campos({ datos, cambiar(campo, valor), errores, idDe(campo), id, registro }) → nodos
+ *      bloqueado(r) → motivo | null (no se abre para editar: avisa por qué)
  *    }
  *  - onGuardar(datos, id?) → promesa · onEliminar(id) → promesa (sin él, no se elimina)
  *  - eliminar: { texto(r), bloqueado(r) → motivo | null } (bloqueado: no pregunta, avisa)
@@ -109,6 +110,11 @@ export function PaginaListaAdmin({
 
   const abrir = (r, extra) => {
     if (!formulario) return;
+    const motivo = r && formulario.bloqueado?.(r);
+    if (motivo) {
+      toast({ tipo: 'aviso', titulo: `No se puede cambiar «${nombreDe(r)}»`, texto: motivo, duracion: 6000 });
+      return;
+    }
     const inicial = r ? formulario.desde(r) : { ...formulario.vacio({ registros, filtros: valores }), ...extra };
     setDatos(inicial);
     setErrores({});

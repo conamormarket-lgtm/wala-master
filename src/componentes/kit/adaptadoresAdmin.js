@@ -3043,6 +3043,20 @@ export function erroresDePalabra(d = {}, lista = [], id = null, existe = null) {
   };
 }
 
+/**
+ * Por qué no se puede cambiar ni quitar la palabra de ese día (o null): uno
+ * que ya pasó queda como se jugó, y la de hoy, si ya alguien la jugó (cambiarla
+ * le dejaría su partida con otra palabra).
+ *  - x: { estado } (palabraDiaDesde) · jugaronHoy: partidas guardadas hoy
+ */
+export function bloqueoPalabra(x = {}, jugaronHoy = 0) {
+  if (x.estado === 'paso') return 'Ese día ya pasó: queda como se jugó.';
+  if (x.estado === 'hoy' && jugaronHoy > 0) {
+    return `Hoy ya ${jugaronHoy === 1 ? 'jugó 1 persona' : `jugaron ${jugaronHoy} personas`} con esta palabra: si la cambias, su partida queda con otra. Programa la tuya desde mañana.`;
+  }
+  return null;
+}
+
 /** 'YYYY-MM-DD' + n días (en UTC, sin horas: no se corre con el horario). */
 const sumarDias = (dia, n) => {
   const [y, m, d] = String(dia).split('-').map(Number);

@@ -12,7 +12,7 @@ import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras } from 
 import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import { PaginaListaAdmin } from './Lista';
 import {
-  palabraLimpia, erroresDePalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDePatrocinio,
+  palabraLimpia, erroresDePalabra, bloqueoPalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDePatrocinio,
   nuevoPuesto, erroresDePremios, metricasBolitas,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -54,6 +54,9 @@ const Casillas = ({ palabra = '' }) => (
  */
 export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintentar, onGuardar, onEliminar, hoy, partidas, cargandoPartidas = false, existe }) {
   const aMano = palabras.filter((x) => !x.automatica);
+  // Hoy, si ya alguien jugó, la palabra queda fija (y no se programa otra para hoy).
+  const jugaronHoy = Number(partidas?.hoy) || 0;
+  const bloqueo = (x) => bloqueoPalabra(x, jugaronHoy);
   const idReal = (id) => (String(id || '').startsWith('auto-') ? undefined : id);
   return (
     <PaginaListaAdmin
@@ -89,7 +92,7 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
       textos={{ creado: 'Palabra programada', guardado: 'Palabra guardada', eliminado: 'Palabra quitada' }}
       eliminar={{
         texto: (x) => `Se quita «${x.palabra}» del ${fechaLarga(x.fecha)}. Ese día el juego elige una sola.`,
-        bloqueado: (x) => (x.automatica ? 'Es la que elige el juego: no hay nada que quitar. Para cambiarla, edítala y pon la tuya.' : null),
+        bloqueado: (x) => bloqueo(x) || (x.automatica ? 'Es la que elige el juego: no hay nada que quitar. Para cambiarla, edítala y pon la tuya.' : null),
       }}
       onGuardar={(d, id) => onGuardar?.({ fecha: d.fecha, palabra: palabraLimpia(d.palabra) }, idReal(id))}
       onEliminar={onEliminar}
@@ -99,7 +102,12 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
         textoGuardar: { nuevo: 'Programar' },
         vacio: () => ({ fecha: hoy || '', palabra: '' }),
         desde: (x) => ({ fecha: x.fecha, palabra: x.palabra }),
-        validar: (d, { id }) => erroresDePalabra(d, aMano, idReal(id), existe),
+        bloqueado: bloqueo,
+        validar: (d, { id }) => {
+          const e = erroresDePalabra(d, aMano, idReal(id), existe);
+          if (!e.fecha && d.fecha === hoy && jugaronHoy > 0) e.fecha = bloqueoPalabra({ estado: 'hoy' }, jugaronHoy);
+          return e;
+        },
         campos: ({ datos: d, cambiar, errores, idDe }) => (
           <GrupoCampos titulo="La palabra">
             <CampoFecha id={idDe('fecha')} etiqueta="Día" valor={d.fecha} min={hoy} error={errores.fecha} onCambiar={(v) => cambiar('fecha', v)} />
