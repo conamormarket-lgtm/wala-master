@@ -58,8 +58,9 @@ const leerBorradores = () => { try { return JSON.parse(localStorage.getItem('wal
 /*
  * /admin/productos (D2a): PaginaProductos con los servicios de AdminProductos.
  * Las pestañas Personalizables y Packs son las de Crear (CrearDelPanel); ?ver=
- * elige la pestaña. Mostrar u ocultar escribe solo `visible`
- * (updateProductField): nunca el producto entero desde la fila de la tabla.
+ * elige la pestaña. Mostrar u ocultar escribe solo `visible` (o `enTienda` al
+ * ocultar un personalizable) con updateProductField: nunca el producto entero
+ * desde la fila de la tabla.
  * Descartar un borrador borra sus fotos de Storage solo si ese producto nunca
  * se publicó (la regla P0 de AdminProductos).
  * El stock (lo que era /admin/inventario) se cambia en la fila: escribe solo
@@ -93,6 +94,11 @@ export default function ProductosDelPanel() {
   // La papelera: los `deleted` (los archivados de antes también), con cuándo se borran y quién los usa.
   const papelera = useMemo(() => papeleraDesde(crudos, Date.now(), premios.datos || []), [crudos, premios.datos]);
   const usos = useMemo(() => usosDeProductos(crudos, premios.datos || []), [crudos, premios.datos]);
+  // El ojo es "se ve en la tienda". En un personalizable, `visible` es "publicado
+  // en Crear": ocultarlo de la tienda apaga `enTienda` y lo deja en Crear (antes
+  // lo despublicaba de Crear y se caían sus packs). Mostrarlo sí lo publica: un
+  // personalizable en esta lista ya tiene enTienda, solo le falta verse.
+  const cambioDeVisible = (id, visible) => (porId.get(id)?.esPrendaBase === true && !visible ? { enTienda: false } : { visible });
   // Restaurar o borrar uno de Crear también cambia sus pestañas.
   const refrescarTodo = () => invalidar(['admin-products'], ['products'], ['featured-products'], ['collection-products'], ['admin-prendas-crear'], ['admin-combos-crear'], ['prendas-base']);
 
@@ -126,10 +132,10 @@ export default function ProductosDelPanel() {
         navigate(c?.esComboCrear ? '/admin/productos?ver=packs' : c?.esPrendaBase ? `/admin/prendas-crear/${p.id}` : `/admin/productos/${p.id}`);
       }}
       onIr={(url) => navigate(url)}
-      onVisible={async (id, visible) => { await updateProductField(id, { visible }); await refrescar(); }}
+      onVisible={async (id, visible) => { await updateProductField(id, cambioDeVisible(id, visible)); await refrescarTodo(); }}
       onVarios={async (ids, visible) => {
-        const r = await unoPorUno(ids, (id) => updateProductField(id, { visible }));
-        await refrescar();
+        const r = await unoPorUno(ids, (id) => updateProductField(id, cambioDeVisible(id, visible)));
+        await refrescarTodo();
         return r;
       }}
       onArchivar={async (ids) => {

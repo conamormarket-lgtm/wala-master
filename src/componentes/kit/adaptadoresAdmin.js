@@ -698,8 +698,9 @@ export function fichaDesdeProducto(p, nuevo = {}) {
     precio: p.price ?? '',
     oferta: Number(p.salePrice) > 0 ? p.salePrice : '',
     sku: p.sku || '',
-    // Un personalizable puede no tener stock (sin límite): vacío.
-    stock: p.esPrendaBase === true && (p.inStock === null || p.inStock === undefined || p.inStock === '') ? '' : (Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0),
+    // Sin stock cargado = sin límite (como en la lista y en el servidor): vacío.
+    // Antes un producto normal se abría con 0 y al guardar quedaba agotado.
+    stock: p.inStock === null || p.inStock === undefined || p.inStock === '' ? '' : (Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0),
     descripcion: p.description || '',
     esCombo: p.isComboProduct === true,
     cumplimiento: p.fulfillmentType || '',
@@ -776,7 +777,8 @@ export function fichaAProducto(f, original = {}, { prendaBaseParaGuardar } = {})
     description: f.descripcion || '',
     price: Number(f.precio) || 0,
     salePrice: Number(f.oferta) || 0,
-    inStock: prenda && f.stock === '' ? null : Number(f.stock) || 0,
+    // Vacío = sin límite: null borra el campo (updateDocument / createProduct).
+    inStock: f.stock === '' || f.stock === null || f.stock === undefined ? null : Number(f.stock) || 0,
     sku: String(f.sku || '').trim(),
     brandId: f.marcaId || '',
     fulfillmentType: f.cumplimiento || undefined,
@@ -3428,7 +3430,10 @@ export const PAGINAS_FIJAS = [
 export function paginasBloqueables(landings = [], bloqueadas = []) {
   return [
     ...PAGINAS_FIJAS.map((p) => ({ ...p, tipo: 'fija' })),
-    ...landings.map((l) => ({ id: l.id, nombre: l.title || l.nombre || l.slug || l.id, ruta: `/${l.slug || l.id}`, tipo: 'landing' })),
+    // La dirección (slug), no el id del documento: el editor y el historial
+    // comparan contra la página abierta, que es su dirección. Con el id, una
+    // landing creada desde el admin (lp_…) o renombrada nunca quedaba bloqueada.
+    ...landings.map((l) => ({ id: l.slug || l.id, nombre: l.title || l.nombre || l.slug || l.id, ruta: `/${l.slug || l.id}`, tipo: 'landing' })),
   ].map((p) => ({ ...p, bloqueada: bloqueadas.includes(p.id) }));
 }
 

@@ -445,6 +445,27 @@ export async function getWalaOrdersForAdmin({
     return true;
   });
 
+  // Al APROBAR un pedido web, el ERP le da un numeroPedido NUEVO y guarda el de
+  // la web en origenPedidoWebId / portalPseudoOrderId (lo contrario de lo que
+  // supone el comentario de arriba). La copia de wala_pedidos, y el pedidos_web
+  // si sigue ahí, conservan el número web: con la clave de arriba no se
+  // reconocían y el pedido salía DOS veces (inflando "Por entregar" y "Pago
+  // pendiente"). Misma regla que Mis pedidos (functions/misPedidosLogic.js).
+  const aprobadoPorNumeroWeb = new Map();
+  for (const v of vivos) {
+    const propia = String(claveDeNegocio(v) || '');
+    [v.origenPedidoWebId, v.portalPseudoOrderId].forEach((n) => {
+      if (n && String(n) !== propia && !aprobadoPorNumeroWeb.has(String(n))) aprobadoPorNumeroWeb.set(String(n), v);
+    });
+  }
+  const aprobadoDe = (p) =>
+    aprobadoPorNumeroWeb.get(String(claveDeNegocio(p) || '')) ||
+    (p?.pedidoWebId ? aprobadoPorNumeroWeb.get(String(p.pedidoWebId)) : undefined);
+  vivos = vivos.filter((p) => {
+    const aprobado = aprobadoDe(p);
+    return !aprobado || aprobado === p;
+  });
+
   // MERGE con wala_pedidos (FUENTE DE VERDAD de PRESENCIA y de estadoWala):
   //   - Si existe un doc VIVO con la misma clave, el vivo conserva su etapa de
   //     producción del ERP y le ADJUNTAMOS el estadoWala/pagado del espejo
@@ -464,6 +485,13 @@ export async function getWalaOrdersForAdmin({
   const clavesEspejoVistas = new Set();
   for (const copia of espejo) {
     const clave = claveDeNegocio(copia);
+    // La copia de un pedido web ya aprobado: su estado va al aprobado, sin repetirlo.
+    const aprobado = aprobadoDe(copia);
+    if (aprobado) {
+      aprobado._walaEstado = copia.estadoWala ?? aprobado._walaEstado ?? null;
+      aprobado._walaPagado = copia.pagado === true || aprobado._walaPagado === true;
+      continue;
+    }
     // Si existe un doc vivo con esta clave, el vivo gana en presencia: le pasamos
     // el estado propio de WALA y NO duplicamos la copia.
     if (clave && clavesVivas.has(clave)) {

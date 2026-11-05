@@ -17,7 +17,12 @@ import { sinError, useInvalidar } from './comun';
  * DashRecepcion, AdminGestionPagos y AdminLibroReclamaciones.
  */
 
-/** /admin/recepcion-pedidos: los pedidos del ERP (solo lectura). "Ver detalle" abre la ficha del cliente, como antes. */
+/**
+ * /admin/recepcion-pedidos: los pedidos del ERP (solo lectura). Sin "Ver
+ * detalle": llevaba a /cuenta/pedidos/:id, que solo encuentra los pedidos de
+ * la cuenta conectada (el admin veía "no encontrado"); la tarjeta ya muestra
+ * entrega, cliente, productos y montos.
+ */
 export function RecepcionDelPanel() {
   const { data, isLoading, isFetching, isError, refetch } = useAdminWalaOrders();
   const sinErp = isError || data?.available === false;
@@ -28,7 +33,6 @@ export function RecepcionDelPanel() {
       actualizando={isFetching && !isLoading}
       error={sinErp ? (data?.error || 'No se pudieron cargar los pedidos del ERP en este momento.') : undefined}
       onActualizar={() => refetch()}
-      detalleDe={(p) => `/cuenta/pedidos/${p.id}`}
     />
   );
 }

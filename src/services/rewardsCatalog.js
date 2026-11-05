@@ -18,13 +18,15 @@ import { getCollection, getDocument, createDocument, updateDocument, deleteDocum
 // Forma del doc: { title, description, cost (number, en puntos),
 //   tipo, descuentoPct, descuentoMonto, topeDescuento, productId, productName,
 //   vigenciaDias (días de validez del cupón generado), imageUrl,
-//   value (nota interna, texto libre), active (bool), order (number) }.
+//   packId (stickers_whatsapp), brandId + marcaNombre (cupón de una marca),
+//   value (nota interna, texto libre: el cliente no la ve), active (bool), order (number) }.
 const COLLECTION = 'rewardsCatalog';
 
 const CAMPOS = [
   'title', 'description', 'cost', 'value', 'active', 'order',
   'tipo', 'descuentoPct', 'descuentoMonto', 'topeDescuento',
   'productId', 'productName', 'vigenciaDias', 'imageUrl', 'packId',
+  'brandId', 'marcaNombre',
 ];
 
 export const getRewards = async () => {
@@ -49,6 +51,11 @@ export const createReward = async (data) => {
     productName: data.productName || '',
     vigenciaDias: Number(data.vigenciaDias) || 30,
     imageUrl: data.imageUrl || '',
+    // Sin estos, una recompensa nueva de stickers no tenía pack (el canje
+    // fallaba) y un cupón de una marca valía para toda la tienda.
+    packId: data.packId || '',
+    brandId: data.brandId || '',
+    marcaNombre: data.marcaNombre || '',
   });
 };
 

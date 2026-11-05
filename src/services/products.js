@@ -782,6 +782,10 @@ export const clearProductCaches = () => {
  */
 export const createProduct = async (data, explicitId = null) => {
   const payload = normalizeProductPayload(data);
+  // null = "sin valor" (p. ej. inStock vacío = sin límite). updateDocument lo
+  // convierte en deleteField, pero setDocument lo guardaría tal cual y el
+  // servidor lee Number(null) = 0: el producto nuevo saldría sin stock.
+  Object.keys(payload).forEach((k) => { if (payload[k] === null) delete payload[k]; });
   let result;
 
   if (explicitId) {

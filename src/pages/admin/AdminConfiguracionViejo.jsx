@@ -435,10 +435,10 @@ const AdminConfiguracion = () => {
                     <td>{page.slug || page.id}</td>
                     <td>
                       <button 
-                        onClick={() => togglePageLock(page.id)}
-                        className={`${styles.lockBtn} ${lockedPages.includes(page.id) ? styles.locked : styles.unlocked}`}
+                        onClick={() => togglePageLock(page.slug || page.id)}
+                        className={`${styles.lockBtn} ${lockedPages.includes(page.slug || page.id) ? styles.locked : styles.unlocked}`}
                       >
-                        {lockedPages.includes(page.id) ? <><Lock size={16}/> Bloqueada</> : <><Unlock size={16}/> Desbloqueada</>}
+                        {lockedPages.includes(page.slug || page.id) ? <><Lock size={16}/> Bloqueada</> : <><Unlock size={16}/> Desbloqueada</>}
                       </button>
                     </td>
                   </tr>

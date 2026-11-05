@@ -236,7 +236,7 @@ export function PaginaFichaProducto({
                 onChange={(e) => cambiar('oferta', e.target.value)}
               />
               <Campo id={idCampo('sku')} etiqueta="SKU" value={datos.sku} placeholder="Opcional" onChange={(e) => cambiar('sku', e.target.value)} />
-              <Campo id={idCampo('stock')} etiqueta="Stock" type="number" inputMode="numeric" min={0} value={datos.stock} error={errores.stock} placeholder={esPrenda ? 'Sin límite' : undefined} ayuda={esPrenda ? 'Vacío: sin límite (se hace al pedirlo).' : 'También se cambia desde la lista de Productos.'} onChange={(e) => cambiar('stock', e.target.value)} />
+              <Campo id={idCampo('stock')} etiqueta="Stock" type="number" inputMode="numeric" min={0} value={datos.stock} error={errores.stock} placeholder="Sin límite" ayuda={esPrenda ? 'Vacío: sin límite (se hace al pedirlo).' : 'Vacío: sin límite. También se cambia desde la lista de Productos.'} onChange={(e) => cambiar('stock', e.target.value)} />
             </div>
             {descripcion ? (
               <div className={s.descripcion}>

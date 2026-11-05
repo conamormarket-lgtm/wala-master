@@ -84,19 +84,29 @@ const COPIAS = ['admin-store-config-logs'];
 const MOVIMIENTOS = ['admin-inventory-logs'];
 
 /**
- * Restaura una copia como la guarda el editor: storeConfig/homePage (el menú,
- * la cuenta, el buscador; también lo lee la app) y la página con
- * saveStorefrontConfig; después anota su propia copia en storeConfigLogs, así
- * la más nueva sigue siendo la puesta.
+ * Restaura una copia como la guarda el editor: las secciones en
+ * storeConfig/homePage (también lo lee la app) y en la página con
+ * saveStorefrontConfig, sin tocar el menú, la cuenta ni el buscador de hoy;
+ * después anota su propia copia en storeConfigLogs, así la más nueva sigue
+ * siendo la puesta.
  */
 async function restaurarCopia(x, correo) {
   if (!x?.config) throw new Error('Esta copia no tiene diseño guardado.');
   // Como el editor: una página bloqueada no se guarda.
   const bloqueadas = await getLockedPages();
   if (bloqueadas.includes(x.pagina)) throw new Error(`Esta página (${x.pagina}) está bloqueada por un administrador: no se puede restaurar.`);
-  await sinError(setDocument('storeConfig', 'homePage', x.config));
-  // Las copias de antes de `pages` no traen la lista: sin ella, se vaciaría la página.
-  if (Array.isArray(x.config.sections)) await sinError(saveStorefrontConfig(x.config.sections, x.pagina));
+  if (Array.isArray(x.config.sections)) {
+    // Solo la página: la copia trae también lo global de ese día (el menú, la
+    // cuenta, el buscador) y escribirla entera devolvía TODA la tienda a esa
+    // fecha. homePage se mezcla (setDocument con merge) y solo cambia
+    // `sections`, como al guardar en el editor.
+    await sinError(setDocument('storeConfig', 'homePage', { sections: x.config.sections }));
+    await sinError(saveStorefrontConfig(x.config.sections, x.pagina));
+  } else {
+    // Las copias de antes de `pages` no traen la lista: todo el diseño vivía en
+    // homePage, así que se restaura entero (sin ella, se vaciaría la página).
+    await sinError(setDocument('storeConfig', 'homePage', x.config));
+  }
   // La misma forma que la del editor (timestamp en texto ISO y pageId).
   await sinError(createDocument('storeConfigLogs', {
     pageId: x.pagina,

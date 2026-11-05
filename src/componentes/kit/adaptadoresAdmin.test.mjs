@@ -250,6 +250,16 @@ test('crear: un pack de ida y vuelta, y lo que le falta', () => {
   assert.ok(m2.erroresDePack({ ...k, piezas: [k.piezas[0], { prendaId: 'b', fija: true, color: null }] }).piezas.includes('color'));
 });
 
+test('ficha: un producto normal sin stock cargado se abre y se guarda sin límite (no 0)', () => {
+  const original = { id: 'n', name: 'Taza', price: 30, variants: [{ id: 'v1', name: 'Blanca', imageUrl: 'v.png' }] };
+  const f = m2.fichaDesdeProducto(original);
+  assert.equal(f.stock, '');
+  assert.equal(m2.fichaAProducto(f, original).inStock, null);
+  assert.equal(m2.fichaAProducto({ ...f, stock: '0' }, original).inStock, 0);
+  assert.equal(m2.fichaAProducto({ ...f, stock: 7 }, original).inStock, 7);
+  assert.equal(m2.fichaDesdeProducto({ ...original, inStock: 0 }).stock, 0);
+});
+
 test('crear: la ficha de un personalizable guarda su prendaBase y su stock sin límite', () => {
   const original = { id: 'h', name: 'Hoodie', price: 90, esPrendaBase: true, inStock: null, enTienda: true, seVendeTalCual: false, variants: [{ id: 'v1', name: 'Negro', imageUrl: '' }], prendaBase: { vistas: [{ id: 'f', imagen: 'f.png', zonas: [{ id: 'z' }] }], colores: {} } };
   const f = m2.fichaDesdeProducto(original);
@@ -853,8 +863,11 @@ test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () 
   assert.equal(m2.erroresDeAdmin({ correo: 'yo@w.pe', permisos: ['manage_design'] }, { id: 'yo@w.pe', yo: 'Yo@w.pe' }).permisos, 'Te quitarías el acceso a esta página: deja Super Admin.');
   assert.equal(m2.textoPermisos(['manage_inventory', 'manage_products']), 'Catálogo · Inventario');
   assert.equal(m2.textoPermisos(['superadmin', 'manage_products']), 'Super Admin');
-  const pags = m2.paginasBloqueables([{ id: 'l1', title: 'Navidad', slug: 'navidad' }], ['tienda', 'l1']);
-  assert.deepEqual(pags.map((p) => [p.id, p.bloqueada, p.tipo]), [['home', false, 'fija'], ['tienda', true, 'fija'], ['footer', false, 'fija'], ['l1', true, 'landing']]);
+  // Una landing se bloquea por su dirección (lo que compara el editor), no por el id del documento.
+  const pags = m2.paginasBloqueables([{ id: 'l1', title: 'Navidad', slug: 'navidad' }], ['tienda', 'navidad']);
+  assert.deepEqual(pags.map((p) => [p.id, p.bloqueada, p.tipo]), [['home', false, 'fija'], ['tienda', true, 'fija'], ['footer', false, 'fija'], ['navidad', true, 'landing']]);
+  assert.equal(m2.paginasBloqueables([{ id: 'l1', slug: 'navidad' }], ['l1'])[3].bloqueada, false);
+  assert.equal(m2.paginasBloqueables([{ id: 'l1' }], ['l1'])[3].id, 'l1');
   assert.deepEqual(m2.conBloqueo(['home'], 'home', true), ['home']);
   assert.deepEqual(m2.conBloqueo(['home', 'x'], 'home', false), ['x']);
   assert.equal(m2.textoConteoImagenes({ imagenes: 0 }), 'No queda ninguna imagen por convertir.');

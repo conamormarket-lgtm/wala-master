@@ -206,6 +206,10 @@ export const saveRuletaPrize = async (prizeData, id = null) => {
       hasta: p.hasta,
       stockTotal: p.stockTotal,
       maxPorUsuario: p.maxPorUsuario,
+      // Un cupón de una marca: solo descuenta sus productos (spinRuletaSecure
+      // lo copia al cupón). Antes no se guardaba y valía para toda la tienda.
+      brandId: p.brandId,
+      marcaNombre: p.marcaNombre,
 
       // Espejo para el cliente antiguo (se puede quitar cuando ya no haya
       // versiones viejas en circulación).

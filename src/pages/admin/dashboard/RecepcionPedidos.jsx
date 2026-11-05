@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import GlassCard from '../../../components/dashboard/GlassCard';
 import KpiRow from '../../../components/dashboard/KpiRow';
@@ -253,15 +252,7 @@ function TarjetaPedido({ pedido }) {
         >
           WhatsApp
         </GlassButton>
-        <GlassButton
-          as={Link}
-          to={`/cuenta/pedidos/${id}`}
-          variant="glass"
-          size="sm"
-          className={styles.accionDetalle}
-        >
-          Ver detalle
-        </GlassButton>
+        {/* Sin "Ver detalle": /cuenta/pedidos/:id solo abre pedidos de la cuenta conectada. */}
       </footer>
     </article>
   );

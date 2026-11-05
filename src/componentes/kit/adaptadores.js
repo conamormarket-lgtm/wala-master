@@ -69,8 +69,16 @@ const esDeCrear = (p) => p?.esPrendaBase === true || p?.esComboCrear === true;
 /** Una prenda de Crear que también se vende sin personalizar ("Agregar al carrito" y "Personalízalo"). */
 const seVendeTalCual = (p) => p?.esPrendaBase === true && p.seVendeTalCual === true;
 
-/** Agotado: en Crear solo con un stock cargado en 0; en la tienda, sin stock. */
-const agotadoDe = (p) => (esDeCrear(p) ? typeof p.inStock === 'number' && p.inStock <= 0 : !p?.inStock);
+/**
+ * Agotado: solo con un stock cargado en 0 (o menos). Sin stock cargado es sin
+ * límite, en Crear y en la tienda: así lo leen la lista del admin y el servidor
+ * (cartValidation). Antes un producto sin el campo salía "Agotado" y se vendía.
+ */
+const agotadoDe = (p) => {
+  const v = p?.inStock;
+  if (v === undefined || v === null || v === '') return false;
+  return !(Number(v) > 0);
+};
 
 /** Adónde lleva "Personalízalo": el estudio de la prenda (en ese color) o el combo. */
 export function rutaPersonalizar(p, colorId) {
@@ -762,14 +770,15 @@ const diaLegible = (iso) => {
 /**
  * Recompensa de rewardsCatalog → TarjetaRecompensa.
  *  - beneficio: el texto del premio (textoPremio de utils/ruletaModel, como
- *    CatalogReward); sin él, reward.value
+ *    CatalogReward); sin él, nada. reward.value es la nota interna del admin
+ *    ("solo la ve el admin"): antes salía aquí en las recompensas a mano.
  */
 export const recompensaDesdeFirestore = (r = {}, beneficio) => ({
   id: r.id,
   titulo: r.title,
   descripcion: r.description,
   imagen: r.imageUrl || null,
-  beneficio: beneficio || r.value || '',
+  beneficio: beneficio || '',
   costo: Number(r.cost) || 0,
   // Stickers de WhatsApp: se añaden desde la app (el aviso del canje lo dice).
   stickers: r.tipo === 'stickers_whatsapp',

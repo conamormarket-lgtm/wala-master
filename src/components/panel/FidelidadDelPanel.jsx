@@ -249,7 +249,7 @@ export function RecompensasDelPanel() {
   const recompensas = useLectura(['admin-rewards'], getRewards);
   const productos = useLectura(['admin-recompensas-productos'], () => getProducts(), { staleTime: 5 * 60 * 1000 });
   const invalidar = useInvalidar();
-  const refrescar = () => invalidar(['admin-rewards'], ['rewards']);
+  const refrescar = () => invalidar(['admin-rewards'], ['rewards'], ['recompensas-catalogo']);
   const lista = useMemo(() => (productos.datos || []).map(productoAdminDesde).filter(Boolean), [productos.datos]);
   // Para los cupones de una marca («Vale en»).
   const marcasRecompensa = useLectura(['admin-brands'], getBrands);
