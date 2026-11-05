@@ -326,6 +326,14 @@ test('pagos: filtros, cifras, serie por día, enlace nuevo y configuración', ()
   assert.equal(r.cobradoUSD, 20);
   assert.equal(Math.round(r.conversion), 67);
   assert.deepEqual([r.pendientes, r.vencidos], [1, 0]);
+  // Tiempo de vida: cuánto le queda o cuándo venció; un pagado ya no vence.
+  const h = 3600000;
+  const ahora = Date.UTC(2026, 10, 5, 15, 0);
+  assert.equal(m2.vidaDeEnlace({ estado: 'pendiente', createdMs: ahora - 30 * h, venceMs: ahora + 6 * h }, ahora).texto, 'Vence en 6h 0m');
+  assert.match(m2.vidaDeEnlace({ estado: 'pendiente', createdMs: ahora - 30 * h, venceMs: ahora + 6 * h }, ahora).titulo, /dura 36 h/);
+  assert.match(m2.vidaDeEnlace({ estado: 'vencido', createdMs: ahora - 40 * h, venceMs: ahora - 4 * h }, ahora).texto, /^Venció el /);
+  assert.equal(m2.vidaDeEnlace({ estado: 'pagado', createdMs: ahora, venceMs: ahora + h }, ahora), null);
+  assert.equal(m2.HORAS_ENLACE_PAGO, 36);
   assert.deepEqual([m2.resumenEnlaces([...enlaces, { id: 'v', estado: 'vencido', createdMs: d(1) }]).vencidos], [1]);
   const serie = m2.serieDiariaEnlaces(enlaces);
   assert.deepEqual(serie.map((x) => x.etiqueta), ['01/10', '02/10', '03/10', '04/10']);

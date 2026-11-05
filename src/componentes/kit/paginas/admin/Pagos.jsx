@@ -12,6 +12,7 @@ import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import {
   PERIODOS_PAGOS, rangoDePeriodo, enlaceEnFiltro, resumenEnlaces, serieDiariaEnlaces, duracionCorta, enlaceNuevo,
+  vidaDeEnlace, HORAS_ENLACE_PAGO,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Pagos.module.css';
@@ -127,7 +128,14 @@ function Historial({ enlaces, cargando, error, onActualizar, urlDe }) {
           { id: 'concepto', titulo: 'Concepto', tarjeta: 'titulo', celda: (e) => <>{e.concepto || '—'}<span className={l.sub}>Creado {fechaHora(e.createdMs)}</span></> },
           { id: 'monto', titulo: 'Monto', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (e) => <span className={l.numero}>{dinero(e.monto, e.moneda)}</span> },
           { id: 'metodo', titulo: 'Método', ancho: 90, tarjeta: 'detalle', celda: (e) => (e.metodo === 'culqi' ? 'Culqi' : e.metodo === 'paypal' ? 'PayPal' : '—') },
-          { id: 'estado', titulo: 'Estado', ancho: 120, tarjeta: 'estado', celda: (e) => <InsigniaEstado estado={e.estado} estados={ESTADOS_ENLACE} /> },
+          {
+            // Debajo, su tiempo de vida: cuánto le queda o cuándo venció (pasando el ratón, la fecha exacta).
+            id: 'estado', titulo: 'Estado', ancho: 160, tarjeta: 'estado',
+            celda: (e) => {
+              const vida = vidaDeEnlace(e);
+              return <><InsigniaEstado estado={e.estado} estados={ESTADOS_ENLACE} />{vida && <span className={l.sub} title={vida.titulo}>{vida.texto}</span>}</>;
+            },
+          },
           { id: 'pagado', titulo: 'Pagado', ancho: 170, tarjeta: 'detalle', celda: (e) => (e.estado === 'pagado' ? <>{fechaHora(e.pagadoMs)}<span className={l.sub}>en {duracionCorta(e.tiempoPagoMs)}</span></> : '—') },
           {
             id: 'copiar', titulo: 'Enlace', ancho: 110, tarjeta: 'control',
@@ -152,7 +160,7 @@ function Generar({ onGenerar, urlDe, onVerHistorial }) {
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState('');
-  const [hecho, setHecho] = useState(null); // { url, concepto, monto }
+  const [hecho, setHecho] = useState(null); // { url, concepto, monto, venceMs }
   const cambiar = (k, v) => { setDatos((d) => ({ ...d, [k]: v })); setErrores((e) => ({ ...e, [k]: undefined })); };
 
   const generar = async (ev) => {
@@ -163,7 +171,7 @@ function Generar({ onGenerar, urlDe, onVerHistorial }) {
     setFallo('');
     try {
       const id = await onGenerar?.(r.datos);
-      setHecho({ url: urlDe(id), concepto: r.datos.concepto, monto: dinero(r.datos.monto, r.datos.moneda) });
+      setHecho({ url: urlDe(id), concepto: r.datos.concepto, monto: dinero(r.datos.monto, r.datos.moneda), venceMs: Date.now() + HORAS_ENLACE_PAGO * 3600000 });
       setDatos((d) => ({ ...d, concepto: '', monto: '' }));
     } catch (err) {
       setFallo(err?.message || 'No se pudo crear el enlace. Vuelve a intentar.');
@@ -175,7 +183,7 @@ function Generar({ onGenerar, urlDe, onVerHistorial }) {
   return (
     <div className={s.angosto}>
       <form className={s.tarjeta} onSubmit={generar} noValidate>
-        <GrupoCampos titulo="Un cobro que no es un pedido" ayuda="Saldos extra, envíos al extranjero… El cliente paga con tarjeta en la página del enlace.">
+        <GrupoCampos titulo="Un cobro que no es un pedido" ayuda={`Saldos extra, envíos al extranjero… El cliente paga con tarjeta en la página del enlace. El enlace dura ${HORAS_ENLACE_PAGO} horas: después dice que venció y hay que generar otro.`}>
           <Campo id="pago-concepto" etiqueta="Concepto" placeholder="Ej. Diferencia de envío a España" value={datos.concepto} error={errores.concepto} onChange={(e) => cambiar('concepto', e.target.value)} />
         </GrupoCampos>
         <GrupoCampos titulo="Cuánto" columnas={2}>
@@ -190,7 +198,9 @@ function Generar({ onGenerar, urlDe, onVerHistorial }) {
 
       {hecho && (
         <section className={s.tarjeta} aria-live="polite">
-          <Aviso tipo="exito" titulo="Enlace listo">Envíaselo a tu cliente: {hecho.concepto} · {hecho.monto}.</Aviso>
+          <Aviso tipo="exito" titulo="Enlace listo">
+            {`Envíaselo a tu cliente: ${hecho.concepto} · ${hecho.monto}. Vence el ${new Date(hecho.venceMs).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} (dura ${HORAS_ENLACE_PAGO} h).`}
+          </Aviso>
           <div className={s.enlace}>
             <input className={s.enlaceTexto} readOnly value={hecho.url} aria-label="El enlace de pago" onFocus={(e) => e.target.select()} />
             <Boton variante="secundario" icono={<Copy aria-hidden="true" />} onClick={() => copiar(hecho.url, toast)}>Copiar</Boton>

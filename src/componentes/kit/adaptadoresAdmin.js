@@ -1120,6 +1120,25 @@ export function serieDiariaEnlaces(enlaces = [], maxDias = 120) {
   return serie;
 }
 
+/** Cuánto dura un enlace de pago del admin (el cliente y el servidor usan lo mismo). */
+export const HORAS_ENLACE_PAGO = 36;
+
+const diaHora = (ms) => new Date(ms).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * El tiempo de vida de un enlace (normalizarEnlace: estado, createdMs, venceMs)
+ * → { texto, titulo } para la tabla, o null si ya no vence (pagado) o no se sabe.
+ *  - pendiente: «Vence en 5h 20m» · titulo «Vence el 06/11, 14:30 (dura 36 h)»
+ *  - vencido: «Venció el 03/11, 10:15» · titulo «Duraba 36 h»
+ */
+export function vidaDeEnlace(e = {}, ahora = Date.now()) {
+  if (e.estado === 'pagado' || e.venceMs == null) return null;
+  const dura = e.createdMs != null ? Math.round((e.venceMs - e.createdMs) / 3600000) : null;
+  const duracion = dura ? ` (dura ${dura} h)` : '';
+  if (e.estado === 'vencido' || e.venceMs <= ahora) return { texto: `Venció el ${diaHora(e.venceMs)}`, titulo: dura ? `Duraba ${dura} h` : '' };
+  return { texto: `Vence en ${duracionCorta(e.venceMs - ahora)}`, titulo: `Vence el ${diaHora(e.venceMs)}${duracion}` };
+}
+
 /** "2d 4h", "3h 10m", "5m 2s", "40s" (como antes); null → '—'. */
 export function duracionCorta(ms) {
   if (ms == null) return '—';
