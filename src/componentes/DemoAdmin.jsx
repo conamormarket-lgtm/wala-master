@@ -1942,6 +1942,8 @@ function PanelDePrueba() {
         {...comunes}
         productos={vacio ? [] : productos}
         masVendidos={{ filas: MAS_VENDIDOS, disponible: !vacio, cargando: con('cargando') }}
+        marcas={MARCAS_TIENDA.map((m) => ({ id: m.id, nombre: m.name }))}
+        onVerTienda={() => toast({ tipo: 'info', titulo: 'En el admin abriría la tienda', texto: '/', duracion: 2200 })}
         onDestacar={async (id) => {
           await espera(500);
           fallar();

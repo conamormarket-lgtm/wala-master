@@ -140,3 +140,24 @@
   border-radius: 18px;
   background: var(--color-surface);
 }
+
+/* Lo más vendido que ya está en la fila: su puesto, sin botón. */
+.enFila {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--violet-600, #7c3aed);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.enFila svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+:global([data-theme='dark']) .enFila {
+  color: var(--violet-300, #c4b5fd);
+}

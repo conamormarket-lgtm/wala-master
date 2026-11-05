@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts, updateProductField } from '../../services/products';
 import { getTopSellingWala } from '../../services/salesAnalytics';
+import { getBrands } from '../../services/brands';
 import { PaginaDestacados } from '../../componentes/kit/paginas/admin/Destacados';
 import { productoAdminDesde } from '../../componentes/kit/adaptadoresAdmin';
 import { useLectura, useInvalidar } from './comun';
@@ -16,6 +17,8 @@ const productosConOcultos = () => getProducts([], null, null, { includeHidden: t
  */
 export default function DestacadosDelPanel() {
   const productos = useLectura(['admin-products'], productosConOcultos);
+  // Para decir en qué página de marca sale cada destacado.
+  const marcas = useLectura(['admin-brands'], getBrands);
   const invalidar = useInvalidar();
   const top = useQuery({
     queryKey: ['top-selling-wala', 30],
@@ -35,6 +38,8 @@ export default function DestacadosDelPanel() {
       cargando={productos.cargando}
       error={productos.error}
       onReintentar={productos.onReintentar}
+      marcas={(marcas.datos || []).map((b) => ({ id: b.id, nombre: b.name || b.slug || b.id }))}
+      onVerTienda={() => window.open('/', '_blank', 'noopener')}
       masVendidos={{
         filas: (top.data?.topByUnits || []).filter((f) => f.productId).map((f) => ({ id: f.productId, unidades: f.units })),
         cargando: top.isLoading,
