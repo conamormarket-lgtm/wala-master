@@ -273,7 +273,9 @@ export default function CheckoutDeTienda() {
     if (esComboCrear(it)) {
       const piezas = it.customization.piezas || [];
       const precios = repartirPrecio(it.customization?.finalPrice || it.price || 0, piezas.length);
-      return piezas.map((p, k) => ({ productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: !p.fija }));
+      // Las piezas de un combo se cobran al precio del combo, no al de catálogo:
+      // como en el cobro (prepareCheckoutPayment), no se revaloran.
+      return piezas.map((p, k) => ({ productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: true }));
     }
     return [{
       productId: it.productId || '',
@@ -289,7 +291,7 @@ export default function CheckoutDeTienda() {
     // Un cupón que no resta nada en este carrito no se aplica: se consumiría para nada.
     if (!res.descuento) throw new Error(res.aviso || 'Este cupón no descuenta nada en este carrito.');
     const cupon = {
-      codigo, descuento: res.descuento, envioGratis: res.envioGratis, tipo: res.cupon?.tipo || '',
+      codigo, descuento: res.descuento, envioGratis: res.envioGratis, tipo: res.cupon?.tipo || '', topeCupon: res.topeCupon ?? null,
       texto: res.cupon?.texto || res.cupon?.titulo || '', aviso: res.aviso || '',
     };
     cuponRef.current = cupon;

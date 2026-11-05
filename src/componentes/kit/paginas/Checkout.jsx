@@ -44,7 +44,7 @@ const cuentasDe = ({ items, usar, saldo, cupon, reglaEnvio }) => {
   const tope = topeMonedasCheckout(items.map((it) => ({ importe: it.precio * it.cantidad, cantidad: it.cantidad, tope: it.topeMonedas })));
   // Monedas + cupón no pasan ese tope: el cupón va primero y las monedas usan lo
   // que quede (repartoTopeCupon, la misma regla del servidor).
-  const reparto = repartoTopeCupon({ topeMonedas: tope, descuentoCupon: cupon?.descuento, tipoCupon: cupon?.tipo, envioGratis: cupon?.envioGratis });
+  const reparto = repartoTopeCupon({ topeMonedas: tope, descuentoCupon: cupon?.descuento, tipoCupon: cupon?.tipo, envioGratis: cupon?.envioGratis, topeCupon: cupon?.topeCupon });
   const maximo = reparto.maxMonedas;
   const descuentoMonedas = usar ? Math.min(saldo || 0, maximo) : 0;
   const descuentoCupon = reparto.descuentoCupon;

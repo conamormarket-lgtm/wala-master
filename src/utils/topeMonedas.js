@@ -81,10 +81,15 @@ export function topeMonedasCheckout(lineas = []) {
 //    un regalo entero y no se recorta;
 //  - el envío gratis no toca el precio de los productos (no cuenta);
 //  - las monedas, hasta lo que quede del tope.
-export function repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis } = {}) {
+export function repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis, topeCupon = null } = {}) {
   const tope = Math.max(0, Number(topeMonedas) || 0);
   const crudo = envioGratis ? 0 : Math.max(0, Number(descuentoCupon) || 0);
-  const cupon = tipoCupon === 'producto_gratis' ? crudo : Math.min(crudo, tope);
+  // Un cupón de una marca o de un producto: como mucho el tope de esas líneas
+  // (topeCupon, lo manda validarCuponSecure). Sin él, el de todo el pedido.
+  const limite = topeCupon === null || topeCupon === undefined || !Number.isFinite(Number(topeCupon))
+    ? tope
+    : Math.min(tope, Math.max(0, Number(topeCupon)));
+  const cupon = tipoCupon === 'producto_gratis' ? crudo : Math.min(crudo, limite);
   return {
     descuentoCupon: Math.round(cupon * 100) / 100,
     maxMonedas: Math.max(0, Math.floor(tope - cupon + 1e-9)),

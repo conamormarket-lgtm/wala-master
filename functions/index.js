@@ -32,7 +32,7 @@ const {
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
-const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon } = require("./checkoutTotals");
+const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon, monedasDeLinea, topeDeMarca } = require("./checkoutTotals");
 const niveles = require("./nivelesLogic");
 const popupsEmbudo = require("./popupsEmbudo");
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
@@ -515,16 +515,20 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     let descuentoCupon = 0;
     let envioGratis = false;
     let tipoCupon = "";
+    let topeCupon = null;
     if (uid && cuponCode) {
       const encontrado = await buscarCupon(uid, cuponCode, t);
       const motivoCupon = motivoRechazo(encontrado && encontrado.cupon);
       // En la app el cupón se pide a propósito: si no sirve, se dice por qué (no se cobra sin descuento en silencio).
       if (motivoCupon && mobile) throw new functions.https.HttpsError("failed-precondition", motivoCupon);
       if (!motivoCupon) {
-        // Todas las líneas como "no valorables": la base del descuento es el
-        // subtotal que ya calculó el servidor, no el del navegador.
+        // Los productos de catálogo se valoran con el catálogo (como al validar el
+        // cupón en el carrito); los personalizados y las piezas de un combo, no.
+        // Antes iban todos como personalizados: un cupón de una marca no
+        // encontraba sus productos, descontaba 0 al pagar y el total no cuadraba.
         const items = Object.values(orderPayload.productos || {}).map((p) => ({
-          productId: p && p.productoId, qty: p && p.cantidad, precio: p && p.precio, personalizado: true,
+          productId: p && p.productoId, qty: p && p.cantidad, precio: p && p.precio,
+          personalizado: Boolean(p && (p.personalizado || p.comboCrear)),
         }));
         // La base es el subtotal entero, como al validar el cupón (validarCuponSecure
         // con un carrito de catálogo): con la base rebajada por las monedas, un cupón
@@ -538,10 +542,11 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
         envioGratis = envioGratis || calculo.envioGratis;
         descuentoCupon = calculo.envioGratis ? 0 : calculo.descuento;
         tipoCupon = encontrado.cupon.tipo || "";
+        topeCupon = calculo.topeCupon;
       }
     }
     // Monedas + cupón no pasan el tope de la marca (checkoutTotals.repartoTopeCupon).
-    const reparto = repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis });
+    const reparto = repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis, topeCupon });
     descuentoCupon = reparto.descuentoCupon;
 
     // ── Monedas ──
@@ -5592,12 +5597,47 @@ async function calcularDescuentoCupon(cupon, datos) {
       if (precio !== undefined) baseMarca += precio * Math.max(1, Number(it.qty) || 1);
     }
     if (baseMarca <= 0) {
+      // ¿Hay de esa marca pero personalizados? Su precio no se puede rehacer aquí.
+      const soloPersonalizados = items.some((it) => it.personalizado && marcaPorId.get(String(it.productId || "")) === String(cupon.brandId));
       return {
-        descuento: 0, envioGratis: false, base: 0, exacta,
-        aviso: "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + ": añade alguno al carrito para usarlo.",
+        descuento: 0, envioGratis: false, base: 0, exacta, topeCupon: null,
+        aviso: soloPersonalizados
+          ? "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + " de la tienda (no vale en los personalizados)."
+          : "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + ": añade alguno al carrito para usarlo.",
       };
     }
     base = baseMarca;
+  }
+
+  // 2c) El tope del cupón: uno de una marca o de un producto descuenta como
+  // mucho lo que esa marca deja pagar con monedas en ESAS líneas (Admin →
+  // Marcas). Si no, usaba el margen de las otras marcas del carrito. Lo aplica
+  // repartoTopeCupon (al validar lo usa el carrito; al pagar, el servidor).
+  let topeCupon = null;
+  const productoDelCupon = ["producto_descuento", "producto_gratis"].includes(cupon.tipo) ? String(cupon.productId || "") : "";
+  const marcaDelTope = cupon.brandId ? String(cupon.brandId) : (productoDelCupon ? marcaPorId.get(productoDelCupon) || null : null);
+  if (cupon.brandId || (productoDelCupon && cupon.tipo === "producto_descuento")) {
+    let marcaDoc = null;
+    if (marcaDelTope) {
+      const sm = await db.collection("tienda_brands").doc(marcaDelTope).get();
+      marcaDoc = sm.exists ? sm.data() || {} : null;
+    }
+    const tope = topeDeMarca(marcaDoc);
+    let suma = 0;
+    if (cupon.brandId) {
+      for (const it of items) {
+        const id = String(it.productId || "");
+        if (it.personalizado || marcaPorId.get(id) !== String(cupon.brandId)) continue;
+        const precio = precioPorId.get(id);
+        const cantidad = Math.max(1, Number(it.qty) || 1);
+        if (precio !== undefined) suma += monedasDeLinea({ importe: precio * cantidad, cantidad, tope });
+      }
+    } else {
+      // Descuento en un producto: sobre una unidad, como el cupón.
+      const precio = precioPorId.get(productoDelCupon);
+      if (precio !== undefined) suma = monedasDeLinea({ importe: precio, cantidad: 1, tope });
+    }
+    topeCupon = Math.floor(suma + 1e-9);
   }
 
   let descuento = 0;
@@ -5679,7 +5719,7 @@ async function calcularDescuentoCupon(cupon, datos) {
   descuento = envioGratis
     ? Math.max(0, Math.min(descuento, ENVIO_ESTANDAR))
     : Math.max(0, Math.min(descuento, base));
-  return { descuento: +descuento.toFixed(2), envioGratis, base: +base.toFixed(2), exacta, aviso };
+  return { descuento: +descuento.toFixed(2), envioGratis, base: +base.toFixed(2), exacta, aviso, topeCupon };
 }
 
 // ── Validar un cupón (no lo consume) ──────────────────────────────────────────
@@ -5697,6 +5737,8 @@ exports.validarCuponSecure = functions.https.onCall(async (data, context) => {
       descuento: calculo.descuento,
       envioGratis: calculo.envioGratis,
       aviso: calculo.aviso,
+      // De una marca o un producto: el carrito lo usa para no pasar el tope de esas líneas.
+      topeCupon: calculo.topeCupon,
       cupon: {
         code: cupon.code,
         tipo: cupon.tipo,
@@ -5748,7 +5790,11 @@ exports.canjearCuponSecure = functions.https.onCall(async (data, context) => {
       t.update(previo.ref, {
         status: "used",
         orderId,
-        descuentoAplicado: calculo.descuento,
+        // Lo que de verdad pudo descontar: un cupón de una marca o de un
+        // producto no pasa el tope de esas líneas (topeCupon).
+        descuentoAplicado: calculo.topeCupon === null || calculo.topeCupon === undefined || ["producto_gratis"].includes(cupon.tipo)
+          ? calculo.descuento
+          : Math.min(calculo.descuento, calculo.topeCupon),
         usadoAt: FieldValue.serverTimestamp(),
       });
       return { success: true, descuento: calculo.descuento, repetido: false };

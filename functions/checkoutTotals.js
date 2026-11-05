@@ -87,10 +87,16 @@ function topeMonedasCheckout(lineas) {
 //    un regalo entero y no se recorta;
 //  - el envío gratis no toca el precio de los productos (no cuenta);
 //  - las monedas, hasta lo que quede del tope.
-function repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis }) {
+//  - un cupón de una marca o de un producto, como mucho el tope de ESAS líneas
+//    (`topeCupon`, lo calcula calcularDescuentoCupon): si no, usaba el margen
+//    de las otras marcas del carrito.
+function repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis, topeCupon = null }) {
   const tope = Math.max(0, Number(topeMonedas) || 0);
   const crudo = envioGratis ? 0 : Math.max(0, Number(descuentoCupon) || 0);
-  const cupon = tipoCupon === "producto_gratis" ? crudo : Math.min(crudo, tope);
+  const limite = topeCupon === null || topeCupon === undefined || !Number.isFinite(Number(topeCupon))
+    ? tope
+    : Math.min(tope, Math.max(0, Number(topeCupon)));
+  const cupon = tipoCupon === "producto_gratis" ? crudo : Math.min(crudo, limite);
   return {
     descuentoCupon: Math.round(cupon * 100) / 100,
     maxMonedas: Math.max(0, Math.floor(tope - cupon + 1e-9)),
@@ -103,5 +109,5 @@ const toleranciaCheckout = (unidades) => 0.05 + 0.01 * Math.max(0, Number(unidad
 
 module.exports = {
   totalEsperadoCheckout, topeMonedasCheckout, pctMonedasDeMarca, topeDeMarca, TOPE_MONEDAS_PCT_POR_DEFECTO, toleranciaCheckout,
-  repartoTopeCupon,
+  repartoTopeCupon, monedasDeLinea,
 };

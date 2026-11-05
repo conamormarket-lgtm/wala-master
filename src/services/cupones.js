@@ -76,6 +76,8 @@ export const validarCupon = async (code, { subtotal, subtotalProductos, envio, i
       descuento: res.data?.descuento || 0,
       envioGratis: !!res.data?.envioGratis,
       aviso: res.data?.aviso || '',
+      // De una marca o un producto: el tope de esas líneas (null: el del pedido).
+      topeCupon: res.data?.topeCupon ?? null,
     };
   } catch (error) {
     return { success: false, error: error?.message || 'No pudimos validar el cupón' };
