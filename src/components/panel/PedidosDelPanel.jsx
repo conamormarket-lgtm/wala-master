@@ -1,14 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import useAdminWalaOrders from '../../hooks/useAdminWalaOrders';
-import { getMessage, setMessage } from '../../services/messages';
 import { createDocument, getCollection, updateDocument } from '../../services/firebase/firestore';
 import { getEnlacesPago } from '../../services/enlacesPago';
 import { empresa } from '../../config/empresa';
 import { PaginaRecepcion } from '../../componentes/kit/paginas/admin/Pedidos';
 import { PaginaPagos } from '../../componentes/kit/paginas/admin/Pagos';
 import { PaginaReclamos } from '../../componentes/kit/paginas/admin/Reclamos';
-import { configPagosDesde, configPagosAMensajes, reclamoDesdeFirestore } from '../../componentes/kit/adaptadoresAdmin';
+import { reclamoDesdeFirestore } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useInvalidar } from './comun';
 
 /*
@@ -37,10 +36,7 @@ export function RecepcionDelPanel() {
   );
 }
 
-// Los mensajes de los ajustes de pagos (más el WhatsApp de la cuenta, de respaldo).
-const CLAVES_PAGOS = ['yape_number', 'yape_name', 'plin_number', 'plin_name', 'whatsapp_number_pagos', 'whatsapp_text_pagos', 'whatsapp_number_cuenta'];
-
-/** /admin/gestion-pagos: historial de enlaces, crear uno nuevo y los ajustes de cobro. */
+/** /admin/gestion-pagos: historial de enlaces y crear uno nuevo (los números de cobro van en /admin/whatsapp). */
 export function PagosDelPanel() {
   const invalidar = useInvalidar();
   const enlaces = useQuery({
@@ -49,15 +45,6 @@ export function PagosDelPanel() {
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
-  const config = useQuery({
-    queryKey: ['admin-pagos-config'],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const valores = await Promise.all(CLAVES_PAGOS.map((k) => getMessage(k)));
-      return configPagosDesde(Object.fromEntries(CLAVES_PAGOS.map((k, i) => [k, valores[i]?.data ?? ''])));
-    },
-  });
-
   return (
     <PaginaPagos
       enlaces={enlaces.data || []}
@@ -72,12 +59,8 @@ export function PagosDelPanel() {
         await invalidar(['enlaces-pago']);
         return id;
       }}
-      config={config.data}
-      cargandoConfig={config.isLoading}
-      onGuardarConfig={async (c) => {
-        await Promise.all(Object.entries(configPagosAMensajes(c)).map(([k, v]) => sinError(setMessage(k, v))));
-        await invalidar(['admin-pagos-config'], ['user-pagos-config'], ['pagos-saldo-config']);
-      }}
+      // Yape, Plin y el WhatsApp de pagos se cambian en /admin/whatsapp (con todos los números).
+      urlNumeros="/admin/whatsapp"
     />
   );
 }

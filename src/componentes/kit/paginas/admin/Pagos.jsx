@@ -272,6 +272,23 @@ function Ajustes({ config, cargando, onGuardar }) {
   );
 }
 
+/* Desde 2026-11-05 Yape, Plin y el WhatsApp de comprobantes se cambian en
+   Ajustes › WhatsApp y teléfonos, con los demás números: aquí, solo el camino. */
+function NumerosEnWhatsApp({ url }) {
+  return (
+    <div className={s.angosto}>
+      <div className={s.tarjeta}>
+        <Aviso tipo="info" titulo="Yape, Plin y el WhatsApp de pagos se mudaron">
+          Ahora están en «WhatsApp y teléfonos», junto con el número de los pedidos, el botón verde, los asesores de cada marca y el teléfono del pie. Así todos los números se cambian en un solo lugar.
+        </Aviso>
+        <div className={s.pie}>
+          <Boton to={url} iconoFin={<ExternalLink aria-hidden="true" />}>Ir a WhatsApp y teléfonos</Boton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── La página ─────────────────────────────────────────── */
 
 /**
@@ -281,10 +298,12 @@ function Ajustes({ config, cargando, onGuardar }) {
  *  - urlDe(id) → el enlace que se copia (…/pago-rapido/{id})
  *  - onGenerar(datos de enlaceNuevo) → promesa con el id nuevo
  *  - config (configPagosDesde) · cargandoConfig · onGuardarConfig(config) → promesa
+ *  - urlNumeros: con ella, «Ajustes» solo lleva a la página de WhatsApp y
+ *    teléfonos (donde se cambian Yape, Plin y el WhatsApp de pagos)
  */
 export function PaginaPagos({
   pestana: pestanaFuera, onPestana, enlaces = [], cargando = false, actualizando = false, error, onActualizar,
-  urlDe = (id) => `/pago-rapido/${id}`, onGenerar, config, cargandoConfig = false, onGuardarConfig,
+  urlDe = (id) => `/pago-rapido/${id}`, onGenerar, config, cargandoConfig = false, onGuardarConfig, urlNumeros,
 }) {
   const [pestanaDentro, setPestanaDentro] = useState('historial');
   const pestana = pestanaFuera || pestanaDentro;
@@ -296,7 +315,7 @@ export function PaginaPagos({
         icono="pagos"
         tono="menta"
         titulo="Gestión de pagos"
-        subtitulo="Los enlaces de pago, cuánto se cobra con ellos y los datos de Yape, Plin y WhatsApp."
+        subtitulo={urlNumeros ? 'Los enlaces de pago y cuánto se cobra con ellos.' : 'Los enlaces de pago, cuánto se cobra con ellos y los datos de Yape, Plin y WhatsApp.'}
         acciones={pestana === 'historial' && onActualizar ? <Boton tamano="sm" variante="secundario" icono={<RefreshCw aria-hidden="true" />} cargando={actualizando} onClick={onActualizar}>Actualizar</Boton> : undefined}
         principal={pestana === 'historial' ? { texto: 'Generar enlace', Icono: Link2, onClick: () => ir('generar') } : undefined}
       />
@@ -310,7 +329,7 @@ export function PaginaPagos({
       </div>
       {pestana === 'historial' && <Historial enlaces={enlaces} cargando={cargando} error={error} onActualizar={onActualizar} urlDe={urlDe} />}
       {pestana === 'generar' && <Generar onGenerar={onGenerar} urlDe={urlDe} onVerHistorial={() => ir('historial')} />}
-      {pestana === 'ajustes' && <Ajustes config={config} cargando={cargandoConfig} onGuardar={onGuardarConfig} />}
+      {pestana === 'ajustes' && (urlNumeros ? <NumerosEnWhatsApp url={urlNumeros} /> : <Ajustes config={config} cargando={cargandoConfig} onGuardar={onGuardarConfig} />)}
     </div>
   );
 }

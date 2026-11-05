@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getStorefrontConfig } from '../../pages/Tienda/services/storefront';
+import { getMessage } from '../../services/messages';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +35,16 @@ import s from './PieDeTienda.module.css';
  * Lo de antes (FooterViejo.jsx) baja con el interruptor pieViejo o con
  * editorViejo (su editor dibuja ahí).
  */
+// La columna por defecto traía un WhatsApp fijo: va al general de Ajustes ›
+// WhatsApp y teléfonos (51 + 9 dígitos), si hay uno.
+const columnasConWhatsApp = (columnas, numero) => {
+  if (!numero) return columnas;
+  const n = numero.length === 9 ? `51${numero}` : numero;
+  return columnas.map((c) => (c.type === 'links'
+    ? { ...c, links: (c.links || []).map((l) => (/^https:\/\/wa\.me\/\d+$/.test(l.url) ? { ...l, url: `https://wa.me/${n}` } : l)) }
+    : c));
+};
+
 export default function PieDeTienda() {
   const location = useLocation();
   const { isEditModeActive, activePageId, setActivePageId, paginaDelBuilder, storeConfigDraft, sinGuardar } = useVisualEditor();
@@ -51,6 +62,16 @@ export default function PieDeTienda() {
     },
     staleTime: 10 * 60 * 1000,
   });
+  // El teléfono del pie y el WhatsApp general, de Ajustes › WhatsApp y teléfonos
+  // (vacío: el de config/empresa y la columna como venía).
+  const { data: numeros } = useQuery({
+    queryKey: ['contacto-telefono'],
+    queryFn: async () => {
+      const [tel, general] = await Promise.all([getMessage('contacto_telefono'), getMessage('whatsapp_number')]);
+      return { telefono: String(tel.data || '').trim(), whatsapp: String(general.data || '').replace(/\D/g, '') };
+    },
+    staleTime: 10 * 60 * 1000,
+  });
 
   if (!layout?.isFooterVisible) return null;
   if (window.Capacitor?.isNativePlatform?.() || esAppNativa()) return null;
@@ -60,8 +81,9 @@ export default function PieDeTienda() {
   const editando = isEditModeActive && activePageId === 'footer';
   let bloques = editando ? (storeConfigDraft?.sections || []) : (config?.sections || []);
   if (!isLoading && bloques.length === 0) {
-    bloques = [{ id: 'default_footer', type: 'footer_columns', order: 0, settings: { columns: COLUMNAS_POR_DEFECTO } }];
+    bloques = [{ id: 'default_footer', type: 'footer_columns', order: 0, settings: { columns: columnasConWhatsApp(COLUMNAS_POR_DEFECTO, numeros?.whatsapp) } }];
   }
+  const legal = pieLegalDesdeEmpresa(numeros?.telefono ? { ...empresa, telefono: numeros.telefono } : empresa);
 
   const kapiFlota = Boolean(userProfile) && layout.isHeaderVisible !== false && !layout.kapiFlotanteOculto && !sinKapiFlotante(location.pathname);
   const kapi = !kapiFlota && !layout.pieSinKapi && !sinKapiEnPie(location.pathname, { sesion: Boolean(user) });
@@ -98,7 +120,7 @@ export default function PieDeTienda() {
         </div>
       )}
       <div className={s.ancho}>
-        <MarcoPie kapi={kapi} pieLegal={<PieLegal {...pieLegalDesdeEmpresa(empresa)} />}>
+        <MarcoPie kapi={kapi} pieLegal={<PieLegal {...legal} />}>
           {bloques.map((bloque, i) => (
             <React.Fragment key={bloque.id || i}>
               {editando && <PuntoDeInsercion indice={i} />}

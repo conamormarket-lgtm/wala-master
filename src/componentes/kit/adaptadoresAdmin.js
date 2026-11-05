@@ -3518,6 +3518,17 @@ export const traduccionesPorIdioma = (pendientes = {}) => Object.entries(pendien
  */
 /** El que recibe los pedidos si no se eligió otro (el de AdminMarcas). */
 export const WHATSAPP_PEDIDOS_FABRICA = '+51924426791';
+/*
+ * Desde 2026-11-05 la página junta TODOS los números (antes repartidos en
+ * Gestión de pagos › Ajustes, Marcas y config/empresa):
+ *  - Los pagos: whatsapp_number_pagos (vacío: el de Mi cuenta) para «Enviar
+ *    comprobante», «¿Problemas para pagar?» y el enlace de pago vencido, con
+ *    el mensaje whatsapp_text_pagos; Yape y Plin a mano (yape_* / plin_*).
+ *  - El teléfono de contacto del pie legal: contacto_telefono (vacío: el de
+ *    config/empresa).
+ *  - Los asesores de cada marca: `asesores` [{ id, nombre, numero }] (se
+ *    guardan en tienda_brands.whatsappNumber, no en messages).
+ */
 
 // 987654321, +51 987 654 321 y 51987654321 son el mismo.
 const digitosWhatsApp = (v) => {
@@ -3547,6 +3558,13 @@ export function whatsappDesdeMensajes(m = {}) {
     crear: propio('whatsapp_number_crear'),
     cuenta: propio('whatsapp_number_cuenta'),
     enAcceso: m.whatsapp_mostrar_en_acceso === 'si',
+    pagos: t('whatsapp_number_pagos'),
+    mensajePagos: m.whatsapp_text_pagos || MENSAJE_PAGOS_POR_DEFECTO,
+    yapeNumero: t('yape_number'),
+    yapeTitular: t('yape_name'),
+    plinNumero: t('plin_number'),
+    plinTitular: t('plin_name'),
+    contacto: t('contacto_telefono'),
   };
 }
 
@@ -3564,8 +3582,23 @@ export function whatsappAMensajes(c = {}) {
     whatsapp_text_tienda: c.mensajePedido || '',
     whatsapp_mostrar_en_acceso: c.enAcceso ? 'si' : 'no',
     whatsapp_number: t(c.tienda),
+    whatsapp_number_pagos: t(c.pagos),
+    whatsapp_text_pagos: c.mensajePagos || '',
+    yape_number: t(c.yapeNumero),
+    yape_name: t(c.yapeTitular),
+    plin_number: t(c.plinNumero),
+    plin_name: t(c.plinTitular),
+    contacto_telefono: t(c.contacto),
   };
 }
+
+/** Los asesores que cambiaron → [{ id, numero }] (para guardarlos en cada marca). */
+export const asesoresCambiados = (antes = [], ahora = []) => {
+  const previo = new Map(lista(antes).map((a) => [a.id, String(a.numero || '').trim()]));
+  return lista(ahora)
+    .map((a) => ({ id: a.id, numero: String(a.numero || '').trim() }))
+    .filter((a) => a.id && previo.has(a.id) && previo.get(a.id) !== a.numero);
+};
 
 /** Mientras se escribe: solo números, espacios, +, - y paréntesis. */
 export const telefonoEscrito = (v) => String(v || '').replace(/[^\d\s\-()+]/g, '');
@@ -3577,7 +3610,13 @@ export function erroresDeWhatsApp(c = {}) {
     if (!n) return obligatorio ? 'El botón necesita un número: es el de la tienda y el de las secciones sin otro.' : undefined;
     return n < 9 || n > 15 ? `Revisa el número: tiene ${n} dígito${n === 1 ? '' : 's'}.` : undefined;
   };
-  return { pedidos: revisar(c.pedidos), tienda: revisar(c.tienda, true), crear: revisar(c.crear), cuenta: revisar(c.cuenta) };
+  const e = {
+    pedidos: revisar(c.pedidos), tienda: revisar(c.tienda, true), crear: revisar(c.crear), cuenta: revisar(c.cuenta),
+    pagos: revisar(c.pagos), yapeNumero: revisar(c.yapeNumero), plinNumero: revisar(c.plinNumero), contacto: revisar(c.contacto),
+  };
+  // Cada asesor con su campo (wa-asesor-{id}).
+  lista(c.asesores).forEach((a) => { e[`asesor-${a.id}`] = revisar(a.numero); });
+  return e;
 }
 
 /**
@@ -3600,10 +3639,18 @@ export function dosNumerosWhatsApp(pedidos, boton, fabrica = WHATSAPP_PEDIDOS_FA
   return { pedidos: p, boton: b, sinElegir: !String(pedidos || '').trim() };
 }
 
-export function resumenWhatsApp(c = {}, marcas = [], fabrica = WHATSAPP_PEDIDOS_FABRICA) {
+export function resumenWhatsApp(c = {}, marcas = [], fabrica = WHATSAPP_PEDIDOS_FABRICA, contactoPorDefecto = '') {
   const conNumero = marcas.filter((m) => String(m.numero || '').trim());
   const nombres = conNumero.map((m) => m.nombre).join(', ');
+  const pagos = c.pagos || c.cuenta || c.tienda;
   return {
+    // `grupo`: la parte de «Así queda» donde va cada fila.
+    pagos: [
+      { id: 'pagos', donde: 'Comprobantes, «¿Problemas para pagar?» y un enlace vencido', numero: pagos, nota: c.pagos ? '' : 'el de Mi cuenta' },
+      { id: 'yape', donde: 'Yape a mano', numero: c.yapeNumero || null, nota: c.yapeNumero ? c.yapeTitular || '' : 'no se muestra' },
+      { id: 'plin', donde: 'Plin a mano', numero: c.plinNumero || null, nota: c.plinNumero ? c.plinTitular || '' : 'no se muestra' },
+    ],
+    contacto: { id: 'contacto', donde: 'Teléfono del pie de la tienda', numero: c.contacto || contactoPorDefecto || null, nota: c.contacto ? '' : 'el que viene puesto' },
     filas: [
       { id: 'pedidos', donde: 'Confirmar un pedido', numero: c.pedidos || fabrica, nota: [!c.pedidos && NOTA_SIN_ELEGIR, c.multimarca && conNumero.length && `los de ${nombres}, a su asesor`].filter(Boolean).join(' · ') },
       { id: 'tienda', donde: 'El botón en la tienda y las fichas', numero: c.tienda, nota: '' },

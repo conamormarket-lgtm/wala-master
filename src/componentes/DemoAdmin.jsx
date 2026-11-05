@@ -627,7 +627,9 @@ const ADMINS_DEMO = [
   { id: 'almacen.wala@gmail.com', email: 'almacen.wala@gmail.com', permissions: ['manage_inventory'] },
 ].map(adminDesdeFirestore);
 // D8b: los números guardados (Crear vacío: usa el de la tienda), las copias del editor y los cambios de stock.
-const WHATSAPP_DEMO = whatsappDesdeMensajes({ whatsapp_number_tienda: '987 654 321', whatsapp_number_cuenta: '+51 912 345 678', whatsapp_mostrar_en_acceso: 'no' });
+// Con los asesores de cada marca (se editan en la misma página desde 2026-11-05).
+const ASESORES_DEMO = [{ id: 'daida', nombre: 'Daida Hogar', numero: '+51953055306' }, { id: 'yoryo', nombre: 'Yoryo', numero: '+51936558073' }, { id: 'lumi', nombre: 'Lumi', numero: '' }];
+const WHATSAPP_DEMO = { ...whatsappDesdeMensajes({ whatsapp_number_tienda: '987 654 321', whatsapp_number_cuenta: '+51 912 345 678', whatsapp_mostrar_en_acceso: 'no', whatsapp_number_pagos: '926 639 234' }), asesores: ASESORES_DEMO };
 const horasAtras = (h) => new Date(Date.now() - h * 3600000).toISOString();
 const COPIAS_DEMO = [
   { id: 'log1', timestamp: horasAtras(2), pageId: 'home', user: 'Admin', description: 'Guardado desde el Editor Visual (Página: home)', config: { sections: [] } },
@@ -1481,8 +1483,8 @@ function PanelDePrueba() {
         error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
         onReintentar={comunes.onReintentar}
         config={whatsappDemo}
-        marcas={[{ nombre: 'Daida Hogar', numero: '+51953055306' }, { nombre: 'Yoryo', numero: '+51936558073' }]}
-        onGuardar={async (c) => { await espera(600); fallar(); setWhatsappDemo(whatsappDesdeMensajes(whatsappAMensajes(c))); }}
+        contactoPorDefecto="+51 924 426 791"
+        onGuardar={async (c) => { await espera(600); fallar(); setWhatsappDemo({ ...whatsappDesdeMensajes(whatsappAMensajes(c)), asesores: c.asesores }); }}
       />
     );
   } else if (rutaSola === '/admin/backups' || rutaSola === '/admin/historial-stock') {

@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import useInvitacionReferido from '../../hooks/useInvitacionReferido';
 import { getMessage } from '../../services/messages';
+import { empresa } from '../../config/empresa';
 import { getBrands } from '../../services/brands';
 import { prepareCheckoutPayment, precalentarFunciones } from '../../services/checkoutPayment';
 import { validarCupon } from '../../services/cupones';
@@ -88,23 +89,22 @@ const LUGARES = {
 // El WhatsApp (los números y el texto): los cinco mensajes a la vez (antes, uno detrás de otro).
 const leerWhatsappConfig = async () => {
   try {
-    const [tienda, general, texto, principalMsg, multimarcaMsg] = await Promise.all([
-      getMessage('whatsapp_number_tienda'), getMessage('whatsapp_number'), getMessage('whatsapp_text_tienda'),
-      getMessage('whatsapp_number_principal'), getMessage('whatsapp_multimarca'),
+    const [texto, principalMsg, multimarcaMsg] = await Promise.all([
+      getMessage('whatsapp_text_tienda'), getMessage('whatsapp_number_principal'), getMessage('whatsapp_multimarca'),
     ]);
     const limpiar = (n) => {
       const x = String(n || '').replace(/[\s\-()+]/g, '');
       return x && !x.startsWith('51') && x.length <= 9 ? `51${x}` : x;
     };
     return {
-      number: limpiar(tienda.data?.trim() || general.data?.trim()) || '51999999999',
-      principalNumber: limpiar(principalMsg.data?.trim() || '+51924426791') || '51924426791',
+      // Los pedidos: el de Ajustes › WhatsApp y teléfonos o, vacío, el de config/empresa.
+      principalNumber: limpiar(principalMsg.data?.trim()) || empresa.whatsapp,
       multimarca: multimarcaMsg.data?.trim().toLowerCase() === 'true',
       customText: texto.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.',
     };
   } catch {
     return {
-      number: '51999999999', principalNumber: '51924426791', multimarca: false,
+      principalNumber: empresa.whatsapp, multimarca: false,
       customText: 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.',
     };
   }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Download, ExternalLink, MessageCircle, RefreshCw, RotateCcw, ShoppingBag } from 'lucide-react';
+import { ChevronDown, CreditCard, Download, ExternalLink, MessageCircle, Phone, RefreshCw, RotateCcw, ShoppingBag, Store } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
@@ -55,16 +55,22 @@ const OTROS_NUMEROS = [
   { clave: 'cuenta', etiqueta: 'Mi cuenta tiene su propio número', donde: 'Mi cuenta, mis pedidos, el carrito y «¿Problemas para pagar?».' },
 ];
 
+// WhatsApp pone en negrita lo que va entre asteriscos: la muestra también.
+const conNegritas = (texto) => String(texto).split(/\*([^*\n]+)\*/g).map((parte, i) => (i % 2 ? <b key={i}>{parte}</b> : parte));
+
 /**
- * WhatsApp (/admin/whatsapp).
+ * WhatsApp (/admin/whatsapp): todos los números en un solo lugar (2026-11-05).
  *  - cargando · error · onReintentar
- *  - config: whatsappDesdeMensajes · onGuardar(config) (el conector la pasa por whatsappAMensajes)
- *  - marcas: [{ nombre, numero }] (el WhatsApp de su asesor, de Marcas) · urlMarcas
+ *  - config: whatsappDesdeMensajes + asesores [{ id, nombre, numero }] (sin
+ *    asesores, la lista de marcas no se edita aquí) · onGuardar(config) (el
+ *    conector guarda los mensajes y los asesores que cambiaron)
+ *  - marcas: [{ nombre, numero }] (solo si no llegan asesores) · urlMarcas
  *  - fabrica: el que recibe los pedidos si no se eligió otro
+ *  - contactoPorDefecto: el teléfono del pie si no se pone otro
  */
 export function PaginaWhatsAppAdmin({
   cargando = false, error, onReintentar, config, onGuardar,
-  marcas = [], urlMarcas = '/admin/marcas', fabrica = WHATSAPP_PEDIDOS_FABRICA,
+  marcas = [], urlMarcas = '/admin/marcas', fabrica = WHATSAPP_PEDIDOS_FABRICA, contactoPorDefecto = '',
 }) {
   const toast = useToast();
   const [c, setC] = useState(config);
@@ -99,7 +105,7 @@ export function PaginaWhatsAppAdmin({
       setGuardando(false);
     }
   };
-  const cabeza = { icono: 'whatsapp', tono: 'menta', titulo: 'WhatsApp', subtitulo: 'A qué número llegan los pedidos y a cuál escribe el cliente desde el botón verde.' };
+  const cabeza = { icono: 'whatsapp', tono: 'menta', titulo: 'WhatsApp y teléfonos', subtitulo: 'Todos los números en un solo lugar: los pedidos, el botón verde, los pagos, los asesores de cada marca y el teléfono de contacto.' };
 
   let cuerpo;
   if (error) {
@@ -108,7 +114,14 @@ export function PaginaWhatsAppAdmin({
     cuerpo = <EsqueletoFormulario campos={5} />;
   } else {
     const conId = c.mensajePedido.includes('{id}');
-    const resumen = resumenWhatsApp(c, marcas, fabrica);
+    const asesores = Array.isArray(c.asesores) ? c.asesores : null;
+    const marcasConNumero = asesores ? asesores.filter((a) => String(a.numero || '').trim()) : marcas;
+    const resumen = resumenWhatsApp(c, marcasConNumero, fabrica, contactoPorDefecto);
+    const cambiarAsesor = (id, numero) => {
+      setC((x) => ({ ...x, asesores: x.asesores.map((a) => (a.id === id ? { ...a, numero } : a)) }));
+      setErrores((e) => (e[`asesor-${id}`] ? { ...e, [`asesor-${id}`]: undefined } : e));
+    };
+    const muestraPagos = String(c.mensajePagos || '').replaceAll('{id}', 'WALA-01820').replaceAll('{monto}', '45.00');
     const nombresMarcas = resumen.marcas.map((m) => m.nombre).join(' y ');
     const dos = dosNumerosWhatsApp(c.pedidos, c.tienda, fabrica);
     cuerpo = (
@@ -210,6 +223,82 @@ export function PaginaWhatsAppAdmin({
               />
             </div>
           </GrupoCampos>
+
+          <GrupoCampos icono={<CreditCard />} tono="oro" titulo="Los pagos" ayuda="Lo que ve quien paga el saldo de un pedido (y quien abre un enlace de pago que ya venció).">
+            <Campo
+              id="wa-pagos"
+              etiqueta="WhatsApp de pagos"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder={c.cuenta || c.tienda ? `Vacío: ${legible(c.cuenta || c.tienda)}` : '+51 987 654 321'}
+              ayuda="«Enviar comprobante», «¿Problemas para pagar?» y un enlace de pago vencido. Vacío: el de Mi cuenta."
+              value={c.pagos}
+              error={errores.pagos}
+              onChange={(e) => cambiar('pagos', telefonoEscrito(e.target.value))}
+            />
+            <Destino numero={c.pagos || c.cuenta || c.tienda} nota={c.pagos ? '' : 'el de Mi cuenta'} />
+            <div className={s.otro}>
+              <Campo
+                etiqueta="Mensaje al mandar el comprobante"
+                multilinea={3}
+                ayuda="{id} es el pedido y {monto}, el saldo."
+                value={c.mensajePagos}
+                onChange={(e) => cambiar('mensajePagos', e.target.value)}
+              />
+              {muestraPagos && (
+                <div className={s.burbuja} aria-label="Así llega el mensaje">
+                  <span className={s.etiqueta}>Así te llega</span>
+                  <p>{conNegritas(muestraPagos)}</p>
+                </div>
+              )}
+            </div>
+            <div className={s.otro}>
+              <div className={s.dosCampos}>
+                <Campo id="wa-yapeNumero" etiqueta="Yape: número" inputMode="tel" autoComplete="off" placeholder="Ej. 987 654 321" value={c.yapeNumero} error={errores.yapeNumero} onChange={(e) => cambiar('yapeNumero', telefonoEscrito(e.target.value))} />
+                <Campo etiqueta="Yape: titular" placeholder="Ej. Juan Pérez" ayuda="Recomendado: el cliente lo ve al pagar." value={c.yapeTitular} onChange={(e) => cambiar('yapeTitular', e.target.value)} />
+                <Campo id="wa-plinNumero" etiqueta="Plin: número" inputMode="tel" autoComplete="off" placeholder="Vacío si no usas Plin" value={c.plinNumero} error={errores.plinNumero} onChange={(e) => cambiar('plinNumero', telefonoEscrito(e.target.value))} />
+                <Campo etiqueta="Plin: titular" placeholder="Ej. Juan Pérez" value={c.plinTitular} onChange={(e) => cambiar('plinTitular', e.target.value)} />
+              </div>
+              <p className={s.nota}>Con al menos un número, la hoja de pagar el saldo muestra «Yape o Plin a mano» con «Copiar». Ese pago lo revisa cobranza (no se registra solo).</p>
+            </div>
+          </GrupoCampos>
+
+          {asesores && (
+            <GrupoCampos icono={<Store />} tono="rosa" titulo="Los asesores de cada marca" ayuda="El botón en la página y las fichas de esa marca, «Consultar a la marca» en Mis pedidos y, con «Cada marca a su asesor», sus pedidos. Vacío: los números de arriba.">
+              {asesores.length ? (
+                <div className={s.dosCampos}>
+                  {asesores.map((a) => (
+                    <Campo
+                      key={a.id}
+                      id={`wa-asesor-${a.id}`}
+                      etiqueta={a.nombre}
+                      inputMode="tel"
+                      autoComplete="off"
+                      placeholder="Vacío: el general"
+                      value={a.numero}
+                      error={errores[`asesor-${a.id}`]}
+                      onChange={(e) => cambiarAsesor(a.id, telefonoEscrito(e.target.value))}
+                    />
+                  ))}
+                </div>
+              ) : <p className={s.nota}>Todavía no hay marcas.</p>}
+              <p className={s.nota}>También se cambia en <Boton tamano="sm" variante="fantasma" to={urlMarcas}>Marcas</Boton></p>
+            </GrupoCampos>
+          )}
+
+          <GrupoCampos icono={<Phone />} tono="plata" titulo="El teléfono de contacto" ayuda="El «Tel.» del pie de la tienda, junto al correo y la dirección.">
+            <Campo
+              id="wa-contacto"
+              etiqueta="Teléfono"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder={contactoPorDefecto ? `Vacío: ${contactoPorDefecto}` : '+51 987 654 321'}
+              ayuda={contactoPorDefecto ? `Vacío: ${contactoPorDefecto}, el que viene puesto.` : 'Vacío: sin teléfono.'}
+              value={c.contacto}
+              error={errores.contacto}
+              onChange={(e) => cambiar('contacto', telefonoEscrito(e.target.value))}
+            />
+          </GrupoCampos>
         </div>
 
         <aside className={s.resumen} aria-label="Así queda">
@@ -217,6 +306,8 @@ export function PaginaWhatsAppAdmin({
           {[
             { id: 'pedidos', titulo: 'Pedidos', filas: resumen.filas.filter((f) => f.id === 'pedidos') },
             { id: 'boton', titulo: 'Botón verde', filas: resumen.filas.filter((f) => f.id !== 'pedidos') },
+            { id: 'pagos', titulo: 'Pagos', filas: resumen.pagos },
+            { id: 'contacto', titulo: 'Contacto', filas: [resumen.contacto] },
           ].map((parte) => (
             <div key={parte.id} className={s.resumenParte}>
               <span className={s.resumenSubtitulo}>{parte.titulo}</span>
@@ -224,7 +315,7 @@ export function PaginaWhatsAppAdmin({
                 {parte.filas.map((f) => (
                   <li key={f.id}>
                     <span className={s.resumenDonde}>{f.donde}</span>
-                    <span className={f.numero ? s.resumenNumero : s.resumenSin}>{f.numero ? legible(f.numero) : 'Sin botón'}</span>
+                    <span className={f.numero ? s.resumenNumero : s.resumenSin}>{f.numero ? legible(f.numero) : parte.id === 'boton' ? 'Sin botón' : 'No se muestra'}</span>
                     {f.numero && f.nota && <span className={s.resumenNota}>{f.nota}</span>}
                   </li>
                 ))}
@@ -244,7 +335,7 @@ export function PaginaWhatsAppAdmin({
               </ul>
               <p className={s.nota}>
                 En su página y sus fichas, el botón usa el de la marca{c.multimarca ? '; sus pedidos también' : ''}.
-                {' '}Se cambia en <Boton tamano="sm" variante="fantasma" to={urlMarcas}>Marcas</Boton>
+                {!asesores && <>{' '}Se cambia en <Boton tamano="sm" variante="fantasma" to={urlMarcas}>Marcas</Boton></>}
               </p>
             </div>
           )}

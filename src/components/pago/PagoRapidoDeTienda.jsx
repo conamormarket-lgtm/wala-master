@@ -8,12 +8,14 @@ import { trackPaymentComplete } from '../../services/analytics/tracker';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import { PaginaPagoRapido } from '../../componentes/kit/paginas/PagoRapido';
 import { enlacePagoDesde } from '../../componentes/kit/adaptadores';
+import { empresa } from '../../config/empresa';
 
 // PayPal (su SDK) baja solo para los enlaces en dólares.
 const PaypalEnlaceCheckout = lazy(() => import('../PaypalCheckout/PaypalEnlaceCheckout'));
 
 // El número principal de WhatsApp (el mismo del checkout), con su respaldo.
-const NUMERO_PRINCIPAL = '51924426791';
+// Si no hay ninguno configurado: el de la empresa (config/empresa).
+const NUMERO_PRINCIPAL = empresa.whatsapp;
 const limpiarNumero = (n) => {
   const limpio = String(n || '').replace(/[\s\-()+]/g, '');
   return limpio && !limpio.startsWith('51') && limpio.length <= 9 ? `51${limpio}` : limpio;
@@ -50,8 +52,17 @@ export default function PagoRapidoDeTienda() {
   const sinSalida = doc === null || estado === 'vencido';
   // "Escribir al asesor": solo hace falta si el enlace no sirve.
   const { data: numero } = useQuery({
-    queryKey: ['whatsapp-principal'],
-    queryFn: async () => limpiarNumero((await getMessage('whatsapp_number_principal')).data) || NUMERO_PRINCIPAL,
+    // El WhatsApp de pagos (Ajustes › WhatsApp y teléfonos) y, si está vacío, el
+    // de Mi cuenta y el general: un enlace que no sirve es un tema de pagos (antes
+    // iba al número de los pedidos).
+    queryKey: ['whatsapp-pagos'],
+    queryFn: async () => {
+      for (const clave of ['whatsapp_number_pagos', 'whatsapp_number_cuenta', 'whatsapp_number', 'whatsapp_number_principal']) {
+        const n = limpiarNumero((await getMessage(clave)).data);
+        if (n) return n;
+      }
+      return NUMERO_PRINCIPAL;
+    },
     enabled: sinSalida,
     staleTime: 10 * 60 * 1000,
   });

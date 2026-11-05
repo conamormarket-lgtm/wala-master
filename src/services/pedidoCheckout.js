@@ -1,4 +1,5 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { empresa } from '../config/empresa';
 import { leerReferidoGuardado, olvidarReferido } from './referrals';
 import { markItemAsGifted } from './wishlist';
 import { marcarCreacionesEnPedido } from './designs';
@@ -727,7 +728,7 @@ export function armarWhatsapp({
     // ── Número de destino del WhatsApp único ("Todo a WALA") ───────────
     // Por defecto (multimarca !== true) TODO va al NÚMERO PRINCIPAL.
     const waMultimarca = whatsappConfig?.multimarca === true;
-    const waPrincipal = whatsappConfig?.principalNumber || '51924426791';
+    const waPrincipal = whatsappConfig?.principalNumber || empresa.whatsapp;
     const waLink = `https://wa.me/${waPrincipal}?text=${encodeURIComponent(message)}`;
 
     // ── 3.a Helper de mensaje por marca (usado solo en modo multimarca) ──

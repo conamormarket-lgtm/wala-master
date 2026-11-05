@@ -4,13 +4,14 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { getMessage, setMessage } from '../../services/messages';
 import { createDocument, getCollection, setDocument } from '../../services/firebase/firestore';
 import { getInventoryLogs } from '../../services/inventoryLogs';
-import { getBrands } from '../../services/brands';
+import { getBrands, updateBrand } from '../../services/brands';
+import { empresa } from '../../config/empresa';
 import { getLandingPages } from '../../pages/Tienda/services/landingPages';
 import { getLockedPages } from '../../services/lockedPages';
 import { saveStorefrontConfig } from '../../pages/Tienda/services/storefront';
 import { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from '../../componentes/kit/paginas/admin/Ajustes';
 import {
-  whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde, puedeVer,
+  whatsappDesdeMensajes, whatsappAMensajes, asesoresCambiados, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde, puedeVer,
 } from '../../componentes/kit/adaptadoresAdmin';
 import { useAuth } from '../../contexts/AuthContext';
 import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
@@ -37,6 +38,9 @@ const CLAVES_WHATSAPP = [
   'whatsapp_number_principal', 'whatsapp_multimarca',
   'whatsapp_number_tienda', 'whatsapp_number_crear', 'whatsapp_number_cuenta',
   'whatsapp_text_tienda', 'whatsapp_mostrar_en_acceso', 'whatsapp_number',
+  // Desde 2026-11-05 también los de Gestión de pagos y el teléfono del pie.
+  'whatsapp_number_pagos', 'whatsapp_text_pagos', 'yape_number', 'yape_name', 'plin_number', 'plin_name',
+  'contacto_telefono',
 ];
 // Las marcas (la misma lista que el botón y el checkout, ['brands']).
 const leerMarcas = async () => (await getBrands()).data || [];
@@ -58,21 +62,33 @@ export function WhatsAppDelPanel() {
     return { data: whatsappDesdeMensajes(Object.fromEntries(CLAVES_WHATSAPP.map((k, i) => [k, valores[i]?.data ?? '']))) };
   });
   const marcasQ = useQuery({ queryKey: ['brands'], queryFn: leerMarcas, staleTime: 15 * 60 * 1000 });
-  const marcas = useMemo(() => (marcasQ.data || [])
-    .filter((b) => String(b?.whatsappNumber || '').trim())
-    .map((b) => ({ nombre: b.name || b.slug, numero: b.whatsappNumber.trim() })), [marcasQ.data]);
+  // El asesor de cada marca se edita aquí también (se guarda en la marca).
+  const asesores = useMemo(() => (marcasQ.data || [])
+    .filter((b) => b?.id)
+    .map((b) => ({ id: b.id, nombre: b.name || b.slug || b.id, numero: String(b.whatsappNumber || '').trim() })), [marcasQ.data]);
+  // Un objeto estable entre dibujos: la página no pierde lo que se escribe.
+  const config = useMemo(() => (lectura.datos && marcasQ.data ? { ...lectura.datos, asesores } : null), [lectura.datos, marcasQ.data, asesores]);
   return (
     <PaginaWhatsAppAdmin
-      // useQuery da el mismo objeto entre render y render: la página no pierde lo que se escribe.
-      config={lectura.datos}
-      marcas={marcas}
+      config={config}
       urlMarcas="/admin/marcas"
-      cargando={lectura.cargando}
+      contactoPorDefecto={empresa.telefono}
+      // El de respaldo de los pedidos sale de config/empresa (un solo lugar en el código).
+      fabrica={`+${empresa.whatsapp}`}
+      cargando={lectura.cargando || marcasQ.isLoading}
       error={lectura.error}
       onReintentar={lectura.onReintentar}
       onGuardar={async (c) => {
-        await Promise.all(Object.entries(whatsappAMensajes(c)).map(([k, v]) => sinError(setMessage(k, v))));
-        await invalidar(WHATSAPP, ['whatsapp-numbers-config'], ['whatsapp-config-checkout'], ['whatsapp_number_cuenta'], ['admin-whatsapp-marcas-config']);
+        const { asesores: nuevos, ...resto } = c;
+        await Promise.all(Object.entries(whatsappAMensajes(resto)).map(([k, v]) => sinError(setMessage(k, v))));
+        await Promise.all(asesoresCambiados(asesores, nuevos).map((a) => sinError(updateBrand(a.id, { whatsappNumber: a.numero }))));
+        // Todo lo que lee la tienda y el resto del panel: el botón, el checkout,
+        // la hoja de pagar el saldo, Pago rápido, el pie y las marcas.
+        await invalidar(
+          WHATSAPP, ['whatsapp-numbers-config'], ['whatsapp-config-checkout'], ['whatsapp_number_cuenta'], ['admin-whatsapp-marcas-config'],
+          ['pagos-saldo-config'], ['admin-pagos-config'], ['user-pagos-config'], ['whatsapp-principal'], ['whatsapp-pagos'], ['contacto-telefono'],
+          ['brands'], ['admin-brands'], ['whatsapp-general'],
+        );
       }}
     />
   );

@@ -899,7 +899,20 @@ test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () 
 
 test('whatsapp: los números, el general, los errores y el mensaje del pedido', () => {
   const c = m2.whatsappDesdeMensajes({ whatsapp_number: '+51 900 000 001', whatsapp_number_crear: ' 987 654 321 ', whatsapp_mostrar_en_acceso: 'si' });
-  assert.deepEqual(c, { pedidos: '', multimarca: false, tienda: '+51 900 000 001', crear: '987 654 321', cuenta: '', mensajePedido: m2.MENSAJE_PEDIDO_POR_DEFECTO, enAcceso: true });
+  assert.deepEqual(c, {
+    pedidos: '', multimarca: false, tienda: '+51 900 000 001', crear: '987 654 321', cuenta: '', mensajePedido: m2.MENSAJE_PEDIDO_POR_DEFECTO, enAcceso: true,
+    pagos: '', mensajePagos: m2.MENSAJE_PAGOS_POR_DEFECTO, yapeNumero: '', yapeTitular: '', plinNumero: '', plinTitular: '', contacto: '',
+  });
+  // Todos los números en una página: pagos, Yape/Plin y el teléfono del pie van y vuelven.
+  const conPagos = m2.whatsappDesdeMensajes({ whatsapp_number_pagos: '926639234', yape_number: '987 111 222', yape_name: 'Walá', contacto_telefono: '+51 924 426 791', whatsapp_text_pagos: 'Pago {id}' });
+  const ida = m2.whatsappAMensajes(conPagos);
+  assert.deepEqual([ida.whatsapp_number_pagos, ida.yape_number, ida.yape_name, ida.plin_number, ida.contacto_telefono, ida.whatsapp_text_pagos], ['926639234', '987 111 222', 'Walá', '', '+51 924 426 791', 'Pago {id}']);
+  assert.deepEqual(m2.asesoresCambiados([{ id: 'a', numero: '1' }, { id: 'b', numero: '' }], [{ id: 'a', numero: ' 1 ' }, { id: 'b', numero: '987654321' }, { id: 'x', numero: '9' }]), [{ id: 'b', numero: '987654321' }]);
+  assert.equal(m2.erroresDeWhatsApp({ tienda: '912881722', yapeNumero: '123', asesores: [{ id: 'm', numero: '45' }] })['asesor-m'], 'Revisa el número: tiene 2 dígitos.');
+  assert.equal(m2.erroresDeWhatsApp({ tienda: '912881722', yapeNumero: '123' }).yapeNumero, 'Revisa el número: tiene 3 dígitos.');
+  const rp = m2.resumenWhatsApp({ tienda: '912881722', cuenta: '', pagos: '', yapeNumero: '987111222', yapeTitular: 'Walá' }, [], undefined, '+51 924 426 791');
+  assert.deepEqual(rp.pagos.map((f) => [f.id, f.numero, f.nota]), [['pagos', '912881722', 'el de Mi cuenta'], ['yape', '987111222', 'Walá'], ['plin', null, 'no se muestra']]);
+  assert.deepEqual([rp.contacto.numero, rp.contacto.nota], ['+51 924 426 791', 'el que viene puesto']);
   // El mismo número que la tienda, escrito de otra forma = usa el de la tienda.
   const igual = m2.whatsappDesdeMensajes({ whatsapp_number_tienda: '912881722', whatsapp_number_crear: '+51 912 881 722', whatsapp_number_cuenta: '51912881722', whatsapp_number_principal: ' 999 888 777 ', whatsapp_multimarca: 'true' });
   assert.deepEqual([igual.crear, igual.cuenta, igual.pedidos, igual.multimarca], ['', '', '999 888 777', true]);
