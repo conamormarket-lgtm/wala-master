@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import { BarraAdmin } from '../../componentes/kit/piezas/Marco';
-import { useConfirmar } from '../../componentes/kit/Feedback';
+import { useConfirmar, useToast } from '../../componentes/kit/Feedback';
 import useLoViejo from '../../hooks/useLoViejo';
 
 /*
@@ -31,6 +31,7 @@ export default function BarraDeAdmin() {
   const navigate = useNavigate();
   const { isEditModeActive, toggleEditMode, sinGuardar, paginaDelBuilder } = useVisualEditor();
   const confirmar = useConfirmar();
+  const toast = useToast();
   const adminViejo = useLoViejo('admin');
   const pideEditor = new URLSearchParams(search).has('editar');
   useEffect(() => {
@@ -40,6 +41,14 @@ export default function BarraDeAdmin() {
     navigate(`${pathname}${resto.toString() ? `?${resto}` : ''}${hash}`, { replace: true });
     if (!isEditModeActive && !Capacitor.isNativePlatform() && !EN_VISTA_PREVIA_CALOR) toggleEditMode();
   }, [pideEditor, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+  // El editor es de la tienda: al volver al panel (Atrás desde "Diseñar",
+  // o un enlace) se cierra. Antes quedaba abierto encima del panel.
+  const enPanel = pathname.startsWith('/admin');
+  useEffect(() => {
+    if (!enPanel || !isEditModeActive) return;
+    toggleEditMode();
+    if (sinGuardar) toast({ tipo: 'aviso', titulo: 'Se cerró el editor sin publicar', texto: 'Los cambios que no publicaste se perdieron.' });
+  }, [enPanel, isEditModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
   // Con el editor abierto el botón solo lo cierra (publicar es del panel):
   // "Salir del editor", y si hay cambios sin publicar, se pregunta antes.
   const alternarEditor = async () => {

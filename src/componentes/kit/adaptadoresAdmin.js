@@ -94,7 +94,6 @@ export const MENU_ADMIN = [
   {
     id: 'diseno', titulo: 'Diseño y juegos', icono: 'diseno', tono: 'rosa',
     items: [
-      { to: '/tienda', texto: 'Editar la tienda', icono: 'editar', permiso: DISENO, fuera: true },
       { to: '/admin/destacados', texto: 'Destacados', icono: 'destacados', permiso: DISENO },
       { to: '/admin/mascota', texto: 'Kapi', icono: 'kapi', permiso: DISENO },
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: DISENO },
