@@ -286,3 +286,19 @@
 .girado {
   transform: rotate(180deg);
 }
+
+/* El aviso de los dos números entra bajando suave al aparecer. Solo
+   transform y opacity. */
+.avisoVivo {
+  animation: avisoEntra var(--dur-media) var(--ease-signature) both;
+}
+
+@keyframes avisoEntra {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avisoVivo {
+    animation: none;
+  }
+}

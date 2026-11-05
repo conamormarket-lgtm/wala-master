@@ -115,9 +115,11 @@ export function PaginaWhatsAppAdmin({
       <div className={s.whatsapp}>
         <div className={s.columna}>
           {dos && (
+            <div className={s.avisoVivo}>
             <Aviso tipo="info" titulo="Usas dos números de WhatsApp">
               {`Los pedidos llegan al ${legible(dos.pedidos)}${dos.sinElegir ? ' (el que viene puesto: aún no elegiste uno)' : ''} y el botón verde de la tienda lleva al ${legible(dos.boton)}. Si quieres uno solo, escribe el mismo número en «Número que recibe los pedidos» y en «Número del botón».`}
             </Aviso>
+            </div>
           )}
           <GrupoCampos icono={<ShoppingBag />} titulo="Los pedidos" ayuda="Al terminar de comprar, el cliente te manda por WhatsApp el mensaje de abajo para confirmar su pedido.">
             <Campo

@@ -12,7 +12,7 @@ import {
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, referentesDesde, misionDesdeFirestore, misionAFirestore,
   retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, PaginaCanjesAdmin, canjesDesde, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
-  PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
+  PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, PaginaResenasProductos, configConPregunta,
   PaginaSorteosAdmin, PaginaSorteoAdmin, sorteoDesdeFirestore, sorteoAFormulario, participanteDesde,
   PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
   PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
@@ -509,6 +509,13 @@ const EMBUDO_DEMO = [
   { id: 'whatsapp', label: 'Promociones por WhatsApp', total: 33, porcentaje: 28, nota: 'solo a quien no lo tenía activado' },
   { id: 'terminaron', label: 'Terminaron', total: 64, porcentaje: 53 },
 ];
+// Reseñas de productos de ejemplo (PaginaResenasProductos).
+const RESENAS_DEMO = [
+  { id: 'r1', producto: 'Polera clásica', productoUrl: '/producto/demo', estrellas: 5, comentario: 'La tela es suavecita y el estampado no se despinta. ¡La volvería a pedir!', nombre: 'Ana Torres', fecha: Date.now() - 2 * 86400000, fotos: ['https://picsum.photos/seed/r1/400'] },
+  { id: 'r2', producto: 'Taza mágica «Feliz día»', productoUrl: '/producto/demo', estrellas: 4, comentario: 'Llegó bien envuelta. El color cambia rapidísimo con el café.', nombre: 'Luis', fecha: Date.now() - 5 * 86400000, fotos: [] },
+  { id: 'r3', producto: 'Polo clásico', productoUrl: '/producto/demo', estrellas: 2, comentario: 'Me llegó una talla más grande.', nombre: 'Anónimo', fecha: Date.now() - 9 * 86400000, fotos: [] },
+];
+
 const ENTREGAS_DEMO = [
   [5, ['Todo estuvo bien'], 'Llegó rapidísimo y el empaque precioso.', 1, 'WL-1042', 'Valeria Quispe'],
   [4, ['Tiempo de entrega'], 'Muy bonito, pero tardó un día más.', 2, 'WL-1038', 'Luis Mendoza'],
@@ -761,6 +768,8 @@ function PanelDePrueba() {
   const [resFicha, setResFicha] = useState('resumen');
   const [resVisibles, setResVisibles] = useState(4);
   const [resEncuesta, setResEncuesta] = useState('entregas');
+  const [resenasDemo, setResenasDemo] = useState(RESENAS_DEMO);
+  const [mensajeTiendaDemo, setMensajeTiendaDemo] = useState('');
   const [resOrigen, setResOrigen] = useState('todos');
   const [resDiseno, setResDiseno] = useState('todos');
   const [resAncho, setResAncho] = useState('todos');
@@ -975,6 +984,8 @@ function PanelDePrueba() {
     pagina = (
       <PaginaMarcas
         {...comunes}
+        mensajeTienda={mensajeTiendaDemo}
+        onGuardarMensajeTienda={async (t) => { await espera(600); fallar(); setMensajeTiendaDemo(t); }}
         marcas={vacio ? [] : marcas}
         onGuardar={guardarMarca}
         onEliminar={eliminarMarca}
@@ -1314,7 +1325,14 @@ function PanelDePrueba() {
           />
         ) : resPestana === 'opiniones' ? (
           <PaginaOpinionesResultados encuesta={resEncuesta} onEncuesta={setResEncuesta}>
-            {resEncuesta === 'entregas' ? (
+            {resEncuesta === 'resenas' ? (
+              <PaginaResenasProductos
+                resenas={con('vacio') ? [] : resenasDemo}
+                cargando={con('cargando')}
+                error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+                onBorrar={async (id) => { await espera(500); fallar(); setResenasDemo((l) => l.filter((r) => r.id !== id)); }}
+              />
+            ) : resEncuesta === 'entregas' ? (
               <RespuestasEntregas
                 config={encuesta.entregaPanel}
                 onGuardarConfig={async (e) => { await espera(600); fallar(); setEncuesta((c) => ({ ...c, entregaPanel: e })); }}

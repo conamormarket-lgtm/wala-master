@@ -391,6 +391,11 @@ export function CuentaDemo({
           monto={pagar?.deuda || pagar?.total || 0}
           tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta o Yape</Boton>}
           urlAyuda={enlaceWhatsApp(empresa.whatsapp, `Hola, tengo un problema para pagar el saldo de mi pedido #${pagar?.codigo}.`)}
+          manual={{
+            yape: { numero: '987 654 321', nombre: 'Walá S.A.C.' },
+            plin: { numero: '987 654 321', nombre: 'Walá S.A.C.' },
+            urlComprobante: enlaceWhatsApp(empresa.whatsapp, `Hola, quiero pagar mi saldo pendiente del pedido *#${pagar?.codigo}*. Adjunto mi comprobante.`),
+          }}
         />
       </>
     );

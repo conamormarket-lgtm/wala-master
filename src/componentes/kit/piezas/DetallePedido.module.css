@@ -518,20 +518,103 @@
   box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
 }
 
-/* Yape o Plin a mano: el número de cada cuenta con su titular. */
+/* Yape o Plin a mano: cada cuenta en su fila (entran en cascada), el número
+   con su titular y «Copiar» con un visto que salta. Solo transform y opacity. */
 .cuentaManual {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  animation: entraCuenta var(--dur-media) var(--ease-signature) both;
+  animation-delay: calc(var(--k, 0) * 60ms + 80ms);
 }
 
-.cuentaManual strong {
+@keyframes entraCuenta {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.cuentaDatos {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.cuentaDatos strong {
   font-size: 1rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
-.cuentaManual small {
+.cuentaDatos small {
+  overflow: hidden;
   color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copiarNumero {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 36px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) var(--ease-signature), border-color var(--dur-rapida) ease;
+}
+
+.copiarNumero svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.copiarNumero:active {
+  transform: scale(0.95);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .copiarNumero:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--color-border));
+  }
+}
+
+.copiado {
+  border-color: #c6f0dc;
+  color: #059669;
+}
+
+.copiado svg {
+  animation: saltaCopiado 0.42s var(--ease-signature) both;
+}
+
+@keyframes saltaCopiado {
+  0% { transform: scale(0.3) rotate(-20deg); }
+  60% { transform: scale(1.25) rotate(6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+:global([data-theme='dark']) .copiado {
+  border-color: rgba(52, 211, 153, 0.35);
+  color: #34d399;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cuentaManual,
+  .copiado svg {
+    animation: none;
+  }
+
+  .copiarNumero {
+    transition: none;
+  }
 }

@@ -102,7 +102,7 @@ export { PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaM
 export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin, PaginaCanjesAdmin } from './paginas/admin/Fidelidad';
 export { PaginaFechasAdmin } from './paginas/admin/Fechas';
 export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
-export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta } from './paginas/admin/Encuestas';
+export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, PaginaResenasProductos } from './paginas/admin/Encuestas';
 export { PaginaSorteosAdmin, PaginaSorteoAdmin, GanadoresSorteo, AjusteSorteo } from './paginas/admin/Sorteos';
 export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admin/Suscripciones';
 export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';

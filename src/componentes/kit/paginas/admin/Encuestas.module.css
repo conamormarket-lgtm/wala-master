@@ -262,3 +262,55 @@
 .gusto {
   overflow-wrap: anywhere;
 }
+
+/* ── Reseñas de productos: vivas como las tarjetas de la tienda ───────────
+   Entran subiendo en cascada (entraTarjeta de Crear y Comunidad), se levantan
+   un poco al pasar el ratón y, al borrarlas, se encogen y se van. Solo
+   transform y opacity; nada en bucle. */
+.resena {
+  transition: transform var(--dur-rapida) var(--ease-signature), border-color var(--dur-rapida) ease;
+  animation: entraResena var(--dur-media) var(--ease-signature) both;
+  animation-delay: calc(min(var(--k, 0), 8) * 45ms);
+}
+
+@keyframes entraResena {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .resena:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--primary-color) 35%, var(--color-border));
+  }
+
+  .resena:hover .estrellas {
+    transform: scale(1.08);
+  }
+}
+
+.resena .estrellas {
+  display: inline-block;
+  transition: transform var(--dur-rapida) var(--ease-signature);
+  transform-origin: left center;
+}
+
+.resenaSale {
+  pointer-events: none;
+  animation: saleResena 220ms ease-in forwards;
+}
+
+@keyframes saleResena {
+  to { opacity: 0; transform: scale(0.96) translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resena,
+  .resenaSale {
+    animation: none;
+    transition: none;
+  }
+
+  .resenaSale {
+    opacity: 0.4;
+  }
+}

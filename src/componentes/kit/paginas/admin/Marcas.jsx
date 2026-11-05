@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Boxes, LayoutTemplate, MessageCircle, MessageSquareText, MoreHorizontal, PackageMinus, PackagePlus, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Boxes, Check, LayoutTemplate, MessageCircle, MessageSquareText, MoreHorizontal, PackageMinus, PackagePlus, Plus, Sparkles, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, useToast } from '../../Feedback';
 import { Campo, Deslizador } from '../../Formulario';
@@ -44,8 +44,8 @@ function TarjetaWhatsApp({ config, cargando, url }) {
   // El botón verde va a otro número a propósito: se dice aquí para que no confunda.
   const dos = dosNumerosWhatsApp(config.principal, config.boton, config.fabrica);
   return (
-    <div className={s.whatsapp}>
-      <Sello tamano={40} tono="menta"><MessageCircle /></Sello>
+    <div className={`${s.whatsapp} ${s.tarjetaViva}`} style={{ '--k': 0 }}>
+      <Sello tamano={40} tono="menta" className={s.selloVivo}><MessageCircle /></Sello>
       <div className={s.whatsappTextos}>
         <strong>Pedidos por WhatsApp</strong>
         {cargando ? <EsqueletoTexto lineas={1} /> : (
@@ -71,12 +71,20 @@ function TarjetaMensajeTienda({ valor = '', cargando, onGuardar }) {
   const toast = useToast();
   const [texto, setTexto] = useState(valor);
   const [guardando, setGuardando] = useState(false);
+  // El visto que salta junto a «Guardar» (se va solo a los 2,5 s).
+  const [guardado, setGuardado] = useState(false);
   useEffect(() => { setTexto(valor); }, [valor]);
+  useEffect(() => {
+    if (!guardado) return undefined;
+    const t = setTimeout(() => setGuardado(false), 2500);
+    return () => clearTimeout(t);
+  }, [guardado]);
   const cambio = texto.trim() !== String(valor || '').trim();
   const guardar = async () => {
     setGuardando(true);
     try {
       await onGuardar(texto.trim());
+      setGuardado(true);
       toast({ tipo: 'exito', titulo: 'Mensaje guardado', texto: texto.trim() ? undefined : 'Sin texto: se ve el de siempre.' });
     } catch (err) {
       toast({ tipo: 'error', titulo: 'No se guardó', texto: err?.message || 'Vuelve a intentar.' });
@@ -85,8 +93,8 @@ function TarjetaMensajeTienda({ valor = '', cargando, onGuardar }) {
     }
   };
   return (
-    <div className={s.whatsapp}>
-      <Sello tamano={40} tono="oro"><MessageSquareText /></Sello>
+    <div className={`${s.whatsapp} ${s.tarjetaViva}`} style={{ '--k': 1 }}>
+      <Sello tamano={40} tono="oro" className={s.selloVivo}><MessageSquareText /></Sello>
       <div className={s.whatsappTextos}>
         <strong>Mensaje si la tienda no tiene productos</strong>
         {cargando ? <EsqueletoTexto lineas={1} /> : (
@@ -100,7 +108,9 @@ function TarjetaMensajeTienda({ valor = '', cargando, onGuardar }) {
           />
         )}
       </div>
-      <Boton tamano="sm" variante="secundario" onClick={guardar} cargando={guardando} disabled={cargando || !cambio}>Guardar</Boton>
+      {guardado && !cambio
+        ? <span className={s.guardado} role="status"><Check aria-hidden="true" /> Guardado</span>
+        : <Boton tamano="sm" variante="secundario" onClick={guardar} cargando={guardando} disabled={cargando || !cambio}>Guardar</Boton>}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Check, CheckCircle2, AlertTriangle, Receipt, FileText, Camera, Coins, CreditCard, Send, Loader2, ImageOff, Smartphone } from 'lucide-react';
+import { Check, CheckCircle2, AlertTriangle, Receipt, FileText, Camera, Coins, CreditCard, Send, Loader2, ImageOff, Smartphone, Copy } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { HojaInferior } from '../Feedback';
@@ -186,6 +186,15 @@ export function PagosPedido({ total = 0, abonado, deuda = 0, pagado = false, est
  */
 export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, urlAyuda, manual, cargando = false }) {
   const cuentas = [manual?.yape?.numero && { app: 'Yape', ...manual.yape }, manual?.plin?.numero && { app: 'Plin', ...manual.plin }].filter(Boolean);
+  // Copiar el número con un toque (para pegarlo en Yape o Plin): el visto salta y se va a los 2 s.
+  const [copiado, setCopiado] = useState('');
+  const relojCopiado = useRef(null);
+  const copiar = (c) => {
+    navigator.clipboard?.writeText(String(c.numero).replace(/\D/g, '')).catch(() => {});
+    setCopiado(c.app);
+    clearTimeout(relojCopiado.current);
+    relojCopiado.current = setTimeout(() => setCopiado(''), 2000);
+  };
   return (
     <HojaInferior abierta={abierta} onCerrar={onCerrar} titulo="Pagar el saldo">
       <div className={s.pagar}>
@@ -206,12 +215,19 @@ export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, urlAyuda
             {cuentas.length > 0 && (
               <section className={s.metodo}>
                 <h4><Smartphone aria-hidden="true" /> <Texto>Yape o Plin a mano</Texto> <span><Texto>Lo revisamos</Texto></span></h4>
-                {cuentas.map((c) => (
-                  <p key={c.app} className={s.cuentaManual}>
+                {cuentas.map((c, i) => (
+                  <div key={c.app} className={s.cuentaManual} style={{ '--k': i }}>
                     <span className={`${s.marcaPago} ${c.app === 'Yape' ? s.marcaYape : s.marcaPlin}`}>{c.app}</span>
-                    <strong>{c.numero}</strong>
-                    {c.nombre && <small>{c.nombre}</small>}
-                  </p>
+                    <span className={s.cuentaDatos}>
+                      <strong>{c.numero}</strong>
+                      {c.nombre && <small>{c.nombre}</small>}
+                    </span>
+                    <button type="button" className={`${s.copiarNumero} ${copiado === c.app ? s.copiado : ''}`} onClick={() => copiar(c)} aria-label={`Copiar el número de ${c.app}`}>
+                      {copiado === c.app
+                        ? <><Check aria-hidden="true" key="ok" /> <Texto>Copiado</Texto></>
+                        : <><Copy aria-hidden="true" key="copiar" /> <Texto>Copiar</Texto></>}
+                    </button>
+                  </div>
                 ))}
                 <p><Texto>Yapea o plinea el monto y mándanos la captura: se confirma cuando la revisemos.</Texto></p>
                 {manual.urlComprobante && (

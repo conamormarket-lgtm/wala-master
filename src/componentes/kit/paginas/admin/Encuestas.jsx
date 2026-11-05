@@ -662,14 +662,19 @@ export function PaginaResenasProductos({ resenas = [], cargando, error, onReinte
   const toast = useToast();
   const [visibles, setVisibles] = useState(30);
   const [borrar, setBorrar] = useState(null);
+  // La que se está borrando: se encoge y se va mientras el servidor la quita.
+  const [saliendo, setSaliendo] = useState(null);
   const total = resenas.length;
   const promedio = total ? Math.round((resenas.reduce((n, r) => n + (Number(r.estrellas) || 0), 0) / total) * 10) / 10 : 0;
   const confirmarBorrar = async () => {
+    const x = borrar;
+    setBorrar(null);
+    setSaliendo(x.id);
     try {
-      await onBorrar(borrar.id);
-      toast({ tipo: 'exito', titulo: 'Reseña borrada', texto: borrar.producto || undefined });
-      setBorrar(null);
+      await onBorrar(x.id);
+      toast({ tipo: 'exito', titulo: 'Reseña borrada', texto: x.producto || undefined });
     } catch (err) {
+      setSaliendo(null);
       toast({ tipo: 'error', titulo: 'No se borró', texto: err?.message || 'Vuelve a intentar.' });
     }
   };
@@ -683,8 +688,13 @@ export function PaginaResenasProductos({ resenas = [], cargando, error, onReinte
       <BloqueMetrica titulo="Lo que escriben en cada producto" ayuda="Todas, de la más nueva a la más vieja. Borrar una la quita de la ficha del producto.">
         {cargando ? <EsqueletoTexto lineas={4} /> : total ? (
           <ul className={s.comentarios}>
-            {resenas.slice(0, visibles).map((x) => (
-              <li key={x.id} className={s.comentario}>
+            {resenas.slice(0, visibles).map((x, i) => (
+              <li
+                key={x.id}
+                className={[s.comentario, s.resena, saliendo === x.id && s.resenaSale].filter(Boolean).join(' ')}
+                // En cascada, las primeras 8 (las que llegan con «Cargar más» también).
+                style={{ '--k': i % 30 }}
+              >
                 <span className={s.comentarioCabeza}>
                   <span className={s.estrellas} aria-label={`${x.estrellas} de 5 estrellas`}>{estrellasTexto(x.estrellas)}</span>
                   <span className={s.nota}>
