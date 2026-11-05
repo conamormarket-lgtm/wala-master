@@ -5,19 +5,17 @@ import { getEstadisticasPopup, getPopups, reiniciarEstadoLocal, savePopups } fro
 import { normalizarPopup } from '../../services/popupsLogic.mjs';
 import { getBrands } from '../../services/brands';
 import { getLandingPages, saveLandingPage, deleteLandingPage, moverDisenoDeLanding } from '../../pages/Tienda/services/landingPages';
-import { getThemes, saveTheme, deleteTheme } from '../../pages/Tienda/services/themes';
 import { CLAVE_ENLACES_ROTOS } from '../../pages/admin/dashboard/EnlacesRotos';
 import { PaginaPopupsAdmin } from '../../componentes/kit/paginas/admin/Popups';
-import { PaginaLandingsAdmin, PaginaTemasAdmin } from '../../componentes/kit/paginas/admin/Paginas';
-import { landingDesde, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss } from '../../componentes/kit/adaptadoresAdmin';
+import { PaginaLandingsAdmin } from '../../componentes/kit/paginas/admin/Paginas';
+import { landingDesde, landingAFirestore } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
 /*
- * D6d · Popups, páginas y temas: los mismos servicios, claves e
- * invalidaciones que AdminPopups, AdminLandingPages y AdminThemes. Las dos
- * últimas no usaban React Query (leían con useEffect): aquí las landings
- * tienen su clave propia y los temas comparten ['admin-themes'] con el editor
- * de la tienda (la misma lista cruda de getThemes).
+ * D6d · Popups y páginas: los mismos servicios, claves e invalidaciones que
+ * AdminPopups y AdminLandingPages. Las landings no usaban React Query (leían
+ * con useEffect): aquí tienen su clave propia. Los temas (CSS por landing)
+ * se quitaron el 2026-11-05: nadie los usaba.
  */
 
 /* ── Popups ─────────────────────────────────────────── */
@@ -135,58 +133,6 @@ export function LandingsDelPanel() {
       }}
       onDisenar={(ruta) => navigate(`${ruta}?editar`)}
       nuevaDireccion={nuevaDireccion}
-    />
-  );
-}
-
-/* ── Temas ──────────────────────────────────────────── */
-
-// getThemes devuelve la lista sola (y [] si falla, como antes).
-const leerTemas = () => getThemes().then((data) => ({ data }));
-
-/** El .zip de un tema de WordPress → el tema (como AdminThemes: todos los .css, sin __MACOSX, vendor ni node_modules). */
-async function temaDelZip(archivo) {
-  const JSZip = (await import('jszip')).default;
-  const zip = await new JSZip().loadAsync(archivo);
-  const lecturas = [];
-  let principal = null;
-  zip.forEach((ruta, entrada) => {
-    if (!ruta.endsWith('.css') || ruta.includes('__MACOSX') || ruta.includes('/vendor/') || ruta.includes('/node_modules/')) return;
-    // El style.css de arriba (o de la primera carpeta) trae el nombre, autor y versión.
-    if (ruta.endsWith('style.css') && ruta.split('/').length <= 2) principal = entrada;
-    lecturas.push(entrada.async('string'));
-  });
-  if (!lecturas.length) throw new Error('No se encontró ningún archivo .css válido en el tema.');
-  const todos = await Promise.all(lecturas);
-  return temaDesdeCss({ principal: principal ? await principal.async('string') : '', todos, archivo: archivo.name });
-}
-
-/*
- * /admin/temas: el CSS de las páginas del editor, en tienda_themes. Importar
- * un .zip crea un tema nuevo (theme_<ms>), como antes.
- */
-export function TemasDelPanel() {
-  const temas = useLectura(['admin-themes'], leerTemas);
-  const invalidar = useInvalidar();
-  const refrescar = () => invalidar(['admin-themes']);
-
-  return (
-    <PaginaTemasAdmin
-      temas={(temas.datos || []).map(temaDesde)}
-      cargando={temas.cargando}
-      error={temas.error}
-      onReintentar={temas.onReintentar}
-      onGuardar={async (datos, id) => {
-        await sinError(saveTheme(id || null, temaAFirestore(datos)));
-        await refrescar();
-      }}
-      onEliminar={async (id) => { await sinError(deleteTheme(id)); await refrescar(); }}
-      onImportarZip={async (archivo) => {
-        const tema = await temaDelZip(archivo);
-        await sinError(saveTheme(null, temaAFirestore(tema)));
-        await refrescar();
-        return tema;
-      }}
     />
   );
 }

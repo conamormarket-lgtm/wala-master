@@ -223,7 +223,6 @@ const AdminMarcaProductosRuta = lazy(() => import('./pages/admin/AdminMarcaProdu
 const AdminEnlaces = lazy(() => import('./pages/admin/AdminEnlaces'));
 const AdminEnlaceEditor = lazy(() => import('./pages/admin/AdminEnlaceEditor'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
-const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminBolitasPage = lazy(() => import('./pages/admin/AdminBolitasPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
@@ -555,7 +554,8 @@ function App() {
                                       {/* "Elementos con diseño" solo editaba las burbujas de categorías: ahora van en el editor de cada página. */}
                                       <Route path="elementos-diseno/*" element={<Navigate to="/admin/landing-pages" replace />} />
                                       <Route path="landing-pages" element={<AdminLandingPages />} />
-                                      <Route path="temas" element={<AdminThemes />} />
+                                      {/* Los temas (CSS por landing) se quitaron: nadie los usaba. */}
+                                      <Route path="temas" element={<Navigate to="/admin/landing-pages" replace />} />
                                       <Route path="ruleta" element={<AdminRuletaPage />} />
               <Route path="bolitas" element={<AdminBolitasPage />} />
                                       <Route path="backups" element={<AdminBackups />} />

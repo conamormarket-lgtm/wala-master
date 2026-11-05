@@ -1,7 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useParams, useLocation, Navigate } from 'react-router-dom';
 import { getLandingPageBySlug } from './services/landingPages';
-import { getThemeById } from './services/themes';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
@@ -33,7 +32,6 @@ const LandingDinamica = ({ slug }) => {
   
   const [loading, setLoading] = useState(true);
   const [landingPage, setLandingPage] = useState(null);
-  const [themeContent, setThemeContent] = useState(null);
 
   // Oculta el header/footer de la tienda DE INMEDIATO. Si esperamos al fetch de
   // la landing, el cliente ve por un instante el chrome de WALA + el esqueleto
@@ -62,18 +60,6 @@ const LandingDinamica = ({ slug }) => {
             setHeaderVisible(!page.hideHeader);
             setFooterVisible(!page.hideFooter);
 
-            if (page.themeId) {
-              try {
-                const theme = await getThemeById(page.themeId);
-                if (theme && theme.cssContent) {
-                  setThemeContent(theme.cssContent);
-                }
-              } catch (themeErr) {
-                // El tema es cosmetico (CSS extra): si falla, la landing se
-                // ve sin ese tema en vez de quedarse cargando para siempre.
-                console.warn('No se pudo cargar el tema de la landing:', themeErr);
-              }
-            }
           } else {
             setPaginaDelBuilder(null);
           }
@@ -135,9 +121,6 @@ const LandingDinamica = ({ slug }) => {
 
   return (
     <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''}`} id="landing-theme-wrapper" translate="no">
-      {themeContent && (
-        <style dangerouslySetInnerHTML={{ __html: themeContent }} />
-      )}
       {/* 
         TiendaPage internamente usa la ruta para definir el pageId,
         así que ya renderizará las secciones correctas para esta landing.

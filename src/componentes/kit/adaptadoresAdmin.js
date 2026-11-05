@@ -88,7 +88,6 @@ export const MENU_ADMIN = [
       { to: '/admin/enlaces', texto: 'Enlaces útiles', icono: 'enlaces', permiso: DISENO },
       { to: '/admin/popups', texto: 'Popups y anuncios', icono: 'popups', permiso: CLIENTES },
       { to: '/admin/landing-pages', texto: 'Landing pages', icono: 'landings', permiso: [...PRODUCTOS, 'manage_landing_pages'], todos: true },
-      { to: '/admin/temas', texto: 'Temas', icono: 'temas', permiso: [...PRODUCTOS, 'manage_landing_pages'], todos: true },
     ],
   },
   {
@@ -2995,26 +2994,6 @@ export function landingAFirestore(d = {}, previa = null) {
   if (vieja && vieja !== slug) anteriores = [...new Set([...anteriores, vieja])];
   return { title: String(d.nombre || '').trim(), brandId: d.marcaId || '', slug, slugsAnteriores: anteriores.filter((x) => x !== slug) };
 }
-
-/* Temas: CSS propio o importado de un tema de WordPress (.zip). */
-export const temaDesde = (t = {}) => ({ id: t.id, nombre: t.name || '', autor: t.author || '', version: t.version || '1.0', tipo: t.type === 'wordpress_import' ? 'wordpress_import' : 'custom_css', css: t.cssContent || '' });
-export const temaAFirestore = (d = {}) => ({ name: String(d.nombre || '').trim(), author: String(d.autor || '').trim() || 'Custom', type: d.tipo || 'custom_css', cssContent: d.css || '', version: d.version || '1.0' });
-
-/** Del CSS de un .zip: el nombre, autor y versión salen de la cabecera del style.css (o del primero). */
-export function temaDesdeCss({ principal = '', todos = [], archivo = 'tema.zip' } = {}) {
-  const fuente = principal || todos[0] || '';
-  const de = (campo) => new RegExp(`${campo}:\\s*(.*)`, 'i').exec(fuente)?.[1].trim();
-  return {
-    nombre: de('Theme Name') || String(archivo).replace(/\.zip$/i, ''),
-    autor: de('Author') || 'Desconocido',
-    version: de('Version') || '1.0',
-    tipo: 'wordpress_import',
-    css: todos.join('\n\n/* --- Siguiente Archivo --- */\n\n'),
-  };
-}
-
-/** "12.4 KB" (para decir cuánto CSS tiene un tema). */
-export const pesoTexto = (texto = '') => { const b = new TextEncoder().encode(texto).length; return b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`; };
 
 /* ── D7a · La Palabra del día y Las Bolitas ───────────── */
 

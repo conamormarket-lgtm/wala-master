@@ -416,50 +416,6 @@ const HeroCarouselSlideEditor = ({ slide, index, total, onUpdate, onRemove, onMo
   );
 };
 
-const LandingPageSettingsBox = ({ slug }) => {
-  const [lp, setLp] = React.useState(null);
-  const { data: themes } = useQuery({
-    queryKey: ['admin-themes'],
-    queryFn: async () => {
-      const { getThemes } = await import('../services/themes');
-      return await getThemes();
-    }
-  });
-
-  React.useEffect(() => {
-    import('../services/landingPages').then(async ({ getLandingPageById }) => {
-      const data = await getLandingPageById(slug);
-      setLp(data || { id: slug, themeId: '' }); // Fallback if page is not saved yet
-    });
-  }, [slug]);
-
-  if (!lp) return <div style={{padding: '10px', color: '#a7a9ad'}}>Cargando selector de temas...</div>;
-
-  const handleChangeTheme = async (themeId) => {
-    setLp({ ...lp, themeId });
-    const { saveLandingPage } = await import('../services/landingPages');
-    await saveLandingPage(lp.id, { themeId });
-    // Refrescar iframe para ver los cambios
-    const iframe = document.querySelector('iframe');
-    if (iframe) iframe.contentWindow.location.reload();
-  };
-
-  return (
-    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-      <select 
-        value={lp.themeId || ''} 
-        onChange={e => handleChangeTheme(e.target.value)}
-        style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #3e3f43', fontSize: '0.85rem', background: '#3b3c40', color: '#ffffff', outline: 'none' }}
-      >
-        <option value="">-- Tema Global Wala (Por Defecto) --</option>
-        {themes?.map(t => (
-          <option key={t.id} value={t.id}>{t.name}</option>
-        ))}
-      </select>
-    </div>
-  );
-};
-
 const VisualEditorPanel = () => {
   const [activeTab, setActiveTab] = React.useState('modules'); // 'modules' | 'settings'
 
@@ -3737,20 +3693,6 @@ const VisualEditorPanel = () => {
 
             {activeTab === 'settings' && (
               <div style={{ padding: '1.5rem', flexGrow: 1, overflowY: 'auto', background: '#1f2124' }}>
-
-                {/* TEMA VISUAL */}
-                {activePageId !== 'home' && activePageId !== 'tienda' && activePageId !== 'footer' && (
-                  <div style={{ marginBottom: '20px', background: '#25262a', border: '1px solid #3e3f43', borderRadius: '8px', padding: '15px' }}>
-                    <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#e5e5e5', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <LayoutTemplate size={18} color="#e60278" />
-                      Tema Visual
-                    </h4>
-                    <p style={{ fontSize: '0.85rem', color: '#a7a9ad', marginBottom: '15px' }}>
-                      Sobrescribe los estilos globales de tu tienda aplicando un tema personalizado solo para esta Landing Page.
-                    </p>
-                    <LandingPageSettingsBox slug={activePageId} />
-                  </div>
-                )}
 
                 {/* ESTRUCTURA GLOBAL */}
                 <div style={{ marginBottom: '20px', background: '#25262a', border: '1px solid #3e3f43', borderRadius: '8px', padding: '15px' }}>

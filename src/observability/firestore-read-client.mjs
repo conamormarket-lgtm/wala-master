@@ -75,7 +75,6 @@ const routes = [
   "/admin/notificaciones",
   "/admin/marcas",
   "/admin/landing-pages",
-  "/admin/temas",
   "/admin/ruleta",
   "/admin/bolitas",
   "/admin/backups",

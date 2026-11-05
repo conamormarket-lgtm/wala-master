@@ -288,12 +288,6 @@ const AdminLayoutViejo = () => {
                       >
                         Páginas
                       </NavLink>
-                      <NavLink
-                        to="/admin/temas"
-                        className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                      >
-                        Gestor de Temas
-                      </NavLink>
                     </>
                   )}
                 </>

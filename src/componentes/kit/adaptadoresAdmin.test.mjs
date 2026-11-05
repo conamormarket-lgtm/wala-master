@@ -741,12 +741,6 @@ test('popups, páginas y temas', () => {
   assert.equal(m2.erroresDeLanding({ id: 'n', nombre: 'Otra', slug: 'Promo' }, [{ id: 'p', slug: 'promo' }]).slug, 'Ya hay una página con esa dirección: escoge otra.');
   assert.deepEqual(m2.landingAFirestore({ nombre: ' Promo ', slug: 'promo-2', marcaId: '' }, { slug: 'promo', slugsAnteriores: ['promo-2', 'vieja'] }), { title: 'Promo', brandId: '', slug: 'promo-2', slugsAnteriores: ['vieja', 'promo'] });
   assert.equal(m2.landingAFirestore({ nombre: 'Daida', slug: 'Daida', deMarca: true }).slug, 'Daida');
-
-  const tz = m2.temaDesdeCss({ principal: '/*\nTheme Name: Astra\nAuthor: Brainstorm\nVersion: 4.1\n*/', todos: ['a{}', 'b{}'], archivo: 'astra.zip' });
-  assert.deepEqual([tz.nombre, tz.autor, tz.version, tz.css.includes('Siguiente Archivo')], ['Astra', 'Brainstorm', '4.1', true]);
-  assert.equal(m2.temaDesdeCss({ todos: ['x{}'], archivo: 'mio.zip' }).nombre, 'mio');
-  assert.equal(m2.pesoTexto('a'.repeat(2048)), '2.0 KB');
-  assert.deepEqual(m2.temaAFirestore({ nombre: 'Oscuro', css: 'body{}' }), { name: 'Oscuro', author: 'Custom', type: 'custom_css', cssContent: 'body{}', version: '1.0' });
 });
 
 test('juegos: la palabra del día y las bolitas', () => {
