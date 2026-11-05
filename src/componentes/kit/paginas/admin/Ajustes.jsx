@@ -10,7 +10,7 @@ import { GrupoCampos, BarraGuardar } from '../../piezas/admin/Formularios';
 import { PaginaListaAdmin } from './Lista';
 import { numeroWhatsApp, haceCuanto } from '../../adaptadores';
 import {
-  telefonoEscrito, erroresDeWhatsApp, mensajePedidoDeEjemplo, resumenWhatsApp, WHATSAPP_PEDIDOS_FABRICA,
+  telefonoEscrito, erroresDeWhatsApp, mensajePedidoDeEjemplo, resumenWhatsApp, dosNumerosWhatsApp, NOTA_SIN_ELEGIR, WHATSAPP_PEDIDOS_FABRICA,
   paginasDelHistorial, textoCambioStock, textoStock, csvInventario,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -110,9 +110,15 @@ export function PaginaWhatsAppAdmin({
     const conId = c.mensajePedido.includes('{id}');
     const resumen = resumenWhatsApp(c, marcas, fabrica);
     const nombresMarcas = resumen.marcas.map((m) => m.nombre).join(' y ');
+    const dos = dosNumerosWhatsApp(c.pedidos, c.tienda, fabrica);
     cuerpo = (
       <div className={s.whatsapp}>
         <div className={s.columna}>
+          {dos && (
+            <Aviso tipo="info" titulo="Usas dos números de WhatsApp">
+              {`Los pedidos llegan al ${legible(dos.pedidos)}${dos.sinElegir ? ' (el que viene puesto: aún no elegiste uno)' : ''} y el botón verde de la tienda lleva al ${legible(dos.boton)}. Si quieres uno solo, escribe el mismo número en «Número que recibe los pedidos» y en «Número del botón».`}
+            </Aviso>
+          )}
           <GrupoCampos icono={<ShoppingBag />} titulo="Los pedidos" ayuda="Al terminar de comprar, el cliente te manda por WhatsApp el mensaje de abajo para confirmar su pedido.">
             <Campo
               id="wa-pedidos"
@@ -120,12 +126,12 @@ export function PaginaWhatsAppAdmin({
               inputMode="tel"
               autoComplete="off"
               placeholder={legible(fabrica)}
-              ayuda={`Vacío: el de fábrica, ${legible(fabrica)}. Sin +, se le pone el +51 del Perú.`}
+              ayuda={`Vacío: ${legible(fabrica)}, el que viene puesto. Sin +, se le pone el +51 del Perú.`}
               value={c.pedidos}
               error={errores.pedidos}
               onChange={(e) => cambiar('pedidos', telefonoEscrito(e.target.value))}
             />
-            <Destino texto="Llegan a" numero={c.pedidos || fabrica} nota={c.pedidos ? '' : 'el de fábrica'} />
+            <Destino texto="Llegan a" numero={c.pedidos || fabrica} nota={c.pedidos ? '' : NOTA_SIN_ELEGIR} />
             <Interruptor
               etiqueta="Cada marca a su asesor"
               descripcion={c.multimarca

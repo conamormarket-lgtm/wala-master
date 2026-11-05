@@ -10,7 +10,7 @@ import { Sello } from '../../Marca';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, AccionesLote, CargarMas, InsigniaEstado } from '../../piezas/admin/Datos';
 import { GrupoCampos, CampoImagen, CampoColor, ElegirUno } from '../../piezas/admin/Formularios';
-import { normalizarBusqueda, slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO } from '../../adaptadoresAdmin';
+import { normalizarBusqueda, slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO, dosNumerosWhatsApp, NOTA_SIN_ELEGIR } from '../../adaptadoresAdmin';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, NumeroCelda, porNombre, porOrden } from './celdas';
 import l from './Lista.module.css';
@@ -27,7 +27,12 @@ import { EsqueletoTexto } from '../../Esqueletos';
 
 const soloTelefono = (t) => String(t || '').replace(/[^\d\s\-()+]/g, '');
 /* +51924426791 → +51 924 426 791 (solo para leerlo). */
-const telefonoLegible = (t) => String(t || '').replace(/^\+51(\d{3})(\d{3})(\d{3})$/, '+51 $1 $2 $3');
+// "912881722", "51912881722" o "+51912881722" → "+51 912 881 722".
+const telefonoLegible = (t) => {
+  const d = String(t || '').replace(/\D/g, '');
+  const conMas = d ? `+${d.length === 9 ? `51${d}` : d}` : String(t || '');
+  return conMas.replace(/^\+51(\d{3})(\d{3})(\d{3})$/, '+51 $1 $2 $3');
+};
 const VACIA = { nombre: '', slug: '', logo: '', orden: 0, whatsapp: '', mensajeVacio: '', topeMonedas: TOPE_MONEDAS_POR_DEFECTO, tipoTope: 'pct', monedasPorProducto: '', fondo: '#ffffff', textura: '', opacidad: 100 };
 
 /*
@@ -36,6 +41,8 @@ const VACIA = { nombre: '', slug: '', logo: '', orden: 0, whatsapp: '', mensajeV
  */
 function TarjetaWhatsApp({ config, cargando, url }) {
   const numero = config.principal || config.fabrica;
+  // El botón verde va a otro número a propósito: se dice aquí para que no confunda.
+  const dos = dosNumerosWhatsApp(config.principal, config.boton, config.fabrica);
   return (
     <div className={s.whatsapp}>
       <Sello tamano={40} tono="menta"><MessageCircle /></Sello>
@@ -45,7 +52,8 @@ function TarjetaWhatsApp({ config, cargando, url }) {
           <span>
             {config.multimarca
               ? 'Cada marca recibe los pedidos de sus productos en el WhatsApp de su asesor.'
-              : `Todo llega a ${telefonoLegible(numero)}${config.principal ? '' : ' (el de fábrica)'}.`}
+              : `Los pedidos llegan a ${telefonoLegible(numero)}${config.principal ? '' : ` (${NOTA_SIN_ELEGIR})`}.`}
+            {dos && ` El botón verde de la tienda lleva a otro número: ${telefonoLegible(dos.boton)}.`}
           </span>
         )}
       </div>
@@ -104,7 +112,7 @@ function TarjetaMensajeTienda({ valor = '', cargando, onGuardar }) {
  *  - onGuardarOrden(ids) → promesa: todas, en el orden nuevo. Con él, la lista
  *    se arrastra (como Categorías) y una nueva va al final sola
  *  - muestraDe(marcaId) → props de TarjetaProducto de uno de sus productos (la vista previa) o null
- *  - whatsapp: { principal, multimarca, fabrica } · cargandoWhatsapp · urlWhatsapp (ahí se cambia)
+ *  - whatsapp: { principal, multimarca, fabrica, boton } · cargandoWhatsapp · urlWhatsapp (ahí se cambia)
  *  - onProductos(marca) (sus productos) · onDisenar(marca) (su página con el editor)
  *  - onAplicarPlantilla() → promesa con el resultado en texto · onQuitarRepetidas() → igual
  *  - mensajeTienda · cargandoMensajeTienda · onGuardarMensajeTienda(texto) → promesa

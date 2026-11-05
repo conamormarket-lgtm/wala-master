@@ -50,8 +50,17 @@ export default function MarcasDelPanel() {
   const whatsapp = useQuery({
     queryKey: ['admin-whatsapp-marcas-config'],
     queryFn: async () => {
-      const [principal, multimarca] = await Promise.all([getMessage('whatsapp_number_principal'), getMessage('whatsapp_multimarca')]);
-      return { principal: principal.data?.trim() || '', multimarca: multimarca.data === 'true', fabrica: WHATSAPP_FABRICA };
+      const [principal, multimarca, tienda, general] = await Promise.all([
+        getMessage('whatsapp_number_principal'), getMessage('whatsapp_multimarca'),
+        // El del botón verde (como whatsappDesdeMensajes): para decir si es otro número.
+        getMessage('whatsapp_number_tienda'), getMessage('whatsapp_number'),
+      ]);
+      return {
+        principal: principal.data?.trim() || '',
+        multimarca: multimarca.data === 'true',
+        fabrica: WHATSAPP_FABRICA,
+        boton: tienda.data?.trim() || general.data?.trim() || '',
+      };
     },
   });
 

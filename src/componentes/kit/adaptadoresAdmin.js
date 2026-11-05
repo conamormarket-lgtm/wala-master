@@ -3566,12 +3566,27 @@ export function erroresDeWhatsApp(c = {}) {
  *  - c: whatsappDesdeMensajes · marcas: [{ nombre, numero }] (las que tienen el suyo)
  *  → { filas: [{ id, donde, numero | null, nota }], marcas }
  */
+/** Lo que se dice del número de pedidos cuando nadie eligió uno (antes «el de fábrica», que confundía). */
+export const NOTA_SIN_ELEGIR = 'el que viene puesto: aún no elegiste uno';
+
+/**
+ * Los pedidos y el botón verde van a números distintos → { pedidos, boton } para
+ * avisarlo; null si es el mismo (o falta el del botón). Son dos números a
+ * propósito, pero verlos distintos sin explicación confundía.
+ */
+export function dosNumerosWhatsApp(pedidos, boton, fabrica = WHATSAPP_PEDIDOS_FABRICA) {
+  const p = String(pedidos || '').trim() || fabrica;
+  const b = String(boton || '').trim();
+  if (!b || mismoNumero(p, b)) return null;
+  return { pedidos: p, boton: b, sinElegir: !String(pedidos || '').trim() };
+}
+
 export function resumenWhatsApp(c = {}, marcas = [], fabrica = WHATSAPP_PEDIDOS_FABRICA) {
   const conNumero = marcas.filter((m) => String(m.numero || '').trim());
   const nombres = conNumero.map((m) => m.nombre).join(', ');
   return {
     filas: [
-      { id: 'pedidos', donde: 'Confirmar un pedido', numero: c.pedidos || fabrica, nota: [!c.pedidos && 'el de fábrica', c.multimarca && conNumero.length && `los de ${nombres}, a su asesor`].filter(Boolean).join(' · ') },
+      { id: 'pedidos', donde: 'Confirmar un pedido', numero: c.pedidos || fabrica, nota: [!c.pedidos && NOTA_SIN_ELEGIR, c.multimarca && conNumero.length && `los de ${nombres}, a su asesor`].filter(Boolean).join(' · ') },
       { id: 'tienda', donde: 'El botón en la tienda y las fichas', numero: c.tienda, nota: '' },
       { id: 'crear', donde: 'El botón en Crear', numero: c.crear || c.tienda, nota: c.crear ? '' : 'el de la tienda' },
       { id: 'cuenta', donde: 'El botón en Mi cuenta y el carrito', numero: c.cuenta || c.tienda, nota: c.cuenta ? '' : 'el de la tienda' },

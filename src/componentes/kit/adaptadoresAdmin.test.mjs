@@ -898,7 +898,11 @@ test('whatsapp: los números, el general, los errores y el mensaje del pedido', 
   assert.deepEqual([m2.whatsappAMensajes(igual).whatsapp_number_principal, m2.whatsappAMensajes(igual).whatsapp_multimarca, m2.whatsappAMensajes(igual).whatsapp_number_crear], ['999 888 777', 'true', '']);
   const r = m2.resumenWhatsApp({ ...igual, pedidos: '', enAcceso: false }, [{ nombre: 'Yoryo', numero: '+51936558073' }, { nombre: 'Lumi', numero: '' }]);
   assert.deepEqual(r.filas.map((f) => [f.id, f.numero]), [['pedidos', m2.WHATSAPP_PEDIDOS_FABRICA], ['tienda', '912881722'], ['crear', '912881722'], ['cuenta', '912881722'], ['acceso', null], ['nunca', null]]);
-  assert.deepEqual([r.filas[0].nota, r.marcas.length], ['el de fábrica · los de Yoryo, a su asesor', 1]);
+  assert.deepEqual([r.filas[0].nota, r.marcas.length], [`${m2.NOTA_SIN_ELEGIR} · los de Yoryo, a su asesor`, 1]);
+  // Pedidos y botón a números distintos: se avisa; el mismo (con o sin +51), no.
+  assert.deepEqual(m2.dosNumerosWhatsApp('', '912881722'), { pedidos: '+51924426791', boton: '912881722', sinElegir: true });
+  assert.equal(m2.dosNumerosWhatsApp('+51 912 881 722', '912881722'), null);
+  assert.equal(m2.dosNumerosWhatsApp('987654321', ''), null);
   const g = m2.whatsappAMensajes({ ...c, enAcceso: false });
   assert.deepEqual([g.whatsapp_number, g.whatsapp_number_tienda, g.whatsapp_mostrar_en_acceso, 'whatsapp_text_crear' in g], ['+51 900 000 001', '+51 900 000 001', 'no', false]);
   // Mi cuenta vacío se guarda con el de la tienda (respaldo de "¿Problemas para pagar?").
