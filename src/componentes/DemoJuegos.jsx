@@ -8,7 +8,7 @@ import JUEGOS from './demo/juegos.json';
 
 /*
  * Los minijuegos por dentro en la Tienda de prueba: la Palabra del día
- * (/palabra-del-dia), la Ruleta Semanal (/ruleta) y Las Bolitas de Kapi
+ * (/palabra-del-dia), La Ruleta de Kapi (/ruleta) y Las Bolitas de Kapi
  * (/ball-sort).
  *
  * Qué es real y qué es de ejemplo:
@@ -35,7 +35,7 @@ function palabraDeHoy(hoy) {
 
 export const VISTAS_JUEGOS = [
   ['Palabra del día', '/palabra-del-dia'],
-  ['Ruleta Semanal', '/ruleta'],
+  ['La Ruleta de Kapi', '/ruleta'],
   ['Las Bolitas de Kapi', '/ball-sort'],
 ];
 

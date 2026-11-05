@@ -96,7 +96,7 @@ export const MENU_ADMIN = [
     id: 'diseno', titulo: 'Diseño y juegos', icono: 'diseno', tono: 'rosa',
     items: [
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: DISENO },
-      { to: '/admin/ruleta', texto: 'Ruleta semanal', icono: 'ruleta', permiso: DISENO },
+      { to: '/admin/ruleta', texto: 'La Ruleta de Kapi', icono: 'ruleta', permiso: DISENO },
       { to: '/admin/bolitas', texto: 'Las Bolitas de Kapi', icono: 'bolitas', permiso: DISENO },
     ],
   },
@@ -3171,7 +3171,7 @@ export function metricasBolitas(data = {}) {
   };
 }
 
-/* ── D7b · La Ruleta semanal ──────────────────────────── */
+/* ── D7b · La Ruleta de Kapi ──────────────────────────── */
 
 /*
  * Los premios se editan con los nombres de utils/ruletaModel (normalizarPremio):

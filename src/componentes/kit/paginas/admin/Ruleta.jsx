@@ -21,7 +21,7 @@ import s from './Ruleta.module.css';
 import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
- * D7b · La Ruleta semanal (/admin/ruleta): qué se puede ganar, con qué
+ * D7b · La Ruleta de Kapi (/admin/ruleta): qué se puede ganar, con qué
  * probabilidad y qué días; los colores y las reglas con la rueda real de
  * vista previa; y quién ganó qué, para entregar lo que es a mano. Los premios
  * y la config usan utils/ruletaModel, el mismo modelo del servidor.
@@ -156,7 +156,7 @@ function Entregas({ ganados = [], cargando, error, onReintentar, onMarcarEntrega
 }
 
 /**
- * La Ruleta semanal (/admin/ruleta).
+ * La Ruleta de Kapi (/admin/ruleta).
  *  - pestana + onPestana · hoy ('YYYY-MM-DD', Lima) · diaSemana (0-6, Lima) · cargando · error · onReintentar
  *  - premios: [normalizarPremio] · onGuardarPremio(datos, id?) (premioRuletaAFirestore) · onEliminarPremio(id) · onReiniciarContador(id)
  *  - productos: [productoAdminDesde] · subirImagen(blob, { alAvanzar }) → url
@@ -175,7 +175,7 @@ export function PaginaRuletaAdmin({
   const suma = sumaProbabilidades(premios);
   const sumaOk = Math.abs(suma - 100) < 0.01;
   const hoyLista = useMemo(() => premiosDeHoy(premios, { hoy, diaSemana, ganados: {} }), [premios, hoy, diaSemana]);
-  const cabeza = { icono: 'ruleta', tono: 'rosa', titulo: 'Ruleta semanal', subtitulo: 'Qué se puede ganar, qué días sale cada premio y cómo se ve la rueda.' };
+  const cabeza = { icono: 'ruleta', tono: 'rosa', titulo: 'La Ruleta de Kapi', subtitulo: 'Qué se puede ganar, qué días sale cada premio y cómo se ve la rueda.' };
   const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes de la ruleta" opciones={PESTANAS} valor={pestana} onChange={ir} /></div>;
 
   if (pestana === 'premios') {

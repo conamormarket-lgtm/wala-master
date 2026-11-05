@@ -12,7 +12,7 @@ import { premioRuletaAFirestore, ganadoRuletaDesde, productoAdminDesde } from '.
 import { useLectura, useInvalidar, subirA } from './comun';
 
 /*
- * La Ruleta semanal (D7b): los premios, cómo se ve y las entregas. Los mismos
+ * La Ruleta de Kapi (D7b): los premios, cómo se ve y las entregas. Los mismos
  * servicios (services/firebase/ruleta) y payloads que AdminRuletaPage:
  * saveRuletaPrize normaliza el premio y escribe el espejo viejo
  * (name/type/probability/amount); stockUsado lo lleva el servidor.

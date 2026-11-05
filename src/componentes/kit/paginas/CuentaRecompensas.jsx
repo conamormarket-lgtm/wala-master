@@ -143,7 +143,7 @@ export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, 
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
       ) : ordenados.length === 0 && stickers.length === 0 ? (
-        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.</Texto>}>
+        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en La Ruleta de Kapinal o canjeando tus monedas en el catálogo.</Texto>}>
           <Boton to={urlRuleta}><Texto>Ir a la ruleta</Texto></Boton>
           <Boton to={urlCatalogo} variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
         </EstadoVacio>

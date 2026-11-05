@@ -6,7 +6,7 @@ import RuletaDeTienda from '../../components/minijuegos/RuletaDeTienda';
 const RuletaViejo = lazy(() => import('./RuletaViejo'));
 
 /*
- * /ruleta (Ruleta Semanal). Paso 6 de la migración (JUEGOS.md): la del kit
+ * /ruleta (La Ruleta de Kapi). Paso 6 de la migración (JUEGOS.md): la del kit
  * por RuletaDeTienda. juegosViejo (useLoViejo('juegos'): en Firestore
  * `juegosViejo: true`; en localStorage, "juegos") vuelve a la de antes.
  * Las dos mandan al login sin cuenta.

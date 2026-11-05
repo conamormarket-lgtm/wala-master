@@ -11,7 +11,7 @@ import { PaginaRuleta } from '../../componentes/kit/paginas/Ruleta';
 import entregarMonedas from './entregarMonedas';
 
 /*
- * La Ruleta Semanal (/ruleta) con el kit (paso 6, JUEGOS.md). La misma
+ * La Ruleta de Kapi (/ruleta) con el kit (paso 6, JUEGOS.md). La misma
  * lógica que la página de antes:
  *  - sin cuenta, al login (y de vuelta aquí)
  *  - el tablero (config, premios de hoy en su orden, historial) lo arma el
@@ -35,7 +35,7 @@ import entregarMonedas from './entregarMonedas';
  */
 
 const CLAVE_AYUDA = 'wala_ruleta_ayuda_vista';
-const JUEGO = { gameId: 'ruleta', gameName: 'Ruleta Semanal' };
+const JUEGO = { gameId: 'ruleta', gameName: 'La Ruleta de Kapi' };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];

@@ -14,12 +14,12 @@ import { Texto, useTexto } from '../Traduccion';
 import { anguloDeParada } from '../../../utils/ruletaModel';
 import s from './Juegos.module.css';
 
-/* ── Ruleta Semanal (/ruleta) ───────────────────────────── */
+/* ── La Ruleta de Kapi (/ruleta) ───────────────────────────── */
 
 const SIN_HISTORIAL = [];
 
 /**
- * La Ruleta Semanal: se gana un giro con 7 días alimentando a Kapi (cuando
+ * La Ruleta de Kapi: se gana un giro con 7 días alimentando a Kapi (cuando
  * sea, `dias7`; o de lunes a domingo, `racha7`) o uno por semana (`siempre`).
  * La racha se ve arriba de la rueda; el premio lo sortea el servidor y la
  * rueda para en su gajo (anguloDeParada).
@@ -72,7 +72,7 @@ export function PaginaRuleta({
   else if (!desbloqueada && perdida) textoBoton = 'Semana perdida';
   else if (!desbloqueada) textoBoton = `Bloqueada: te ${faltan === 1 ? 'falta 1 día' : `faltan ${faltan} días`}`;
   const t = {
-    compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en la Ruleta Semanal de Walá!` : undefined),
+    compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en La Ruleta de Kapi de Walá!` : undefined),
     premio: useTexto(premio?.texto),
   };
 
@@ -123,7 +123,7 @@ export function PaginaRuleta({
     }
     return (
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Ruleta Semanal" onAyuda={() => setAyuda(true)} ancho="md">
+        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)} ancho="md">
           {vacio}
         </MarcoJuego>
         {ayudaNodo}
@@ -160,7 +160,7 @@ export function PaginaRuleta({
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Ruleta Semanal" onAyuda={() => setAyuda(true)}>
+        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)}>
           <div className={s.ruleta} data-componente="PaginaRuleta">
             <div className={s.zonaRueda}>
               {!siempre && (

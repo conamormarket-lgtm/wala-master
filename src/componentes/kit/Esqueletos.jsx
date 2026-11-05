@@ -902,7 +902,7 @@ const PAGINAS = {
     </span>
   ),
   ruleta: () => (
-    // La Ruleta Semanal: la racha, la rueda, el botón y lo ya ganado.
+    // La Ruleta de Kapi: la racha, la rueda, el botón y lo ya ganado.
     <span className={s.juegoEsq}>
       {barraJuego()}
       <span className={s.juegoCuerpo}>

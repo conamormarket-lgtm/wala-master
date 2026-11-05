@@ -144,7 +144,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
           />
           <TarjetaJuego
             imagen="/assets/kapi/banners/ruleta.webp"
-            titulo="Ruleta Semanal"
+            titulo="La Ruleta de Kapi"
             descripcion="Reclama tu moneda los 7 días para girar la ruleta."
             estado={{ texto: 'Bloqueada', tono: 'neutro' }}
             recompensa={{ texto: 'Premio semanal', icono: 'regalo' }}

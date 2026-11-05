@@ -1,5 +1,5 @@
 // =========================================================================
-// Ruleta Semanal — modelo de premios y disponibilidad (ESPEJO DE CLIENTE)
+// La Ruleta de Kapi — modelo de premios y disponibilidad (ESPEJO DE CLIENTE)
 // -------------------------------------------------------------------------
 // GENERADO por scripts/generar-espejo-ruleta.js desde functions/ruletaLogic.js.
 // No lo edites a mano: edita el original y vuelve a ejecutar el script. El

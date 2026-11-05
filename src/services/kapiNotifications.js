@@ -112,7 +112,7 @@ export const scheduleKapiNotifications = async (userProfile) => {
     });
 
     // -----------------------------------------------------
-    // 6. RULETA SEMANAL - Notificaciones contextuales (basadas en estado actual)
+    // 6. LA RULETA DE KAPI - Notificaciones contextuales (basadas en estado actual)
     // Se cancelan a diario y se reprograman si el usuario entra a la app
     // Usaremos las IDs 16, 17, 18
     const currentDayOfWeek = now.getDay(); // 0: Sunday, 1: Monday, 5: Friday
@@ -135,7 +135,7 @@ export const scheduleKapiNotifications = async (userProfile) => {
       }
     } else if (currentDayOfWeek === 1) {
       extraTitle = "Nueva semana 🎰";
-      extraBody = "Alimenta a Kapi 7/7 días y desbloquea la Ruleta Semanal.";
+      extraBody = "Alimenta a Kapi 7/7 días y desbloquea La Ruleta de Kapi.";
     } else if (currentDayOfWeek === 5 && daysCount >= 4) {
       extraTitle = "¡Llevas 5/5 días! 🎰"; 
       extraBody = "Dos más y giras la ruleta. No falles ahora.";

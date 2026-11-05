@@ -78,7 +78,7 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
 }
 
 const ORIGENES = {
-  ruleta: { texto: 'Ruleta semanal', icono: 'estrella', clase: 'talonRuleta' },
+  ruleta: { texto: 'La Ruleta de Kapi', icono: 'estrella', clase: 'talonRuleta' },
   recompensa: { texto: 'Catálogo de recompensas', icono: 'regalo', clase: 'talonCatalogo' },
   nivel: { texto: 'Regalo de nivel', icono: 'estrella', clase: 'talonCatalogo' },
 };

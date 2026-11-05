@@ -8,7 +8,7 @@ import { atributosDeFoto } from '../../../components/common/OptimizedImage/Optim
 import s from './Ruleta.module.css';
 
 /*
- * Piezas de la Ruleta Semanal (/ruleta): la rueda y lo que ya ganaste.
+ * Piezas de La Ruleta de Kapi (/ruleta): la rueda y lo que ya ganaste.
  * La rueda es la de components/ruleta/RuedaRuleta.jsx (mismo SVG, mismo
  * origen de ángulos que anguloDeParada), sin los emojis de los gajos.
  * Los textos (también los nombres de los premios) pasan por la traducción.

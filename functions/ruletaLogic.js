@@ -1,5 +1,5 @@
 // =========================================================================
-// Ruleta Semanal — modelo de premios y disponibilidad (lógica pura)
+// La Ruleta de Kapi — modelo de premios y disponibilidad (lógica pura)
 // -------------------------------------------------------------------------
 // Este módulo NO toca Firestore: son funciones puras que deciden qué premio
 // puede salir hoy y qué forma tiene un premio. Vive aquí (y espejado en
