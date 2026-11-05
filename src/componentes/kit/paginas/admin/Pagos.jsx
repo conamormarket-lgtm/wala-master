@@ -15,6 +15,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Pagos.module.css';
+import { Cargando } from '../../Cargando';
 
 /*
  * D3b · Gestión de pagos (/admin/gestion-pagos): el historial de los
@@ -233,7 +234,7 @@ function Ajustes({ config, cargando, onGuardar }) {
     }
   };
 
-  if (cargando) return <div className={s.angosto} aria-busy="true"><div className={s.tarjeta}><p className={l.sub}>Cargando los ajustes…</p></div></div>;
+  if (cargando) return <div className={s.angosto}><Cargando texto="Cargando los ajustes" bloque /></div>;
 
   return (
     <form className={s.angosto} onSubmit={guardar}>

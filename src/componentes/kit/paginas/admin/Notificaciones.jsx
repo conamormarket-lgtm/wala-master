@@ -139,7 +139,7 @@ function Automaticos({ config, cargando, error, onReintentar, onGuardar, onProba
   if (error) {
     return <Aviso tipo="error" titulo="No pudimos cargar la configuración" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error} Mientras no cargue, no se puede guardar: pisaría lo que hay.</Aviso>;
   }
-  if (cargando || !datos) return <div className={s.cargando}><Cargando texto="Cargando la configuración" /></div>;
+  if (cargando || !datos) return <Cargando texto="Cargando la configuración" bloque />;
 
   const activo = (clave, v) => setDatos((d) => ({ ...d, activos: { ...d.activos, [clave]: v } }));
   const horario = (clave, campo, v) => setDatos((d) => ({ ...d, horarios: { ...d.horarios, [clave]: { ...d.horarios[clave], [campo]: v } } }));

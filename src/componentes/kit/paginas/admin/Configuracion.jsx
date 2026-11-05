@@ -17,6 +17,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Configuracion.module.css';
+import { Cargando } from '../../Cargando';
 
 /*
  * D8a · Configuración (/admin/configuracion, solo Super Admin): quién del
@@ -151,7 +152,7 @@ function Imagenes({ onRevisar, onConvertir }) {
       <GrupoCampos titulo="Optimizar imágenes antiguas" ayuda="Lo que subes ahora ya se guarda en WebP y con 2000 px de lado como máximo. Esto es para lo de antes: las que siguen en PNG o JPG y las WebP más grandes de 2000 px.">
         <ElegirUno etiqueta="Qué revisar" opciones={AMBITOS} valor={ambito} onElegir={elegir} disabled={trabajando} />
         <p className={s.nota}>{nota} Los originales <strong>no se borran</strong>; las imágenes de fuera (Drive y demás), los SVG y los GIF se dejan como están.</p>
-        {conteo === 'cargando' && <p className={s.nota} aria-busy="true">Revisando…</p>}
+        {conteo === 'cargando' && <Cargando tamano="sm" texto="Revisando" />}
         {conteo?.error && <Aviso tipo="error" compacto titulo="No se pudo revisar">{conteo.error}</Aviso>}
         {listo && (
           <>
@@ -220,7 +221,7 @@ function Idiomas({ onRevisar, onPublicar }) {
   return (
     <div className={s.tarea}>
       <GrupoCampos titulo="Publicar las traducciones" ayuda="Los nombres de producto y los textos del editor se traducen al vuelo cuando alguien navega en inglés o portugués. Publicadas, el resto de visitantes las recibe ya hechas.">
-        {pendientes === null && <p className={s.nota} aria-busy="true">Revisando…</p>}
+        {pendientes === null && <Cargando tamano="sm" texto="Revisando" />}
         {pendientes && (total
           ? (
             <FilaCifras etiqueta="Sin publicar">

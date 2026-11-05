@@ -18,6 +18,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Ruleta.module.css';
+import { Cargando } from '../../Cargando';
 
 /*
  * D7b · La Ruleta semanal (/admin/ruleta): qué se puede ganar, con qué
@@ -291,7 +292,7 @@ export function PaginaRuletaAdmin({
       {secciones}
       {pestana === 'apariencia' && (error
         ? <Aviso tipo="error" titulo="No pudimos cargar la ruleta" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
-        : config ? <Apariencia config={config} premios={premios} premiosHoy={hoyLista} subirImagen={subirImagen} onGuardar={onGuardarConfig} /> : <p className={s.nota} aria-busy="true">Cargando…</p>)}
+        : config ? <Apariencia config={config} premios={premios} premiosHoy={hoyLista} subirImagen={subirImagen} onGuardar={onGuardarConfig} /> : <Cargando bloque />)}
       {pestana === 'entregas' && <Entregas ganados={ganados} cargando={cargandoGanados} error={errorGanados} onReintentar={onReintentarGanados} onMarcarEntregado={onMarcarEntregado} />}
     </div>
   );

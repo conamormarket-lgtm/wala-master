@@ -320,12 +320,6 @@
   font-size: 0.88rem;
 }
 
-/* Cargando la configuración: la pieza del kit, centrada en el espacio de la lista. */
-.cargando {
-  display: grid;
-  place-items: center;
-  min-height: 14rem;
-}
 
 /* Editando una guardada: el aviso con su «Cancelar edición». */
 .editando {

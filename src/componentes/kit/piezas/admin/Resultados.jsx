@@ -7,6 +7,7 @@ import { Enlace } from '../../Enlace';
 import { Etiqueta } from '../../Etiquetas';
 import { BloqueMetrica, SinDatos, VerTodos } from './Metricas';
 import s from './Resultados.module.css';
+import { Cargando } from '../../Cargando';
 
 /*
  * Piezas de Resultados (D4): lo que conviene mejorar, la comparativa con el
@@ -186,7 +187,7 @@ export function TarjetaEnlacesRotos({ enlaces = [], landings = [], visitas = 0, 
       ayuda="Direcciones que no existen y que la gente pidió: de un anuncio, un QR o una landing borrada."
       acciones={visitas ? <Etiqueta tono="peligro" punto>{entero(visitas)} {visitas === 1 ? 'visita' : 'visitas'}</Etiqueta> : null}
     >
-      {cargando ? <SinDatos>Cargando…</SinDatos> : error ? <SinDatos>No se pudieron leer los enlaces rotos: {error}</SinDatos> : !enlaces.length ? (
+      {cargando ? <Cargando tamano="sm" /> : error ? <SinDatos>No se pudieron leer los enlaces rotos: {error}</SinDatos> : !enlaces.length ? (
         <SinDatos>Nadie llegó a una dirección que no existe en este rango.</SinDatos>
       ) : (
         <>

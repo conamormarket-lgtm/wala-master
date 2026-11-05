@@ -19,6 +19,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Encuestas.module.css';
+import { Cargando } from '../../Cargando';
 
 /*
  * D5e · Encuestas. El editor de la encuesta de suscripción
@@ -155,7 +156,7 @@ export function PaginaEncuestaAdmin({ config, guardada, categoriasTienda = [], c
       </div>
     );
   }
-  if (cargando || !c) return <div className={s.pagina}>{cabeza}<p className={s.nota} aria-busy="true">Cargando la encuesta…</p></div>;
+  if (cargando || !c) return <div className={s.pagina}>{cabeza}<Cargando texto="Cargando la encuesta" bloque /></div>;
 
   return (
     <div className={s.pagina} data-componente="PaginaEncuestaAdmin">
@@ -460,7 +461,7 @@ export function RespuestasEncuesta({
           <ColumnasMetricas>
             <BloqueMetrica titulo="Hasta dónde llegan" ayuda={`Personas distintas en cada paso y su parte de las que entraron. Se registra desde el ${fechaDeDia(EMBUDO_DESDE)}.`}>
               {errorEmbudo ? <SinDatos>No se pudo cargar: {errorEmbudo}</SinDatos>
-                : cargandoEmbudo || !embudo ? <SinDatos>Cargando…</SinDatos>
+                : cargandoEmbudo || !embudo ? <Cargando tamano="sm" />
                   : !embudo[0]?.total ? <SinDatos>Nadie entró a la encuesta en este periodo.</SinDatos>
                     : (
                       <ListaBarras
