@@ -157,7 +157,14 @@ export default function PalabraDeTienda() {
       key={listo ? `${user?.uid || 'invitado'}-${hoy}` : 'cargando'}
       estado={listo ? undefined : 'cargando'}
       objetivo={objetivo}
-      esValida={(p) => VALID_GUESSES.size <= 10 || normalizarPalabra(p) === objetivo || VALID_GUESSES.has(normalizarPalabra(p))}
+      // El diccionario es de 5 letras: con una palabra puesta de 6 a 8 (desde el
+      // admin) vale cualquier intento de ese largo; la de hoy vale siempre.
+      esValida={(p) => {
+        const w = normalizarPalabra(p);
+        if (w === objetivo) return true;
+        if ([...objetivo].length !== 5) return /^[A-ZÑ]+$/.test(w);
+        return VALID_GUESSES.size <= 10 || VALID_GUESSES.has(w);
+      }}
       inicial={inicial || {}}
       sesion={sesion}
       estadisticas={estadisticas}

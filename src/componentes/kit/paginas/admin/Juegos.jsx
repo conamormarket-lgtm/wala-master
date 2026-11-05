@@ -103,7 +103,7 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
         campos: ({ datos: d, cambiar, errores, idDe }) => (
           <GrupoCampos titulo="La palabra">
             <CampoFecha id={idDe('fecha')} etiqueta="Día" valor={d.fecha} min={hoy} error={errores.fecha} onCambiar={(v) => cambiar('fecha', v)} />
-            <Campo id={idDe('palabra')} etiqueta="Palabra" ayuda="5 letras, de las que conoce el juego. Las tildes se quitan." placeholder="Ej. FELIZ" maxLength={5} value={d.palabra} error={errores.palabra} onChange={(e) => cambiar('palabra', e.target.value.toUpperCase())} />
+            <Campo id={idDe('palabra')} etiqueta="Palabra" ayuda={[...palabraLimpia(d.palabra || '')].length > 5 ? 'Con más de 5 letras, ese día el juego acepta cualquier intento de ese largo (no hay diccionario).' : 'De 5 a 8 letras. Las de 5 tienen que ser del diccionario del juego. Las tildes se quitan.'} placeholder="Ej. REGALO" maxLength={8} value={d.palabra} error={errores.palabra} onChange={(e) => cambiar('palabra', e.target.value.toUpperCase())} />
             {d.palabra && <Casillas palabra={palabraLimpia(d.palabra)} />}
           </GrupoCampos>
         ),

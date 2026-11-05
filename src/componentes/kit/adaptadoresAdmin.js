@@ -3018,7 +3018,8 @@ export function landingAFirestore(d = {}, previa = null) {
 /* ── D7a · La Palabra del día y Las Bolitas ───────────── */
 
 /** "Regalo" → "REGALO" (sin tildes, como la guarda el juego). */
-export const palabraLimpia = (w = '') => String(w).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+// Sin tildes y en mayúsculas, pero con la Ñ (como normalizarPalabra del juego).
+export const palabraLimpia = (w = '') => String(w).toUpperCase().replace(/Ñ/g, '\u0000').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0000/g, 'Ñ').trim();
 
 /** Una palabra programada (daily_words/{YYYY-MM-DD}) → el admin, con si ya pasó. */
 export function palabraDiaDesde(x = {}, hoy = '') {
@@ -3027,9 +3028,9 @@ export function palabraDiaDesde(x = {}, hoy = '') {
 }
 
 /**
- * Los errores: solo letras, exactamente 5 (el juego solo conoce palabras de
- * 5: con más, ningún intento sería válido) y que esté en su diccionario
- * (`existe(PALABRA)`: si no, nadie podría escribirla); y que ese día no tenga ya otra.
+ * Los errores: solo letras, de 5 a 8. Las de 5 tienen que estar en el
+ * diccionario del juego (`existe(PALABRA)`: si no, nadie podría escribirla);
+ * con 6 a 8 el juego acepta cualquier intento de ese largo. Y que ese día no tenga ya otra.
  */
 export function erroresDePalabra(d = {}, lista = [], id = null, existe = null) {
   const w = String(d.palabra || '').trim();
@@ -3037,8 +3038,8 @@ export function erroresDePalabra(d = {}, lista = [], id = null, existe = null) {
   return {
     fecha: !d.fecha ? 'Elige el día.' : lista.some((x) => x.id === d.fecha && x.id !== id) ? 'Ese día ya tiene palabra: edítala en la lista.' : undefined,
     palabra: !w ? 'Escribe la palabra.' : !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/.test(w) ? 'Solo letras, sin espacios.'
-      : limpia.length !== 5 ? 'Tiene que tener 5 letras: el juego solo conoce palabras de 5.'
-        : existe && !existe(limpia) ? 'No está en el diccionario del juego: nadie podría escribirla. Prueba con otra.' : undefined,
+      : [...limpia].length < 5 || [...limpia].length > 8 ? 'De 5 a 8 letras.'
+        : [...limpia].length === 5 && existe && !existe(limpia) ? 'No está en el diccionario del juego: nadie podría escribirla. Prueba con otra.' : undefined,
   };
 }
 
