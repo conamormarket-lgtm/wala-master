@@ -13,7 +13,7 @@ import { FotoCelda, porOrden } from './celdas';
 import {
   ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, ESTADOS_CANJE, resumenCanjes, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
   ACCIONES_RETO, esRetoConEvidencia, textoAccionReto,
-  TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, erroresDeRecompensa,
+  TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, CUPON_CON_MARCA, beneficioDeRecompensa, erroresDeRecompensa,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Fidelidad.module.css';
@@ -471,7 +471,7 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
  *  - subirImagen(blob, { alAvanzar }) → url · cargando · error · onReintentar
  *  - onGuardar(datos, id?) · onEliminar(id)
  */
-export function PaginaRecompensasAdmin({ recompensas = [], productos = [], packsStickers = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, pestanas }) {
+export function PaginaRecompensasAdmin({ recompensas = [], productos = [], marcas = [], packsStickers = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, pestanas }) {
   const tipoTexto = (v) => TIPOS_RECOMPENSA.find((x) => x.valor === v)?.texto || v;
   const queDa = (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</>;
   const estadoDe = (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado>;
@@ -589,6 +589,9 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], packs
                       ? <CampoDinero id={idDe('topeDescuento')} etiqueta="Hasta (tope)" value={datos.topeDescuento} error={errores.topeDescuento} onChange={(e) => cambiar('topeDescuento', e.target.value)} />
                       : <CampoDinero etiqueta="O un monto fijo" value={datos.descuentoMonto} onChange={(e) => cambiar('descuentoMonto', e.target.value)} />)}
                   </div>
+                )}
+                {CUPON_CON_MARCA.includes(datos.tipo) && marcas.length > 0 && (
+                  <Campo etiqueta="Vale en" ayuda="Con una marca, el cupón solo descuenta sus productos (sin ninguno en el carrito, no se puede usar)." opciones={[{ valor: '', texto: 'Toda la tienda' }, ...marcas]} value={datos.marcaId || ''} onChange={(e) => { const m = marcas.find((x) => x.valor === e.target.value); cambiar('marcaId', e.target.value); cambiar('marcaNombre', m?.texto || ''); }} />
                 )}
                 {RECOMPENSA_CON_VIGENCIA.includes(datos.tipo) && (
                   <Campo etiqueta="El cupón vence en" type="number" inputMode="numeric" min={1} sufijo="días" value={datos.vigenciaDias} onChange={(e) => cambiar('vigenciaDias', e.target.value)} />

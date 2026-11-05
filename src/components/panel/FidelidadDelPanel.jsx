@@ -9,6 +9,7 @@ import { estimateReferralReward } from '../../services/referrals';
 import { getMissions, createMission, updateMission, deleteMission } from '../../services/missions';
 import { getRewards, createReward, updateReward, deleteReward } from '../../services/rewardsCatalog';
 import { getProducts } from '../../services/products';
+import { getBrands } from '../../services/brands';
 import { MISSION_ACTIONS } from '../../constants/missionActions';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { PACKS_STICKERS } from '../../constants/stickersWhatsapp';
@@ -250,6 +251,8 @@ export function RecompensasDelPanel() {
   const invalidar = useInvalidar();
   const refrescar = () => invalidar(['admin-rewards'], ['rewards']);
   const lista = useMemo(() => (productos.datos || []).map(productoAdminDesde).filter(Boolean), [productos.datos]);
+  // Para los cupones de una marca («Vale en»).
+  const marcasRecompensa = useLectura(['admin-brands'], getBrands);
 
   const pestanas = (
     <PestanasRecompensas
@@ -265,6 +268,7 @@ export function RecompensasDelPanel() {
       packsStickers={PACKS_STICKERS.map((p) => ({ valor: p.id, texto: `${p.nombre} (${p.cantidad} stickers)` }))}
       recompensas={(recompensas.datos || []).map(recompensaAdminDesdeFirestore)}
       productos={lista}
+      marcas={(marcasRecompensa.datos || []).map((b) => ({ valor: b.id, texto: b.name || b.slug || b.id }))}
       subirImagen={subirImagen}
       cargando={recompensas.cargando}
       error={recompensas.error}

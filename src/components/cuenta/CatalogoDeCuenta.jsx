@@ -30,6 +30,8 @@ const beneficioDe = (r) => {
     descuentoMonto: Number(r.descuentoMonto) || 0,
     topeDescuento: Number(r.topeDescuento) || 0,
     productName: r.productName,
+    brandId: r.brandId,
+    marcaNombre: r.marcaNombre,
     monedas: 0,
   });
 };

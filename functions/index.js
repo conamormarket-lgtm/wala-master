@@ -3874,6 +3874,9 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
           topeDescuento: cupon.topeDescuento,
           productId: cupon.productId,
           productName: cupon.productName,
+          // De una marca: el checkout solo descuenta sus productos.
+          brandId: elegido.brandId || null,
+          marcaNombre: elegido.brandId ? elegido.marcaNombre || null : null,
           expiraEn: cupon.expiraEn,
           status: "active",
           orderId: null,
@@ -5279,7 +5282,11 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
             descuentoMonto: reward.descuentoMonto || 0,
             topeDescuento: reward.topeDescuento || 0,
             productName: reward.productName,
+            marcaNombre: reward.brandId ? reward.marcaNombre : "",
           }),
+          // De una marca: el checkout solo descuenta sus productos.
+          brandId: reward.brandId || null,
+          marcaNombre: reward.brandId ? reward.marcaNombre || null : null,
           descuentoPct: reward.descuentoPct || 0,
           descuentoMonto: reward.descuentoMonto || 0,
           topeDescuento: reward.topeDescuento || 0,

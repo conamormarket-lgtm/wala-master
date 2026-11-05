@@ -13,7 +13,7 @@ import { GrupoCampos, CampoImagen, CampoDinero, CampoColor, CampoColores, Elegir
 import { PaginaListaAdmin } from './Lista';
 import { normalizarPremio, premiosDeHoy, sumaProbabilidades, textoPremio, PRESETS_TEMA } from '../../../../utils/ruletaModel';
 import {
-  DIAS_RULETA, textoDiasRuleta, TIPOS_PREMIO_RULETA, PREMIO_RULETA_CON_PRODUCTO, PREMIO_RULETA_CON_CUPON,
+  DIAS_RULETA, textoDiasRuleta, TIPOS_PREMIO_RULETA, PREMIO_RULETA_CON_PRODUCTO, PREMIO_RULETA_CON_CUPON, CUPON_CON_MARCA,
   premioRuletaAFormulario, erroresDePremioRuleta, motivoRuletaHoy, normalizarBusqueda, fechaDeDia,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -161,7 +161,7 @@ function Entregas({ ganados = [], cargando, error, onReintentar, onMarcarEntrega
  */
 export function PaginaRuletaAdmin({
   pestana: pestanaFuera, onPestana, hoy = '', diaSemana = 0, cargando = false, error, onReintentar,
-  premios = [], onGuardarPremio, onEliminarPremio, onReiniciarContador, productos = [], subirImagen,
+  premios = [], onGuardarPremio, onEliminarPremio, onReiniciarContador, productos = [], marcas = [], subirImagen,
   config, onGuardarConfig, ganados = [], cargandoGanados = false, errorGanados, onReintentarGanados, onMarcarEntregado,
 }) {
   const toast = useToast();
@@ -249,6 +249,9 @@ export function PaginaRuletaAdmin({
                         ? <CampoDinero id={idDe('topeDescuento')} etiqueta="Hasta (tope)" value={d.topeDescuento} error={errores.topeDescuento} onChange={(e) => cambiar('topeDescuento', Number(e.target.value))} />
                         : <CampoDinero etiqueta="O un monto fijo" value={d.descuentoMonto} onChange={(e) => cambiar('descuentoMonto', Number(e.target.value))} />)}
                     </div>
+                  )}
+                  {CUPON_CON_MARCA.includes(d.tipo) && marcas.length > 0 && (
+                    <Campo etiqueta="Vale en" ayuda="Con una marca, el cupón solo descuenta sus productos (sin ninguno en el carrito, no se puede usar)." opciones={[{ valor: '', texto: 'Toda la tienda' }, ...marcas]} value={d.brandId || ''} onChange={(e) => { const m = marcas.find((x) => x.valor === e.target.value); cambiar('brandId', e.target.value); cambiar('marcaNombre', m?.texto || ''); }} />
                   )}
                   {PREMIO_RULETA_CON_CUPON.includes(d.tipo) && <Campo etiqueta="El cupón vence en" type="number" inputMode="numeric" min={1} sufijo="días" value={d.vigenciaDias} onChange={(e) => cambiar('vigenciaDias', Number(e.target.value))} />}
                   {muestra && <p className={s.muestra}><span>El cliente verá:</span> {muestra}</p>}

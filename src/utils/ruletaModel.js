@@ -94,6 +94,9 @@ export function normalizarPremio(raw) {
     topeDescuento: Math.max(0, Number(raw.topeDescuento || 0) || 0),
     productId: raw.productId ? String(raw.productId) : null,
     productName: raw.productName ? String(raw.productName) : "",
+    // Un cupón de una marca: solo descuenta sus productos (el checkout mira brandId).
+    brandId: raw.brandId ? String(raw.brandId) : null,
+    marcaNombre: raw.brandId && raw.marcaNombre ? String(raw.marcaNombre) : "",
     vigenciaDias: Math.max(1, Number(raw.vigenciaDias || VIGENCIA_CUPON_POR_DEFECTO) || VIGENCIA_CUPON_POR_DEFECTO),
 
     // Presentación. color null = toma el color que le toque de la paleta.
@@ -307,18 +310,20 @@ export function textoPremio(premio) {
   switch (premio.tipo) {
     case "monedas":
       return premio.monedas + " monedas";
-    case "descuento":
+    case "descuento": {
+      const deMarca = premio.marcaNombre ? " en productos de " + premio.marcaNombre : "";
       if (premio.descuentoPct > 0) {
-        return premio.descuentoPct + "% de descuento" +
+        return premio.descuentoPct + "% de descuento" + deMarca +
           (premio.topeDescuento > 0 ? " (hasta S/ " + premio.topeDescuento.toFixed(2) + ")" : "");
       }
-      return "S/ " + premio.descuentoMonto.toFixed(2) + " de descuento";
+      return "S/ " + premio.descuentoMonto.toFixed(2) + " de descuento" + deMarca;
+    }
     case "producto_descuento":
       return premio.descuentoPct + "% en " + (premio.productName || "un producto");
     case "producto_gratis":
       return (premio.productName || "Un producto") + " gratis";
     case "envio_gratis":
-      return "Envío gratis";
+      return premio.marcaNombre ? "Envío gratis con productos de " + premio.marcaNombre : "Envío gratis";
     case "manual":
       return premio.nombre;
     case "nada":

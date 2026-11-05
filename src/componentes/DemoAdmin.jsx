@@ -1444,6 +1444,7 @@ function PanelDePrueba() {
         pestanas={pestanasRecompensas}
         recompensas={vacio ? [] : recompensas}
         productos={PRODUCTOS}
+        marcas={MARCAS_TIENDA.map((m) => ({ valor: m.id, texto: m.name }))}
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
@@ -1551,6 +1552,7 @@ function PanelDePrueba() {
         }}
         onEliminarPremio={async (id) => { await espera(500); fallar(); setPremiosRuleta((l) => l.filter((x) => x.id !== id)); }}
         onReiniciarContador={async (id) => { await espera(500); fallar(); setPremiosRuleta((l) => l.map((x) => (x.id === id ? { ...x, stockUsado: 0 } : x))); }}
+        marcas={MARCAS_TIENDA.map((m) => ({ valor: m.id, texto: m.name }))}
         productos={PRODUCTOS}
         subirImagen={subir}
         config={configRuleta}

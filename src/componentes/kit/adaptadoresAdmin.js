@@ -1978,15 +1978,16 @@ export const RECOMPENSA_CON_VIGENCIA = ['descuento', 'producto_descuento', 'prod
 export function beneficioDeRecompensa(r = {}) {
   const pct = Number(r.descuentoPct) || 0;
   const tope = Number(r.topeDescuento) || 0;
+  const deMarca = r.marcaId && r.marcaNombre ? ` en productos de ${r.marcaNombre}` : '';
   switch (r.tipo) {
     case 'descuento':
-      return pct > 0 ? `${pct}% de descuento${tope > 0 ? ` (hasta S/ ${tope.toFixed(2)})` : ''}` : `S/ ${(Number(r.descuentoMonto) || 0).toFixed(2)} de descuento`;
+      return pct > 0 ? `${pct}% de descuento${deMarca}${tope > 0 ? ` (hasta S/ ${tope.toFixed(2)})` : ''}` : `S/ ${(Number(r.descuentoMonto) || 0).toFixed(2)} de descuento${deMarca}`;
     case 'producto_descuento':
       return `${pct}% en ${r.productoNombre || r.productName || 'un producto'}`;
     case 'producto_gratis':
       return `${r.productoNombre || r.productName || 'Un producto'} gratis`;
     case 'envio_gratis':
-      return 'Envío gratis';
+      return r.marcaId && r.marcaNombre ? `Envío gratis con productos de ${r.marcaNombre}` : 'Envío gratis';
     case 'stickers_whatsapp':
       return 'Stickers para WhatsApp, en la app de Walá';
     default:
@@ -2012,6 +2013,8 @@ export function recompensaAdminDesdeFirestore(doc = {}) {
     vigenciaDias: Number(doc.vigenciaDias) || 30,
     imagen: doc.imageUrl || '',
     packId: doc.packId || '',
+    marcaId: doc.brandId || '',
+    marcaNombre: doc.brandId ? doc.marcaNombre || '' : '',
   };
 }
 
@@ -2034,6 +2037,9 @@ export function recompensaAdminAFirestore(r = {}) {
     vigenciaDias: Number(r.vigenciaDias) || 30,
     imageUrl: r.imagen || '',
     packId: r.tipo === 'stickers_whatsapp' ? r.packId || '' : '',
+    // Un cupón de una marca: solo descuenta sus productos.
+    brandId: CUPON_CON_MARCA.includes(r.tipo) ? r.marcaId || '' : '',
+    marcaNombre: CUPON_CON_MARCA.includes(r.tipo) && r.marcaId ? r.marcaNombre || '' : '',
   };
 }
 
@@ -3222,11 +3228,14 @@ export const TIPOS_PREMIO_RULETA = [
 ];
 export const PREMIO_RULETA_CON_PRODUCTO = ['producto_descuento', 'producto_gratis'];
 export const PREMIO_RULETA_CON_CUPON = ['descuento', 'producto_descuento', 'producto_gratis', 'envio_gratis'];
+/** Los cupones que pueden ser de una marca (los de un producto ya son de la suya). */
+export const CUPON_CON_MARCA = ['descuento', 'envio_gratis'];
 
 /** Un premio normalizado → la hoja (los nulos vuelven a texto vacío). */
 export const premioRuletaAFormulario = (p = {}) => ({
   ...p, color: p.color || '', desde: p.desde || '', hasta: p.hasta || '', productId: p.productId || '',
   stockTotal: p.stockTotal ?? '', maxPorUsuario: p.maxPorUsuario ?? '', dias: p.dias || [],
+  brandId: p.brandId || '', marcaNombre: p.marcaNombre || '',
 });
 
 /** Lo que se guarda (saveRuletaPrize): vacíos como null, como antes. */
@@ -3244,6 +3253,8 @@ export function premioRuletaAFirestore(d = {}) {
     color: d.color || null,
     productId: PREMIO_RULETA_CON_PRODUCTO.includes(d.tipo) ? d.productId || null : null,
     productName: PREMIO_RULETA_CON_PRODUCTO.includes(d.tipo) ? d.productName || '' : '',
+    brandId: CUPON_CON_MARCA.includes(d.tipo) ? d.brandId || null : null,
+    marcaNombre: CUPON_CON_MARCA.includes(d.tipo) && d.brandId ? d.marcaNombre || '' : '',
   };
 }
 

@@ -5,6 +5,7 @@ import {
   getRuletaConfig, saveRuletaConfig, getRuletaWins, marcarPremioEntregado,
 } from '../../services/firebase/ruleta';
 import { getProducts } from '../../services/products';
+import { getBrands } from '../../services/brands';
 import { normalizarConfig } from '../../utils/ruletaModel';
 import { limaTodayStr, limaDayOfWeek } from '../../utils/fechaLima';
 import { PaginaRuletaAdmin } from '../../componentes/kit/paginas/admin/Ruleta';
@@ -70,6 +71,8 @@ export default function RuletaDelPanel() {
   const productos = useLectura(CLAVE_PRODUCTOS, () => getProducts(), { staleTime: 5 * 60 * 1000, enabled: pestana === 'premios' });
 
   const listaProductos = useMemo(() => (productos.datos || []).map(productoAdminDesde).filter(Boolean), [productos.datos]);
+  // Para los cupones de una marca («Vale en»).
+  const marcas = useLectura(['admin-brands'], getBrands);
   const listaGanados = useMemo(() => (ganados.data || []).map(ganadoRuletaDesde), [ganados.data]);
   const recargar = () => invalidar(CLAVE_PREMIOS, CLAVE_CONFIG);
 
@@ -97,6 +100,7 @@ export default function RuletaDelPanel() {
         await recargar();
       }}
       productos={listaProductos}
+      marcas={(marcas.datos || []).map((b) => ({ valor: b.id, texto: b.name || b.slug || b.id }))}
       subirImagen={subirImagen}
       config={config.data}
       onGuardarConfig={async (c) => {

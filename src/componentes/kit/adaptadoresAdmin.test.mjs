@@ -748,6 +748,17 @@ test('popups, páginas y temas', () => {
   assert.deepEqual(m2.pasosEmbudoPopup({ vistas: 3, clics: 1 }, 'encuesta'), []);
 });
 
+test('cupones de una marca: la ruleta y las recompensas', () => {
+  const r = m2.recompensaAdminAFirestore({ nombre: 'Geek', tipo: 'descuento', descuentoPct: 15, topeDescuento: 30, marcaId: 'b1', marcaNombre: 'Con Amor Geeks' });
+  assert.deepEqual([r.brandId, r.marcaNombre], ['b1', 'Con Amor Geeks']);
+  assert.equal(m2.beneficioDeRecompensa(m2.recompensaAdminDesdeFirestore({ ...r, id: 'x' })), '15% de descuento en productos de Con Amor Geeks (hasta S/ 30.00)');
+  // Un producto gratis ya es de su marca: no guarda otra.
+  assert.equal(m2.recompensaAdminAFirestore({ tipo: 'producto_gratis', marcaId: 'b1', marcaNombre: 'X' }).brandId, '');
+  const p = m2.premioRuletaAFirestore({ nombre: 'Envío', tipo: 'envio_gratis', probabilidad: 5, brandId: 'b2', marcaNombre: 'Lumi' });
+  assert.deepEqual([p.brandId, p.marcaNombre], ['b2', 'Lumi']);
+  assert.equal(m2.premioRuletaAFirestore({ nombre: 'M', tipo: 'monedas', brandId: 'b2', marcaNombre: 'Lumi' }).brandId, null);
+});
+
 test('juegos: la palabra del día y las bolitas', () => {
   assert.equal(m2.palabraLimpia(' Regaló '), 'REGALO');
   assert.deepEqual(['2026-11-01', '2026-11-02', '2026-11-09'].map((id) => m2.palabraDiaDesde({ id }, '2026-11-02').estado), ['paso', 'hoy', 'programada']);
