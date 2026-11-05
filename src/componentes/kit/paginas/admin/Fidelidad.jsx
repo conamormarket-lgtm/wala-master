@@ -11,7 +11,7 @@ import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, porOrden } from './celdas';
 import {
-  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, ESTADOS_CANJE, resumenCanjes, RECOMPENSAS_RETO, recompensaDeReto,
+  ESTADOS_REFERIDO, ESTADOS_REFERENTE, resumenReferidos, ESTADOS_CANJE, resumenCanjes, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
   ACCIONES_RETO, esRetoConEvidencia, textoAccionReto,
   TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, erroresDeRecompensa,
 } from '../../adaptadoresAdmin';
