@@ -6,14 +6,15 @@ import { getAdminRoles, setAdminRole, deleteAdminRole } from '../../services/adm
 import { getLockedPages, saveLockedPages } from '../../services/lockedPages';
 import { getLandingPages } from '../../pages/Tienda/services/landingPages';
 import { reconvertirImagenesAWebp, contarImagenesPorConvertir, AMBITO_DISENO, AMBITO_PRODUCTOS } from '../../services/imagenesWebp';
-import { PaginaConfiguracionAdmin } from '../../componentes/kit/paginas/admin/Configuracion';
+import { PaginaConfiguracionAdmin, PaginaBloqueosAdmin } from '../../componentes/kit/paginas/admin/Configuracion';
 import { adminDesdeFirestore, adminAFirestore, equipoConPrincipales, paginasBloqueables, conBloqueo } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useInvalidar } from './comun';
 
 /*
  * Configuración (D8a, /admin/configuracion, solo Super Admin): el equipo con
- * sus permisos, las páginas bloqueadas para el editor y el mantenimiento
- * (imágenes viejas a WebP y publicar las traducciones). Los mismos servicios
+ * sus permisos y el mantenimiento (imágenes viejas a WebP). Las páginas
+ * bloqueadas para el editor tienen su página (BloqueosDelPanel,
+ * /admin/paginas-bloqueadas, en Páginas de la tienda). Los mismos servicios
  * que AdminConfiguracion; lo que se escribe en adminRoles y en
  * storeConfig/lockedPages sale de los adaptadores del kit (adminAFirestore,
  * conBloqueo).
@@ -39,7 +40,6 @@ const coleccionesDe = (ambito) => (ambito === 'productos' ? AMBITO_PRODUCTOS : A
 export default function ConfiguracionDelPanel() {
   const { adminPermissions, user } = useAuth();
   const esSuperadmin = Boolean(adminPermissions?.includes('superadmin'));
-  const queryClient = useQueryClient();
   const invalidar = useInvalidar();
 
   const adminsQ = useQuery({ queryKey: ADMINS, queryFn: getAdminRoles, enabled: esSuperadmin });
@@ -51,13 +51,10 @@ export default function ConfiguracionDelPanel() {
     staleTime: 10 * 60 * 1000,
     retry: 1,
   });
-  const bloqueadasQ = useQuery({ queryKey: BLOQUEADAS, queryFn: getLockedPages, enabled: esSuperadmin });
-  const landingsQ = useQuery({ queryKey: LANDINGS, queryFn: getLandingPages, enabled: esSuperadmin });
 
   // La lista y las páginas se copian en la página: los mismos objetos entre render y render.
   // Si no se pueden leer las principales, la lista sale igual (sin ellas).
   const admins = useMemo(() => equipoConPrincipales((adminsQ.data || []).map(adminDesdeFirestore), principalesQ.data || []), [adminsQ.data, principalesQ.data]);
-  const paginas = useMemo(() => paginasBloqueables(landingsQ.data || [], bloqueadasQ.data || []), [landingsQ.data, bloqueadasQ.data]);
 
   const errorDe = (q, texto) => (q.error ? q.error.message || texto : undefined);
 
@@ -79,10 +76,33 @@ export default function ConfiguracionDelPanel() {
         await sinError(deleteAdminRole(id));
         await invalidar(ADMINS);
       }}
+      onRevisarImagenes={(ambito) => contarImagenesPorConvertir({ colecciones: coleccionesDe(ambito) })}
+      onConvertirImagenes={(ambito, { alAvanzar } = {}) => reconvertirImagenesAWebp({ colecciones: coleccionesDe(ambito), onProgreso: alAvanzar })}
+    />
+  );
+}
+
+/**
+ * /admin/paginas-bloqueadas (solo Super Admin, como antes en Configuración):
+ * las fijas y las landings con su candado. Bloquear marca la lista al
+ * instante y la guarda; si falla, se vuelve a leer la de verdad.
+ */
+export function BloqueosDelPanel() {
+  const { adminPermissions } = useAuth();
+  const esSuperadmin = Boolean(adminPermissions?.includes('superadmin'));
+  const queryClient = useQueryClient();
+  const invalidar = useInvalidar();
+  const bloqueadasQ = useQuery({ queryKey: BLOQUEADAS, queryFn: getLockedPages, enabled: esSuperadmin });
+  const landingsQ = useQuery({ queryKey: LANDINGS, queryFn: getLandingPages, enabled: esSuperadmin });
+  const paginas = useMemo(() => paginasBloqueables(landingsQ.data || [], bloqueadasQ.data || []), [landingsQ.data, bloqueadasQ.data]);
+  const errorDe = (q, texto) => (q.error ? q.error.message || texto : undefined);
+  return (
+    <PaginaBloqueosAdmin
+      esSuperadmin={esSuperadmin}
       paginas={paginas}
-      cargandoPaginas={bloqueadasQ.isLoading || landingsQ.isLoading}
-      errorPaginas={errorDe(bloqueadasQ, 'No se pudieron leer los bloqueos.') || errorDe(landingsQ, 'No se pudieron leer las landing pages.')}
-      onReintentarPaginas={() => { bloqueadasQ.refetch(); landingsQ.refetch(); }}
+      cargando={bloqueadasQ.isLoading || landingsQ.isLoading}
+      error={errorDe(bloqueadasQ, 'No se pudieron leer los bloqueos.') || errorDe(landingsQ, 'No se pudieron leer las landing pages.')}
+      onReintentar={() => { bloqueadasQ.refetch(); landingsQ.refetch(); }}
       onBloquear={async (id, bloquear) => {
         // Sobre la última lista (no la de este dibujo): dos clics seguidos no se pisan.
         const nueva = conBloqueo(queryClient.getQueryData(BLOQUEADAS) || [], id, bloquear);
@@ -94,8 +114,6 @@ export default function ConfiguracionDelPanel() {
           throw err;
         }
       }}
-      onRevisarImagenes={(ambito) => contarImagenesPorConvertir({ colecciones: coleccionesDe(ambito) })}
-      onConvertirImagenes={(ambito, { alAvanzar } = {}) => reconvertirImagenesAWebp({ colecciones: coleccionesDe(ambito), onProgreso: alAvanzar })}
     />
   );
 }

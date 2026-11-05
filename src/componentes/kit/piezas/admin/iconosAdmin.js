@@ -3,7 +3,7 @@ import {
   Truck, Target, BarChart3, Eye, Users, MessageCircle, Wrench, Share2, Gift, ListChecks,
   Trophy, Bell, CalendarHeart, ClipboardList, Megaphone, Ticket, Repeat, Link2, MessageSquare, PanelsTopLeft,
   Palette, Brush, Paintbrush, Star, PawPrint, SpellCheck, Disc3, FlaskConical, Settings, ShieldCheck,
-  MessageCircleMore, History,
+  MessageCircleMore, History, Lock, Globe,
 } from 'lucide-react';
 
 /*
@@ -54,6 +54,9 @@ export const ICONOS_ADMIN = {
   admins: ShieldCheck,
   whatsapp: MessageCircleMore,
   historial: History,
+  premios: Gift,
+  paginas: Globe,
+  bloqueos: Lock,
 };
 
 export const iconoAdmin = (nombre, respaldo) => ICONOS_ADMIN[nombre] || ICONOS_ADMIN[respaldo] || LayoutGrid;

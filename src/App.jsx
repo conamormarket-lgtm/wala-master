@@ -199,6 +199,8 @@ const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
+const AdminPaginasBloqueadas = lazy(() => import('./pages/admin/AdminPaginasBloqueadas'));
+const AdminHistorialStock = lazy(() => import('./pages/admin/AdminHistorialStock'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminMisiones = lazy(() => import('./pages/admin/AdminMisiones'));
 const AdminPublicoProductos = lazy(() => import('./pages/admin/AdminPublicoProductos'));
@@ -559,6 +561,8 @@ function App() {
                                       <Route path="ruleta" element={<AdminRuletaPage />} />
               <Route path="bolitas" element={<AdminBolitasPage />} />
                                       <Route path="backups" element={<AdminBackups />} />
+                                      <Route path="historial-stock" element={<AdminHistorialStock />} />
+                                      <Route path="paginas-bloqueadas" element={<AdminPaginasBloqueadas />} />
                                       <Route path="configuracion" element={<AdminConfiguracion />} />
                                       <Route path="encuestas" element={<AdminEncuestas />} />
                                       <Route path="popups" element={<AdminPopups />} />

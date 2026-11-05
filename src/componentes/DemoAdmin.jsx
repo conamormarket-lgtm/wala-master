@@ -19,7 +19,7 @@ import {
   PaginaPopupsAdmin, PaginaLandingsAdmin, landingDesde, landingAFirestore,
   PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, palabrasConAutomaticas, patrocinioDesde, premiosBolitasDesde,
   PaginaRuletaAdmin, premioRuletaAFirestore, ganadoRuletaDesde,
-  PaginaConfiguracionAdmin, adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo,
+  PaginaConfiguracionAdmin, PaginaBloqueosAdmin, adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo,
   PaginaWhatsAppAdmin, PaginaHistorialAdmin, whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
@@ -94,6 +94,8 @@ const HECHAS = [
   ['/admin/configuracion', 'Configuración'],
   ['/admin/whatsapp', 'WhatsApp'],
   ['/admin/backups', 'Historial'],
+  ['/admin/historial-stock', 'Stock'],
+  ['/admin/paginas-bloqueadas', 'Bloqueos'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
   ['/admin/marcas', 'Marcas'],
@@ -867,8 +869,8 @@ function PanelDePrueba() {
   };
   const vacio = con('vacio');
 
-  // Las fichas de Crear viven bajo Productos en el menú.
-  const rutaMenu = rutaSola.startsWith('/admin/prendas-crear') ? '/admin/productos' : rutaSola;
+  // Las fichas de Crear y el historial de stock viven bajo Productos en el menú.
+  const rutaMenu = rutaSola.startsWith('/admin/prendas-crear') || rutaSola === '/admin/historial-stock' ? '/admin/productos' : rutaSola;
   const actual = opcionActiva(grupos, rutaMenu);
   const dePaso = opcionActiva(menuAdminPara(['superadmin']), rutaMenu);
   const prendaDeRuta = rutaSola.match(/^\/admin\/prendas-crear\/([^/]+)$/)?.[1];
@@ -1105,7 +1107,7 @@ function PanelDePrueba() {
         colecciones={COLECCIONES_CORTAS}
         tipos={TIPOS}
         soloStock={!puedeVer({ permiso: ['manage_products'] }, p.permisos)}
-        urlHistorial="/admin/backups?ver=inventario"
+        urlHistorial="/admin/historial-stock"
         onGuardarStock={async (x, n) => { await espera(500); fallar('No se guardó el stock (es una prueba).'); setProductos((ps) => ps.map((y) => (y.id === x.id ? { ...y, stock: n } : y))); }}
         vista={verDeRuta}
         onVista={(v) => navegar.current(v === 'tienda' ? '/admin/productos' : `/admin/productos?ver=${v}`)}
@@ -1465,11 +1467,12 @@ function PanelDePrueba() {
         onGuardar={async (c) => { await espera(600); fallar(); setWhatsappDemo(whatsappDesdeMensajes(whatsappAMensajes(c))); }}
       />
     );
-  } else if (rutaSola === '/admin/backups') {
+  } else if (rutaSola === '/admin/backups' || rutaSola === '/admin/historial-stock') {
     pagina = (
       <PaginaHistorialAdmin
-        pestana={historialPestana}
+        pestana={rutaSola === '/admin/historial-stock' ? 'inventario' : historialPestana}
         onPestana={setHistorialPestana}
+        conPestanas={false}
         cambios={vacio ? [] : conVersionActual(copias)}
         nombresPaginas={{ yoryo: 'Yoryo', lumi: 'Lumi', daidahogar: 'Daida Hogar' }}
         cargando={con('cargando')}
@@ -1485,6 +1488,17 @@ function PanelDePrueba() {
         cargandoMovimientos={con('cargando')}
         errorMovimientos={con('error') ? 'No se pudieron leer los cambios de stock (es una prueba).' : undefined}
         onReintentarMovimientos={comunes.onReintentar}
+      />
+    );
+  } else if (rutaSola === '/admin/paginas-bloqueadas') {
+    pagina = (
+      <PaginaBloqueosAdmin
+        esSuperadmin={p.permisos.includes('superadmin')}
+        paginas={paginasBloqueables(landings.map((x) => ({ id: x.id, title: x.nombre, slug: x.slug })), bloqueadas)}
+        cargando={con('cargando')}
+        error={con('error') ? 'No se pudieron leer las páginas (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        onBloquear={async (id, si) => { await espera(400); fallar(); setBloqueadas((b) => conBloqueo(b, id, si)); }}
       />
     );
   } else if (rutaSola === '/admin/configuracion') {
@@ -1506,11 +1520,6 @@ function PanelDePrueba() {
           setAdmins((l) => (id ? l.map((x) => (x.id === id ? a : x)) : [...l, a]));
         }}
         onEliminarAdmin={async (id) => { await espera(500); fallar(); setAdmins((l) => l.filter((x) => x.id !== id)); }}
-        paginas={paginasBloqueables(landings.map((x) => ({ id: x.id, title: x.nombre, slug: x.slug })), bloqueadas)}
-        cargandoPaginas={con('cargando')}
-        errorPaginas={con('error') ? 'No se pudieron leer las páginas (es una prueba).' : undefined}
-        onReintentarPaginas={comunes.onReintentar}
-        onBloquear={async (id, si) => { await espera(400); fallar(); setBloqueadas((b) => conBloqueo(b, id, si)); }}
         onRevisarImagenes={async (ambito) => { await espera(700); fallar('No se pudieron leer los documentos (es una prueba).'); return imagenesPendientes.current[ambito]; }}
         onConvertirImagenes={async (ambito, { alAvanzar }) => {
           const c = imagenesPendientes.current[ambito];

@@ -28,7 +28,7 @@ import { capasEnOtraPrenda } from '../../pages/Crear/zonasEquivalentes';
  */
 
 // Publicar en la comunidad: Diseño y juegos (o el permiso de diseño de antes).
-const PERMISOS = ['superadmin', 'diseno', 'manage_design'];
+const PERMISOS = ['superadmin', 'paginas', 'diseno', 'manage_design'];
 const HECHO = { publicar: 'Publicada en la comunidad.', actualizar: 'Publicación actualizada.', retirar: 'Retirada de la comunidad.' };
 
 /** El color de una creación para el kit: su nombre y el fondo de la muestra. */

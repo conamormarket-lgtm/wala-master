@@ -332,14 +332,16 @@ function TarjetaPaginaGuardada({ grupo, origen, onRestaurar }) {
 }
 
 /**
- * Historial (/admin/backups).
- *  - pestana + onPestana
+ * Historial: el del diseño (/admin/backups, en Páginas de la tienda) y el de
+ * stock (/admin/historial-stock, desde Productos). Con `conPestanas` (la demo)
+ * van juntos con sus pestañas; sin ellas, cada uno con su título.
+ *  - pestana + onPestana · conPestanas
  *  - cambios: conVersionActual([cambioDisenoDesde]) · nombresPaginas: { id: nombre } (marcas y landings)
  *    · cargando · error · onReintentar · onRestaurar(cambio)
  *  - movimientos: [movimientoInventarioDesde] · cargandoMovimientos · errorMovimientos · onReintentarMovimientos
  */
 export function PaginaHistorialAdmin({
-  pestana: pestanaFuera, onPestana,
+  pestana: pestanaFuera, onPestana, conPestanas = true,
   cambios = [], nombresPaginas = {}, cargando = false, error, onReintentar, onRestaurar,
   movimientos = [], cargandoMovimientos = false, errorMovimientos, onReintentarMovimientos,
 }) {
@@ -348,8 +350,12 @@ export function PaginaHistorialAdmin({
   const pestana = pestanaFuera || pestanaDentro;
   const ir = (p) => (onPestana ? onPestana(p) : setPestanaDentro(p));
   const [restaurar, setRestaurar] = useState(null);
-  const cabeza = { icono: 'historial', tono: 'plata', titulo: 'Historial', subtitulo: 'Vuelve a una versión anterior de una página o revisa los cambios de stock.' };
-  const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes del historial" opciones={PESTANAS_HISTORIAL} valor={pestana} onChange={ir} /></div>;
+  const cabeza = !conPestanas && pestana === 'inventario'
+    ? { icono: 'historial', tono: 'plata', titulo: 'Historial de stock', subtitulo: 'Los cambios de stock, para revisarlos o descargarlos.' }
+    : !conPestanas
+      ? { icono: 'historial', tono: 'plata', titulo: 'Historial del diseño', subtitulo: 'Vuelve a una versión anterior de una página.' }
+      : { icono: 'historial', tono: 'plata', titulo: 'Historial', subtitulo: 'Vuelve a una versión anterior de una página o revisa los cambios de stock.' };
+  const secciones = conPestanas ? <div className={s.pestanas}><Pestanas etiqueta="Partes del historial" opciones={PESTANAS_HISTORIAL} valor={pestana} onChange={ir} /></div> : null;
   const grupos = useMemo(() => paginasDelHistorial(cambios, nombresPaginas), [cambios, nombresPaginas]);
   const nombreDe = (pagina) => grupos.find((g) => g.pagina === pagina)?.nombre || pagina;
   const origen = typeof window !== 'undefined' ? window.location.origin : '';

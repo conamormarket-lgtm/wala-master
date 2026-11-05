@@ -16,7 +16,8 @@
 const COLECCION = "comunidad_disenos";
 const CARPETA = "comunidad";
 // Diseño y juegos (2026-11-05) o el permiso de diseño de antes.
-const PERMISOS_ADMIN_COMUNIDAD = ["superadmin", "diseno", "manage_design"];
+// Páginas de la tienda (2026-11-05), o los de antes (Diseño y juegos, manage_design).
+const PERMISOS_ADMIN_COMUNIDAD = ["superadmin", "paginas", "diseno", "manage_design"];
 
 /**
  * { bucket, path } de una URL de Firebase Storage, o null si no lo es.

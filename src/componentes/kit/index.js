@@ -110,7 +110,7 @@ export { PaginaPopupsAdmin } from './paginas/admin/Popups';
 export { PaginaLandingsAdmin } from './paginas/admin/Paginas';
 export { PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
 export { PaginaRuletaAdmin } from './paginas/admin/Ruleta';
-export { PaginaConfiguracionAdmin } from './paginas/admin/Configuracion';
+export { PaginaConfiguracionAdmin, PaginaBloqueosAdmin } from './paginas/admin/Configuracion';
 export { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from './paginas/admin/Ajustes';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';

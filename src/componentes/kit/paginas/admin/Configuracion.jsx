@@ -30,7 +30,8 @@ import { EsqueletoTexto } from '../../Esqueletos';
 const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
 const errorDe = (err) => err?.message || 'Vuelve a intentar.';
 // Las imágenes y los idiomas van juntos (como antes): con cuatro pestañas, la última no cabía en el celular (ni «Mantenimiento»).
-const PESTANAS = [{ id: 'equipo', texto: 'Equipo' }, { id: 'bloqueos', texto: 'Bloqueos' }, { id: 'optimizar', texto: 'Optimizar' }];
+// Los bloqueos de páginas pasaron a Páginas de la tienda (PaginaBloqueosAdmin, 2026-11-05).
+const PESTANAS = [{ id: 'equipo', texto: 'Equipo' }, { id: 'optimizar', texto: 'Optimizar' }];
 /** Cuántas opciones del menú abre (sin contar el inicio, que lo ve cualquiera). */
 const seccionesQueVe = (permisos) => menuAdminPara(permisos).reduce((t, g) => t + g.items.length, 0) - 1;
 const ESTADOS_BLOQUEO = { si: { texto: 'Bloqueada', tono: 'aviso' }, no: { texto: 'Abierta', tono: 'exito' } };
@@ -200,20 +201,18 @@ function Imagenes({ onRevisar, onConvertir }) {
  *  - esSuperadmin (si no, solo un aviso) · yo (el correo de quien mira) · pestana + onPestana
  *  - admins: [adminDesdeFirestore] · cargando · error · onReintentar
  *    onGuardarAdmin(datos, id?) (adminAFirestore) · onEliminarAdmin(id)
- *  - paginas: [paginasBloqueables] · cargandoPaginas · errorPaginas · onReintentarPaginas · onBloquear(id, bloquear)
  *  - onRevisarImagenes(ambito: 'diseno' | 'productos') → { imagenes, documentos, apariciones }
  *    onConvertirImagenes(ambito, { alAvanzar({ hechas, total, actual }) }) → { convertidas, documentos, saltadas, errores }
  */
 export function PaginaConfiguracionAdmin({
   esSuperadmin = true, yo = '', pestana: pestanaFuera, onPestana,
   admins = [], cargando = false, error, onReintentar, onGuardarAdmin, onEliminarAdmin,
-  paginas = [], cargandoPaginas = false, errorPaginas, onReintentarPaginas, onBloquear,
   onRevisarImagenes, onConvertirImagenes,
 }) {
   const [pestanaDentro, setPestanaDentro] = useState('equipo');
   const pestana = pestanaFuera || pestanaDentro;
   const ir = (p) => (onPestana ? onPestana(p) : setPestanaDentro(p));
-  const cabeza = { icono: 'admins', tono: 'plata', titulo: 'Configuración', subtitulo: 'Quién del equipo entra al panel, qué páginas no se tocan y el mantenimiento de la tienda.' };
+  const cabeza = { icono: 'admins', tono: 'plata', titulo: 'Configuración', subtitulo: 'Quién del equipo entra al panel y el mantenimiento de la tienda.' };
   const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes de la configuración" opciones={PESTANAS} valor={pestana} onChange={ir} /></div>;
   const esYo = (r) => Boolean(yo) && r.correo === yo.trim().toLowerCase();
 
@@ -326,8 +325,25 @@ export function PaginaConfiguracionAdmin({
     <div className={s.pagina} data-componente="PaginaConfiguracionAdmin">
       <CabezaAdmin {...cabeza} />
       {secciones}
-      {pestana === 'bloqueos' && <Bloqueos paginas={paginas} cargando={cargandoPaginas} error={errorPaginas} onReintentar={onReintentarPaginas} onBloquear={onBloquear} />}
       {pestana === 'optimizar' && <Imagenes onRevisar={onRevisarImagenes} onConvertir={onConvertirImagenes} />}
+    </div>
+  );
+}
+
+/**
+ * Páginas bloqueadas (/admin/paginas-bloqueadas, en Páginas de la tienda; solo
+ * Super Admin): las páginas fijas y las landings con su candado para el editor.
+ *  - esSuperadmin (si no, solo un aviso)
+ *  - paginas: [paginasBloqueables] · cargando · error · onReintentar · onBloquear(id, bloquear)
+ */
+export function PaginaBloqueosAdmin({ esSuperadmin = true, paginas = [], cargando = false, error, onReintentar, onBloquear }) {
+  const cabeza = { icono: 'bloqueos', tono: 'plata', titulo: 'Páginas bloqueadas', subtitulo: 'Las páginas que nadie puede guardar desde el editor, para que no se cambien sin querer.' };
+  return (
+    <div className={s.pagina} data-componente="PaginaBloqueosAdmin">
+      <CabezaAdmin {...cabeza} />
+      {esSuperadmin
+        ? <Bloqueos paginas={paginas} cargando={cargando} error={error} onReintentar={onReintentar} onBloquear={onBloquear} />
+        : <EstadoVacio imagen={null} icono={<Lock aria-hidden="true" />} titulo="Solo para Super Admin" texto="Pídele a un Super Admin del equipo que bloquee o abra la página por ti." />}
     </div>
   );
 }

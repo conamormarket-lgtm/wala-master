@@ -9,10 +9,10 @@ import {
   MENU_ADMIN, PERMISOS_ADMIN, menuAdminPara, accesosAdminPara, opcionActiva, textoPermisos,
 } from '../../componentes/kit/adaptadoresAdmin';
 
-/** La opción del menú de una ruta: las fichas de Crear viven bajo Productos. */
+/** La opción del menú de una ruta: las fichas de Crear y el historial de stock viven bajo Productos. */
 export const rutaDelMenu = (pathname) => {
   const ruta = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  return ruta.startsWith('/admin/prendas-crear') ? '/admin/productos' : ruta;
+  return ruta.startsWith('/admin/prendas-crear') || ruta === '/admin/historial-stock' ? '/admin/productos' : ruta;
 };
 
 /*

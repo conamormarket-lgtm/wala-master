@@ -13,26 +13,30 @@
  * Cada opción dice qué permiso pide (`permiso`: uno de la lista basta;
  * `todos`: hacen falta todos; `[]`: solo superadmin). Sin `permiso`, la ve
  * cualquier admin. Productos lo abre también Inventario (solo el stock).
- * Los permisos de antes (manage_*) siguen valiendo: permisosEfectivos los
- * traduce a los grupos; al editar a esa persona se guardan los nuevos.
- * Resultados › Clientes y Opiniones (datos personales) piden además Clientes.
+ * Datos de clientes (`clientes`) no es un grupo: abre Clientes y Opiniones
+ * en Resultados (nombres, correos, teléfonos).
+ * Los permisos de antes (manage_*, y los grupos que ya no están: el «Clientes»
+ * y el «Diseño y juegos» de antes del orden nuevo) siguen valiendo:
+ * permisosEfectivos los traduce; al editar a esa persona se guardan los nuevos.
  */
 const PEDIDOS = ['pedidos'];
 const CATALOGO = ['catalogo'];
 const CATALOGO_O_STOCK = ['catalogo', 'inventario'];
 const RESULTADOS = ['resultados'];
-const CLIENTES = ['clientes'];
+const PREMIOS = ['premios'];
 const CAMPANAS = ['campanas'];
-const DISENO = ['diseno'];
+const PAGINAS = ['paginas'];
 const AJUSTES = ['ajustes'];
 
 /** Lo que daba cada permiso de antes, en los grupos de ahora. */
 export const PERMISOS_DE_ANTES = {
-  manage_design: ['pedidos', 'campanas', 'diseno', 'ajustes', 'resultados'],
+  manage_design: ['pedidos', 'campanas', 'premios', 'paginas', 'ajustes', 'resultados'],
   manage_products: ['catalogo'],
   manage_inventory: ['inventario'],
-  manage_clients: ['clientes', 'resultados'],
-  manage_landing_pages: ['campanas'],
+  manage_clients: ['clientes', 'premios', 'campanas', 'resultados'],
+  manage_landing_pages: ['campanas', 'paginas'],
+  // «Diseño y juegos» (solo los juegos): ahora en Premios y juegos.
+  diseno: ['premios'],
 };
 
 /** Los permisos de una persona con los de antes ya traducidos (sin repetir). */
@@ -41,6 +45,14 @@ export function permisosEfectivos(permisos = []) {
   return [...new Set(lista.flatMap((p) => [p, ...(PERMISOS_DE_ANTES[p] || [])]))];
 }
 
+/*
+ * El orden (2026-11-05): cada grupo es un tipo de trabajo — vender (Pedidos y
+ * pagos, con las zonas de envío), qué se vende (Catálogo), cómo va
+ * (Resultados), lo que gana el cliente (Premios y juegos), cómo se atrae
+ * (Campañas), las páginas (Páginas de la tienda) y la cuenta del panel
+ * (Ajustes). El historial de stock no está en el menú: se abre desde
+ * Productos (/admin/historial-stock).
+ */
 export const MENU_ADMIN = [
   {
     id: 'inicio', titulo: 'Inicio', icono: 'inicio', tono: 'degradado', suelto: true,
@@ -52,6 +64,7 @@ export const MENU_ADMIN = [
       { to: '/admin/recepcion-pedidos', texto: 'Recepción de pedidos', icono: 'pedidos', permiso: PEDIDOS },
       { to: '/admin/gestion-pagos', texto: 'Gestión de pagos', icono: 'pagos', permiso: PEDIDOS },
       { to: '/admin/libro-reclamaciones', texto: 'Libro de reclamaciones', icono: 'reclamos', permiso: PEDIDOS },
+      { to: '/admin/envios', texto: 'Zonas de envío', icono: 'envios', permiso: PEDIDOS },
     ],
   },
   {
@@ -64,7 +77,6 @@ export const MENU_ADMIN = [
       { to: '/admin/colecciones', texto: 'Colecciones', icono: 'colecciones', permiso: CATALOGO },
       { to: '/admin/marcas', texto: 'Marcas', icono: 'marcas', permiso: CATALOGO },
       { to: '/admin/atributos-catalogo', texto: 'Atributos del catálogo', icono: 'atributos', permiso: CATALOGO },
-      { to: '/admin/envios', texto: 'Zonas de envío', icono: 'envios', permiso: CATALOGO },
       { to: '/admin/publico-productos', texto: 'Datos para recomendar', icono: 'recomendar', permiso: CATALOGO },
     ],
   },
@@ -80,33 +92,38 @@ export const MENU_ADMIN = [
     ],
   },
   {
-    id: 'clientes', titulo: 'Clientes', icono: 'clientes', tono: 'rosa',
+    // Todo lo que le da monedas o premios al cliente.
+    id: 'premios', titulo: 'Premios y juegos', icono: 'premios', tono: 'rosa',
     items: [
-      { to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: CLIENTES },
-      { to: '/admin/recompensas', texto: 'Recompensas', icono: 'recompensas', permiso: CLIENTES },
-      { to: '/admin/misiones', texto: 'Misiones diarias', icono: 'misiones', permiso: CLIENTES },
-      { to: '/admin/retos', texto: 'Retos semanales', icono: 'retos', permiso: CLIENTES },
-      { to: '/admin/notificaciones', texto: 'Notificaciones y ofertas', icono: 'notificaciones', permiso: CLIENTES },
-      { to: '/admin/fechas-importantes', texto: 'Fechas importantes', icono: 'fechas', permiso: CLIENTES },
-      { to: '/admin/encuestas', texto: 'Encuesta de suscripción', icono: 'encuesta', permiso: CLIENTES },
+      { to: '/admin/recompensas', texto: 'Recompensas', icono: 'recompensas', permiso: PREMIOS },
+      { to: '/admin/misiones', texto: 'Misiones diarias', icono: 'misiones', permiso: PREMIOS },
+      { to: '/admin/retos', texto: 'Retos semanales', icono: 'retos', permiso: PREMIOS },
+      { to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: PREMIOS },
+      { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: PREMIOS },
+      { to: '/admin/ruleta', texto: 'La Ruleta de Kapi', icono: 'ruleta', permiso: PREMIOS },
+      { to: '/admin/bolitas', texto: 'Las Bolitas de Kapi', icono: 'bolitas', permiso: PREMIOS },
     ],
   },
   {
+    // Para atraer y avisar: ofertas, fechas, sorteos y anuncios.
     id: 'campanas', titulo: 'Campañas', icono: 'campanas', tono: 'oro',
     items: [
+      { to: '/admin/notificaciones', texto: 'Notificaciones y ofertas', icono: 'notificaciones', permiso: CAMPANAS },
+      { to: '/admin/fechas-importantes', texto: 'Fechas importantes', icono: 'fechas', permiso: CAMPANAS },
       { to: '/admin/sorteos', texto: 'Sorteos y rifas', icono: 'sorteos', permiso: CAMPANAS },
       { to: '/admin/sorteos-suscripcion', texto: 'Sorteo por suscripción', icono: 'suscripcion', permiso: CAMPANAS },
-      { to: '/admin/enlaces', texto: 'Enlaces útiles', icono: 'enlaces', permiso: CAMPANAS },
+      { to: '/admin/encuestas', texto: 'Encuesta de suscripción', icono: 'encuesta', permiso: CAMPANAS },
       { to: '/admin/popups', texto: 'Popups y anuncios', icono: 'popups', permiso: CAMPANAS },
-      { to: '/admin/landing-pages', texto: 'Landing pages', icono: 'landings', permiso: CAMPANAS },
     ],
   },
   {
-    id: 'diseno', titulo: 'Diseño y juegos', icono: 'diseno', tono: 'rosa',
+    // Las páginas que se arman con el editor: las landings, el link de la bio, sus candados y sus copias.
+    id: 'paginas', titulo: 'Páginas de la tienda', icono: 'paginas', tono: 'degradado',
     items: [
-      { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: DISENO },
-      { to: '/admin/ruleta', texto: 'La Ruleta de Kapi', icono: 'ruleta', permiso: DISENO },
-      { to: '/admin/bolitas', texto: 'Las Bolitas de Kapi', icono: 'bolitas', permiso: DISENO },
+      { to: '/admin/landing-pages', texto: 'Landing pages', icono: 'landings', permiso: PAGINAS },
+      { to: '/admin/enlaces', texto: 'Enlaces útiles', icono: 'enlaces', permiso: PAGINAS },
+      { to: '/admin/paginas-bloqueadas', texto: 'Páginas bloqueadas', icono: 'bloqueos', permiso: [] },
+      { to: '/admin/backups', texto: 'Historial del diseño', icono: 'historial', permiso: PAGINAS },
     ],
   },
   {
@@ -114,7 +131,6 @@ export const MENU_ADMIN = [
     items: [
       { to: '/admin/configuracion', texto: 'Configuración', icono: 'admins', permiso: [] },
       { to: '/admin/whatsapp', texto: 'WhatsApp', icono: 'whatsapp', permiso: AJUSTES },
-      { to: '/admin/backups', texto: 'Historial y backups', icono: 'historial', permiso: AJUSTES },
     ],
   },
 ];
@@ -146,7 +162,7 @@ const ACCESOS = [
   { id: 'productos', to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: CATALOGO_O_STOCK },
   { id: 'resultados', to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: RESULTADOS },
   { id: 'reclamos', to: '/admin/libro-reclamaciones', texto: 'Reclamos', icono: 'reclamos', permiso: PEDIDOS },
-  { id: 'referidos', to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: CLIENTES },
+  { id: 'referidos', to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: PREMIOS },
 ];
 
 export function accesosAdminPara(permisos, cuantos = 4) {
@@ -3307,15 +3323,22 @@ export function ganadoRuletaDesde(g = {}) {
  * Inventario va aparte: abre Productos solo para cambiar el stock.
  */
 const DETALLE_PERMISO = {
-  resultados: 'El resumen, productos, visitantes y lo técnico (Clientes y Opiniones, con Clientes).',
-  inventario: 'El stock en Productos (sin crear ni editar).',
+  resultados: 'El resumen, productos, visitantes y lo técnico (Clientes y Opiniones, con Datos de clientes).',
+  inventario: 'El stock en Productos (sin crear ni editar) y su historial.',
+  clientes: 'En Resultados, Clientes y Opiniones: nombres, correos y teléfonos.',
+};
+// Los que no son un grupo del menú, detrás del grupo al que acompañan.
+const PERMISOS_SUELTOS = {
+  catalogo: { valor: 'inventario', texto: 'Inventario' },
+  resultados: { valor: 'clientes', texto: 'Datos de clientes' },
 };
 export const PERMISOS_ADMIN = [
   { valor: 'superadmin', texto: 'Super Admin', detalle: 'Todo, también el equipo y esta página.' },
   ...MENU_ADMIN.filter((g) => g.id !== 'inicio').flatMap((g) => {
     const secciones = g.items.filter((it) => it.permiso?.includes(g.id)).map((it) => it.texto);
     const fila = { valor: g.id, texto: g.titulo, detalle: DETALLE_PERMISO[g.id] || `${secciones.join(', ')}.` };
-    return g.id === 'catalogo' ? [fila, { valor: 'inventario', texto: 'Inventario', detalle: DETALLE_PERMISO.inventario }] : [fila];
+    const suelto = PERMISOS_SUELTOS[g.id];
+    return suelto ? [fila, { ...suelto, detalle: DETALLE_PERMISO[suelto.valor] }] : [fila];
   }),
 ];
 const VALORES_PERMISO = new Set(PERMISOS_ADMIN.map((p) => p.valor));

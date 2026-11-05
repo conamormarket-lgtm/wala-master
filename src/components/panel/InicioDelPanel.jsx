@@ -8,7 +8,8 @@ import { PaginaInicioAdmin } from '../../componentes/kit/paginas/admin/Inicio';
 import { puedeVer } from '../../componentes/kit/adaptadoresAdmin';
 
 const PEDIDOS = ['pedidos'];
-const CLIENTES = ['clientes'];
+const PREMIOS = ['premios'];
+const CAMPANAS = ['campanas'];
 
 /** Cuántos documentos cumplen campo == valor (una lectura por cada 1000). */
 const contar = async (coleccion, campo, valor) => {
@@ -20,8 +21,8 @@ const ATAJOS = [
   { to: '/admin/productos', texto: 'Productos', detalle: 'Crear, editar y su stock', icono: 'productos', tono: 'degradado', permiso: ['catalogo', 'inventario'] },
   { to: '/admin/resultados', texto: 'Resultados', detalle: 'Cómo va la tienda', icono: 'resultados', tono: 'oro', permiso: ['resultados'] },
   { to: '/admin/categorias', texto: 'Categorías', detalle: 'Las burbujas de cada marca', icono: 'categorias', tono: 'degradado', permiso: ['catalogo'] },
-  { to: '/admin/notificaciones', texto: 'Notificaciones', detalle: 'Ofertas y novedades', icono: 'notificaciones', tono: 'rosa', permiso: CLIENTES },
-  { to: '/admin/fechas-importantes', texto: 'Fechas importantes', detalle: 'El calendario de campañas', icono: 'fechas', tono: 'rosa', permiso: CLIENTES },
+  { to: '/admin/notificaciones', texto: 'Notificaciones', detalle: 'Ofertas y novedades', icono: 'notificaciones', tono: 'rosa', permiso: CAMPANAS },
+  { to: '/admin/fechas-importantes', texto: 'Fechas importantes', detalle: 'El calendario de campañas', icono: 'fechas', tono: 'rosa', permiso: CAMPANAS },
 ];
 
 /*
@@ -50,14 +51,14 @@ export default function InicioDelPanel() {
   const retos = useQuery({
     queryKey: ['admin-inicio', 'evidencias-pendientes'],
     queryFn: () => contar('challengeEvidences', 'status', 'pending'),
-    enabled: ve(CLIENTES),
+    enabled: ve(PREMIOS),
     staleTime: 60 * 1000,
   });
 
   const pendientes = [
     ve(PEDIDOS) && { id: 'pedidos', texto: 'Pedidos por entregar', detalle: 'Ni entregados ni anulados', cuenta: pedidos.data?.resumen?.porEntregar ?? 0, to: '/admin/recepcion-pedidos', icono: 'pedidos', tono: 'menta' },
     ve(PEDIDOS) && { id: 'reclamos', texto: 'Reclamos sin responder', detalle: 'El plazo legal es de 15 días hábiles', cuenta: reclamos.data ?? 0, to: '/admin/libro-reclamaciones', icono: 'reclamos', tono: 'rosa' },
-    ve(CLIENTES) && { id: 'retos', texto: 'Evidencias de retos', detalle: 'Fotos que mandaron los clientes', cuenta: retos.data ?? 0, to: '/admin/retos', icono: 'retos', tono: 'oro' },
+    ve(PREMIOS) && { id: 'retos', texto: 'Evidencias de retos', detalle: 'Fotos que mandaron los clientes', cuenta: retos.data ?? 0, to: '/admin/retos', icono: 'retos', tono: 'oro' },
   ].filter(Boolean);
   const cargando = [pedidos, reclamos, retos].some((q) => q.isLoading && q.fetchStatus !== 'idle');
 

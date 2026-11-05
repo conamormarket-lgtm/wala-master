@@ -16,7 +16,7 @@ import { consultaProducto } from '../regalar/regaloDeLista';
 import { creacionDesdeDiseno } from '../../componentes/kit/adaptadores';
 
 // Publicar en la comunidad: Diseño y juegos (o el permiso de diseño de antes).
-const PERMISOS = ['superadmin', 'diseno', 'manage_design'];
+const PERMISOS = ['superadmin', 'paginas', 'diseno', 'manage_design'];
 
 /*
  * Las tarjetas de las creaciones del cliente (TarjetaCreacion del kit) y lo

@@ -840,9 +840,12 @@ test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () 
   assert.deepEqual(eq.map((r) => [r.correo, Boolean(r.principal)]), [['yo@x.pe', true], ['jefa@x.pe', true], ['b@x.pe', false]]);
   assert.deepEqual([eq[1].id, eq[1].nombre, eq[1].permisos], ['principal:u2', 'jefa', ['superadmin']]);
   // Cada grupo del menú es un permiso, con sus secciones.
-  assert.deepEqual(m2.PERMISOS_ADMIN.map((p) => p.valor), ['superadmin', 'pedidos', 'catalogo', 'inventario', 'resultados', 'clientes', 'campanas', 'diseno', 'ajustes']);
+  assert.deepEqual(m2.PERMISOS_ADMIN.map((p) => p.valor), ['superadmin', 'pedidos', 'catalogo', 'inventario', 'resultados', 'clientes', 'premios', 'campanas', 'paginas', 'ajustes']);
+  // Los grupos que ya no están se traducen (el «Diseño y juegos» de antes = los juegos).
+  assert.deepEqual(m2.permisosDeAhora(['diseno']), ['premios']);
+  assert.ok(m2.PERMISOS_ADMIN.find((p) => p.valor === 'paginas').detalle.includes('Historial del diseño'));
   assert.ok(m2.PERMISOS_ADMIN.find((p) => p.valor === 'catalogo').detalle.includes('Destacados'));
-  assert.deepEqual(m2.permisosEfectivos(['manage_design']).sort(), ['ajustes', 'campanas', 'diseno', 'manage_design', 'pedidos', 'resultados']);
+  assert.deepEqual(m2.permisosEfectivos(['manage_design']).sort(), ['ajustes', 'campanas', 'manage_design', 'paginas', 'pedidos', 'premios', 'resultados']);
   const reg = [a];
   assert.equal(m2.erroresDeAdmin({ correo: 'ana@gmail.com', permisos: ['x'] }, { registros: reg }).correo, 'Ya está en el equipo: edítalo en la lista.');
   assert.equal(m2.erroresDeAdmin({ correo: 'ana@gmail.com', permisos: ['x'] }, { id: 'ana@gmail.com', registros: reg }).correo, undefined);

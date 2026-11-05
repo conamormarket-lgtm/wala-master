@@ -107,7 +107,7 @@ export default function ProductosDelPanel() {
       error={productos.error}
       onReintentar={productos.onReintentar}
       soloStock={soloStock}
-      urlHistorial={puedeVer({ permiso: ['ajustes'] }, permisos) ? '/admin/backups?ver=inventario' : undefined}
+      urlHistorial="/admin/historial-stock"
       onGuardarStock={async (p, nuevo, anterior) => {
         await updateProductField(p.id, { inStock: nuevo });
         await logInventoryChange(p.id, porId.get(p.id)?.name || p.nombre, anterior, nuevo, user?.email || 'Admin');

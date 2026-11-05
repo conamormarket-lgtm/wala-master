@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { getMessage, setMessage } from '../../services/messages';
 import { createDocument, getCollection, setDocument } from '../../services/firebase/firestore';
 import { getInventoryLogs } from '../../services/inventoryLogs';
@@ -10,9 +10,10 @@ import { getLockedPages } from '../../services/lockedPages';
 import { saveStorefrontConfig } from '../../pages/Tienda/services/storefront';
 import { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from '../../componentes/kit/paginas/admin/Ajustes';
 import {
-  whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
+  whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde, puedeVer,
 } from '../../componentes/kit/adaptadoresAdmin';
 import { useAuth } from '../../contexts/AuthContext';
+import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
 import { sinError, useLectura, useInvalidar } from './comun';
 
 /*
@@ -108,23 +109,19 @@ async function restaurarCopia(x, correo) {
 }
 
 /**
- * /admin/backups: storeConfigLogs por timestamp (de la más nueva), las 50 →
- * cambioDisenoDesde y conVersionActual; getInventoryLogs →
- * movimientoInventarioDesde (se lee al abrir la pestaña).
+ * /admin/backups (Historial del diseño, en Páginas de la tienda):
+ * storeConfigLogs por timestamp (de la más nueva), las 50 → cambioDisenoDesde
+ * y conVersionActual. ?ver=inventario (el enlace de antes) lleva al de stock.
  */
 export function HistorialDelPanel() {
   const invalidar = useInvalidar();
   const { user } = useAuth();
-  // ?ver=inventario abre los cambios de stock (el botón de Productos lleva ahí).
   const [searchParams] = useSearchParams();
-  const [pestana, setPestana] = useState(() => (searchParams.get('ver') === 'inventario' ? 'inventario' : 'diseno'));
 
   const copiasQ = useQuery({
     queryKey: COPIAS,
     queryFn: () => sinError(getCollection('storeConfigLogs', [], { field: 'timestamp', direction: 'desc' }, 50)),
   });
-  // getInventoryLogs no devuelve { data, error }: la lista (o [] si falla), como antes.
-  const movimientosQ = useQuery({ queryKey: MOVIMIENTOS, queryFn: getInventoryLogs, enabled: pestana === 'inventario' });
 
   const cambios = useMemo(() => conVersionActual((copiasQ.data || []).map(cambioDisenoDesde)), [copiasQ.data]);
   // Los nombres de las páginas de marca y de las landings (si no, sale /slug).
@@ -136,12 +133,12 @@ export function HistorialDelPanel() {
     (marcasQ.data || []).forEach((b) => { if (b?.slug && b.name) n[b.slug] = b.name; });
     return n;
   }, [marcasQ.data, landingsQ.data]);
-  const movimientos = useMemo(() => (movimientosQ.data || []).map(movimientoInventarioDesde), [movimientosQ.data]);
 
+  if (searchParams.get('ver') === 'inventario') return <Navigate to="/admin/historial-stock" replace />;
   return (
     <PaginaHistorialAdmin
-      pestana={pestana}
-      onPestana={setPestana}
+      pestana="diseno"
+      conPestanas={false}
       cambios={cambios}
       nombresPaginas={nombresPaginas}
       cargando={copiasQ.isLoading}
@@ -152,6 +149,25 @@ export function HistorialDelPanel() {
         // La config de esa página (home incluida) y lo de storeConfig/homePage (cabecera, cuenta, buscador).
         await invalidar(COPIAS, ['storefront-config', x.pagina], ['store-config-custom']);
       }}
+    />
+  );
+}
+
+/**
+ * /admin/historial-stock (desde Productos; no está en el menú): getInventoryLogs
+ * → movimientoInventarioDesde. Lo abren Catálogo e Inventario.
+ */
+export function HistorialStockDelPanel() {
+  const { adminPermissions } = useAuth();
+  const puede = puedeVer({ permiso: ['catalogo', 'inventario'] }, adminPermissions || []);
+  // getInventoryLogs no devuelve { data, error }: la lista (o [] si falla), como antes.
+  const movimientosQ = useQuery({ queryKey: MOVIMIENTOS, queryFn: getInventoryLogs, enabled: puede });
+  const movimientos = useMemo(() => (movimientosQ.data || []).map(movimientoInventarioDesde), [movimientosQ.data]);
+  if (!puede) return <SinPermiso permiso="Catálogo o Inventario" />;
+  return (
+    <PaginaHistorialAdmin
+      pestana="inventario"
+      conPestanas={false}
       movimientos={movimientos}
       cargandoMovimientos={movimientosQ.isLoading}
     />
