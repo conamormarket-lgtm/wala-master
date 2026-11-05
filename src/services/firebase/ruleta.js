@@ -49,10 +49,21 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
   // weeklyClaimsData.ruleta (como mucho un giro guardado). No hay semana que
   // perder ni "ya giraste esta semana": al girar, la cuenta vuelve a 0.
   const cuenta = userProfile.weeklyClaimsData?.ruleta;
-  if (reglas?.modoDesbloqueo === 'dias7' && cuenta) {
+  if (reglas?.modoDesbloqueo === 'dias7') {
+    if (cuenta) {
+      return {
+        isUnlocked: cuenta.listo === true,
+        days: cuenta.listo === true ? 7 : Math.max(0, Math.min(6, Number(cuenta.dias) || 0)),
+        hasLost: false, hasSpun: false, esPendienteAnterior: false, haEmpezado, porDias: true,
+      };
+    }
+    // Sin cuenta todavía (no alimentó a Kapi desde el cambio): el servidor
+    // arranca con los días de esta semana y el giro que le dejaba la regla de
+    // antes. Se muestra eso mismo, ya con los textos de los 7 días.
+    const antes = getRuletaEligibility(userProfile, { ...reglas, modoDesbloqueo: 'racha7' });
     return {
-      isUnlocked: cuenta.listo === true,
-      days: cuenta.listo === true ? 7 : Math.max(0, Math.min(6, Number(cuenta.dias) || 0)),
+      isUnlocked: antes.isUnlocked,
+      days: antes.isUnlocked ? 7 : Math.min(6, antes.days),
       hasLost: false, hasSpun: false, esPendienteAnterior: false, haEmpezado, porDias: true,
     };
   }
