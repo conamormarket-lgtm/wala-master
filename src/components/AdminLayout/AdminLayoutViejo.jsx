@@ -194,12 +194,6 @@ const AdminLayoutViejo = () => {
                 Historial y Backups
               </NavLink>
               <NavLink
-                to="/admin/mascota"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                Mascota
-              </NavLink>
-              <NavLink
                 to="/admin/wordle"
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}
               >

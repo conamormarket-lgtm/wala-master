@@ -95,7 +95,6 @@ export const MENU_ADMIN = [
   {
     id: 'diseno', titulo: 'Diseño y juegos', icono: 'diseno', tono: 'rosa',
     items: [
-      { to: '/admin/mascota', texto: 'Kapi', icono: 'kapi', permiso: DISENO },
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: DISENO },
       { to: '/admin/ruleta', texto: 'Ruleta semanal', icono: 'ruleta', permiso: DISENO },
       { to: '/admin/bolitas', texto: 'Las Bolitas de Kapi', icono: 'bolitas', permiso: DISENO },

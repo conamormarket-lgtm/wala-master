@@ -7,11 +7,10 @@ import { CampoFecha } from '../../Fecha';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { InsigniaEstado, ListaOrdenable } from '../../piezas/admin/Datos';
-import { GrupoCampos, CampoImagen, CampoDinero, ElegirUno, BarraGuardar } from '../../piezas/admin/Formularios';
+import { GrupoCampos, CampoDinero, ElegirUno, BarraGuardar } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras } from '../../piezas/admin/Metricas';
 import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import { PaginaListaAdmin } from './Lista';
-import { toDirectImageUrl, getPreviewImageUrl } from '../../../../utils/mascotaImage';
 import {
   palabraLimpia, erroresDePalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDePatrocinio,
   nuevoPuesto, erroresDePremios, metricasBolitas,
@@ -21,8 +20,8 @@ import s from './Juegos.module.css';
 import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
- * D7a · Los juegos y Kapi: la imagen de Kapi (/admin/mascota), La Palabra
- * del día (/admin/wordle) y Las Bolitas de Kapi con las marcas
+ * D7a · Los juegos: La Palabra del día (/admin/wordle) y Las Bolitas de
+ * Kapi con las marcas
  * (/admin/bolitas). Lo que se guarda de las Bolitas lo comprueba el servidor
  * (adminBolitasSecure), que pone los topes de los cupones.
  */
@@ -31,59 +30,6 @@ const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n)
 const errorDe = (err) => err?.message || 'Vuelve a intentar.';
 const fechaLarga = (dia) => (/^\d{4}-\d{2}-\d{2}/.test(dia || '') ? new Date(`${dia}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }) : dia);
 const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
-/* ── Kapi ──────────────────────────────────────────────── */
-
-/**
- * La imagen de Kapi (/admin/mascota): la mascota de «Mi cuenta» y del registro.
- *  - imagen (url guardada) · cargando · error · onReintentar · onGuardar(url | '') → promesa
- *  - subirImagen(blob, { alAvanzar }) → url (siempre a config/mascota_kap.png)
- */
-export function PaginaKapiAdmin({ imagen = '', cargando = false, error, onReintentar, onGuardar, subirImagen }) {
-  const toast = useToast();
-  const [quitar, setQuitar] = useState(false);
-  const [fallo, setFallo] = useState(false);
-  const vista = getPreviewImageUrl(imagen) || toDirectImageUrl(imagen);
-  useEffect(() => { setFallo(false); }, [vista]);
-  const guardar = async (url) => {
-    try {
-      await onGuardar?.(url);
-      toast({ tipo: 'exito', titulo: url ? 'Kapi guardado' : 'Imagen quitada', texto: url ? 'Se ve así en Mi cuenta y en el registro.' : 'En Mi cuenta y en el registro ya no sale.' });
-    } catch (err) {
-      toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: errorDe(err) });
-    }
-  };
-
-  return (
-    <div className={s.pagina} data-componente="PaginaKapiAdmin">
-      <CabezaAdmin icono="kapi" tono="rosa" titulo="Kapi" subtitulo="La imagen de la mascota en «Mi cuenta» y en el registro." />
-      {error ? (
-        <Aviso tipo="error" titulo="No pudimos cargar a Kapi" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
-      ) : cargando ? <EsqueletoFormulario campos={3} /> : (
-        <div className={s.kapi}>
-          <GrupoCampos titulo="La imagen" ayuda="PNG con fondo transparente. Mejor subirla: los enlaces de Google Drive a veces el navegador los bloquea.">
-            <CampoImagen etiqueta="Kapi" valor={imagen} onCambiar={(url) => (url ? guardar(url) : setQuitar(true))} subir={subirImagen} conEnlace forma="cuadro" contener acepta="image/png,image/webp,image/jpeg" />
-          </GrupoCampos>
-          <section className={s.kapiVista} aria-label="Cómo se ve en Mi cuenta">
-            <span className={s.etiqueta}>Así se ve en Mi cuenta</span>
-            <span className={s.kapiFondo}>
-              {vista && !fallo ? <img src={vista} alt="Kapi" onError={() => setFallo(true)} /> : <span className={s.nota}>{vista ? 'No se pudo cargar: el enlace puede estar restringido. Mejor súbela.' : 'Sin imagen.'}</span>}
-            </span>
-          </section>
-        </div>
-      )}
-      <Confirmar
-        abierta={quitar}
-        titulo="¿Quitar la imagen de Kapi?"
-        texto="En Mi cuenta y en el registro ya no se mostrará."
-        confirmar="Quitar"
-        peligro
-        onCancelar={() => setQuitar(false)}
-        onConfirmar={async () => { await guardar(''); setQuitar(false); }}
-      />
-    </div>
-  );
-}
 
 /* ── La Palabra del día ────────────────────────────────── */
 

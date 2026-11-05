@@ -1,19 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getMessage, setMessage } from '../../services/messages';
-import { uploadFile } from '../../services/firebase/storage';
 import { getAllDailyWords, setDailyWord, deleteDailyWord } from '../../services/wordle';
 import { getBrands } from '../../services/brands';
 import { adminBolitas, listarPatrociniosBolitas, leerMundosBolitas, leerPremiosBolitas } from '../../services/firebase/ballSort';
 import { limaTodayStr } from '../../utils/fechaLima';
-import { PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin } from '../../componentes/kit/paginas/admin/Juegos';
+import { PaginaPalabraAdmin, PaginaBolitasAdmin } from '../../componentes/kit/paginas/admin/Juegos';
 import { palabraDiaDesde, patrocinioDesde, premiosBolitasDesde, premiosBolitasAFirestore } from '../../componentes/kit/adaptadoresAdmin';
-import { sinError, useLectura, useInvalidar } from './comun';
+import { sinError, useInvalidar } from './comun';
 
 /*
- * Los juegos y Kapi (D7a): la imagen de Kapi, La Palabra del día y Las
- * Bolitas de Kapi. Los mismos servicios, rutas de Storage, claves e
- * invalidaciones que AdminMascota, AdminWordlePage y AdminBolitasPage; lo que
+ * Los juegos (D7a): La Palabra del día y Las Bolitas de Kapi. Los mismos
+ * servicios, rutas de Storage, claves e invalidaciones que AdminWordlePage
+ * y AdminBolitasPage; lo que
  * se escribe en Firestore o se manda al servidor (adminBolitasSecure) es lo
  * mismo que mandaban ellas.
  *
@@ -23,49 +21,6 @@ import { sinError, useLectura, useInvalidar } from './comun';
  */
 
 const errorDe = (q, texto) => (q.error ? q.error.message || texto : undefined);
-
-/* ── Kapi ──────────────────────────────────────────────── */
-
-const MASCOTA_KEY = 'mascota_kap_image_url';
-const MASCOTA_RUTA = 'config/mascota_kap.png';
-
-/** La imagen de Kapi siempre en el mismo archivo, como AdminMascota (pisa la anterior). */
-async function subirKapi(blob, { alAvanzar } = {}) {
-  if (!blob || !String(blob.type || '').startsWith('image/')) throw new Error('Ese archivo no es una imagen.');
-  alAvanzar?.(10);
-  const archivo = blob instanceof File ? blob : new File([blob], 'mascota_kap.png', { type: blob.type });
-  const { url, error } = await uploadFile(archivo, MASCOTA_RUTA);
-  if (error || !url) throw new Error(typeof error === 'string' ? error : 'No se pudo subir la imagen.');
-  alAvanzar?.(100);
-  return url;
-}
-
-/**
- * /admin/mascota: getMessage('mascota_kap_image_url') en ['admin-mascota-url'];
- * guardar (al subir, pegar un enlace o quitar) con setMessage e invalida
- * también ['mascota-image-url'], la que lee Mi cuenta.
- */
-export function KapiDelPanel() {
-  const invalidar = useInvalidar();
-  const lectura = useLectura(['admin-mascota-url'], async () => {
-    const r = await getMessage(MASCOTA_KEY);
-    // Como antes: la url recortada, o '' si no hay.
-    return r?.error ? r : { data: r?.data?.trim() ?? '' };
-  });
-  return (
-    <PaginaKapiAdmin
-      imagen={lectura.datos || ''}
-      cargando={lectura.cargando}
-      error={lectura.error}
-      onReintentar={lectura.onReintentar}
-      subirImagen={subirKapi}
-      onGuardar={async (url) => {
-        await sinError(setMessage(MASCOTA_KEY, url?.trim() ?? ''));
-        await invalidar(['admin-mascota-url'], ['mascota-image-url']);
-      }}
-    />
-  );
-}
 
 /* ── La Palabra del día ────────────────────────────────── */
 

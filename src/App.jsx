@@ -197,7 +197,6 @@ const AdminSuscripcionDetalle = lazy(() => import('./pages/admin/AdminSuscripcio
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
-const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
@@ -545,7 +544,8 @@ function App() {
 
                                       <Route path="destacados" element={<AdminDestacados />} />
                                       <Route path="zonas" element={<Navigate to="/admin" replace />} />
-                                      <Route path="mascota" element={<AdminMascota />} />
+                                      {/* La imagen de Kapi se quitó: ninguna página la mostraba. */}
+                                      <Route path="mascota" element={<Navigate to="/admin" replace />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />

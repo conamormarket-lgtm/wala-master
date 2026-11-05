@@ -17,7 +17,7 @@ import {
   PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
   PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
   PaginaPopupsAdmin, PaginaLandingsAdmin, landingDesde, landingAFirestore,
-  PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
+  PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
   PaginaRuletaAdmin, premioRuletaAFirestore, ganadoRuletaDesde,
   PaginaConfiguracionAdmin, adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo,
   PaginaWhatsAppAdmin, PaginaHistorialAdmin, whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
@@ -88,7 +88,6 @@ const HECHAS = [
   ['/admin/enlaces', 'Enlaces'],
   ['/admin/popups', 'Popups'],
   ['/admin/landing-pages', 'Landings'],
-  ['/admin/mascota', 'Kapi'],
   ['/admin/wordle', 'Palabra'],
   ['/admin/bolitas', 'Bolitas'],
   ['/admin/ruleta', 'Ruleta'],
@@ -777,7 +776,6 @@ function PanelDePrueba() {
   const [paginasEnlaces, guardarPaginaEnlacesCruda, eliminarPaginaEnlaces, setPaginasEnlaces] = useListaDemo(PAGINAS_ENLACES_DEMO, falla);
   const [enlacePestana, setEnlacePestana] = useState('contenido');
   const [popups, setPopups] = useState(POPUPS_DEMO);
-  const [kapi, setKapi] = useState('/assets/kapi/kapi-happy.webp');
   const [palabras, setPalabras] = useState(PALABRAS_DEMO);
   const [patrocinios, setPatrocinios] = useState(PATROCINIOS_DEMO);
   const [mundosBolitas, setMundosBolitas] = useState(MARCAS_PAGINAS.slice(0, 2).map((m) => ({ id: m.id, nombre: m.name })));
@@ -1562,17 +1560,6 @@ function PanelDePrueba() {
         errorGanados={con('error') ? 'No se pudieron leer los premios ganados (es una prueba).' : undefined}
         onReintentarGanados={comunes.onReintentar}
         onMarcarEntregado={async (id, v) => { await espera(500); fallar(); setGanadosRuleta((l) => l.map((x) => (x.id === id ? { ...x, entregado: v } : x))); }}
-      />
-    );
-  } else if (rutaSola === '/admin/mascota') {
-    pagina = (
-      <PaginaKapiAdmin
-        imagen={vacio ? '' : kapi}
-        cargando={con('cargando')}
-        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
-        onReintentar={comunes.onReintentar}
-        onGuardar={async (url) => { await espera(600); fallar(); setKapi(url); }}
-        subirImagen={subir}
       />
     );
   } else if (rutaSola === '/admin/wordle') {

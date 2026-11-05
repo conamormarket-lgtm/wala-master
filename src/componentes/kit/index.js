@@ -108,7 +108,7 @@ export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admi
 export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';
 export { PaginaPopupsAdmin } from './paginas/admin/Popups';
 export { PaginaLandingsAdmin } from './paginas/admin/Paginas';
-export { PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
+export { PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
 export { PaginaRuletaAdmin } from './paginas/admin/Ruleta';
 export { PaginaConfiguracionAdmin } from './paginas/admin/Configuracion';
 export { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from './paginas/admin/Ajustes';

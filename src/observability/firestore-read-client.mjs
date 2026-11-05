@@ -69,7 +69,6 @@ const routes = [
   "/admin/enlaces",
   "/admin/destacados",
   "/admin/zonas",
-  "/admin/mascota",
   "/admin/publico-productos",
   "/admin/wordle",
   "/admin/notificaciones",

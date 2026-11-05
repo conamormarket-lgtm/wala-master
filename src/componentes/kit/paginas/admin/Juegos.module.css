@@ -44,38 +44,10 @@
 }
 
 /* Kapi */
-.kapi {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-  gap: 1rem;
-  align-items: start;
-}
 
-.kapiVista {
-  display: grid;
-  gap: 0.5rem;
-}
 
-.kapiFondo {
-  display: grid;
-  place-items: center;
-  min-height: 14rem;
-  padding: 1rem;
-  border-radius: 22px;
-  background: var(--gradient-brand, linear-gradient(135deg, #7c3aed, #c026d3));
-  text-align: center;
-}
 
-.kapiFondo img {
-  max-width: 11rem;
-  max-height: 12rem;
-  object-fit: contain;
-}
 
-.kapiFondo .nota {
-  max-width: 16rem;
-  color: #fff;
-}
 
 /* La palabra en casillas, como en el juego */
 .casillas {
