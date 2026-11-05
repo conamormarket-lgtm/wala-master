@@ -1080,6 +1080,9 @@ export function resumenEnlaces(enlaces = []) {
   return {
     generados: todos.length,
     pagados: pagados.length,
+    // Los que aún se pueden pagar (los vencidos ya no cuentan como por cobrar).
+    pendientes: todos.filter((e) => e.estado === 'pendiente').length,
+    vencidos: todos.filter((e) => e.estado === 'vencido').length,
     conversion: todos.length ? (pagados.length / todos.length) * 100 : 0,
     cobradoPEN: suma('PEN'),
     cobradoUSD: suma('USD'),
@@ -1975,7 +1978,15 @@ export function retoActivoDesde(r = {}, ahora = new Date()) {
     challengeId: r.id, title: g.title, description: g.description, actionType: g.actionType, goal: g.goal,
     rewardCoins: g.rewardCoins, rewardType: g.rewardType,
     startedAt: ahora.toISOString(), expiresAt: new Date(ahora.getTime() + 7 * DIA_MS).toISOString(),
+    // Lo activó el admin: la rotación de los lunes (rotateWeeklyChallenge) lo respeta hasta expiresAt.
+    manual: true,
   };
+}
+
+/** Lo que cambia del reto activo al editar su reto en el catálogo (sin tocar sus fechas). */
+export function retoActivoEditado(r = {}) {
+  const { challengeId, startedAt, expiresAt, manual, ...datos } = retoActivoDesde(r);
+  return datos;
 }
 
 /** Una evidencia pendiente con la recompensa de su reto (la del catálogo o la del activo). */

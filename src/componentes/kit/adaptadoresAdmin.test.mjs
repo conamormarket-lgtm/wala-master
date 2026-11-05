@@ -325,6 +325,8 @@ test('pagos: filtros, cifras, serie por día, enlace nuevo y configuración', ()
   assert.equal(r.cobradoPEN, 40);
   assert.equal(r.cobradoUSD, 20);
   assert.equal(Math.round(r.conversion), 67);
+  assert.deepEqual([r.pendientes, r.vencidos], [1, 0]);
+  assert.deepEqual([m2.resumenEnlaces([...enlaces, { id: 'v', estado: 'vencido', createdMs: d(1) }]).vencidos], [1]);
   const serie = m2.serieDiariaEnlaces(enlaces);
   assert.deepEqual(serie.map((x) => x.etiqueta), ['01/10', '02/10', '03/10', '04/10']);
   assert.deepEqual(serie.map((x) => x.valores.pagados), [0, 0, 2, 0]);
@@ -551,6 +553,10 @@ test('fidelidad: referidos, misiones y retos', () => {
   const act = m2.retoActivoDesde(re, new Date('2026-11-02T10:00:00Z'));
   assert.equal(act.challengeId, 'r');
   assert.equal(act.expiresAt, '2026-11-09T10:00:00.000Z');
+  assert.equal(act.manual, true);
+  const editado = m2.retoActivoEditado({ ...re, nombre: 'Cuatro deseos' });
+  assert.equal(editado.title, 'Cuatro deseos');
+  assert.deepEqual(['challengeId', 'startedAt', 'expiresAt', 'manual'].filter((k) => k in editado), []);
   const ev = m2.evidenciaDesde({ id: 'e', challengeId: 'r', userName: 'Ana', evidenceType: 'image', evidenceUrl: 'u' }, [re]);
   assert.deepEqual([ev.reto, ev.tipo, ev.monedas], ['Tres deseos', 'imagen', 20]);
   assert.equal(m2.evidenciaDesde({ id: 'e2', challengeId: 'zz' }, [re], act).reto, 'Tres deseos');

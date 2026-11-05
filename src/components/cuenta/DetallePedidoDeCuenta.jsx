@@ -195,17 +195,25 @@ export default function DetallePedidoDeCuenta() {
 
   /* ── Pagar el saldo ── */
   const [pagando, setPagando] = useState(false);
-  // El WhatsApp de pagos (Admin → Gestión de pagos), para "¿Problemas para pagar?".
-  // Ya no se manda comprobante: todo se cobra por Culqi (tarjeta o Yape) o PayPal.
-  const { data: whatsappPagos } = useQuery({
-    queryKey: ['whatsapp_number_pagos'],
+  // Lo de Admin → Gestión de pagos: el WhatsApp de pagos ("¿Problemas para
+  // pagar?" y el comprobante), y Yape/Plin a mano con su mensaje. Culqi y
+  // PayPal se confirman solos; el pago a mano, al revisar el comprobante.
+  const { data: configPagos } = useQuery({
+    queryKey: ['pagos-saldo-config'],
     queryFn: async () => {
-      const [pagos, respaldo] = await Promise.all([getMessage('whatsapp_number_pagos'), getMessage('whatsapp_number_cuenta')]);
-      return pagos.data?.trim() || respaldo.data?.trim() || '';
+      const claves = ['whatsapp_number_pagos', 'whatsapp_number_cuenta', 'yape_number', 'yape_name', 'plin_number', 'plin_name', 'whatsapp_text_pagos'];
+      const v = Object.fromEntries((await Promise.all(claves.map((k) => getMessage(k)))).map((r, i) => [claves[i], String(r.data || '').trim()]));
+      return {
+        whatsapp: v.whatsapp_number_pagos || v.whatsapp_number_cuenta,
+        yape: { numero: v.yape_number, nombre: v.yape_name },
+        plin: { numero: v.plin_number, nombre: v.plin_name },
+        texto: v.whatsapp_text_pagos || 'Hola, quiero pagar mi saldo pendiente del pedido *#{id}*. Adjunto mi comprobante por S/ *{monto}*.',
+      };
     },
     // Recién al abrir la hoja (antes, al entrar a cualquier pedido con deuda).
     enabled: pagando && Boolean(pedido?.conDeuda),
   });
+  const whatsappPagos = configPagos?.whatsapp || '';
   // "¿Cómo te fue con este pedido?": si el admin la tiene prendida y con cuántas monedas.
   const { data: encuestaEntrega } = useQuery({
     queryKey: ['encuesta-entrega-config'],
@@ -367,11 +375,16 @@ export default function DetallePedidoDeCuenta() {
   };
 
   let urlAyudaPago = null;
+  let pagoManual;
   if (whatsappPagos) {
-    const limpio = whatsappPagos.replace(/[^\d+]/g, '');
-    const numero = (limpio.startsWith('+') ? limpio : `+51${limpio}`).replace('+', '');
+    // normalizarWhatsapp: con "51 9…" antes quedaba "+5151…" y el enlace no abría.
+    const numero = normalizarWhatsapp(whatsappPagos);
     const texto = `Hola, tengo un problema para pagar el saldo de mi pedido *#${codigo}* (S/ ${deuda.toFixed(2)}).`;
     urlAyudaPago = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+    const comprobante = configPagos.texto.replaceAll('{id}', codigo).replaceAll('{monto}', deuda.toFixed(2));
+    pagoManual = { yape: configPagos.yape, plin: configPagos.plin, urlComprobante: `https://wa.me/${numero}?text=${encodeURIComponent(comprobante)}` };
+  } else if (configPagos) {
+    pagoManual = { yape: configPagos.yape, plin: configPagos.plin };
   }
 
   return (
@@ -409,6 +422,7 @@ export default function DetallePedidoDeCuenta() {
           onCerrar={() => setPagando(false)}
           monto={deuda}
           urlAyuda={urlAyudaPago}
+          manual={pagoManual}
           tarjeta={pagando && (
             <>
               <CulqiCustomCheckout

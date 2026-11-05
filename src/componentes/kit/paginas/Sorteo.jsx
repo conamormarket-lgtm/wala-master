@@ -30,7 +30,8 @@ const PERU = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }];
  * Participar y pagar lo hace el servidor; la página solo pide los datos y
  * muestra cómo va.
  *  - sorteo: { premio, imagen, descripcion, tipo: 'gratis' | 'pagado',
- *    precioTicket, moneda, numGanadores, hasta (ISO), cerrado, participantes,
+ *    precioTicket, moneda, numGanadores, hasta (ISO), cerrado, empieza (texto
+ *    "10/11/2026" si todavía no empieza), participantes,
  *    reglas: { compartir, referido, appExtra, appObligatorio }, ganadores: [{ id, nombre }] }
  *  - participacion: { tickets, chances, compartio } (null si aún no participa)
  *  - sesion · yo (uid) · enApp · urlLogin · urlApp
@@ -133,6 +134,7 @@ export function PaginaSorteo({
   let accion;
   if (!sesion) accion = <Boton to={urlLogin} bloque tamano="lg" icono={<LogIn aria-hidden="true" />}><Texto>Inicia sesión para participar</Texto></Boton>;
   else if (sorteo.cerrado) accion = <Boton bloque tamano="lg" disabled><Texto>El sorteo ya cerró</Texto></Boton>;
+  else if (sorteo.empieza) accion = <Boton bloque tamano="lg" disabled><Texto>{`Empieza el ${sorteo.empieza}`}</Texto></Boton>;
   else if (reglas.appObligatorio && !enApp) {
     accion = (
       <div className={s.accionApp}>

@@ -30,7 +30,7 @@ const PESTANAS = [
   { id: 'ajustes', texto: 'Ajustes' },
 ];
 const METODOS = [{ valor: 'culqi', texto: 'Culqi (S/)' }, { valor: 'paypal', texto: 'PayPal ($)' }];
-const ESTADOS_ENLACE = { pagado: { texto: 'Pagado', tono: 'exito' }, pendiente: { texto: 'Pendiente', tono: 'aviso' } };
+const ESTADOS_ENLACE = { pagado: { texto: 'Pagado', tono: 'exito' }, pendiente: { texto: 'Pendiente', tono: 'aviso' }, vencido: { texto: 'Vencido', tono: 'neutro' } };
 
 const dinero = (monto, moneda) => (monto == null ? '—' : `${moneda === 'USD' ? '$' : 'S/'} ${Number(monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 const fechaHora = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -71,7 +71,7 @@ function Historial({ enlaces, cargando, error, onActualizar, urlDe }) {
     <div className={s.bloques}>
       <FilaCifras etiqueta="Resumen de los enlaces">
         <Cifra nombre="Enlaces generados" valor={entero(r.generados)} tono="violeta" cargando={cargando} />
-        <Cifra nombre="Pagados" valor={entero(r.pagados)} ayuda={r.generados - r.pagados ? `${entero(r.generados - r.pagados)} pendientes` : 'Ninguno pendiente'} tono="exito" cargando={cargando} />
+        <Cifra nombre="Pagados" valor={entero(r.pagados)} ayuda={[r.pendientes ? `${entero(r.pendientes)} pendiente${r.pendientes === 1 ? '' : 's'}` : 'Ninguno pendiente', r.vencidos ? `${entero(r.vencidos)} vencido${r.vencidos === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')} tono="exito" cargando={cargando} />
         <Cifra nombre="Conversión" valor={`${r.conversion.toLocaleString('es-PE', { maximumFractionDigits: 1 })} %`} ayuda="Pagados ÷ generados" tono="cielo" cargando={cargando} />
         <Cifra nombre="Cobrado" valor={cobrado[0] || 'S/ 0.00'} ayuda={cobrado[1] ? `y ${cobrado[1]}` : 'Soles por Culqi, dólares por PayPal'} tono="aviso" cargando={cargando} />
         <Cifra nombre="Tiempo hasta el pago" valor={duracionCorta(r.tiempoPromedio)} ayuda="En promedio" tono="neutro" cargando={cargando} />
@@ -82,7 +82,7 @@ function Historial({ enlaces, cargando, error, onActualizar, urlDe }) {
         onBusqueda={(t) => { setBusqueda(t); setVisibles(PASO); }}
         placeholder="Buscar un concepto"
         filtros={[
-          { id: 'estado', etiqueta: 'Estado', todos: 'Pagados y pendientes', opciones: [{ valor: 'pendiente', texto: 'Pendientes' }, { valor: 'pagado', texto: 'Pagados' }], valor: filtros.estado },
+          { id: 'estado', etiqueta: 'Estado', todos: 'Todos', opciones: [{ valor: 'pendiente', texto: 'Pendientes' }, { valor: 'pagado', texto: 'Pagados' }, { valor: 'vencido', texto: 'Vencidos (36 h)' }], valor: filtros.estado },
           { id: 'metodo', etiqueta: 'Método', todos: 'Culqi y PayPal', opciones: METODOS, valor: filtros.metodo },
           { id: 'periodo', etiqueta: 'Periodo', todos: 'Desde el inicio', opciones: PERIODOS_PAGOS, valor: filtros.periodo },
         ]}

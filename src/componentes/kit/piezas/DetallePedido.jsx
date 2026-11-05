@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Check, CheckCircle2, AlertTriangle, Receipt, FileText, Camera, Coins, CreditCard, Send, Loader2, ImageOff } from 'lucide-react';
+import { Check, CheckCircle2, AlertTriangle, Receipt, FileText, Camera, Coins, CreditCard, Send, Loader2, ImageOff, Smartphone } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { HojaInferior } from '../Feedback';
@@ -174,14 +174,18 @@ export function PagosPedido({ total = 0, abonado, deuda = 0, pagado = false, est
 }
 
 /**
- * Pagar el saldo de un pedido. Todo pasa por Culqi (tarjeta o Yape) o PayPal:
- * el cobro se confirma al instante y queda registrado con su constancia, sin
- * mandar comprobantes. El formulario de pago entra como `tarjeta`.
+ * Pagar el saldo de un pedido: por Culqi (tarjeta o Yape) o PayPal, que se
+ * confirma al instante con su constancia (el formulario entra como `tarjeta`),
+ * o por Yape/Plin a mano con el comprobante por WhatsApp (`manual`).
  *  - abierta, onCerrar · monto · tarjeta: nodo
  *  - urlAyuda: wa.me para "¿Problemas para pagar?" (sin él, no se muestra)
+ *  - manual: { yape: { numero, nombre }, plin: { numero, nombre }, urlComprobante }
+ *    (Admin › Gestión de pagos): pagar por Yape o Plin a mano y mandar el
+ *    comprobante por WhatsApp. Sin números, no se muestra.
  *  - cargando: aún no llegan los datos de pago
  */
-export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, urlAyuda, cargando = false }) {
+export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, urlAyuda, manual, cargando = false }) {
+  const cuentas = [manual?.yape?.numero && { app: 'Yape', ...manual.yape }, manual?.plin?.numero && { app: 'Plin', ...manual.plin }].filter(Boolean);
   return (
     <HojaInferior abierta={abierta} onCerrar={onCerrar} titulo="Pagar el saldo">
       <div className={s.pagar}>
@@ -197,6 +201,22 @@ export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, urlAyuda
                 </p>
                 <p><Texto>El pago se confirma al momento y queda registrado en tu pedido. No necesitas enviar comprobante.</Texto></p>
                 {tarjeta}
+              </section>
+            )}
+            {cuentas.length > 0 && (
+              <section className={s.metodo}>
+                <h4><Smartphone aria-hidden="true" /> <Texto>Yape o Plin a mano</Texto> <span><Texto>Lo revisamos</Texto></span></h4>
+                {cuentas.map((c) => (
+                  <p key={c.app} className={s.cuentaManual}>
+                    <span className={`${s.marcaPago} ${c.app === 'Yape' ? s.marcaYape : s.marcaPlin}`}>{c.app}</span>
+                    <strong>{c.numero}</strong>
+                    {c.nombre && <small>{c.nombre}</small>}
+                  </p>
+                ))}
+                <p><Texto>Yapea o plinea el monto y mándanos la captura: se confirma cuando la revisemos.</Texto></p>
+                {manual.urlComprobante && (
+                  <Boton to={manual.urlComprobante} variante="secundario" bloque icono={<Send aria-hidden="true" />}><Texto>Enviar comprobante por WhatsApp</Texto></Boton>
+                )}
               </section>
             )}
             {urlAyuda && (

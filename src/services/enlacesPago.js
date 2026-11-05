@@ -78,6 +78,8 @@ export function metodoDeEnlace(e) {
  * @param {object} raw documento con { id, ...data }
  * @returns {object}
  */
+const HORAS_ENLACE = 36;
+
 export function normalizarEnlace(raw) {
   const moneda = raw?.moneda === 'USD' ? 'USD' : raw?.moneda === 'PEN' ? 'PEN' : null;
   // Monto: prioriza `monto`; si falta, cae al específico por moneda (retrocompat).
@@ -86,9 +88,13 @@ export function normalizarEnlace(raw) {
   );
   const monto = Number.isFinite(montoNum) ? montoNum : null;
 
-  const estado = raw?.estado === 'pagado' ? 'pagado' : 'pendiente';
   const createdMs = tsAMillis(raw?.createdAt);
   const pagadoMs = tsAMillis(raw?.pagadoEn);
+  // Vence en expiresAt o, si no lo tiene (los del admin), a las 36 h de creado:
+  // la misma regla que el cliente (enlacePagoDesde) y el servidor (pagosLogic).
+  // Antes los vencidos salían "Pendiente" y se contaban como por cobrar.
+  const venceMs = tsAMillis(raw?.expiresAt) ?? (createdMs != null ? createdMs + HORAS_ENLACE * 3600000 : null);
+  const estado = raw?.estado === 'pagado' ? 'pagado' : venceMs != null && venceMs <= Date.now() ? 'vencido' : 'pendiente';
 
   const base = {
     id: raw?.id,
@@ -98,6 +104,7 @@ export function normalizarEnlace(raw) {
     estado,
     createdMs,
     pagadoMs,
+    venceMs,
     culqiChargeId: raw?.culqiChargeId || null,
     paypalOrderId: raw?.paypalOrderId || null,
   };

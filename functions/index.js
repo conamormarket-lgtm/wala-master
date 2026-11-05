@@ -36,6 +36,7 @@ const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon, monedasDeLi
 const niveles = require("./nivelesLogic");
 const popupsEmbudo = require("./popupsEmbudo");
 const { adminConPermiso } = require("./adminAuth");
+const { mensajeFueraDeFechas } = require("./sorteoFechas");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
 const constancia = require("./constanciaPago");
@@ -1936,6 +1937,15 @@ exports.rotateWeeklyChallenge = onSchedule({
   timeZone: "America/Lima"
 }, async (event) => {
   try {
+    // El reto que activó el admin dura sus 7 días: el lunes no se pisa (antes
+    // la rotación lo reemplazaba aunque lo hubieran activado el domingo).
+    const actual = await db.collection("globals").doc("activeChallenge").get();
+    const a = actual.exists ? actual.data() || {} : {};
+    if (a.manual === true && a.expiresAt && Date.parse(a.expiresAt) > Date.now()) {
+      console.log("Reto activado por el admin hasta", a.expiresAt, "- no se rota.");
+      return;
+    }
+
     const challengesSnap = await db.collection("weeklyChallenges").get();
     if (challengesSnap.empty) {
       console.log("No hay retos disponibles para rotar.");
@@ -7847,6 +7857,10 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
   }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
+  }
   if (sorteo.tipo === "pagado") {
     throw new functions.https.HttpsError("failed-precondition", "este sorteo requiere comprar ticket");
   }
@@ -7993,6 +8007,10 @@ async function leerPrecioTicketSorteo(sorteoId, cantidad) {
   const sorteo = snap.data();
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
   }
   if (sorteo.tipo !== "pagado") {
     throw new functions.https.HttpsError("failed-precondition", "Este sorteo no vende tickets.");
@@ -8852,6 +8870,10 @@ exports.sumarChanceCompartir = functions.https.onCall(async (data, context) => {
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
   }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
+  }
 
   try {
     return await db.runTransaction(async (t) => {
@@ -8914,6 +8936,10 @@ exports.claimRaffleReferralSecure = functions.https.onCall(async (data, context)
   }
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
   }
 
   // 2) Resuelve el DUEÑO del refCode en portal_clientes_users (referralCode==refCode).
@@ -9611,6 +9637,9 @@ exports.crearSuscripcionCulqi = functions.https.onCall(async (data, context) => 
         planId,
         intervalo: plan.intervalo || null,
         meses,
+        // Lo que autorizó ("Autorizo el cobro automático de S/ X"): las
+        // renovaciones cobran esto aunque el admin cambie el precio del plan.
+        precioCentimos: montoCentimos,
         chancesPorCiclo,
         chancesExtra: esNuevo ? 0 : FieldValue.increment(0),
         chancesTotal,
@@ -9726,13 +9755,24 @@ exports.cobrarSuscripcionesCulqi = onSchedule(
         }
 
         try {
-          // MONTO autoritativo: se re-lee del plan de la campaña (no del suscriptor).
+          // MONTO: lo que autorizó el suscriptor (sub.precioCentimos), no el precio
+          // de hoy del plan: un cambio de precio en el admin es solo para los
+          // nuevos. Los de antes de guardarlo: el último recibo; si no hay, el plan.
+          // Así un plan borrado tampoco deja sin cobrar a sus suscriptores.
           const campSnap = await campRef.get();
           const campana = campSnap.exists ? campSnap.data() : {};
           const planes = Array.isArray(campana.planes) ? campana.planes : [];
           const plan = planes.find((p) => p && p.id === sub.planId) || {};
-          const montoCentimos = Number(plan.precioCentimos);
-          const meses = Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0 ? Number(plan.meses) : Number(sub.meses) || 1;
+          let montoCentimos = Number(sub.precioCentimos);
+          if (!Number.isInteger(montoCentimos) || montoCentimos <= 0) {
+            // eslint-disable-next-line no-await-in-loop
+            const ultimo = await subRef.collection("recibos").orderBy("fecha", "desc").limit(1).get().catch(() => null);
+            const delRecibo = ultimo && !ultimo.empty ? Number(ultimo.docs[0].data().montoCentimos) : NaN;
+            montoCentimos = Number.isInteger(delRecibo) && delRecibo > 0 ? delRecibo : Number(plan.precioCentimos);
+          }
+          const meses = Number.isInteger(Number(sub.meses)) && Number(sub.meses) > 0
+            ? Number(sub.meses)
+            : (Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0 ? Number(plan.meses) : 1);
           if (!Number.isInteger(montoCentimos) || montoCentimos <= 0 || !sub.culqiCardId) {
             await lockRef.set({ status: "failed", error: "plan/card inválido", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
             continue;
@@ -9773,6 +9813,8 @@ exports.cobrarSuscripcionesCulqi = onSchedule(
                     vigenciaHasta: admin.firestore.Timestamp.fromDate(nuevaVigencia),
                     proximoCobro: admin.firestore.Timestamp.fromDate(nuevaVigencia),
                     intentosFallidos: 0,
+                    // Queda guardado lo que se le cobra (los de antes no lo tenían).
+                    precioCentimos: montoCentimos,
                     updatedAt: FieldValue.serverTimestamp(),
                   }, { merge: true });
                   t.set(reciboRef, {
@@ -9828,10 +9870,14 @@ exports.cobrarSuscripcionesCulqi = onSchedule(
 async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
   const cacheRef = db.collection("paypalPlanes").doc(`${campaignId}__${plan.id}`);
   const cacheSnap = await cacheRef.get();
-  if (cacheSnap.exists && cacheSnap.data().paypalPlanId) {
-    return cacheSnap.data().paypalPlanId;
-  }
   const precioUsd = Number(plan.precioUsd);
+  // Un plan de PayPal tiene su precio y su intervalo fijos. Si el admin cambió
+  // alguno, se crea otro plan para los NUEVOS suscriptores; los de antes siguen
+  // en el suyo (pagan lo que aceptaron). Antes se reusaba siempre el primero.
+  const cache = cacheSnap.exists ? cacheSnap.data() || {} : {};
+  if (cache.paypalPlanId && Number(cache.precioUsd) === precioUsd && Number(cache.meses) === Number(meses)) {
+    return cache.paypalPlanId;
+  }
   if (!Number.isFinite(precioUsd) || precioUsd <= 0) {
     throw new functions.https.HttpsError("failed-precondition", "El plan no tiene precioUsd válido (PayPal).");
   }
@@ -9864,7 +9910,8 @@ async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
     headers: {
       "Authorization": `Bearer ${accessToken}`,
       "Content-Type": "application/json",
-      "PayPal-Request-Id": `plan_${campaignId}_${plan.id}`,
+      // Con el precio y los meses: el mismo id devolvería el plan de antes.
+      "PayPal-Request-Id": `plan_${campaignId}_${plan.id}_${precioUsd.toFixed(2)}_${meses}`,
     },
     body: JSON.stringify({
       product_id: productId,
@@ -9895,6 +9942,10 @@ async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
   await cacheRef.set({
     campaignId, planId: plan.id, productId, paypalPlanId,
     precioUsd, meses, createdAt: FieldValue.serverTimestamp(),
+    // Los planes de PayPal de antes (sus suscriptores siguen ahí).
+    ...(cache.paypalPlanId && cache.paypalPlanId !== paypalPlanId && {
+      anteriores: FieldValue.arrayUnion({ paypalPlanId: cache.paypalPlanId, precioUsd: Number(cache.precioUsd) || null, meses: Number(cache.meses) || null }),
+    }),
   }, { merge: true });
   return paypalPlanId;
 }
@@ -9995,6 +10046,8 @@ exports.confirmarSuscripcionPaypal = functions.https.onCall(async (data, context
       chancesTotal,
       metodoPago: "paypal",
       paypalSubscriptionId: subscriptionId,
+      // Lo que aceptó en PayPal (su plan de PayPal no cambia con el admin).
+      precioUsd: Number(plan.precioUsd) || null,
       culqiCustomerId: null,
       culqiCardId: null,
       updatedAt: FieldValue.serverTimestamp(),
@@ -10163,8 +10216,10 @@ exports.paypalSubscriptionWebhook = functions.https.onRequest(async (req, res) =
         const campSnap = await campRef.get();
         const planes = campSnap.exists && Array.isArray(campSnap.data().planes) ? campSnap.data().planes : [];
         const plan = planes.find((p) => p && p.id === (subData && subData.planId)) || {};
-        if (Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0) meses = Number(plan.meses);
-        montoUsd = Number(plan.precioUsd) || (recurso.amount && Number(recurso.amount.total)) || null;
+        // El intervalo y el monto del suscriptor (su plan de PayPal no cambia aunque
+        // el admin cambie el plan): lo cobrado por PayPal manda.
+        if (!(Number(subData && subData.meses) > 0) && Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0) meses = Number(plan.meses);
+        montoUsd = (recurso.amount && Number(recurso.amount.total)) || Number(subData && subData.precioUsd) || Number(plan.precioUsd) || null;
       } catch (_e) { /* usa defaults */ }
       const nuevaVigencia = sumarMeses(ahora, meses);
       const pagoId = recurso.id || `${eventId}`;

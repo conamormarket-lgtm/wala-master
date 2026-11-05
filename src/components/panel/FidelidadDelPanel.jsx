@@ -19,7 +19,7 @@ import {
 } from '../../componentes/kit/paginas/admin/Fidelidad';
 import {
   referidoDesdeFirestore, referentesDesde, canjesDesde, misionDesdeFirestore, misionAFirestore, retoDesdeFirestore, retoAFirestore,
-  retoActivoDesde, evidenciaDesde, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, productoAdminDesde,
+  retoActivoDesde, retoActivoEditado, evidenciaDesde, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, productoAdminDesde,
 } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
@@ -174,9 +174,17 @@ export function RetosDelPanel() {
       onGuardar={async (datos, id) => {
         const doc = retoAFirestore(datos);
         await sinError(id ? updateDocument('weeklyChallenges', id, doc) : createDocument('weeklyChallenges', doc));
+        // El reto activo es una copia: si es este, el cambio llega también al
+        // cliente (antes seguía con lo de antes hasta volver a activarlo).
+        if (id && activo.data?.challengeId === id) {
+          await sinError(updateDocument('globals', 'activeChallenge', retoActivoEditado({ ...datos, id })));
+          await invalidar(['admin-reto-activo']);
+        }
         await invalidar(['admin-retos']);
       }}
       onEliminar={async (id) => {
+        // Sin él en el catálogo, aprobar sus evidencias falla ("ya no existe").
+        if (activo.data?.challengeId === id) throw new Error('Es el reto activo de esta semana: activa otro antes de borrarlo.');
         await sinError(deleteDocument('weeklyChallenges', id));
         await invalidar(['admin-retos']);
       }}

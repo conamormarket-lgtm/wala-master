@@ -484,6 +484,10 @@
   background: #6d1d7f;
 }
 
+.marcaPlin {
+  background: #00b2c3;
+}
+
 .notaMonedas {
   display: flex;
   align-items: center;
@@ -512,4 +516,22 @@
 .lineaDeuda .actual .punto {
   background: linear-gradient(135deg, #fb7185, #e11d48);
   box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
+}
+
+/* Yape o Plin a mano: el número de cada cuenta con su titular. */
+.cuentaManual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.cuentaManual strong {
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.cuentaManual small {
+  color: var(--color-text-muted);
 }

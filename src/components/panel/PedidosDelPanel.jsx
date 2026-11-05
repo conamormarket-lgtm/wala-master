@@ -76,7 +76,7 @@ export function PagosDelPanel() {
       cargandoConfig={config.isLoading}
       onGuardarConfig={async (c) => {
         await Promise.all(Object.entries(configPagosAMensajes(c)).map(([k, v]) => sinError(setMessage(k, v))));
-        await invalidar(['admin-pagos-config'], ['user-pagos-config']);
+        await invalidar(['admin-pagos-config'], ['user-pagos-config'], ['pagos-saldo-config']);
       }}
     />
   );
