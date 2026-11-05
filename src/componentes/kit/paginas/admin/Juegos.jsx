@@ -18,7 +18,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Juegos.module.css';
-import { Cargando } from '../../Cargando';
+import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
  * D7a · Los juegos y Kapi: la imagen de Kapi (/admin/mascota), La Palabra
@@ -59,7 +59,7 @@ export function PaginaKapiAdmin({ imagen = '', cargando = false, error, onReinte
       <CabezaAdmin icono="kapi" tono="rosa" titulo="Kapi" subtitulo="La imagen de la mascota en «Mi cuenta» y en el registro." />
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar a Kapi" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
-      ) : cargando ? <Cargando bloque /> : (
+      ) : cargando ? <EsqueletoFormulario campos={3} /> : (
         <div className={s.kapi}>
           <GrupoCampos titulo="La imagen" ayuda="PNG con fondo transparente. Mejor subirla: los enlaces de Google Drive a veces el navegador los bloquea.">
             <CampoImagen etiqueta="Kapi" valor={imagen} onCambiar={(url) => (url ? guardar(url) : setQuitar(true))} subir={subirImagen} conEnlace forma="cuadro" contener acepta="image/png,image/webp,image/jpeg" />
@@ -375,7 +375,7 @@ export function PaginaBolitasAdmin({
         <Aviso tipo="error" titulo="No pudimos cargar las Bolitas" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
       ) : cargando && pestana !== 'resultados' ? (
         // Mundos y Premios copian lo guardado al llegar: sin esto, lo editado mientras carga se pierde.
-        <Cargando bloque />
+        <EsqueletoFormulario campos={3} />
       ) : pestana === 'mundos' ? (
         <Mundos guardados={mundos} marcas={marcas} onGuardar={onGuardarMundos} />
       ) : pestana === 'premios' ? (

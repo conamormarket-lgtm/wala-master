@@ -15,7 +15,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Ajustes.module.css';
-import { Cargando } from '../../Cargando';
+import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
  * D8b · WhatsApp (/admin/whatsapp) y el historial (/admin/backups): a qué
@@ -77,7 +77,7 @@ export function PaginaWhatsAppAdmin({ cargando = false, error, onReintentar, con
   if (error) {
     cuerpo = <Aviso tipo="error" titulo="No pudimos leer los números" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>;
   } else if (cargando || !c) {
-    cuerpo = <Cargando bloque />;
+    cuerpo = <EsqueletoFormulario campos={4} />;
   } else {
     const conId = c.mensajePedido.includes('{id}');
     cuerpo = (

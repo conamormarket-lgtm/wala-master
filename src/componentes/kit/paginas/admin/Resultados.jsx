@@ -4,7 +4,7 @@ import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio } from '../../Feedback';
 import { Buscador, Interruptor } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
-import { Hueso } from '../../Esqueletos';
+import { EsqueletoFila, EsqueletoTexto, Hueso } from '../../Esqueletos';
 import { CampoFecha } from '../../Fecha';
 import { Enlace } from '../../Enlace';
 import { PasoAdmin } from '../../piezas/admin/Pasos';
@@ -22,7 +22,6 @@ import {
 import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeProductoVisto, mensajeCarrito } from '../../../../utils/whatsappLink';
 import l from './Lista.module.css';
 import s from './Resultados.module.css';
-import { Cargando } from '../../Cargando';
 
 /*
  * D4 · Resultados (/admin/resultados): cómo va la tienda. D4a: el marco
@@ -443,7 +442,7 @@ export function PaginaClientesResultados({
             </p>
           )}
           {preparando && <p className={s.nota} aria-live="polite">{preparando}</p>}
-          {cargandoClientes ? <Cargando tamano="sm" texto="Cargando clientes" /> : errorClientes ? <SinDatos>No se pudieron cargar: {errorClientes}</SinDatos> : !clientes.length ? (
+          {cargandoClientes ? <>{[0, 1, 2].map((k) => <EsqueletoFila key={k} derecha={false} />)}</> : errorClientes ? <SinDatos>No se pudieron cargar: {errorClientes}</SinDatos> : !clientes.length ? (
             !buscando && <SinDatos>Todavía no hay clientes.</SinDatos>
           ) : (
             <ul className={s.clientes} tabIndex={0} aria-label="Clientes">
@@ -465,7 +464,7 @@ export function PaginaClientesResultados({
           ayuda="De tus clientes y de las personas que agendaron, en los próximos 30 días."
           acciones={fechasImportantes && <Boton tamano="sm" variante="fantasma" to={fechasImportantes}>Fechas importantes</Boton>}
         >
-          {cargandoCumpleanos ? <Cargando tamano="sm" /> : <ListaCumpleanos cumpleanos={cumples} />}
+          {cargandoCumpleanos ? <EsqueletoTexto lineas={4} /> : <ListaCumpleanos cumpleanos={cumples} />}
           {cumpleanos?.truncated && <p className={s.nota}>Se revisaron los primeros {entero(cumpleanos.docsLeidos)} perfiles.</p>}
         </BloqueMetrica>
       </ColumnasMetricas>

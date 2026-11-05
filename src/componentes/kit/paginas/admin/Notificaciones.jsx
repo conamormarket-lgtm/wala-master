@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BellRing, Copy, Pencil, Plus, RefreshCw, Save, Send, Trash2, X, XCircle } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, useToast } from '../../Feedback';
-import { Cargando } from '../../Cargando';
 import { Campo, Interruptor } from '../../Formulario';
 import { CampoFecha, CampoHora } from '../../Fecha';
 import { IsoWala } from '../../Marca';
@@ -17,6 +16,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Notificaciones.module.css';
+import { EsqueletoTarjeta } from '../../Esqueletos';
 
 /*
  * D5d · Notificaciones (/admin/notificaciones): los avisos automáticos (qué
@@ -139,7 +139,7 @@ function Automaticos({ config, cargando, error, onReintentar, onGuardar, onProba
   if (error) {
     return <Aviso tipo="error" titulo="No pudimos cargar la configuración" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error} Mientras no cargue, no se puede guardar: pisaría lo que hay.</Aviso>;
   }
-  if (cargando || !datos) return <Cargando texto="Cargando la configuración" bloque />;
+  if (cargando || !datos) return <>{[0, 1, 2].map((k) => <EsqueletoTarjeta key={k} lineas={2} boton={false} />)}</>;
 
   const activo = (clave, v) => setDatos((d) => ({ ...d, activos: { ...d.activos, [clave]: v } }));
   const horario = (clave, campo, v) => setDatos((d) => ({ ...d, horarios: { ...d.horarios, [clave]: { ...d.horarios[clave], [campo]: v } } }));

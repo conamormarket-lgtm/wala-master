@@ -15,7 +15,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Pagos.module.css';
-import { Cargando } from '../../Cargando';
+import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
  * D3b · Gestión de pagos (/admin/gestion-pagos): el historial de los
@@ -234,7 +234,7 @@ function Ajustes({ config, cargando, onGuardar }) {
     }
   };
 
-  if (cargando) return <div className={s.angosto}><Cargando texto="Cargando los ajustes" bloque /></div>;
+  if (cargando) return <div className={s.angosto}><EsqueletoFormulario campos={4} /></div>;
 
   return (
     <form className={s.angosto} onSubmit={guardar}>

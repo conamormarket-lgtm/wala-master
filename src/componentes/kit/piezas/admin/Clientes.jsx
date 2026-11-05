@@ -4,12 +4,11 @@ import Boton from '../../Boton';
 import { Aviso } from '../../Feedback';
 import { Etiqueta } from '../../Etiquetas';
 import { Pestanas } from '../../Navegacion';
-import { Hueso } from '../../Esqueletos';
+import { EsqueletoTexto, Hueso } from '../../Esqueletos';
 import { Cifra, FilaCifras, SinDatos } from './Metricas';
 import { resumenDeFicha, listasDeFicha } from '../../adaptadoresAdmin';
 import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp } from '../../../../utils/whatsappLink';
 import s from './Clientes.module.css';
-import { Cargando } from '../../Cargando';
 
 /*
  * Clientes de Resultados (D4c): la ficha de un cliente (lo que mira, su
@@ -60,7 +59,7 @@ export function FichaCliente({ ficha, cargando = false, error, actividad, cargan
   const telefono = telefonoDePerfil({ phone: ficha.phone, phoneIntl: ficha.phoneIntl });
   const primerNombre = String(ficha.nombre || '').split(' ')[0];
   const escribir = telefono && aceptoWhatsApp(ficha) ? urlWhatsApp(telefono, `¡Hola${primerNombre ? ` ${primerNombre}` : ''}! Te escribimos de Walá.`) : null;
-  const actividadPendiente = cargandoActividad ? <Cargando tamano="sm" texto="Cargando la actividad" /> : errorActividad ? <SinDatos>No se pudo cargar la actividad: {errorActividad}</SinDatos> : null;
+  const actividadPendiente = cargandoActividad ? <EsqueletoTexto lineas={4} /> : errorActividad ? <SinDatos>No se pudo cargar la actividad: {errorActividad}</SinDatos> : null;
 
   return (
     <div className={s.ficha} data-componente="FichaCliente">

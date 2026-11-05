@@ -15,7 +15,7 @@ import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, NumeroCelda, porNombre, porOrden } from './celdas';
 import l from './Lista.module.css';
 import s from './Marcas.module.css';
-import { Cargando } from '../../Cargando';
+import { EsqueletoTexto } from '../../Esqueletos';
 
 /*
  * Marcas (/admin/marcas, D1): los datos de cada marca que usa toda la tienda
@@ -43,7 +43,7 @@ function TarjetaWhatsApp({ config, cargando, onGuardar }) {
       <Sello tamano={40} tono="menta"><MessageCircle /></Sello>
       <div className={s.whatsappTextos}>
         <strong>Pedidos por WhatsApp</strong>
-        {cargando ? <Cargando tamano="sm" /> : (
+        {cargando ? <EsqueletoTexto lineas={1} /> : (
           <span>
             {config.multimarca
               ? 'Cada marca recibe los pedidos de sus productos en el WhatsApp de su asesor.'

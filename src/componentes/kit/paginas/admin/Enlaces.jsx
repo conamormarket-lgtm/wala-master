@@ -17,7 +17,7 @@ import {
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Enlaces.module.css';
-import { Cargando } from '../../Cargando';
+import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
  * D6c · Enlaces (/admin/enlaces y /admin/enlaces/:id): las páginas de
@@ -228,7 +228,7 @@ export function PaginaEnlaceAdmin({
       </div>
     );
   }
-  if (cargando || !d) return <div className={s.pagina}>{cabeza}<Cargando texto="Cargando la página" bloque /></div>;
+  if (cargando || !d) return <div className={s.pagina}>{cabeza}<EsqueletoFormulario campos={5} /></div>;
 
   return (
     <div className={s.pagina} data-componente="PaginaEnlaceAdmin">
