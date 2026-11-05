@@ -144,7 +144,8 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
   return (
     <div className={[s.rueda, girando && s.girando].filter(Boolean).join(' ')} data-componente="RuedaRuleta">
       <div className={s.puntero} aria-hidden="true">
-        <svg ref={puntero} viewBox="0 0 28 36" className={s.punteroForma}>
+        {/* El lienzo deja margen: la cabeza redonda (con su borde) sube hasta y = -2.6. */}
+        <svg ref={puntero} viewBox="-1 -4 30 40" className={s.punteroForma}>
           <defs>
             <linearGradient id={`${id}-puntero`} x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stopColor={mezclar(colorPuntero, 0.35)} />
