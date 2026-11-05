@@ -7,7 +7,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const { hitoDeEstadoErp, hitoDeEstadoWala } = require("./ordersLogic");
-const { puedeUsarPuente } = require("./adminAuth");
+const { adminConPermiso } = require("./adminAuth");
 const { configEntrega, limpiarRespuestaEntrega, claveEntrega } = require("./encuestaEntregaLogic");
 
 const db = admin.firestore();
@@ -114,11 +114,8 @@ exports.responderEncuestaEntrega = functions.https.onCall(async (data, context) 
 // Admin: las respuestas (las últimas 2000) para /admin/encuesta-entregas.
 exports.resultadosEncuestaEntrega = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
-  const esAdmin = context.auth.token?.admin === true
-    || (puedeUsarPuente(context.auth.token)
-      && await db.collection("adminUsers").doc(context.auth.uid).get()
-        .then((s) => s.exists && s.data().role === "admin")
-        .catch(() => false));
+  // Resultados › Opiniones pide el permiso de datos de clientes (nombres, teléfonos).
+  const esAdmin = await adminConPermiso(db, context, ["clientes"]);
   if (!esAdmin) throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver las respuestas.");
   const snap = await db.collection(RESPUESTAS).orderBy("createdAtMs", "desc").limit(2000).get();
   return {

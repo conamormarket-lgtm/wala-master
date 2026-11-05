@@ -35,7 +35,7 @@ const { calcularRecompensaFechas } = require("./fechasLogic");
 const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon, monedasDeLinea, topeDeMarca } = require("./checkoutTotals");
 const niveles = require("./nivelesLogic");
 const popupsEmbudo = require("./popupsEmbudo");
-const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
+const { adminConPermiso } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
 const constancia = require("./constanciaPago");
@@ -57,7 +57,6 @@ exports.collectClientFirestoreReads = functions.region('us-central1')
   }));
 const db = admin.firestore();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
-const ADMIN_USERS_COLLECTION = "adminUsers";
 
 // Configuración de la ruleta. El doc puede no existir: normalizarConfig() da los
 // valores de casa, así que la ruleta funciona sin que el admin lo haya tocado.
@@ -67,19 +66,12 @@ const MIN_PASSWORD_LENGTH = 6;
 
 // ── Autorización (Fase 0, H-01/H-09) ──────────────────────────────────────────
 // El llamante es admin si tiene el custom claim `admin: true`. El doc
-// adminUsers/{uid} solo vale para las cuentas de ADMIN_BRIDGE_EMAILS: mientras
-// las reglas compartidas con el ERP dejen escribirlo, cualquiera podía crearse
-// el suyo y pasar por admin (ver ./adminAuth.js).
-async function callerIsAdmin(context) {
-  if (!context || !context.auth) return false;
-  if (tieneClaimAdmin(context)) return true;
-  if (!puedeUsarPuente(context.auth.token)) return false;
-  try {
-    const snap = await db.collection(ADMIN_USERS_COLLECTION).doc(context.auth.uid).get();
-    return snap.exists && snap.data().role === "admin";
-  } catch (e) {
-    return false;
-  }
+// adminUsers/{uid} solo vale para las cuentas de ADMIN_BRIDGE_EMAILS (ver
+// ./adminAuth.js). Una persona de Configuración › Equipo (adminRoles) entra a
+// las funciones de sus grupos del menú: `grupos` es la lista que pide la
+// función ([] = solo superadmin). Sin `grupos`, solo las cuentas principales.
+async function callerIsAdmin(context, grupos = null) {
+  return adminConPermiso(db, context, grupos);
 }
 
 // ── Acceso al Firebase del ERP (Fase 0, H-02) ─────────────────────────────────
@@ -2025,7 +2017,7 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   // Antes no se comprobaba que fuera admin y el monto (rewardCoins/rewardType)
   // llegaba del navegador: cualquiera podía aprobarse su propia evidencia por la
   // cantidad que quisiera. Ahora solo admin, y el premio sale del reto.
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["premios"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo administradores.");
   }
 
@@ -3555,7 +3547,7 @@ exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
 //  - premiarSemana { semana } (repetir a mano el premio de una semana)
 // Lo que se guarda pasa por las mismas normalizaciones que usa el juego.
 exports.adminBolitasSecure = functions.https.onCall(async (data, context) => {
-  if (!(await callerIsAdmin(context))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
+  if (!(await callerIsAdmin(context, ["premios"]))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
   const d = data || {};
   const FECHA = /^\d{4}-\d{2}-\d{2}$/;
   try {
@@ -5336,7 +5328,7 @@ const msDeTimestamp = (v) => (v && typeof v.toMillis === "function" ? v.toMillis
  * del navegador se pierde. Solo lee: analytics_events y los perfiles.
  */
 exports.embudoPopupsSecure = functions.https.onCall(async (data, context) => {
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los resultados de los popups.");
   }
   const ids = [...new Set((Array.isArray(data && data.ids) ? data.ids : []).map(String).filter(Boolean))].slice(0, 30);
@@ -5406,7 +5398,7 @@ exports.embudoPopupsSecure = functions.https.onCall(async (data, context) => {
  * equipo no las veía. Solo para admins; solo lee (Auth en tandas de 1000).
  */
 exports.cuentasPrincipalesSecure = functions.https.onCall(async (_data, context) => {
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, []))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver el equipo.");
   }
   const cuentas = [];
@@ -5432,7 +5424,7 @@ exports.cuentasPrincipalesSecure = functions.https.onCall(async (_data, context)
 });
 
 exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) => {
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["premios"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los canjes.");
   }
   const snap = await db.collection("userCoupons").where("origen", "==", "recompensa").get();
@@ -5494,7 +5486,7 @@ exports.stickersAgregadosSecure = functions.https.onCall(async (data, context) =
 
 // Marcar entregado (o deshacerlo) un canje que se entrega a mano.
 exports.entregarCanjeSecure = functions.https.onCall(async (data, context) => {
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["premios"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede marcar canjes.");
   }
   const id = limpiarId(data && data.id);
@@ -8250,7 +8242,7 @@ async function confirmarTicketSorteoDesdePago({ metadata, pagoId, metodoPago } =
 exports.asignarTicketsManual = functions.https.onCall(async (data, context) => {
   // 1) Autorización: autenticado + admin (claim o puente adminUsers).
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede asignar tickets.");
   }
   const adminUid = context.auth.uid;
@@ -8679,7 +8671,7 @@ function elegirGanadoresPonderado(pool, n, nextIntBelow) {
 exports.decidirGanadoresSorteo = functions.https.onCall(async (data, context) => {
   // 1) Autorización: autenticado + admin.
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede decidir ganadores.");
   }
   const adminUid = context.auth.uid;
@@ -8994,7 +8986,7 @@ exports.claimRaffleReferralSecure = functions.https.onCall(async (data, context)
 exports.grantRaffleChancesSecure = functions.https.onCall(async (data, context) => {
   // 1) Autorización: autenticado + admin.
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ajustar chances.");
   }
   const adminUid = context.auth.uid;
@@ -10216,7 +10208,7 @@ exports.paypalSubscriptionWebhook = functions.https.onRequest(async (req, res) =
 // return: { ok, drawId, ganadores, totalElegibles, seed, poolHash }
 exports.decidirGanadoresSuscripcion = functions.https.onCall(async (data, context) => {
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede decidir ganadores.");
   }
   const adminUid = context.auth.uid;
@@ -10380,7 +10372,7 @@ exports.cancelarSuscripcion = functions.https.onCall(async (data, context) => {
 // return: { ok, uid, chancesTotal }
 exports.grantChancesSuscripcion = functions.https.onCall(async (data, context) => {
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ajustar chances.");
   }
   const adminUid = context.auth.uid;
@@ -10525,7 +10517,7 @@ exports.notifyKentaOrderStageChanged = functions.firestore
 // para quedarse con los ~200 que anotaron personas: tardaba mucho. Acá se leen
 // solo email + giftRecipients y se devuelve una fila por fecha, ya filtrada.
 exports.adminFechasDeUsuarios = functions.https.onCall(async (data, context) => {
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver esto.");
   }
   const snap = await db.collection(PORTAL_USERS_COLLECTION).select("email", "giftRecipients").get();

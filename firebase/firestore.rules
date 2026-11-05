@@ -35,13 +35,30 @@ service cloud.firestore {
     function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
 
     // Admin = custom claim `admin: true` (fuente de verdad, H-09) o una cuenta con
-    // rol en el panel (adminRoles/{correo}) y el correo VERIFICADO. adminRoles es
-    // solo de Walá: con estas reglas solo un admin lo puede escribir.
+    // rol en el panel (adminRoles/{correo}) con algún permiso y el correo
+    // VERIFICADO. Un doc sin permisos no cuenta (en sept. 2026 apareció uno
+    // creado con las reglas abiertas). adminRoles solo lo escribe un superadmin.
+    function permisosDelPanel() {
+      return get(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())).data.get('permissions', []);
+    }
+    function tieneRolDelPanel() {
+      return request.auth.token.get('email_verified', false) == true &&
+        request.auth.token.get('email', '') != '' &&
+        exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())) &&
+        permisosDelPanel() is list && permisosDelPanel().size() > 0;
+    }
     function isAdmin() {
       return isAuthenticated() && (
+        request.auth.token.get('admin', false) == true || tieneRolDelPanel()
+      );
+    }
+    // Superadmin: las cuentas principales (claim) o 'superadmin' en adminRoles.
+    // Solo él cambia el equipo: si cualquier admin pudiera escribir adminRoles,
+    // alguien con un solo grupo (p. ej. Catálogo) se pondría Super Admin.
+    function isSuperadmin() {
+      return isAuthenticated() && (
         request.auth.token.get('admin', false) == true ||
-        (request.auth.token.get('email_verified', false) == true &&
-         exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())))
+        (tieneRolDelPanel() && permisosDelPanel().hasAny(['superadmin']))
       );
     }
 
@@ -120,7 +137,9 @@ service cloud.firestore {
     // reutilice lo ya traducido; escritura solo admin, para que nadie de fuera
     // pueda inyectar textos en la tienda.
     match /translations/{id}          { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
-    match /suggested_packages/{id}    { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    // Los paquetes que el equipo arma para un cliente: cada cliente lee solo los
+    // suyos (getUserSuggestedPackages filtra por userId); antes los leía cualquiera.
+    match /suggested_packages/{id}    { allow read: if notSupervision() && (isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid)); allow write: if notSupervision() && (isAdmin()); }
     match /universal_dates/{id}       { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
     match /tienda_encuesta_config/{id}{ allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
     // cuestionarios_templates: sin match desde el 2026-10-16 (se retiró el
@@ -389,7 +408,7 @@ service cloud.firestore {
     // adminRoles: el cliente autenticado lee su propio rol para computar permisos de UI.
     match /adminRoles/{id} {
       allow read: if notSupervision() && (isAuthenticated());
-      allow write: if notSupervision() && (isAdmin());
+      allow write: if notSupervision() && (isSuperadmin());
     }
     match /notification_settings/{id} { allow read, write: if notSupervision() && (isAdmin()); }
     // Historial y cola de campañas push: las escribe solo el servidor

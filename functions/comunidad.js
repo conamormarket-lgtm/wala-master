@@ -18,7 +18,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 const c = require("./comunidadLogic");
-const { puedeUsarPuente } = require("./adminAuth");
+const { adminConPermiso } = require("./adminAuth");
 
 // Como en index.js: FieldValue de firebase-admin/firestore (admin.firestore.FieldValue
 // puede ser undefined en el emulador).
@@ -36,25 +36,11 @@ let cacheGaleria = null;
 const metaGaleria = () => db().collection("comunidad_meta").doc("galeria");
 const cambioGaleria = () => metaGaleria().set({ version: FieldValue.increment(1) }, { merge: true });
 
+// Los mismos permisos que antes (c.rolPermiteComunidad: superadmin, paginas,
+// diseno, manage_design), ahora también para el equipo sin ADMIN_BRIDGE_EMAILS
+// (adminRoles ya solo lo escribe un admin: ver ./adminAuth.js).
 async function esAdminComunidad(context) {
-  const auth = context && context.auth;
-  if (!auth) return false;
-  if (auth.token && auth.token.admin === true) return true;
-  // adminUsers/adminRoles se pueden escribir desde el navegador mientras las
-  // reglas compartidas sigan abiertas: solo valen para ADMIN_BRIDGE_EMAILS.
-  if (!puedeUsarPuente(auth.token)) return false;
-  try {
-    const snap = await db().collection("adminUsers").doc(auth.uid).get();
-    if (snap.exists && snap.data().role === "admin") return true;
-  } catch (e) { /* sigue con adminRoles */ }
-  const email = String((auth.token && auth.token.email) || "").toLowerCase();
-  if (!email) return false;
-  try {
-    const rol = await db().collection("adminRoles").doc(email).get();
-    return rol.exists && c.rolPermiteComunidad(rol.data());
-  } catch (e) {
-    return false;
-  }
+  return adminConPermiso(db(), context, ["paginas", "diseno"]);
 }
 
 async function exigirAdmin(context) {

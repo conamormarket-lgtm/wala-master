@@ -18,6 +18,16 @@ const reglas = fs.readFileSync(path.join(__dirname, '..', 'firebase', 'firestore
 const DOCS = '/databases/(default)/documents';
 const anonimo = { uid: 'anon-erp', token: { firebase: { sign_in_provider: 'anonymous' } } };
 const cliente = (uid) => ({ uid, token: { email: `${uid}@example.com`, email_verified: false, firebase: { sign_in_provider: 'password' } } });
+const principal = { uid: 'P', token: { admin: true, email: 'p@example.com', email_verified: true, firebase: { sign_in_provider: 'password' } } };
+const equipo = (nombre) => ({ uid: nombre, token: { email: `${nombre}@example.com`, email_verified: true, firebase: { sign_in_provider: 'password' } } });
+// adminRoles/{nombre}@example.com con estos permisos (simula get/exists de las reglas).
+const rol = (nombre, permissions) => {
+  const ruta = `${DOCS}/adminRoles/${nombre}@example.com`;
+  return [
+    { function: 'exists', args: [{ exactValue: ruta }], result: { value: true } },
+    { function: 'get', args: [{ exactValue: ruta }], result: { value: { data: { permissions } } } },
+  ];
+};
 
 const casos = [
   // Libreta de direcciones
@@ -45,6 +55,18 @@ const casos = [
   ['DENY', 'sin sesión no crea la copia en wala_pedidos', { method: 'create', path: `${DOCS}/wala_pedidos/PD1`, resource: { data: { pagado: false, estadoWala: 'pendiente_pago' } } }],
   ['DENY', 'cliente no crea la copia en wala_pedidos', { auth: cliente('U1'), method: 'create', path: `${DOCS}/wala_pedidos/PD1`, resource: { data: { pagado: false, estadoWala: 'pendiente_pago', buyerUid: 'U1' } } }],
   ['DENY', 'plantillas del cuestionario cerradas', { method: 'get', path: `${DOCS}/cuestionarios_templates/T1` }],
+  // Equipo del panel (2026-11-05): solo un superadmin cambia adminRoles; un doc sin permisos no es admin
+  ['ALLOW', 'cuenta principal (claim) cambia el equipo', { auth: principal, method: 'update', path: `${DOCS}/adminRoles/x@example.com`, resource: { data: { permissions: ['catalogo'] } } }],
+  ['ALLOW', 'superadmin del equipo cambia el equipo', { auth: equipo('super'), method: 'update', path: `${DOCS}/adminRoles/x@example.com`, resource: { data: { permissions: ['catalogo'] } } }, rol('super', ['superadmin'])],
+  ['DENY', 'alguien de Catálogo no se pone Super Admin', { auth: equipo('cata'), method: 'update', path: `${DOCS}/adminRoles/cata@example.com`, resource: { data: { permissions: ['superadmin'] } } }, rol('cata', ['catalogo'])],
+  ['ALLOW', 'alguien de Catálogo sigue editando productos', { auth: equipo('cata'), method: 'update', path: `${DOCS}/productos_wala/A`, resource: { data: { name: 'x' } } }, rol('cata', ['catalogo'])],
+  ['DENY', 'un doc del equipo sin permisos no es admin', { auth: equipo('vacio'), method: 'update', path: `${DOCS}/productos_wala/A`, resource: { data: { name: 'x' } } }, rol('vacio', [])],
+  ['DENY', 'sin correo verificado no es admin', { auth: { uid: 'n', token: { email: 'super@example.com', email_verified: false, firebase: { sign_in_provider: 'password' } } }, method: 'update', path: `${DOCS}/productos_wala/A`, resource: { data: { name: 'x' } } }, rol('super', ['superadmin'])],
+  // Paquetes sugeridos: cada cliente los suyos
+  ['ALLOW', 'cliente lee su paquete sugerido', { auth: cliente('U1'), method: 'get', path: `${DOCS}/suggested_packages/S1`, existente: { data: { userId: 'U1' } } }],
+  ['DENY', 'cliente no lee el paquete de otro', { auth: cliente('U2'), method: 'get', path: `${DOCS}/suggested_packages/S1`, existente: { data: { userId: 'U1' } } }],
+  ['DENY', 'sin sesión no lee paquetes', { method: 'get', path: `${DOCS}/suggested_packages/S1`, existente: { data: { userId: 'U1' } } }],
+  ['ALLOW', 'admin lee todos los paquetes', { auth: principal, method: 'get', path: `${DOCS}/suggested_packages/S1`, existente: { data: { userId: 'U1' } } }],
 ];
 
 (async () => {
@@ -53,7 +75,12 @@ const casos = [
   if (!token) throw new Error('No hay sesión de Firebase CLI (firebase login).');
   const body = {
     source: { files: [{ name: 'firestore.rules', content: reglas }] },
-    testSuite: { testCases: casos.map(([expectation, , request]) => ({ expectation, request })) },
+    // `existente`: el documento que ya está (resource en una lectura); va aparte de la petición.
+    testSuite: {
+      testCases: casos.map(([expectation, , { existente, ...request }, functionMocks]) => ({
+        expectation, request, ...(existente && { resource: existente }), ...(functionMocks && { functionMocks }),
+      })),
+    },
   };
   const r = await fetch(`https://firebaserules.googleapis.com/v1/projects/${PROYECTO}:test`, {
     method: 'POST',

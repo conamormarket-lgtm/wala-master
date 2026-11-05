@@ -10,7 +10,7 @@ const { recomendarRegalos } = require("./giftLogic");
 const {
   avisoQueToca: avisoQueTocaEncuesta, MAX_DIAS: MAX_DIAS_ENCUESTA, DIA_MS,
 } = require("./encuestaRecordatorioLogic");
-const { puedeUsarPuente } = require("./adminAuth");
+const { adminConPermiso } = require("./adminAuth");
 const { configEntrega } = require("./encuestaEntregaLogic");
 const {
   avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha, armarAvisoFestivo,
@@ -653,17 +653,13 @@ exports.probarAvisoFechas = functions.https.onCall(async (data, context) => {
   return { titulo: payload.title, cuerpo: payload.body, image: payload.image || "", push, tieneApp: tokens.length > 0 };
 });
 
-// Admin = custom claim. El doc adminUsers/{uid} solo vale para las cuentas de
-// ADMIN_BRIDGE_EMAILS (ver ./adminAuth.js) (H-04).
+// Admin = custom claim, adminUsers/{uid} solo para ADMIN_BRIDGE_EMAILS (H-04),
+// o el equipo con el grupo Campañas (Notificaciones y ofertas): ./adminAuth.js.
 async function exigirAdmin(context) {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
-  const esAdmin = context.auth.token?.admin === true
-    || (puedeUsarPuente(context.auth.token)
-      && await db.collection("adminUsers").doc(context.auth.uid).get()
-        .then((s) => s.exists && s.data().role === "admin")
-        .catch(() => false));
+  const esAdmin = await adminConPermiso(db, context, ["campanas"]);
   if (!esAdmin) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede enviar notificaciones.");
   }
