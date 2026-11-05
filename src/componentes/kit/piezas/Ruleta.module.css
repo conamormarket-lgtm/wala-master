@@ -171,3 +171,9 @@
     transition-duration: 300ms !important;
   }
 }
+
+/* El ícono (emoji) del premio, junto al borde del gajo. */
+.iconoGajo {
+  pointer-events: none;
+  user-select: none;
+}

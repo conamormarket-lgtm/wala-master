@@ -65,6 +65,8 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
   const total = premios.length;
   const anguloGajo = total > 0 ? 360 / total : 360;
   const tamTexto = total <= 6 ? 8.4 : total <= 9 ? 7.2 : total <= 12 ? 6 : 5.2;
+  // El ícono del premio (el emoji que se elige en el admin) va junto al borde, sobre el texto.
+  const tamIcono = total <= 6 ? 12 : total <= 9 ? 10.5 : total <= 12 ? 9 : 7.5;
   const maxCaracteres = total <= 3 ? 22 : total <= 6 ? 16 : total <= 9 ? 13 : 10;
   const t = { con: useTexto(`Rueda con ${total} premios`), sin: useTexto('Rueda sin premios') };
   return (
@@ -93,13 +95,20 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
         {premios.map((p, i) => {
           const centroGajo = i * anguloGajo + anguloGajo / 2;
           const color = textoOscuroSobre(colorDeGajo(p, i, total, colores)) ? '#1F2937' : '#FFFFFF';
-          const y = CENTRO - RADIO + 22;
+          const icono = String(p.icono || '').trim();
+          const yIcono = CENTRO - RADIO + 4 + tamIcono / 2;
+          const y = icono ? yIcono + tamIcono / 2 + tamTexto + 1 : CENTRO - RADIO + 22;
           // Se voltea según dónde queda el gajo con la rueda ya girada: así el
           // premio que para arriba se lee derecho.
           const donde = (((centroGajo + rotacion) % 360) + 360) % 360;
           const volteado = donde > 90 && donde < 270;
           return (
             <g key={`t-${p.id || i}`} transform={`rotate(${centroGajo} ${CENTRO} ${CENTRO})`}>
+              {icono && (
+                <text x={CENTRO} y={yIcono} transform={volteado ? `rotate(180 ${CENTRO} ${yIcono})` : undefined} textAnchor="middle" dominantBaseline="central" fontSize={tamIcono} className={s.iconoGajo} aria-hidden="true">
+                  {icono}
+                </text>
+              )}
               <text x={CENTRO} y={y} transform={volteado ? `rotate(180 ${CENTRO} ${y})` : undefined} textAnchor="middle" fontSize={tamTexto} fill={color} className={s.etiqueta}>
                 <TextoGajo texto={p.etiqueta || p.nombre || p.texto} max={maxCaracteres} />
               </text>
