@@ -644,3 +644,41 @@
     transition: none;
   }
 }
+
+/* GrupoCampos con icono: su tarjeta, con el sello y el título. */
+.grupoTarjeta {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem 1.2rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.grupoCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.grupoCabezaTextos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.grupoTarjetaTitulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.grupoAyudaTarjeta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}

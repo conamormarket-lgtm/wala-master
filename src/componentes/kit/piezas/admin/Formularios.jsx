@@ -10,6 +10,7 @@ import { conOpcion } from '../../adaptadoresAdmin';
 import { useBloquearScroll, useCerrarConAtras } from '../../Efectos';
 import { RecortarFoto } from '../RecortarFoto';
 import { useEsconderPrincipal } from './Marco';
+import { Sello } from '../../Marca';
 import campo from '../../Formulario.module.css';
 import s from './Formularios.module.css';
 
@@ -186,8 +187,26 @@ export function HojaEdicion({ abierta, titulo, subtitulo, onCerrar, onGuardar, s
 /**
  * Un bloque de campos con su título y una línea de ayuda.
  *  - titulo · ayuda · columnas (2: dos por fila cuando hay ancho) · children
+ *  - icono (un ícono de lucide) + tono (los del Sello): el bloque va en su
+ *    tarjeta, con el sello y el título grande, para separar partes de una
+ *    página larga (WhatsApp)
  */
-export function GrupoCampos({ titulo, ayuda, columnas = 1, children }) {
+export function GrupoCampos({ titulo, ayuda, columnas = 1, icono, tono = 'degradado', children }) {
+  const uid = useId();
+  if (icono) {
+    return (
+      <section className={s.grupoTarjeta} aria-labelledby={`${uid}-t`}>
+        <header className={s.grupoCabeza}>
+          <Sello tamano={38} tono={tono}>{icono}</Sello>
+          <span className={s.grupoCabezaTextos}>
+            <h2 id={`${uid}-t`} className={s.grupoTarjetaTitulo}>{titulo}</h2>
+            {ayuda && <p className={s.grupoAyudaTarjeta}>{ayuda}</p>}
+          </span>
+        </header>
+        <div className={[s.grupoCampos, columnas > 1 && s.grupoDos].filter(Boolean).join(' ')}>{children}</div>
+      </section>
+    );
+  }
   return (
     <fieldset className={s.grupo}>
       {titulo && <legend className={s.grupoTitulo}>{titulo}</legend>}

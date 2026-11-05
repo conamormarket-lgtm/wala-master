@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Download, ExternalLink, RefreshCw, RotateCcw } from 'lucide-react';
+import { ChevronDown, Download, ExternalLink, MessageCircle, RefreshCw, RotateCcw, ShoppingBag } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
@@ -113,7 +113,7 @@ export function PaginaWhatsAppAdmin({
     cuerpo = (
       <div className={s.whatsapp}>
         <div className={s.columna}>
-          <GrupoCampos titulo="Los pedidos" ayuda="Al terminar de comprar, el cliente te manda por WhatsApp el mensaje de abajo para confirmar su pedido.">
+          <GrupoCampos icono={<ShoppingBag />} titulo="Los pedidos" ayuda="Al terminar de comprar, el cliente te manda por WhatsApp el mensaje de abajo para confirmar su pedido.">
             <Campo
               id="wa-pedidos"
               etiqueta="Número que recibe los pedidos"
@@ -134,21 +134,23 @@ export function PaginaWhatsAppAdmin({
               activo={c.multimarca}
               onChange={(v) => cambiar('multimarca', v)}
             />
-            <Campo
-              etiqueta="Mensaje al confirmar un pedido"
-              multilinea={4}
-              ayuda="{id} se cambia por el código del pedido."
-              value={c.mensajePedido}
-              onChange={(e) => cambiar('mensajePedido', e.target.value)}
-            />
-            <div className={s.burbuja} aria-label="Así llega el mensaje">
-              <span className={s.etiqueta}>Así te llega</span>
-              <p>{mensajePedidoDeEjemplo(c.mensajePedido)}</p>
+            <div className={s.otro}>
+              <Campo
+                etiqueta="Mensaje al confirmar un pedido"
+                multilinea={4}
+                ayuda="{id} se cambia por el código del pedido."
+                value={c.mensajePedido}
+                onChange={(e) => cambiar('mensajePedido', e.target.value)}
+              />
+              <div className={s.burbuja} aria-label="Así llega el mensaje">
+                <span className={s.etiqueta}>Así te llega</span>
+                <p>{mensajePedidoDeEjemplo(c.mensajePedido)}</p>
+              </div>
+              {!conId && <Aviso tipo="aviso" compacto titulo="Sin {id}, el mensaje no dice qué pedido es." />}
             </div>
-            {!conId && <Aviso tipo="aviso" compacto titulo="Sin {id}, el mensaje no dice qué pedido es." />}
           </GrupoCampos>
 
-          <GrupoCampos titulo="El botón de WhatsApp" ayuda="El botón verde de la esquina, para que te pregunten antes de comprar.">
+          <GrupoCampos icono={<MessageCircle />} tono="menta" titulo="El botón de WhatsApp" ayuda="El botón verde de la esquina, para que te pregunten antes de comprar.">
             <Campo
               id="wa-tienda"
               etiqueta="Número del botón"
@@ -191,29 +193,39 @@ export function PaginaWhatsAppAdmin({
                 )}
               </div>
             ))}
-            <Interruptor
-              etiqueta="Mostrarlo al iniciar sesión y en el registro"
-              descripcion={c.enAcceso ? 'Sale en iniciar sesión, registro y recuperar contraseña.' : 'Esas pantallas van sin el botón, para no distraer de entrar.'}
-              activo={c.enAcceso}
-              onChange={(v) => cambiar('enAcceso', v)}
-            />
+            <div className={s.otro}>
+              <Interruptor
+                etiqueta="Mostrarlo al iniciar sesión y en el registro"
+                descripcion={c.enAcceso ? 'Sale en iniciar sesión, registro y recuperar contraseña.' : 'Esas pantallas van sin el botón, para no distraer de entrar.'}
+                activo={c.enAcceso}
+                onChange={(v) => cambiar('enAcceso', v)}
+              />
+            </div>
           </GrupoCampos>
         </div>
 
         <aside className={s.resumen} aria-label="Así queda">
           <h2 className={s.resumenTitulo}>Así queda</h2>
-          <ul className={s.resumenLista}>
-            {resumen.filas.map((f) => (
-              <li key={f.id}>
-                <span className={s.resumenDonde}>{f.donde}</span>
-                <span className={f.numero ? s.resumenNumero : s.resumenSin}>{f.numero ? legible(f.numero) : 'Sin botón'}</span>
-                {f.numero && f.nota && <span className={s.resumenNota}>{f.nota}</span>}
-              </li>
-            ))}
-          </ul>
+          {[
+            { id: 'pedidos', titulo: 'Pedidos', filas: resumen.filas.filter((f) => f.id === 'pedidos') },
+            { id: 'boton', titulo: 'Botón verde', filas: resumen.filas.filter((f) => f.id !== 'pedidos') },
+          ].map((parte) => (
+            <div key={parte.id} className={s.resumenParte}>
+              <span className={s.resumenSubtitulo}>{parte.titulo}</span>
+              <ul className={s.resumenLista}>
+                {parte.filas.map((f) => (
+                  <li key={f.id}>
+                    <span className={s.resumenDonde}>{f.donde}</span>
+                    <span className={f.numero ? s.resumenNumero : s.resumenSin}>{f.numero ? legible(f.numero) : 'Sin botón'}</span>
+                    {f.numero && f.nota && <span className={s.resumenNota}>{f.nota}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
           {resumen.marcas.length > 0 && (
-            <div className={s.resumenMarcas}>
-              <span className={s.resumenDonde}>Con su propio número</span>
+            <div className={s.resumenParte}>
+              <span className={s.resumenSubtitulo}>Marcas con su número</span>
               <ul className={s.resumenLista}>
                 {resumen.marcas.map((m) => (
                   <li key={m.nombre}>

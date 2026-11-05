@@ -51,16 +51,16 @@
 
 .columna {
   display: grid;
-  gap: 1.75rem;
+  gap: 1rem;
   min-width: 0;
 }
 
-/* Crear / Mi cuenta: el interruptor y, si va, su número. */
+/* Una parte dentro de una tarjeta (el mensaje, Crear, Mi cuenta…), separada con una línea. */
 .otro {
   display: grid;
-  gap: 0.6rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--color-border);
 }
 
 .resumen {
@@ -75,8 +75,23 @@
 
 .resumenTitulo {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 800;
+}
+
+.resumenParte {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.resumenSubtitulo {
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .resumenLista {
@@ -113,19 +128,11 @@
 }
 
 .resumenNota {
-  grid-column: 2;
-  justify-self: end;
+  grid-column: 1 / -1;
   font-size: 0.75rem;
   color: var(--color-text-muted);
-  text-align: right;
 }
 
-.resumenMarcas {
-  display: grid;
-  gap: 0.55rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
-}
 
 .enlace {
   display: flex;
