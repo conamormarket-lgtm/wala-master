@@ -1,6 +1,7 @@
 /* ── La rueda ── */
 .rueda {
   position: relative;
+  container-type: inline-size;
   width: clamp(270px, min(84vw, 52vh), 460px);
   aspect-ratio: 1;
   margin: 0 auto;
@@ -25,17 +26,85 @@
 
 .puntero {
   position: absolute;
-  top: -16px;
+  top: -4.5%;
   left: 50%;
-  z-index: 2;
+  z-index: 3;
   line-height: 0;
   transform: translateX(-50%);
   filter: drop-shadow(0 3px 5px rgba(15, 23, 42, 0.35));
 }
 
+/* El «tic» al pasar cada gajo: se ladea y vuelve (desde su punta de arriba).
+   Crece con la rueda (un 9 % de su ancho). */
+.punteroForma {
+  display: block;
+  width: 34px; /* sin container queries (WebView viejo) */
+  width: clamp(28px, 9cqw, 46px);
+  height: auto;
+  transform-origin: 50% 30%;
+}
+
+.tic {
+  animation: tic 140ms ease-out;
+}
+
+@keyframes tic {
+  0% { transform: rotate(0); }
+  35% { transform: rotate(-18deg); }
+  100% { transform: rotate(0); }
+}
+
+/* Las luces del aro: quietas; mientras gira, parpadean alternadas. */
+.luzA,
+.luzB {
+  stroke: rgba(15, 23, 42, 0.18);
+  stroke-width: 0.4;
+}
+
+.luzA {
+  fill: #fff;
+}
+
+.luzB {
+  fill: #fde68a;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .girando .luzA {
+    animation: luz 360ms steps(1, end) infinite;
+  }
+
+  .girando .luzB {
+    animation: luz 360ms steps(1, end) 180ms infinite;
+  }
+}
+
+@keyframes luz {
+  0% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* El sello blanco del ícono de cada premio. */
+.sello {
+  fill: rgba(255, 255, 255, 0.94);
+  stroke: rgba(15, 23, 42, 0.12);
+  stroke-width: 0.5;
+}
+
+/* El brillo de arriba a la izquierda: quieto encima del disco, le da volumen. */
+.brillo {
+  position: absolute;
+  inset: 1%;
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 42%);
+  pointer-events: none;
+}
+
 .etiqueta {
   font-family: var(--fuente-marca);
   font-weight: 900;
+  text-transform: uppercase;
   letter-spacing: -0.02em;
   paint-order: stroke;
   stroke: rgba(0, 0, 0, 0.25);
@@ -49,12 +118,13 @@
   left: 50%;
   display: grid;
   place-items: center;
-  width: 17%;
+  z-index: 2;
+  width: 19%;
   aspect-ratio: 1;
-  border: 6px solid var(--aro);
+  border: 5px solid var(--aro);
   border-radius: 50%;
   background: var(--puntero);
-  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 0 0 3px var(--puntero), 0 6px 14px -4px rgba(15, 23, 42, 0.5);
   color: #fff;
   font-family: var(--fuente-marca);
   font-size: clamp(1rem, 4.5vw, 1.6rem);
@@ -176,4 +246,10 @@
 .iconoGajo {
   pointer-events: none;
   user-select: none;
+}
+
+/* La segunda línea del gajo («monedas»): más liviana. */
+.etiquetaChica {
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }

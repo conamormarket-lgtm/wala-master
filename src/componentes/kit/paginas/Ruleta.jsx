@@ -99,7 +99,7 @@ export function PaginaRuleta({
     let vacio;
     if (!sesion) {
       vacio = (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Inicia sesión para girar la ruleta</Texto>} texto={<Texto>La ruleta es el premio de tu racha con Kapi: entra para ver cuántos días llevas.</Texto>}>
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Inicia sesión para girar la ruleta</Texto>} texto={<Texto>La ruleta es el premio de tus días con Kapi: entra para ver cuántos llevas.</Texto>}>
           <Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
         </EstadoVacio>
       );
