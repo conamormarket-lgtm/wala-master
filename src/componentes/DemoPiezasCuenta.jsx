@@ -139,6 +139,10 @@ export default function DemoPiezasCuenta({ imagenes }) {
       <Ficha nombre="TarjetaCupon" usadaEn="Mis cupones">
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           <TarjetaCupon texto="15% en tu próxima compra" codigo="RULETA-8KQ2" origen="ruleta" vence="31 de octubre" onCopiar={copiar} />
+          <TarjetaCupon texto="15% de descuento en productos de Con Amor Geeks (hasta S/ 30.00)" codigo="RULETA-4FD9" origen="ruleta" marca="Con Amor Geeks" vence="20 de noviembre" onCopiar={copiar} />
+          <TarjetaCupon texto="10 % de descuento en productos de Con Amor Geeks (hasta S/ 20)" codigo="BOLI-7KM2" origen="bolitas_reto" marca="Con Amor Geeks" vence="22 de noviembre" onCopiar={copiar} />
+          <TarjetaCupon texto="20 % de descuento (hasta S/ 40)" codigo="RANK-2QX8" origen="bolitas_semana" vence="24 de noviembre" onCopiar={copiar} />
+          <TarjetaCupon texto="Envío gratis con productos de Lumi" codigo="WALA-9PL4" origen="recompensa" marca="Lumi" vence="20 de noviembre" onCopiar={copiar} />
           <TarjetaCupon texto="S/ 10 de descuento" codigo="WALA-1ZB3" origen="recompensa" estado="caducado" vence="30 de septiembre" />
         </div>
       </Ficha>

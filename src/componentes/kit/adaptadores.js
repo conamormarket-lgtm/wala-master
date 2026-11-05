@@ -784,6 +784,8 @@ export const cuponDesdeFirestore = (c = {}, estado = 'activo') => ({
   codigo: c.code,
   texto: c.texto || c.titulo || c.title || 'Cupón de descuento',
   origen: c.origen,
+  // De una marca (Las Bolitas, la ruleta o el catálogo): solo descuenta sus productos.
+  marca: c.brandId ? c.marcaNombre || '' : '',
   estado,
   vence: diaLegible(c.expiraEn),
   // Los cupones viejos del catálogo (sin tipo) los aplica un asesor.

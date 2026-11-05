@@ -81,6 +81,8 @@ const ORIGENES = {
   ruleta: { texto: 'La Ruleta de Kapi', icono: 'estrella', clase: 'talonRuleta' },
   recompensa: { texto: 'Catálogo de recompensas', icono: 'regalo', clase: 'talonCatalogo' },
   nivel: { texto: 'Regalo de nivel', icono: 'estrella', clase: 'talonCatalogo' },
+  bolitas_reto: { texto: 'Reto de Las Bolitas', icono: 'destello', clase: 'talonBolitas' },
+  bolitas_semana: { texto: 'Ranking de Las Bolitas', icono: 'estrella', clase: 'talonRanking' },
 };
 const ESTADOS_CUPON = { activo: 'Disponible', usado: 'Usado', caducado: 'Vencido' };
 
@@ -89,12 +91,14 @@ const ESTADOS_CUPON = { activo: 'Disponible', usado: 'Usado', caducado: 'Vencido
  * talón dice de dónde salió (ruleta o catálogo); el código se copia con un
  * toque.
  *  - texto: lo que da ("10% en tu próxima compra") · codigo
- *  - origen: 'ruleta' | 'recompensa' (sin origen: catálogo, sin nombre)
+ *  - origen: 'ruleta' | 'recompensa' | 'nivel' | 'bolitas_reto' | 'bolitas_semana'
+ *    (sin origen: catálogo, sin nombre)
+ *  - marca: el nombre de la marca si el cupón solo vale en ella («Solo en …»)
  *  - estado: 'activo' | 'usado' | 'caducado' (estadoCupon de services/cupones)
  *  - vence: texto ya legible ("31 de octubre") · conAsesor: se canjea con un asesor
  *  - onCopiar(codigo): promesa o nada; si falla, la página avisa
  */
-export function TarjetaCupon({ texto, codigo, origen, estado = 'activo', vence, conAsesor = false, onCopiar }) {
+export function TarjetaCupon({ texto, codigo, origen, marca, estado = 'activo', vence, conAsesor = false, onCopiar }) {
   const [copiado, setCopiado] = useState(false);
   const reloj = useRef(null);
   useEffect(() => () => window.clearTimeout(reloj.current), []);
@@ -118,6 +122,7 @@ export function TarjetaCupon({ texto, codigo, origen, estado = 'activo', vence, 
         <p className={s.cuponMeta}>
           <span className={`${s.cuponEstado} ${s[`estado_${estado}`]}`}><Texto>{ESTADOS_CUPON[estado] || estado}</Texto></span>
           {origen && <span className={s.cuponOrigen}><Texto>{o.texto}</Texto></span>}
+          {marca && <span className={s.cuponMarca}><Texto>Solo en</Texto> {marca}</span>}
         </p>
         <h3 className={s.cuponTexto}><Texto>{texto}</Texto></h3>
         <div className={s.codigo}>

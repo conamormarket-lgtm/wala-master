@@ -194,6 +194,15 @@
   background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
 }
 
+/* Las Bolitas: el reto del día (rosa, como sus tubos) y el ranking (oro con violeta). */
+.talonBolitas {
+  background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%);
+}
+
+.talonRanking {
+  background: linear-gradient(135deg, #fcd34d 0%, #a855f7 100%);
+}
+
 .cuponCuerpo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -242,6 +251,20 @@
 .cuponOrigen {
   color: var(--color-text-muted);
   font-weight: 600;
+}
+
+/* Un cupón de una marca: lo dice arriba, a simple vista. */
+.cuponMarca {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--violet-100, #ede9fe);
+  color: var(--violet-700, #6d28d9);
+  font-weight: 800;
+}
+
+:global([data-theme='dark']) .cuponMarca {
+  background: rgba(167, 139, 250, 0.18);
+  color: var(--violet-200, #ddd6fe);
 }
 
 .cuponTexto {
