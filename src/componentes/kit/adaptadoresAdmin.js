@@ -3026,12 +3026,19 @@ export function palabraDiaDesde(x = {}, hoy = '') {
   return { id: fecha, fecha, palabra: x.word || '', estado: fecha === hoy ? 'hoy' : fecha < hoy ? 'paso' : 'programada' };
 }
 
-/** Los errores (como antes: 5 a 8 letras, solo letras) y que ese día no tenga ya otra. */
-export function erroresDePalabra(d = {}, lista = [], id = null) {
+/**
+ * Los errores: solo letras, exactamente 5 (el juego solo conoce palabras de
+ * 5: con más, ningún intento sería válido) y que esté en su diccionario
+ * (`existe(PALABRA)`: si no, nadie podría escribirla); y que ese día no tenga ya otra.
+ */
+export function erroresDePalabra(d = {}, lista = [], id = null, existe = null) {
   const w = String(d.palabra || '').trim();
+  const limpia = palabraLimpia(w);
   return {
     fecha: !d.fecha ? 'Elige el día.' : lista.some((x) => x.id === d.fecha && x.id !== id) ? 'Ese día ya tiene palabra: edítala en la lista.' : undefined,
-    palabra: !w ? 'Escribe la palabra.' : !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/.test(w) ? 'Solo letras, sin espacios.' : w.length < 5 || w.length > 8 ? 'De 5 a 8 letras.' : undefined,
+    palabra: !w ? 'Escribe la palabra.' : !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/.test(w) ? 'Solo letras, sin espacios.'
+      : limpia.length !== 5 ? 'Tiene que tener 5 letras: el juego solo conoce palabras de 5.'
+        : existe && !existe(limpia) ? 'No está en el diccionario del juego: nadie podría escribirla. Prueba con otra.' : undefined,
   };
 }
 

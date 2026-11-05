@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Plus, RefreshCw, RotateCcw, X } from 'lucide-react';
+import { Check, RefreshCw, RotateCcw } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, useToast } from '../../Feedback';
-import { Campo, Interruptor } from '../../Formulario';
+import { Campo, Interruptor, Deslizador } from '../../Formulario';
 import { CampoFecha } from '../../Fecha';
 import { Chip } from '../../Etiquetas';
 import { Pestanas } from '../../Navegacion';
 import { RuedaRuleta } from '../../piezas/Ruleta';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, InsigniaEstado, SelectorProductos } from '../../piezas/admin/Datos';
-import { GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno, BarraGuardar } from '../../piezas/admin/Formularios';
+import { GrupoCampos, CampoImagen, CampoDinero, CampoColor, CampoColores, ElegirUno, ElegirMuestra, BarraGuardar } from '../../piezas/admin/Formularios';
 import { PaginaListaAdmin } from './Lista';
 import { normalizarPremio, premiosDeHoy, sumaProbabilidades, textoPremio, PRESETS_TEMA } from '../../../../utils/ruletaModel';
 import {
@@ -37,6 +37,9 @@ const VACIO = {
 };
 const ESTADOS_HOY = { si: { texto: 'Sale hoy', tono: 'exito' }, no: { texto: 'No sale hoy', tono: 'neutro' } };
 
+/** Los colores de una paleta en franjas, para su muestra. */
+const franjas = (colores = []) => `linear-gradient(90deg, ${colores.map((c, i) => `${c} ${(i / colores.length) * 100}% ${((i + 1) / colores.length) * 100}%`).join(', ')})`;
+
 /** Los colores y las reglas, con la rueda de vista previa. Se guardan juntos. */
 function Apariencia({ config, premiosHoy, premios, subirImagen, onGuardar }) {
   const toast = useToast();
@@ -63,29 +66,22 @@ function Apariencia({ config, premiosHoy, premios, subirImagen, onGuardar }) {
         <GrupoCampos titulo="La ruleta">
           <Interruptor etiqueta="Abierta" descripcion={c.activa ? 'Los clientes pueden girar.' : 'Cerrada: nadie puede girar.'} activo={c.activa} onChange={(v) => setC((x) => ({ ...x, activa: v }))} />
           <ElegirUno etiqueta="Cómo se gana el giro" opciones={[{ valor: 'dias7', texto: '7 días con Kapi, cuando sea' }, { valor: 'racha7', texto: '7 días de lunes a domingo' }, { valor: 'siempre', texto: 'Uno por semana, sin condición' }]} valor={c.reglas.modoDesbloqueo} onElegir={(v) => v && reglas({ modoDesbloqueo: v })} />
-          <Interruptor etiqueta="El giro ganado sigue la semana siguiente" activo={c.reglas.semanaDeGracia} onChange={(v) => reglas({ semanaDeGracia: v })} />
-          <label className={s.rango}><span>Vueltas <strong>{c.reglas.vueltas}</strong></span><input type="range" min={2} max={12} value={c.reglas.vueltas} onChange={(e) => reglas({ vueltas: Number(e.target.value) })} /></label>
-          <label className={s.rango}><span>Cuánto dura el giro <strong>{(c.reglas.duracionGiroMs / 1000).toFixed(1)} s</strong></span><input type="range" min={1500} max={10000} step={500} value={c.reglas.duracionGiroMs} onChange={(e) => reglas({ duracionGiroMs: Number(e.target.value) })} /></label>
+          <p className={s.nota}>{c.reglas.modoDesbloqueo === 'dias7' ? 'Cada día que alimenta a Kapi suma 1, aunque se salte alguno; al séptimo gana un giro, que no vence.'
+            : c.reglas.modoDesbloqueo === 'racha7' ? 'Tiene que alimentar a Kapi de lunes a domingo; si falla un día, pierde la semana.'
+              : 'Todos pueden girar una vez por semana.'}</p>
+          {/* Solo con la regla de lunes a domingo el giro es «de una semana». */}
+          {c.reglas.modoDesbloqueo === 'racha7' && <Interruptor etiqueta="El giro ganado sigue la semana siguiente" descripcion="Si no lo usa esa semana, lo tiene también la siguiente." activo={c.reglas.semanaDeGracia} onChange={(v) => reglas({ semanaDeGracia: v })} />}
+          <Deslizador etiqueta="Vueltas" valor={c.reglas.vueltas} min={2} max={12} onChange={(v) => reglas({ vueltas: v })} />
+          <Deslizador etiqueta="Cuánto dura el giro" valor={c.reglas.duracionGiroMs} min={1500} max={10000} paso={500} formato={(v) => `${(v / 1000).toFixed(1)} s`} onChange={(v) => reglas({ duracionGiroMs: v })} />
         </GrupoCampos>
         <GrupoCampos titulo="Los colores" ayuda="Se reparten entre los gajos; el texto se pone claro u oscuro solo.">
-          <span className={s.paletas} role="group" aria-label="Paletas">
-            {Object.entries(PRESETS_TEMA).map(([id, p]) => (
-              <button key={id} type="button" className={s.paleta} aria-pressed={c.tema.preset === id} onClick={() => tema({ preset: id, colores: p.colores, colorAro: p.colorAro, colorPuntero: p.colorPuntero })}>
-                <span className={s.paletaMuestras} aria-hidden="true">{p.colores.map((x) => <span key={x} style={{ background: x }} />)}</span>
-                {p.nombre}
-              </button>
-            ))}
-          </span>
-          <span className={s.etiqueta}>Los gajos</span>
-          <span className={s.gajos}>
-            {c.tema.colores.map((color, i) => (
-              <span key={`${i}-${color}`} className={s.gajo}>
-                <input type="color" value={color} aria-label={`Color ${i + 1}`} onChange={(e) => tema({ preset: 'personalizado', colores: c.tema.colores.map((x, j) => (j === i ? e.target.value : x)) })} />
-                {c.tema.colores.length > 2 && <button type="button" aria-label={`Quitar el color ${i + 1}`} onClick={() => tema({ preset: 'personalizado', colores: c.tema.colores.filter((_, j) => j !== i) })}><X aria-hidden="true" /></button>}
-              </span>
-            ))}
-            {c.tema.colores.length < 8 && <Boton soloIcono tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} aria-label="Agregar un color" onClick={() => tema({ preset: 'personalizado', colores: [...c.tema.colores, '#6D28D9'] })} />}
-          </span>
+          <ElegirMuestra
+            etiqueta="Paletas"
+            valor={c.tema.preset}
+            onElegir={(id) => { const p = PRESETS_TEMA[id]; if (p) tema({ preset: id, colores: p.colores, colorAro: p.colorAro, colorPuntero: p.colorPuntero }); }}
+            opciones={Object.entries(PRESETS_TEMA).map(([id, p]) => ({ valor: id, nombre: p.nombre, estilo: { background: franjas(p.colores) } }))}
+          />
+          <CampoColores etiqueta="Los gajos" colores={c.tema.colores} onCambiar={(colores) => tema({ preset: 'personalizado', colores })} />
           <div className={s.dos}>
             <CampoColor etiqueta="Aro y separadores" valor={c.tema.colorAro} onCambiar={(v) => tema({ colorAro: v })} />
             <CampoColor etiqueta="Puntero y centro" valor={c.tema.colorPuntero} onCambiar={(v) => tema({ colorPuntero: v })} />

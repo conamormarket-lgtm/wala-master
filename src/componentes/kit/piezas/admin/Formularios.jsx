@@ -390,6 +390,40 @@ export function CampoColor({ etiqueta, ayuda, error, id, valor = '', onCambiar }
 }
 
 /**
+ * Varios colores en fila (los gajos de la ruleta, una paleta): cada muestra
+ * abre el selector del sistema; la × la quita y el + agrega uno.
+ *  - etiqueta · ayuda · colores: ['#hex'] · onCambiar(lista)
+ *  - min (2: con menos no se puede quitar) · max (8) · nuevo ('#6D28D9', el que se agrega)
+ */
+export function CampoColores({ etiqueta, ayuda, colores = [], onCambiar, min = 2, max = 8, nuevo = '#6D28D9' }) {
+  const id = useId();
+  return (
+    <div className={campo.campo} data-componente="CampoColores">
+      {etiqueta && <span id={id} className={campo.etiqueta}>{etiqueta}</span>}
+      <span className={s.colores} role="group" aria-labelledby={etiqueta ? id : undefined}>
+        {colores.map((color, i) => {
+          const hex = hexValido(color) || '#ffffff';
+          return (
+            <span key={i} className={s.colorItem}>
+              <label className={`${s.muestra} ${s.colorMuestra}`} style={{ '--muestra': hex }} title="Cambiar el color">
+                <input type="color" value={hex} aria-label={`Color ${i + 1}`} onChange={(e) => onCambiar?.(colores.map((x, j) => (j === i ? e.target.value : x)))} />
+              </label>
+              {colores.length > min && (
+                <button type="button" className={s.colorQuitar} aria-label={`Quitar el color ${i + 1}`} onClick={() => onCambiar?.(colores.filter((_, j) => j !== i))}>
+                  <X aria-hidden="true" />
+                </button>
+              )}
+            </span>
+          );
+        })}
+        {colores.length < max && <Boton soloIcono tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} aria-label="Agregar un color" onClick={() => onCambiar?.([...colores, nuevo])} />}
+      </span>
+      {ayuda && <span className={campo.ayuda}>{ayuda}</span>}
+    </div>
+  );
+}
+
+/**
  * Elegir una opción con un toque (para quién es, la edad): botones en fila.
  * La elegida va llena; la sugerida (lo que se deduce, sin guardar) con
  * borde punteado. Tocar la elegida la quita (vuelve a la sugerencia).

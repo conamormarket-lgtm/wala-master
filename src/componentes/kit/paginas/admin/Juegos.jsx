@@ -50,8 +50,9 @@ const Casillas = ({ palabra = '' }) => (
  *  - palabras: [palabrasConAutomaticas] · cargando · error · onReintentar · hoy ('YYYY-MM-DD', Lima)
  *  - onGuardar({ fecha, palabra }, id?) → promesa (id solo si era puesta a mano) · onEliminar(id)
  *  - partidas: { hoy, mes } (cuántas se jugaron) · cargandoPartidas
+ *  - existe(PALABRA): ¿está en el diccionario del juego? (sin él, no se revisa)
  */
-export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintentar, onGuardar, onEliminar, hoy, partidas, cargandoPartidas = false }) {
+export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintentar, onGuardar, onEliminar, hoy, partidas, cargandoPartidas = false, existe }) {
   const aMano = palabras.filter((x) => !x.automatica);
   const idReal = (id) => (String(id || '').startsWith('auto-') ? undefined : id);
   return (
@@ -98,11 +99,11 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
         textoGuardar: { nuevo: 'Programar' },
         vacio: () => ({ fecha: hoy || '', palabra: '' }),
         desde: (x) => ({ fecha: x.fecha, palabra: x.palabra }),
-        validar: (d, { id }) => erroresDePalabra(d, aMano, idReal(id)),
+        validar: (d, { id }) => erroresDePalabra(d, aMano, idReal(id), existe),
         campos: ({ datos: d, cambiar, errores, idDe }) => (
           <GrupoCampos titulo="La palabra">
             <CampoFecha id={idDe('fecha')} etiqueta="Día" valor={d.fecha} min={hoy} error={errores.fecha} onCambiar={(v) => cambiar('fecha', v)} />
-            <Campo id={idDe('palabra')} etiqueta="Palabra" ayuda="De 5 a 8 letras, sin espacios. Las tildes se quitan." placeholder="Ej. REGALO" maxLength={8} value={d.palabra} error={errores.palabra} onChange={(e) => cambiar('palabra', e.target.value.toUpperCase())} />
+            <Campo id={idDe('palabra')} etiqueta="Palabra" ayuda="5 letras, de las que conoce el juego. Las tildes se quitan." placeholder="Ej. FELIZ" maxLength={5} value={d.palabra} error={errores.palabra} onChange={(e) => cambiar('palabra', e.target.value.toUpperCase())} />
             {d.palabra && <Casillas palabra={palabraLimpia(d.palabra)} />}
           </GrupoCampos>
         ),

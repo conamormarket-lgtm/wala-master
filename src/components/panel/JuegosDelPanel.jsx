@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDailyWords, setDailyWord, deleteDailyWord, palabraAutomatica, contarPartidas } from '../../services/wordle';
+import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { getBrands } from '../../services/brands';
 import { adminBolitas, listarPatrociniosBolitas, leerMundosBolitas, leerPremiosBolitas } from '../../services/firebase/ballSort';
 import { limaTodayStr } from '../../utils/fechaLima';
@@ -53,6 +54,8 @@ export function PalabraDelPanel() {
       palabras={palabras}
       hoy={hoy}
       partidas={partidas.data}
+      // Solo las del diccionario del juego: otra no la podría escribir nadie.
+      existe={(w) => VALID_GUESSES.size <= 10 || VALID_GUESSES.has(w)}
       cargandoPartidas={partidas.isLoading}
       cargando={q.isLoading}
       error={errorDe(q, 'No se pudieron cargar las palabras.')}

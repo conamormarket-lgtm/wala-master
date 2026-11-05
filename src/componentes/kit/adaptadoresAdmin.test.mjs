@@ -753,9 +753,12 @@ test('juegos: la palabra del día y las bolitas', () => {
   assert.deepEqual(['2026-11-01', '2026-11-02', '2026-11-09'].map((id) => m2.palabraDiaDesde({ id }, '2026-11-02').estado), ['paso', 'hoy', 'programada']);
   const lista = [{ id: '2026-11-09' }];
   assert.equal(m2.erroresDePalabra({ fecha: '2026-11-09', palabra: 'KAPI' }, lista).fecha, 'Ese día ya tiene palabra: edítala en la lista.');
-  assert.equal(m2.erroresDePalabra({ fecha: '2026-11-09', palabra: 'KAPI' }, lista, '2026-11-09').palabra, 'De 5 a 8 letras.');
+  assert.equal(m2.erroresDePalabra({ fecha: '2026-11-09', palabra: 'KAPI' }, lista, '2026-11-09').palabra, 'Tiene que tener 5 letras: el juego solo conoce palabras de 5.');
+  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'REGALO' }).palabra, 'Tiene que tener 5 letras: el juego solo conoce palabras de 5.');
+  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'ZZZZZ' }, [], null, (w) => w === 'FELIZ').palabra, 'No está en el diccionario del juego: nadie podría escribirla. Prueba con otra.');
+  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'feliz' }, [], null, (w) => w === 'FELIZ').palabra, undefined);
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'feliz dia' }).palabra, 'Solo letras, sin espacios.');
-  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'Canción' }).palabra, undefined);
+  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'Árbol' }).palabra, undefined);
   const filas = m2.palabrasConAutomaticas([{ id: '2026-11-03', fecha: '2026-11-03', palabra: 'REGALO', estado: 'programada' }], '2026-11-02', 3, (f) => `w${f.slice(-2)}`);
   assert.deepEqual(filas.map((x) => [x.fecha, x.palabra, x.automatica, x.estado]), [
     ['2026-11-03', 'REGALO', false, 'programada'],

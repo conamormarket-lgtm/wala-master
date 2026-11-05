@@ -79,7 +79,7 @@ export { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaC
 // Panel administrativo (guia/ADMIN.md): la tienda no importa este índice.
 export { MarcoAdmin, BarraInferiorAdmin, CabezaAdmin, SinPermiso, useMarcoAdmin } from './piezas/admin/Marco';
 export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote, CargarMas, ListaOrdenable, SelectorProductos, NumeroEnLinea } from './piezas/admin/Datos';
-export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno, ElegirMuestra, BarraGuardar, CampoLista } from './piezas/admin/Formularios';
+export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, CampoColores, ElegirUno, ElegirMuestra, BarraGuardar, CampoLista } from './piezas/admin/Formularios';
 export { ICONOS_ADMIN, iconoAdmin } from './piezas/admin/iconosAdmin';
 export { PaginaInicioAdmin } from './paginas/admin/Inicio';
 export { PaginaListaAdmin } from './paginas/admin/Lista';

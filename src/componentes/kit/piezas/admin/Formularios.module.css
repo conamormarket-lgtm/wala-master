@@ -404,6 +404,56 @@
   cursor: pointer;
 }
 
+/* ── Varios colores (CampoColores) ── */
+.colores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.colorItem {
+  position: relative;
+}
+
+.muestra.colorMuestra {
+  display: block;
+  width: 2.6rem;
+  height: 2.6rem;
+  margin: 0;
+  border-radius: 12px;
+  transition: transform var(--dur-rapida) ease;
+}
+
+.muestra.colorMuestra:hover {
+  transform: translateY(-1px);
+}
+
+.colorQuitar {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-text);
+  color: var(--color-surface);
+  cursor: pointer;
+}
+
+.colorQuitar:hover {
+  background: var(--danger, #dc2626);
+}
+
+.colorQuitar svg {
+  width: 0.65rem;
+  height: 0.65rem;
+}
+
 /* ── Elegir uno ── */
 .elegirUno {
   display: inline-flex;

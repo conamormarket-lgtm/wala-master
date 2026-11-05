@@ -157,7 +157,7 @@ export default function PalabraDeTienda() {
       key={listo ? `${user?.uid || 'invitado'}-${hoy}` : 'cargando'}
       estado={listo ? undefined : 'cargando'}
       objetivo={objetivo}
-      esValida={(p) => VALID_GUESSES.size <= 10 || VALID_GUESSES.has(normalizarPalabra(p))}
+      esValida={(p) => VALID_GUESSES.size <= 10 || normalizarPalabra(p) === objetivo || VALID_GUESSES.has(normalizarPalabra(p))}
       inicial={inicial || {}}
       sesion={sesion}
       estadisticas={estadisticas}
