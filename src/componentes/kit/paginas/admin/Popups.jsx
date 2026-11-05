@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { Eye, Power, RotateCcw } from 'lucide-react';
+import { ChartColumn, Eye, Power, RotateCcw } from 'lucide-react';
 import Boton from '../../Boton';
-import { useToast } from '../../Feedback';
+import { HojaInferior, useToast } from '../../Feedback';
+import { Hueso } from '../../Esqueletos';
 import { Campo, Interruptor } from '../../Formulario';
 import { CampoFecha } from '../../Fecha';
 import { Chip } from '../../Etiquetas';
 import { VentanaCampana } from '../../piezas/Marco';
 import { InsigniaEstado } from '../../piezas/admin/Datos';
+import { ListaBarras } from '../../piezas/admin/Metricas';
 import { GrupoCampos, CampoImagen, ElegirUno, CampoLista } from '../../piezas/admin/Formularios';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda } from './celdas';
 import { campanaDesdePopup } from '../../adaptadores';
 import { OPCIONES, POPUP_VACIO, PAGINAS_SUGERIDAS, idDesdeNombre, normalizarPopup, normalizarRuta } from '../../../../services/popupsLogic.mjs';
-import { cuandoPopup, erroresDePopup, tasaTexto } from '../../adaptadoresAdmin';
+import { cuandoPopup, erroresDePopup, pasosEmbudoPopup, tasaTexto } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Popups.module.css';
 
@@ -59,15 +61,28 @@ function ElegirPaginas({ rutas = [], onCambiar, error, id }) {
   );
 }
 
+// Mientras llega el embudo: sus filas (nombre arriba, barra abajo).
+function EsqueletoPasos() {
+  return (
+    <span className={s.esqueletoPasos} aria-hidden="true">
+      {[0, 1, 2, 3].map((k) => <span key={k}><Hueso ancho="45%" alto={12} /><Hueso alto={8} /></span>)}
+    </span>
+  );
+}
+
 /**
  * Popups (/admin/popups).
  *  - popups: [normalizarPopup] (popupsDesdeDoc) · cargando · error · onReintentar
  *  - onGuardarPopups(lista) → promesa (la lista entera, como se guarda) · subirImagen(blob, { alAvanzar }) → url
- *  - estadisticas: { [id]: { vistas, clics, cierres, conversiones } } · onReiniciarLocal (volver a verlos en este navegador)
+ *  - estadisticas: { [id]: { vistas, clics, cierres, conversiones, vieron, cerraron, tocaron, empezaron, cumplieron } }
+ *    (en personas, de embudoPopupsSecure; sin `vieron`, solo las veces) · cargandoEstadisticas
+ *  - onReiniciarLocal (volver a verlos en este navegador)
  */
-export function PaginaPopupsAdmin({ popups = [], cargando, error, onReintentar, onGuardarPopups, subirImagen, estadisticas = {}, onReiniciarLocal }) {
+export function PaginaPopupsAdmin({ popups = [], cargando, error, onReintentar, onGuardarPopups, subirImagen, estadisticas = {}, cargandoEstadisticas = false, onReiniciarLocal }) {
   const toast = useToast();
   const [previa, setPrevia] = useState(null);
+  const [resultados, setResultados] = useState(null);
+  const pasos = resultados ? pasosEmbudoPopup(estadisticas[resultados.id], resultados.objetivo) : [];
   const guardarLista = (lista) => onGuardarPopups?.(lista.map(normalizarPopup));
   const alternar = async (p) => {
     try {
@@ -89,7 +104,7 @@ export function PaginaPopupsAdmin({ popups = [], cargando, error, onReintentar, 
           subtitulo: 'Ventanas en la tienda para la encuesta, un Live, una promo o los referidos. Cada persona ve como mucho uno por visita.',
           acciones: onReiniciarLocal ? <Boton tamano="sm" variante="secundario" icono={<RotateCcw aria-hidden="true" />} onClick={() => { onReiniciarLocal(); toast({ tipo: 'exito', titulo: 'Listo', texto: 'En este navegador los popups vuelven a salir como en la primera visita.' }); }}>Volver a verlos aquí</Boton> : undefined,
         }}
-        antes={<p className={s.nota}>Nunca aparecen en el carrito, el pago, el login, el admin, la encuesta ni el editor. Clics: quienes tocaron el botón (y su parte de las vistas). Conversiones: quienes además cumplieron el objetivo en los 7 días siguientes (y su parte de los clics).</p>}
+        antes={<p className={s.nota}>Nunca aparecen en el carrito, el pago, el login, el admin, la encuesta ni el editor. Los resultados van en personas: cuántas lo vieron, cuántas tocaron el botón y cuántas cumplieron el objetivo en los 7 días siguientes.</p>}
         registros={registros}
         cargando={cargando}
         error={error}
@@ -104,9 +119,13 @@ export function PaginaPopupsAdmin({ popups = [], cargando, error, onReintentar, 
           { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagenUrl} /> },
           { id: 'nombre', titulo: 'Popup', tarjeta: 'titulo', celda: (p) => <>{p.nombre || p.titulo}<span className={l.sub}>{etiqueta('objetivo', p.objetivo)} · {p.formato === 'imagen' ? 'solo imagen' : 'tarjeta'}</span></> },
           { id: 'donde', titulo: 'A quién y dónde', tarjeta: 'detalle', celda: (p) => <>{dondeTexto(p)}<span className={l.sub}>Aparece {cuandoPopup(p)} · no se repite por {p.cooldownDias} días{p.desde || p.hasta ? ` · ${p.desde || '…'} → ${p.hasta || '…'}` : ''}</span></> },
-          { id: 'resultados', titulo: 'Vistas · clics', ancho: 150, alinear: 'fin', tarjeta: 'detalle', celda: (p) => {
+          { id: 'resultados', titulo: 'Personas', ancho: 170, alinear: 'fin', tarjeta: 'detalle', celda: (p) => {
             const e = estadisticas[p.id];
-            return e ? <span className={l.numero}>{entero(e.vistas)} · {entero(e.clics)}<span className={l.sub}>{tasaTexto(e.clics, e.vistas)} tocan · {entero(e.conversiones)} cumplen ({tasaTexto(e.conversiones, e.clics)})</span></span> : <span className={l.sub}>—</span>;
+            if (!e) return cargandoEstadisticas ? <span className={s.esqueletoCifra} aria-hidden="true"><Hueso ancho={110} alto={12} /><Hueso ancho={130} alto={10} /></span> : <span className={l.sub}>—</span>;
+            // Sin el embudo (la función no respondió): las veces, como antes.
+            if (typeof e.vieron !== 'number') return <span className={l.numero}>{entero(e.vistas)} vistas · {entero(e.clics)} clics<span className={l.sub}>{tasaTexto(e.clics, e.vistas)} tocan</span></span>;
+            const meta = p.objetivo === 'encuesta' || p.objetivo === 'registro';
+            return <span className={l.numero}>{entero(e.vieron)} vieron · {entero(e.tocaron)} tocaron<span className={l.sub}>{tasaTexto(e.tocaron, e.vieron)} tocan{meta ? ` · ${entero(e.cumplieron)} cumplen (${tasaTexto(e.cumplieron, e.tocaron)})` : ''}</span></span>;
           } },
           { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (p) => <InsigniaEstado estado={p.activo ? 'si' : 'no'} estados={ESTADOS} /> },
         ]}
@@ -114,6 +133,7 @@ export function PaginaPopupsAdmin({ popups = [], cargando, error, onReintentar, 
         textos={{ creado: 'Popup creado', guardado: 'Popup guardado', eliminado: 'Popup eliminado' }}
         eliminar={{ texto: (p) => `Se borra «${p.nombre || p.titulo}». Sus métricas se conservan.` }}
         masAcciones={(p) => [
+          { id: 'resultados', etiqueta: 'Ver resultados', Icono: ChartColumn, accion: () => setResultados(p) },
           { id: 'ver', etiqueta: 'Ver cómo se ve', Icono: Eye, accion: () => setPrevia(p) },
           { id: 'activo', etiqueta: p.activo ? 'Apagar' : 'Encender', Icono: Power, accion: () => alternar(p) },
         ]}
@@ -180,6 +200,21 @@ export function PaginaPopupsAdmin({ popups = [], cargando, error, onReintentar, 
           },
         }}
       />
+      <HojaInferior abierta={Boolean(resultados)} onCerrar={() => setResultados(null)} titulo={resultados ? `Resultados · ${resultados.nombre || resultados.titulo}` : 'Resultados'}>
+        {resultados && (
+          !estadisticas[resultados.id] && cargandoEstadisticas ? <EsqueletoPasos />
+            : pasos.length ? (
+              <>
+                <p className={s.nota}>Personas distintas en cada paso y su parte de las que lo vieron, desde que el popup existe. Se cuenta por cuenta (o por aparato si no inició sesión).</p>
+                <ListaBarras
+                  max={pasos.length}
+                  conCeros
+                  filas={pasos.map((x) => ({ id: x.id, nombre: x.nombre, valor: x.total, texto: `${entero(x.total)} · ${x.porcentaje} %`, sub: [x.aparte && 'aparte: cerraron sin tocar o después', x.nota].filter(Boolean).join(' · ') || undefined }))}
+                />
+              </>
+            ) : <p className={s.nota}>No se pudieron contar las personas. Vuelve a abrir la página en un rato.</p>
+        )}
+      </HojaInferior>
       {previa && <VentanaCampana abierta onCerrar={() => setPrevia(null)} onAccion={() => setPrevia(null)} {...campanaDesdePopup(previa)} />}
     </>
   );

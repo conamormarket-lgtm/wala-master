@@ -34,6 +34,7 @@ const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
 const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon } = require("./checkoutTotals");
 const niveles = require("./nivelesLogic");
+const popupsEmbudo = require("./popupsEmbudo");
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
@@ -5280,6 +5281,76 @@ function nombreCompletoDePerfil(p) {
   return v || "";
 }
 const msDeTimestamp = (v) => (v && typeof v.toMillis === "function" ? v.toMillis() : null);
+
+/*
+ * El embudo de los popups en personas (admin): vieron, cerraron, tocaron,
+ * abrieron la encuesta y cumplieron. Con la encuesta se cruza el clic con la
+ * cuenta (surveyCompletedAt en los 7 días siguientes), porque la conversión
+ * del navegador se pierde. Solo lee: analytics_events y los perfiles.
+ */
+exports.embudoPopupsSecure = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los resultados de los popups.");
+  }
+  const ids = [...new Set((Array.isArray(data && data.ids) ? data.ids : []).map(String).filter(Boolean))].slice(0, 30);
+  if (!ids.length) return { embudos: {} };
+  const config = (await db.collection("storeConfig").doc("popups").get()).data() || {};
+  const objetivoDe = new Map((Array.isArray(config.popups) ? config.popups : []).map((p) => [String(p && p.id), p && p.objetivo]));
+  const eventosDe = async (popupId, type) => {
+    const snap = await db.collection("analytics_events")
+      .where("type", "==", type)
+      .where("eventData.popupId", "==", popupId)
+      .select("uid", "anonymousId", "clientTsMs")
+      .get();
+    return snap.docs.map((d) => {
+      const x = d.data() || {};
+      return { uid: x.uid || null, anonymousId: x.anonymousId || null, ts: Number(x.clientTsMs) || 0 };
+    });
+  };
+  // ¿Abrió la encuesta en los 7 días después de su clic? (page_view de la ruta, por cuenta o aparato)
+  const abrioEncuesta = async (c) => {
+    const campo = c.uid ? "uid" : "anonymousId";
+    const valor = c.uid || c.anonymousId;
+    if (!valor) return false;
+    const snap = await db.collection("analytics_events")
+      .where("type", "==", "page_view")
+      .where("path", "==", popupsEmbudo.RUTA_ENCUESTA)
+      .where(campo, "==", valor)
+      .select("clientTsMs")
+      .limit(50)
+      .get();
+    return snap.docs.some((d) => popupsEmbudo.dentro(Number((d.data() || {}).clientTsMs), c.ts));
+  };
+  const embudos = {};
+  for (const id of ids) {
+    const objetivo = objetivoDe.get(id) || "";
+    const [vistas, cierres, clics, conversiones] = await Promise.all(
+      ["popup_view", "popup_close", "popup_click", "popup_conversion"].map((t) => eventosDe(id, t)),
+    );
+    const abrieron = new Set();
+    const completoEn = new Map();
+    if (objetivo === "encuesta") {
+      const clicDe = [...popupsEmbudo.primerosClics(clics).entries()].slice(0, 400);
+      const uids = [...new Set(clicDe.map(([, c]) => c.uid).filter(Boolean))];
+      for (let i = 0; i < uids.length; i += 100) {
+        const refs = uids.slice(i, i + 100).map((u) => db.collection(PORTAL_USERS_COLLECTION).doc(String(u)));
+        const snaps = await db.getAll(...refs, { fieldMask: ["surveyCompletedAt", "hasCompletedSurvey"] });
+        snaps.forEach((sn) => {
+          const p = sn.exists ? sn.data() || {} : {};
+          const t = msDeTimestamp(p.surveyCompletedAt) || Number(p.surveyCompletedAt) || 0;
+          if (p.hasCompletedSurvey && t) completoEn.set(sn.id, t);
+        });
+      }
+      for (let i = 0; i < clicDe.length; i += 20) {
+        const tanda = clicDe.slice(i, i + 20);
+        const res = await Promise.all(tanda.map(([, c]) => abrioEncuesta(c).catch(() => false)));
+        tanda.forEach(([p], k) => { if (res[k]) abrieron.add(p); });
+      }
+    }
+    embudos[id] = popupsEmbudo.embudoDePopup({ eventos: { vistas, cierres, clics, conversiones }, objetivo, abrieron, completoEn });
+  }
+  return { embudos };
+});
 
 exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) => {
   if (!(await callerIsAdmin(context))) {

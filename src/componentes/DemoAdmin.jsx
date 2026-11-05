@@ -574,7 +574,10 @@ const POPUPS_DEMO = [
   normalizarPopup({ id: 'live-viernes', nombre: 'Live del viernes', activo: true, formato: 'imagen', objetivo: 'enlace', titulo: 'Este viernes a las 8 p. m. sorteamos en vivo', imagenUrl: fotoTienda(2), botonUrl: '/sorteos', audiencia: 'todos', paginas: 'elegidas', rutas: ['/', '/tienda', '/producto/*'], disparador: 'scroll', scrollPct: 50, cooldownDias: 2, prioridad: 5, desde: diaKey(3), hasta: diaKey(-4) }),
   normalizarPopup({ id: 'registro', nombre: 'Crea tu cuenta', activo: false, formato: 'tarjeta', objetivo: 'registro', titulo: '10 monedas por crear tu cuenta', texto: 'Y guarda tus diseños para pedirlos cuando quieras.', botonTexto: 'Crear mi cuenta', audiencia: 'anonimos', disparador: 'salida', segundos: 20 }),
 ];
-const ESTADISTICAS_POPUPS_DEMO = { [POPUPS_DEMO[0].id]: { vistas: 4120, clics: 610, cierres: 3200, conversiones: 233 }, 'live-viernes': { vistas: 880, clics: 142, cierres: 690, conversiones: 0 } };
+const ESTADISTICAS_POPUPS_DEMO = {
+  [POPUPS_DEMO[0].id]: { vistas: 4120, clics: 610, cierres: 3200, conversiones: 233, vieron: 2950, cerraron: 2300, tocaron: 540, empezaron: 380, cumplieron: 233 },
+  'live-viernes': { vistas: 880, clics: 142, cierres: 690, conversiones: 0, vieron: 640, cerraron: 500, tocaron: 120, empezaron: null, cumplieron: 0 },
+};
 const MARCAS_PAGINAS = MARCAS_TIENDA.slice(0, 3).map((m) => ({ id: m.id, slug: m.slug, name: m.name }));
 const LANDINGS_DEMO = [
   { id: 'promo-navidad', title: 'Promo Navidad 2026', slug: 'promo-navidad', slugsAnteriores: ['navidad-2025'] },

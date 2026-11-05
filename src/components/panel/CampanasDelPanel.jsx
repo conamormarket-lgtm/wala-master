@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getEstadisticasPopup, getPopups, reiniciarEstadoLocal, savePopups } from '../../services/popups';
 import { normalizarPopup } from '../../services/popupsLogic.mjs';
 import { getBrands } from '../../services/brands';
@@ -27,24 +28,32 @@ const subirPopup = subirA('config/popups', 'popup');
  * /admin/popups: la lista entera vive en storeConfig/popups y se guarda
  * entera (savePopups). Si no se pudo leer, no se guarda: pisaría lo que haya
  * (AdminPopups apagaba "Nuevo popup"; el kit deja abrir la hoja, así que el
- * guardar es el que se niega). Las métricas, una consulta por popup con la
- * clave de antes.
+ * guardar es el que se niega). Los resultados, en personas, de
+ * embudoPopupsSecure (cruza el clic con la cuenta); si no responde, las veces
+ * de antes (un conteo por popup).
  */
+async function leerEmbudos(ids) {
+  try {
+    const res = await httpsCallable(getFunctions(), 'embudoPopupsSecure')({ ids });
+    return res.data?.embudos || {};
+  } catch {
+    const cifras = await Promise.all(ids.map((id) => getEstadisticasPopup(id).catch(() => null)));
+    return Object.fromEntries(ids.map((id, i) => [id, cifras[i]]).filter(([, c]) => c));
+  }
+}
+
 export function PopupsDelPanel() {
   const queryClient = useQueryClient();
   const popups = useLectura(['admin-popups'], getPopups, { staleTime: 0 });
   const lista = popups.datos || [];
 
-  const metricas = useQueries({
-    queries: lista.map((p) => ({
-      queryKey: ['admin-popup-stats', p.id],
-      queryFn: () => getEstadisticasPopup(p.id),
-      staleTime: 60 * 1000,
-    })),
+  const ids = lista.map((p) => p.id);
+  const embudos = useQuery({
+    queryKey: ['admin-popup-embudos', ids.join(',')],
+    queryFn: () => leerEmbudos(ids),
+    enabled: ids.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
-  // { [id]: { vistas, clics, cierres, conversiones } }; las que no cargan quedan en "—".
-  const estadisticas = {};
-  lista.forEach((p, i) => { if (metricas[i]?.data) estadisticas[p.id] = metricas[i].data; });
 
   return (
     <PaginaPopupsAdmin
@@ -59,7 +68,8 @@ export function PopupsDelPanel() {
         await queryClient.invalidateQueries({ queryKey: ['popups-config'] });
       }}
       subirImagen={subirPopup}
-      estadisticas={estadisticas}
+      estadisticas={embudos.data || {}}
+      cargandoEstadisticas={embudos.isLoading}
       onReiniciarLocal={reiniciarEstadoLocal}
     />
   );

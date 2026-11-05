@@ -741,6 +741,11 @@ test('popups, páginas y temas', () => {
   assert.equal(m2.erroresDeLanding({ id: 'n', nombre: 'Otra', slug: 'Promo' }, [{ id: 'p', slug: 'promo' }]).slug, 'Ya hay una página con esa dirección: escoge otra.');
   assert.deepEqual(m2.landingAFirestore({ nombre: ' Promo ', slug: 'promo-2', marcaId: '' }, { slug: 'promo', slugsAnteriores: ['promo-2', 'vieja'] }), { title: 'Promo', brandId: '', slug: 'promo-2', slugsAnteriores: ['vieja', 'promo'] });
   assert.equal(m2.landingAFirestore({ nombre: 'Daida', slug: 'Daida', deMarca: true }).slug, 'Daida');
+
+  const pasos = m2.pasosEmbudoPopup({ vieron: 130, cerraron: 106, tocaron: 14, empezaron: 9, cumplieron: 1 }, 'encuesta');
+  assert.deepEqual(pasos.map((x) => [x.id, x.total, x.porcentaje]), [['vieron', 130, 100], ['tocaron', 14, 11], ['empezaron', 9, 7], ['cumplieron', 1, 1], ['cerraron', 106, 82]]);
+  assert.deepEqual(m2.pasosEmbudoPopup({ vieron: 10, cerraron: 1, tocaron: 2, empezaron: null, cumplieron: 0 }, 'enlace').map((x) => x.id), ['vieron', 'tocaron', 'cerraron']);
+  assert.deepEqual(m2.pasosEmbudoPopup({ vistas: 3, clics: 1 }, 'encuesta'), []);
 });
 
 test('juegos: la palabra del día y las bolitas', () => {

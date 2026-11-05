@@ -637,10 +637,12 @@ export async function trackPaymentComplete(paymentInfo = {}, userCtx = {}) {
 export async function trackPopupEvent(type, popupId, extra = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
+  // La página se toma antes del await: tras un clic que navega, ya sería la de destino.
+  const path = extra.pagina || window.location.pathname || '/';
   const sessionId = await ensureAnalyticsSession(userCtx);
   await registrarEvento({
     type,
-    path: window.location.pathname || '/',
+    path,
     uid: userCtx?.uid || null,
     email: userCtx?.email || null,
     displayName: userCtx?.displayName || null,

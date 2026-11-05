@@ -2930,7 +2930,7 @@ export function clicsDeEnlaces(clics = {}, botones = [], redes = []) {
   return { filas: filas.map((f) => ({ ...f, texto: `${f.valor} · ${total ? Math.round((f.valor / total) * 100) : 0} %` })), total };
 }
 
-/* ── D6d · Popups, páginas y temas ────────────────────── */
+/* ── D6d · Popups y páginas ────────────────────── */
 
 /*
  * Popups: storeConfig/popups se edita tal cual (lo lee la tienda con
@@ -2954,6 +2954,26 @@ export function erroresDePopup(p = {}) {
     rutas: p.paginas === 'elegidas' && !(p.rutas || []).length ? 'Elige al menos una página o no saldrá en ninguna.' : undefined,
     hasta: p.desde && p.hasta && p.hasta < p.desde ? 'Termina antes de empezar.' : undefined,
   };
+}
+
+/**
+ * Los pasos del embudo de un popup (embudoPopupsSecure), en personas, con su
+ * parte de las que lo vieron. Cerrar va aparte (no es un paso hacia el
+ * objetivo). Sin `vieron` (las cifras viejas, solo veces) → [].
+ *  - e: { vieron, cerraron, tocaron, empezaron (null si no aplica), cumplieron }
+ *  - objetivo: 'encuesta' | 'registro' | 'enlace'
+ */
+export function pasosEmbudoPopup(e, objetivo) {
+  if (!e || typeof e.vieron !== 'number') return [];
+  const parte = (n) => (e.vieron > 0 ? Math.round((n / e.vieron) * 100) : 0);
+  const cumplir = objetivo === 'encuesta' ? 'Terminaron la encuesta' : objetivo === 'registro' ? 'Crearon su cuenta' : null;
+  return [
+    { id: 'vieron', nombre: 'Lo vieron', total: e.vieron, porcentaje: 100 },
+    { id: 'tocaron', nombre: objetivo === 'encuesta' ? 'Tocaron «Llenar»' : 'Tocaron el botón', total: e.tocaron, porcentaje: parte(e.tocaron) },
+    ...(e.empezaron == null ? [] : [{ id: 'empezaron', nombre: 'Abrieron la encuesta', total: e.empezaron, porcentaje: parte(e.empezaron) }]),
+    ...(cumplir ? [{ id: 'cumplieron', nombre: cumplir, total: e.cumplieron, porcentaje: parte(e.cumplieron), nota: 'En los 7 días después de tocar' }] : []),
+    { id: 'cerraron', nombre: 'Lo cerraron', total: e.cerraron, porcentaje: parte(e.cerraron), aparte: true },
+  ];
 }
 
 /* Páginas (landing pages): solo nombre, dirección y marca; el diseño, en la página con el editor. */
