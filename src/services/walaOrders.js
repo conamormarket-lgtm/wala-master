@@ -110,9 +110,13 @@ export function normalizarEspejoParaVista(docId, data) {
     // Contexto de regalo (ADITIVO; solo los espejos nuevos lo traen)
     ...(d.giftDetails != null && { giftDetails: d.giftDetails }),
     ...(d.deliveryDate != null && { deliveryDate: d.deliveryDate }),
-    // Montos display
+    // Montos display (con lo pagado y lo que falta: Recepción y Mis pedidos los muestran)
     montoTotal: d.montoTotal ?? null,
     moneda: d.moneda ?? 'PEN',
+    ...(d.montoPagado != null && { montoPagado: d.montoPagado }),
+    ...(d.montoAdelanto != null && { montoAdelanto: d.montoAdelanto }),
+    ...(d.montoPendiente != null && { montoPendiente: d.montoPendiente }),
+    ...(d.costoEnvio != null && { costoEnvio: d.costoEnvio }),
     // Origen / estado (sin etapa avanzada → la vista lo verá "por confirmar")
     canalVenta: d.canalVenta ?? 'Portal Web',
     web: d.web === true,
