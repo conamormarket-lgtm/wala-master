@@ -197,9 +197,11 @@ const CONFIG_POR_DEFECTO = {
     imagenCentro: "",
   },
   reglas: {
-    // racha7  -> hay que reclamar los 7 días (regla histórica).
+    // dias7   -> 7 días alimentando a Kapi, cuando sea (cada persona lleva su
+    //            cuenta; los días no se pierden al cambiar de semana).
+    // racha7  -> los 7 días de una misma semana, de lunes a domingo (la de antes).
     // siempre -> un giro por semana sin condición (para campañas).
-    modoDesbloqueo: "racha7",
+    modoDesbloqueo: "dias7",
     semanaDeGracia: true,
     // Una ruleta que gira casi cinco segundos se hace larga: para cuando el
     // usuario ya ha visto el premio, sigue arrastrandose. 4 vueltas en 3,5 s dan
@@ -209,7 +211,31 @@ const CONFIG_POR_DEFECTO = {
   },
 };
 
-const MODOS_DESBLOQUEO = ["racha7", "siempre"];
+const MODOS_DESBLOQUEO = ["dias7", "racha7", "siempre"];
+
+// ── 7 días con Kapi, cuando sea (modo dias7) ──
+// La cuenta vive en weeklyClaimsData.ruleta ({ dias, listo, listoDesde }): ese
+// campo solo lo escribe el servidor (las reglas lo protegen), así que nadie se
+// puede marcar el giro desde el navegador.
+const DIAS_PARA_GIRO = 7;
+
+/**
+ * Suma el día de hoy a la cuenta de la ruleta. Con un giro guardado no suma
+ * (como mucho uno guardado: hay que girarlo para empezar los próximos 7). Al
+ * llegar a 7, el giro queda listo y la cuenta vuelve a 0.
+ *  - previa: { dias, listo } o null (la primera vez: se arranca con `inicial`)
+ *  - inicial: { dias, listo } para quien no tenía cuenta (los días de esta
+ *    semana y el giro que le quedaba con la regla de antes)
+ */
+function sumarDiaRuleta(previa, hoy, inicial = { dias: 0, listo: false }) {
+  const base = previa && typeof previa === "object" ? previa : inicial;
+  const listo = base.listo === true;
+  if (listo) return { dias: 0, listo: true, listoDesde: base.listoDesde || hoy };
+  const dias = Math.max(0, Math.floor(Number(base.dias) || 0)) + 1;
+  return dias >= DIAS_PARA_GIRO
+    ? { dias: 0, listo: true, listoDesde: hoy }
+    : { dias, listo: false, listoDesde: null };
+}
 
 // Devuelve siempre una config completa: el doc puede no existir (nunca se creó:
 // CONFIG_DOC estaba declarado pero jamás se escribía) o venir a medias.
@@ -355,6 +381,8 @@ module.exports = {
   PRESETS_TEMA,
   CONFIG_POR_DEFECTO,
   MODOS_DESBLOQUEO,
+  DIAS_PARA_GIRO,
+  sumarDiaRuleta,
   normalizarConfig,
   colorDeGajo,
   TIPOS_LEGADO,

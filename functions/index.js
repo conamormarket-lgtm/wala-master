@@ -28,7 +28,7 @@ const {
 } = require("./economyLogic");
 const {
   normalizarPremio, normalizarConfig, premioDisponible, premiosDeHoy,
-  sortearPremio, esCupon, textoPremio,
+  sortearPremio, esCupon, textoPremio, sumarDiaRuleta,
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
@@ -3189,9 +3189,20 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
       if (u.lastKapiClaimDate === today) {
         throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Kapi hoy.");
       }
-      let weekly = u.weeklyClaimsData || { weekStart, daysClaimed: [] };
+      const previo = u.weeklyClaimsData || null;
+      // Los días de esta semana ANTES de hoy (para arrancar la cuenta de la ruleta).
+      const diasPreviosSemana = previo && previo.weekStart === weekStart && Array.isArray(previo.daysClaimed)
+        ? previo.daysClaimed.length : 0;
+      let weekly = previo || { weekStart, daysClaimed: [] };
       if (weekly.weekStart !== weekStart) weekly = { weekStart, daysClaimed: [today] };
       else if (!weekly.daysClaimed.includes(today)) weekly.daysClaimed.push(today);
+      // Ruleta, 7 días cuando sea: cada día que se alimenta suma 1 y no se
+      // reinicia el lunes. Quien no tenía cuenta arranca con los días de esta
+      // semana y, si le quedaba un giro con la regla de antes, lo conserva.
+      weekly.ruleta = sumarDiaRuleta(previo && previo.ruleta, today, {
+        dias: diasPreviosSemana,
+        listo: !!semanaDeGiroPendiente(u, { modoDesbloqueo: "racha7", semanaDeGracia: true }),
+      });
 
       let add = 1;
       if (u.activeMultiplier === "kapi_double_3d" && u.multiplierExpiresAt &&
@@ -3624,6 +3635,14 @@ function semanaDeGiroPendiente(u, reglas) {
   const weekStart = limaWeekStartStr();
   const weekStartAnterior = limaWeekStartStr(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+  if (reglas.modoDesbloqueo === "dias7") {
+    const cuenta = u.weeklyClaimsData && u.weeklyClaimsData.ruleta;
+    // Con cuenta: el giro está listo o no. Sin cuenta (aún no alimentó a Kapi
+    // desde el cambio): lo que le dejaba la regla de antes.
+    if (cuenta) return cuenta.listo ? `dias7-${cuenta.listoDesde || "listo"}` : null;
+    return semanaDeGiroPendiente(u, Object.assign({}, reglas, { modoDesbloqueo: "racha7" }));
+  }
+
   let semanaPremio;
   if (reglas.modoDesbloqueo === "siempre") {
     // Modo campaña: un giro por semana, sin exigir la racha de 7 días.
@@ -3749,9 +3768,9 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
       if (!semanaPremio) {
         // Se distingue "ya giraste" de "no desbloqueada" para que el cliente no
         // tenga que adivinar cuál de las dos es.
-        const yaGiro = u.lastRuletaSpinWeek === limaWeekStartStr() ||
+        const yaGiro = config.reglas.modoDesbloqueo !== "dias7" && (u.lastRuletaSpinWeek === limaWeekStartStr() ||
           (config.reglas.semanaDeGracia && !!u.ruletaDisponibleDe &&
-            u.lastRuletaSpinWeek === u.ruletaDisponibleDe);
+            u.lastRuletaSpinWeek === u.ruletaDisponibleDe));
         throw new functions.https.HttpsError(
           yaGiro ? "already-exists" : "failed-precondition",
           yaGiro ? "Ya giraste la ruleta de esa semana." : "Ruleta no desbloqueada.");
@@ -3792,8 +3811,15 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
 
       // ── Escrituras ──
       const texto = textoPremio(elegido);
+      const porDias = String(semanaPremio).startsWith("dias7");
       const updates = {
-        lastRuletaSpinWeek: semanaPremio,
+        // Con los 7 días la marca es la semana en que se giró (por si el admin
+        // vuelve a la regla de lunes a domingo, no se gira dos veces esa semana).
+        lastRuletaSpinWeek: porDias ? limaWeekStartStr() : semanaPremio,
+        // Todo giro empieza la cuenta de los próximos 7 días desde cero.
+        weeklyClaimsData: Object.assign({ weekStart: limaWeekStartStr(), daysClaimed: [] }, u.weeklyClaimsData || {}, {
+          ruleta: { dias: 0, listo: false, listoDesde: null },
+        }),
         // Conteo por premio: sostiene el tope `maxPorUsuario` sin tener que
         // consultar ruletaWins dentro de la transacción.
         ruletaPremiosGanados: Object.assign({}, ganados, {

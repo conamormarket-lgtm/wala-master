@@ -193,9 +193,11 @@ export const CONFIG_POR_DEFECTO = {
     imagenCentro: "",
   },
   reglas: {
-    // racha7  -> hay que reclamar los 7 días (regla histórica).
+    // dias7   -> 7 días alimentando a Kapi, cuando sea (cada persona lleva su
+    //            cuenta; los días no se pierden al cambiar de semana).
+    // racha7  -> los 7 días de una misma semana, de lunes a domingo (la de antes).
     // siempre -> un giro por semana sin condición (para campañas).
-    modoDesbloqueo: "racha7",
+    modoDesbloqueo: "dias7",
     semanaDeGracia: true,
     // Una ruleta que gira casi cinco segundos se hace larga: para cuando el
     // usuario ya ha visto el premio, sigue arrastrandose. 4 vueltas en 3,5 s dan
@@ -205,7 +207,7 @@ export const CONFIG_POR_DEFECTO = {
   },
 };
 
-export const MODOS_DESBLOQUEO = ["racha7", "siempre"];
+export const MODOS_DESBLOQUEO = ["dias7", "racha7", "siempre"];
 
 // Devuelve siempre una config completa: el doc puede no existir (nunca se creó:
 // CONFIG_DOC estaba declarado pero jamás se escribía) o venir a medias.

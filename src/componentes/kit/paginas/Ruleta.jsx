@@ -19,7 +19,8 @@ import s from './Juegos.module.css';
 const SIN_HISTORIAL = [];
 
 /**
- * La Ruleta Semanal: se gana un giro por semana con la racha de Kapi (7 días).
+ * La Ruleta Semanal: se gana un giro con 7 días alimentando a Kapi (cuando
+ * sea, `dias7`; o de lunes a domingo, `racha7`) o uno por semana (`siempre`).
  * La racha se ve arriba de la rueda; el premio lo sortea el servidor y la
  * rueda para en su gajo (anguloDeParada).
  *  - premios: los de hoy, en el orden del servidor ({ id, nombre, etiqueta, color })
@@ -58,6 +59,7 @@ export function PaginaRuleta({
   useEffect(() => { if (!ganado) setHistorial(historialInicial); }, [historialInicial]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const siempre = reglas.modoDesbloqueo === 'siempre';
+  const porDias = reglas.modoDesbloqueo === 'dias7';
   const { desbloqueada = false, girada: giradaAntes = false, perdida = false, pendienteAnterior = false } = eleccion;
   const dias = Math.max(0, Math.min(7, Number(eleccion.dias) || 0));
   const girada = giradaAntes || Boolean(ganado);
@@ -66,7 +68,7 @@ export function PaginaRuleta({
   const faltan = 7 - dias;
   let textoBoton = 'Girar la ruleta';
   if (girando) textoBoton = 'Girando…';
-  else if (girada) textoBoton = 'Ya giraste esta semana';
+  else if (girada) textoBoton = porDias ? 'Ya usaste tu giro' : 'Ya giraste esta semana';
   else if (!desbloqueada && perdida) textoBoton = 'Semana perdida';
   else if (!desbloqueada) textoBoton = `Bloqueada: te ${faltan === 1 ? 'falta 1 día' : `faltan ${faltan} días`}`;
   const t = {
@@ -81,11 +83,15 @@ export function PaginaRuleta({
       abierta={ayuda}
       onCerrar={() => { setAyuda(false); onAyudaVista?.(); }}
       boton="Entendido"
-      intro={siempre ? 'Un giro por semana, cortesía de la casa. Los premios cambian según el día.' : 'La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.'}
+      intro={siempre ? 'Un giro por semana, cortesía de la casa. Los premios cambian según el día.'
+        : porDias ? 'La ruleta no se juega: se gana. Es el premio por alimentar a Kapi 7 días.'
+          : 'La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.'}
       pasos={siempre
         ? ['Tienes un giro cada semana, sin condiciones.', 'Al girar, se acaba hasta la semana siguiente.']
+        : porDias
+          ? ['Cada día que alimentas a Kapi suma 1.', 'No tienen que ser seguidos: los días que llevas no se pierden.', 'Al llegar a 7 ganas un giro.', 'Gíralo para empezar a sumar los próximos 7.']
         : ['Alimenta a Kapi todos los días, de lunes a domingo.', 'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.', 'Al completar los 7 días ganas un giro.', 'Un giro por semana: al girar, se acaba hasta la siguiente.']}
-      pie="Si ganas el giro y no lo usas, no lo pierdes: sigue disponible durante la semana siguiente. El premio lo decide el servidor y se acredita solo en tu cuenta."
+      pie={porDias ? 'Tu giro no vence: te espera hasta que lo uses. El premio lo decide el servidor y se acredita solo en tu cuenta.' : 'Si ganas el giro y no lo usas, no lo pierdes: sigue disponible durante la semana siguiente. El premio lo decide el servidor y se acredita solo en tu cuenta.'}
     />
   );
 
@@ -159,10 +165,13 @@ export function PaginaRuleta({
             <div className={s.zonaRueda}>
               {!siempre && (
                 <div className={s.racha}>
-                  <BarraProgreso pasos valor={dias} max={7} etiqueta={<Texto>Tu racha con Kapi</Texto>} />
+                  <BarraProgreso pasos valor={girada && porDias ? 0 : dias} max={7} etiqueta={<Texto>{porDias ? 'Tus días con Kapi' : 'Tu racha con Kapi'}</Texto>} />
                   <p className={s.rachaNota}>
                     <Texto>
-                      {girada ? 'Ya usaste el giro de esta semana.'
+                      {porDias ? (girada ? 'Ya usaste tu giro. Desde mañana, cada día con Kapi suma para el próximo.'
+                        : desbloqueada ? '¡Juntaste los 7 días! Tu giro te espera.'
+                          : `Llevas ${dias} de 7 días. No tienen que ser seguidos.`)
+                        : girada ? 'Ya usaste el giro de esta semana.'
                         : desbloqueada ? (pendienteAnterior ? 'Este giro es el que ganaste la semana pasada. ¡Aprovéchalo!' : '¡Completaste la semana! Tu giro te espera.')
                           : perdida ? 'Perdiste un día esta semana. El lunes empieza otra.'
                             : 'Alimenta a Kapi cada día: al séptimo, la ruleta se abre.'}
@@ -176,7 +185,7 @@ export function PaginaRuleta({
                 <Boton tamano="lg" bloque brillo={desbloqueada && !girada && !girando} cargando={girando} disabled={!desbloqueada || girada || girando} onClick={girar}>
                   {textoBoton}
                 </Boton>
-                {girada && hasta && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Vuelve el lunes, en" textoFin="¡Ya empezó otra semana!" /></p>}
+                {girada && hasta && !porDias && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Vuelve el lunes, en" textoFin="¡Ya empezó otra semana!" /></p>}
               </div>
             </div>
             <aside className={s.lado}>

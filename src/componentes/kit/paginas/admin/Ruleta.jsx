@@ -62,7 +62,7 @@ function Apariencia({ config, premiosHoy, premios, subirImagen, onGuardar }) {
       <div className={s.campos}>
         <GrupoCampos titulo="La ruleta">
           <Interruptor etiqueta="Abierta" descripcion={c.activa ? 'Los clientes pueden girar.' : 'Cerrada: nadie puede girar.'} activo={c.activa} onChange={(v) => setC((x) => ({ ...x, activa: v }))} />
-          <ElegirUno etiqueta="Cómo se gana el giro" opciones={[{ valor: 'racha7', texto: 'Con los 7 días de racha de Kapi' }, { valor: 'siempre', texto: 'Uno por semana, sin condición' }]} valor={c.reglas.modoDesbloqueo} onElegir={(v) => v && reglas({ modoDesbloqueo: v })} />
+          <ElegirUno etiqueta="Cómo se gana el giro" opciones={[{ valor: 'dias7', texto: '7 días con Kapi, cuando sea' }, { valor: 'racha7', texto: '7 días de lunes a domingo' }, { valor: 'siempre', texto: 'Uno por semana, sin condición' }]} valor={c.reglas.modoDesbloqueo} onElegir={(v) => v && reglas({ modoDesbloqueo: v })} />
           <Interruptor etiqueta="El giro ganado sigue la semana siguiente" activo={c.reglas.semanaDeGracia} onChange={(v) => reglas({ semanaDeGracia: v })} />
           <label className={s.rango}><span>Vueltas <strong>{c.reglas.vueltas}</strong></span><input type="range" min={2} max={12} value={c.reglas.vueltas} onChange={(e) => reglas({ vueltas: Number(e.target.value) })} /></label>
           <label className={s.rango}><span>Cuánto dura el giro <strong>{(c.reglas.duracionGiroMs / 1000).toFixed(1)} s</strong></span><input type="range" min={1500} max={10000} step={500} value={c.reglas.duracionGiroMs} onChange={(e) => reglas({ duracionGiroMs: Number(e.target.value) })} /></label>

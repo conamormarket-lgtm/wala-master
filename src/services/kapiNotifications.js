@@ -122,7 +122,18 @@ export const scheduleKapiNotifications = async (userProfile) => {
     let extraTitle = "¡Kapi tiene hambre! 🍖";
     let extraBody = "Alimenta a Kapi hoy para mantenerlo feliz y sumar monedas.";
 
-    if (currentDayOfWeek === 1) {
+    // 7 días con Kapi, cuando sea: los avisos siguen la cuenta de la persona.
+    const cuentaRuleta = userProfile?.weeklyClaimsData?.ruleta;
+    if (cuentaRuleta) {
+      const faltan = 7 - (Number(cuentaRuleta.dias) || 0);
+      if (cuentaRuleta.listo) {
+        extraTitle = "Tu giro te espera 🎰";
+        extraBody = "Juntaste los 7 días con Kapi: entra y gira la ruleta.";
+      } else if (faltan <= 2) {
+        extraTitle = `¡Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'}! 🎰`;
+        extraBody = "Alimenta a Kapi hoy y acércate a tu giro de la ruleta.";
+      }
+    } else if (currentDayOfWeek === 1) {
       extraTitle = "Nueva semana 🎰";
       extraBody = "Alimenta a Kapi 7/7 días y desbloquea la Ruleta Semanal.";
     } else if (currentDayOfWeek === 5 && daysCount >= 4) {

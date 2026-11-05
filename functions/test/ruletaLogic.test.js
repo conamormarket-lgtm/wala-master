@@ -207,7 +207,7 @@ function run() {
     const c = r.normalizarConfig(null);
     assert.strictEqual(c.activa, true);
     assert.strictEqual(c.tema.preset, "aurora");
-    assert.strictEqual(c.reglas.modoDesbloqueo, "racha7");
+    assert.strictEqual(c.reglas.modoDesbloqueo, "dias7");
     assert.ok(c.tema.colores.length > 0);
   });
 
@@ -229,7 +229,7 @@ function run() {
 
   check("normalizarConfig rechaza un modo de desbloqueo desconocido", () => {
     const c = r.normalizarConfig({ reglas: { modoDesbloqueo: "gratis_total" } });
-    assert.strictEqual(c.reglas.modoDesbloqueo, "racha7");
+    assert.strictEqual(c.reglas.modoDesbloqueo, "dias7");
   });
 
   // ────────────────────────────────────────────────────────────────────────
@@ -293,6 +293,39 @@ function run() {
       r.sumaProbabilidades([{ probability: 40 }, { probabilidad: 60 }]), 100);
     assert.strictEqual(r.sumaProbabilidades([]), 0);
     assert.strictEqual(r.sumaProbabilidades(null), 0);
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // 7 días con Kapi, cuando sea (dias7)
+  // ────────────────────────────────────────────────────────────────────────
+  check("sumarDiaRuleta suma un día y abre el giro al séptimo", () => {
+    let c = null;
+    for (let i = 1; i <= 6; i += 1) {
+      c = r.sumarDiaRuleta(c, `2026-11-0${i}`);
+      assert.deepStrictEqual([c.dias, c.listo], [i, false]);
+    }
+    c = r.sumarDiaRuleta(c, "2026-11-09");
+    assert.deepStrictEqual(c, { dias: 0, listo: true, listoDesde: "2026-11-09" });
+  });
+
+  check("sumarDiaRuleta no pierde los días al cambiar de semana ni junta dos giros", () => {
+    // 6 días, falla uno y vuelve: con el siguiente ya tiene su giro.
+    const seis = { dias: 6, listo: false, listoDesde: null };
+    assert.strictEqual(r.sumarDiaRuleta(seis, "2026-11-10").listo, true);
+    // Con un giro guardado no suma: hay que girarlo primero.
+    const guardado = { dias: 0, listo: true, listoDesde: "2026-11-09" };
+    assert.deepStrictEqual(r.sumarDiaRuleta(guardado, "2026-11-11"), guardado);
+  });
+
+  check("sumarDiaRuleta arranca con lo de antes para quien no tenía cuenta", () => {
+    assert.deepStrictEqual(r.sumarDiaRuleta(undefined, "2026-11-05", { dias: 3, listo: false }), { dias: 4, listo: false, listoDesde: null });
+    assert.strictEqual(r.sumarDiaRuleta(undefined, "2026-11-05", { dias: 2, listo: true }).listo, true);
+  });
+
+  check("normalizarConfig acepta los tres modos", () => {
+    for (const m of ["dias7", "racha7", "siempre"]) {
+      assert.strictEqual(r.normalizarConfig({ reglas: { modoDesbloqueo: m } }).reglas.modoDesbloqueo, m);
+    }
   });
 
   console.log(`ruletaLogic.test.js: ${count} casos OK`);

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { getRuletaEligibility } from '../../services/firebase/ruleta';
+import { getRuletaConfig, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { recordMissionAction } from '../../services/loyalty';
 import { getMiPartidaDeHoy } from '../../services/wordle';
 import { limaTodayStr, msHastaMananaLima, msHastaLunesLima } from '../../utils/fechaLima';
@@ -58,7 +59,9 @@ export default function MinijuegosDeTienda() {
     if (tieneCuenta(user)) recordMissionAction('visit_minijuegos').catch(() => {});
   }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const elegibilidad = getRuletaEligibility(userProfile);
+  // Las reglas de la ruleta (cómo se gana el giro), las mismas que su página.
+  const { data: configRuleta } = useQuery({ queryKey: ['ruleta-config'], queryFn: getRuletaConfig, staleTime: 10 * 60 * 1000 });
+  const elegibilidad = getRuletaEligibility(userProfile, configRuleta?.reglas);
   const forzarRuleta = diseno('ruleta');
   const ruleta = forzarRuleta ? {
     desbloqueada: forzarRuleta === 'desbloqueada' || forzarRuleta === 'pendiente',
@@ -73,6 +76,7 @@ export default function MinijuegosDeTienda() {
     perdida: elegibilidad.hasLost,
     empezada: elegibilidad.haEmpezado,
     pendienteAnterior: elegibilidad.esPendienteAnterior,
+    porDias: Boolean(elegibilidad.porDias),
     dias: disenoNum('dias', 0, 7) ?? elegibilidad.days,
   };
 
