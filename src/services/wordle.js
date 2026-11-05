@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs } from './firebase/observed.js';
+import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs, getCountFromServer } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { getCurrentUser } from './firebase/auth';
 import { DAILY_WORDS, PALABRAS_FIJAS } from '../data/wordleDictionary';
@@ -42,6 +42,27 @@ const esperarSesion = async (msMax = 4000) => {
   return getCurrentUser();
 };
 
+/** La palabra que el juego elige solo ese día (sin la puesta a mano). */
+export function palabraAutomatica(dateStr) {
+  if (PALABRAS_FIJAS[dateStr]) return PALABRAS_FIJAS[dateStr];
+  // Una por día, en el orden de la lista (barajada).
+  // Mismo cálculo que palabraDelDia() en functions/wordleWords.js.
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dia = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  const index = ((dia % FALLBACK_WORDS.length) + FALLBACK_WORDS.length) % FALLBACK_WORDS.length;
+  return FALLBACK_WORDS[index];
+}
+
+/** Partidas guardadas de un día y desde un día (para el admin; la colección es pública). */
+export async function contarPartidas(hoy, desde) {
+  const col = collection(db, WORDLE_COLLECTION);
+  const [h, m] = await Promise.all([
+    getCountFromServer(query(col, where('date', '==', hoy))),
+    getCountFromServer(query(col, where('date', '>=', desde))),
+  ]);
+  return { hoy: h.data().count, desde: m.data().count };
+}
+
 export const getDailyWord = async (dateStr) => {
   try {
     const docRef = doc(db, DAILY_WORDS_COLLECTION, dateStr);
@@ -53,14 +74,8 @@ export const getDailyWord = async (dateStr) => {
     console.error("Error fetching daily word:", error);
   }
 
-  if (PALABRAS_FIJAS[dateStr]) return PALABRAS_FIJAS[dateStr];
-
-  // Sin palabra configurada: una por día, en el orden de la lista (barajada).
-  // Mismo cálculo que palabraDelDia() en functions/wordleWords.js.
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dia = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
-  const index = ((dia % FALLBACK_WORDS.length) + FALLBACK_WORDS.length) % FALLBACK_WORDS.length;
-  return FALLBACK_WORDS[index];
+  // Sin palabra configurada: la que elige el juego solo.
+  return palabraAutomatica(dateStr);
 };
 
 /**

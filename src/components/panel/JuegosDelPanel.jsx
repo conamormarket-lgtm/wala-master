@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllDailyWords, setDailyWord, deleteDailyWord } from '../../services/wordle';
+import { getAllDailyWords, setDailyWord, deleteDailyWord, palabraAutomatica, contarPartidas } from '../../services/wordle';
 import { getBrands } from '../../services/brands';
 import { adminBolitas, listarPatrociniosBolitas, leerMundosBolitas, leerPremiosBolitas } from '../../services/firebase/ballSort';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { PaginaPalabraAdmin, PaginaBolitasAdmin } from '../../componentes/kit/paginas/admin/Juegos';
-import { palabraDiaDesde, patrocinioDesde, premiosBolitasDesde, premiosBolitasAFirestore } from '../../componentes/kit/adaptadoresAdmin';
+import { palabraDiaDesde, palabrasConAutomaticas, patrocinioDesde, premiosBolitasDesde, premiosBolitasAFirestore } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useInvalidar } from './comun';
 
 /*
@@ -36,11 +36,24 @@ export function PalabraDelPanel() {
   const hoy = limaTodayStr();
   // getAllDailyWords no devuelve { data, error }: la lista (o [] si falla), como antes.
   const q = useQuery({ queryKey: PALABRAS, queryFn: getAllDailyWords });
-  const palabras = useMemo(() => (q.data || []).map((x) => palabraDiaDesde(x, hoy)), [q.data, hoy]);
+  const palabras = useMemo(() => palabrasConAutomaticas((q.data || []).map((x) => palabraDiaDesde(x, hoy)), hoy, 14, palabraAutomatica), [q.data, hoy]);
+  // Partidas guardadas hoy y en los últimos 30 días (una por persona y día).
+  const partidas = useQuery({
+    queryKey: ['admin-wordle-partidas', hoy],
+    queryFn: async () => {
+      const [y, m, d] = hoy.split('-').map(Number);
+      const desde = new Date(Date.UTC(y, m - 1, d - 29)).toISOString().slice(0, 10);
+      const r = await contarPartidas(hoy, desde);
+      return { hoy: r.hoy, mes: r.desde };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
   return (
     <PaginaPalabraAdmin
       palabras={palabras}
       hoy={hoy}
+      partidas={partidas.data}
+      cargandoPartidas={partidas.isLoading}
       cargando={q.isLoading}
       error={errorDe(q, 'No se pudieron cargar las palabras.')}
       onReintentar={() => q.refetch()}

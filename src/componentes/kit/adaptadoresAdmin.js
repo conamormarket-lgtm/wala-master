@@ -3035,6 +3035,29 @@ export function erroresDePalabra(d = {}, lista = [], id = null) {
   };
 }
 
+/** 'YYYY-MM-DD' + n días (en UTC, sin horas: no se corre con el horario). */
+const sumarDias = (dia, n) => {
+  const [y, m, d] = String(dia).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+};
+
+/**
+ * Lo que sale en el juego: las palabras puestas a mano (todas) y, para los
+ * próximos `dias` días que no tienen una, la que elige el juego solo
+ * (`palabraAuto(fecha)`, la misma cuenta que el juego). Cada fila lleva
+ * `automatica` y las automáticas un id 'auto-<fecha>' (editarla = ponerla a mano).
+ */
+export function palabrasConAutomaticas(manuales = [], hoy = '', dias = 14, palabraAuto = () => '') {
+  const puestas = new Set(manuales.map((x) => x.fecha));
+  const auto = [];
+  for (let i = 0; i < dias && hoy; i += 1) {
+    const fecha = sumarDias(hoy, i);
+    if (puestas.has(fecha)) continue;
+    auto.push({ id: `auto-${fecha}`, fecha, palabra: String(palabraAuto(fecha) || '').toUpperCase(), estado: i === 0 ? 'hoy' : 'programada', automatica: true });
+  }
+  return [...manuales.map((x) => ({ ...x, automatica: false })), ...auto];
+}
+
 /* Las Bolitas: los cupones los topa el servidor (50 % o S/ 100, 1000 por día). */
 export const CUPON_JUEGO_VACIO = { tipo: 'descuento', descuentoPct: 10, descuentoMonto: 0, topeDescuento: 0, vigenciaDias: 15 };
 

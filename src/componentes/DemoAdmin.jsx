@@ -17,7 +17,7 @@ import {
   PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
   PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
   PaginaPopupsAdmin, PaginaLandingsAdmin, landingDesde, landingAFirestore,
-  PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
+  PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, palabrasConAutomaticas, patrocinioDesde, premiosBolitasDesde,
   PaginaRuletaAdmin, premioRuletaAFirestore, ganadoRuletaDesde,
   PaginaConfiguracionAdmin, adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo,
   PaginaWhatsAppAdmin, PaginaHistorialAdmin, whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
@@ -1566,7 +1566,9 @@ function PanelDePrueba() {
     pagina = (
       <PaginaPalabraAdmin
         {...comunes}
-        palabras={vacio ? [] : palabras.map((x) => palabraDiaDesde(x, diaKey(0)))}
+        palabras={vacio ? [] : palabrasConAutomaticas(palabras.map((x) => palabraDiaDesde(x, diaKey(0))), diaKey(0), 14, (f) => ['CENSO', 'PIZZA', 'VIOLA', 'BRUMA', 'LIBRE', 'DRAMA', 'HUEVO'][Number(f.slice(-2)) % 7])}
+        partidas={vacio ? { hoy: 0, mes: 0 } : { hoy: 3, mes: 41 }}
+        cargandoPartidas={con('cargando')}
         hoy={diaKey(0)}
         onGuardar={async ({ fecha, palabra }, id) => { await espera(600); fallar(); setPalabras((l) => [...l.filter((x) => x.id !== id && x.id !== fecha), { id: fecha, word: palabra }]); }}
         onEliminar={async (id) => { await espera(500); fallar(); setPalabras((l) => l.filter((x) => x.id !== id)); }}

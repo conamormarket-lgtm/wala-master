@@ -756,6 +756,13 @@ test('juegos: la palabra del día y las bolitas', () => {
   assert.equal(m2.erroresDePalabra({ fecha: '2026-11-09', palabra: 'KAPI' }, lista, '2026-11-09').palabra, 'De 5 a 8 letras.');
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'feliz dia' }).palabra, 'Solo letras, sin espacios.');
   assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'Canción' }).palabra, undefined);
+  const filas = m2.palabrasConAutomaticas([{ id: '2026-11-03', fecha: '2026-11-03', palabra: 'REGALO', estado: 'programada' }], '2026-11-02', 3, (f) => `w${f.slice(-2)}`);
+  assert.deepEqual(filas.map((x) => [x.fecha, x.palabra, x.automatica, x.estado]), [
+    ['2026-11-03', 'REGALO', false, 'programada'],
+    ['2026-11-02', 'W02', true, 'hoy'],
+    ['2026-11-04', 'W04', true, 'programada'],
+  ]);
+  assert.equal(m2.palabrasConAutomaticas([], '2026-12-31', 2, () => 'x')[1].fecha, '2027-01-01');
 
   assert.equal(m2.modoDeCupon({ tipo: 'descuento', descuentoMonto: 10 }), 'monto');
   assert.deepEqual(m2.cuponConModo(m2.CUPON_JUEGO_VACIO, 'monto').descuentoMonto, 10);

@@ -34,6 +34,7 @@ const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 /* ── La Palabra del día ────────────────────────────────── */
 
 const ESTADOS_PALABRA = { hoy: { texto: 'Hoy', tono: 'exito' }, programada: { texto: 'Programada', tono: 'violeta' }, paso: { texto: 'Ya pasó', tono: 'neutro' } };
+const ORIGEN_PALABRA = { mano: { texto: 'Puesta a mano', tono: 'violeta' }, auto: { texto: 'Automática', tono: 'neutro' } };
 
 /** La palabra como en el juego: una letra por casilla. */
 const Casillas = ({ palabra = '' }) => (
@@ -43,15 +44,25 @@ const Casillas = ({ palabra = '' }) => (
 );
 
 /**
- * La Palabra del día (/admin/wordle): las palabras puestas a mano para un día;
- * los demás días el juego elige una sola.
- *  - palabras: [palabraDiaDesde] · cargando · error · onReintentar · hoy ('YYYY-MM-DD')
- *  - onGuardar({ fecha, palabra }, id?) (palabraLimpia; si cambia el día, el conector borra el anterior) · onEliminar(id)
+ * La Palabra del día (/admin/wordle): lo que sale en el juego. Las puestas a
+ * mano y, para los próximos 14 días sin una, la que elige el juego solo
+ * (palabrasConAutomaticas). Editar una automática la pone a mano.
+ *  - palabras: [palabrasConAutomaticas] · cargando · error · onReintentar · hoy ('YYYY-MM-DD', Lima)
+ *  - onGuardar({ fecha, palabra }, id?) → promesa (id solo si era puesta a mano) · onEliminar(id)
+ *  - partidas: { hoy, mes } (cuántas se jugaron) · cargandoPartidas
  */
-export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintentar, onGuardar, onEliminar, hoy }) {
+export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintentar, onGuardar, onEliminar, hoy, partidas, cargandoPartidas = false }) {
+  const aMano = palabras.filter((x) => !x.automatica);
+  const idReal = (id) => (String(id || '').startsWith('auto-') ? undefined : id);
   return (
     <PaginaListaAdmin
-      cabeza={{ icono: 'palabra', tono: 'rosa', titulo: 'La Palabra del día', subtitulo: 'Las palabras puestas a mano para un día. Los demás días, el juego elige una sola.' }}
+      cabeza={{ icono: 'palabra', tono: 'rosa', titulo: 'La Palabra del día', subtitulo: 'Qué palabra sale cada día. Si no pones una, el juego elige una sola de su lista; puedes cambiarla por la tuya.' }}
+      antes={(
+        <FilaCifras>
+          <Cifra nombre="Partidas de hoy" valor={entero(partidas?.hoy)} cargando={cargandoPartidas || !partidas} />
+          <Cifra nombre="Partidas en 30 días" valor={entero(partidas?.mes)} tono="cielo" cargando={cargandoPartidas || !partidas} />
+        </FilaCifras>
+      )}
       registros={palabras}
       cargando={cargando}
       error={error}
@@ -61,18 +72,25 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
       nombreDe={(x) => x.palabra}
       buscarEn={(x) => `${x.palabra} ${x.fecha}`}
       placeholder="Buscar una palabra o un día"
-      filtros={[{ id: 'estado', etiqueta: 'Cuándo', todos: 'Todas', opciones: [{ valor: 'proximas', texto: 'Hoy y las que vienen' }, { valor: 'paso', texto: 'Las que ya pasaron' }], filtrar: (x, v) => (v === 'paso' ? x.estado === 'paso' : x.estado !== 'paso') }]}
+      filtros={[
+        { id: 'estado', etiqueta: 'Cuándo', todos: 'Todas', opciones: [{ valor: 'proximas', texto: 'Hoy y las que vienen' }, { valor: 'paso', texto: 'Las que ya pasaron' }], filtrar: (x, v) => (v === 'paso' ? x.estado === 'paso' : x.estado !== 'paso') },
+        { id: 'origen', etiqueta: 'Quién la eligió', todos: 'A mano y automáticas', opciones: [{ valor: 'mano', texto: 'Puestas a mano' }, { valor: 'auto', texto: 'Automáticas' }], filtrar: (x, v) => (v === 'auto' ? x.automatica : !x.automatica) },
+      ]}
       columnas={[
         { id: 'fecha', titulo: 'Día', ordenable: true, tarjeta: 'titulo', celda: (x) => <>{fechaLarga(x.fecha)}<span className={l.sub}>{x.fecha}</span></> },
         { id: 'palabra', titulo: 'Palabra', tarjeta: 'detalle', celda: (x) => <Casillas palabra={x.palabra} /> },
+        { id: 'origen', titulo: 'Quién la eligió', ancho: 150, tarjeta: 'detalle', celda: (x) => <InsigniaEstado estado={x.automatica ? 'auto' : 'mano'} estados={ORIGEN_PALABRA} /> },
         { id: 'estado', titulo: 'Estado', ancho: 130, tarjeta: 'estado', celda: (x) => <InsigniaEstado estado={x.estado} estados={ESTADOS_PALABRA} /> },
       ]}
       ordenes={{ fecha: (a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0) }}
       ordenInicial={{ por: 'fecha', dir: 'asc' }}
-      vacio={{ titulo: 'No hay palabras puestas a mano', texto: 'Mientras tanto, el juego elige una cada día.' }}
+      vacio={{ titulo: 'No hay palabras', texto: 'El juego elige una cada día.' }}
       textos={{ creado: 'Palabra programada', guardado: 'Palabra guardada', eliminado: 'Palabra quitada' }}
-      eliminar={{ texto: (x) => `Se quita «${x.palabra}» del ${fechaLarga(x.fecha)}. Ese día el juego elige una sola.` }}
-      onGuardar={(d, id) => onGuardar?.({ fecha: d.fecha, palabra: palabraLimpia(d.palabra) }, id)}
+      eliminar={{
+        texto: (x) => `Se quita «${x.palabra}» del ${fechaLarga(x.fecha)}. Ese día el juego elige una sola.`,
+        bloqueado: (x) => (x.automatica ? 'Es la que elige el juego: no hay nada que quitar. Para cambiarla, edítala y pon la tuya.' : null),
+      }}
+      onGuardar={(d, id) => onGuardar?.({ fecha: d.fecha, palabra: palabraLimpia(d.palabra) }, idReal(id))}
       onEliminar={onEliminar}
       formulario={{
         nuevo: 'Nueva palabra',
@@ -80,7 +98,7 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
         textoGuardar: { nuevo: 'Programar' },
         vacio: () => ({ fecha: hoy || '', palabra: '' }),
         desde: (x) => ({ fecha: x.fecha, palabra: x.palabra }),
-        validar: (d, { id }) => erroresDePalabra(d, palabras, id),
+        validar: (d, { id }) => erroresDePalabra(d, aMano, idReal(id)),
         campos: ({ datos: d, cambiar, errores, idDe }) => (
           <GrupoCampos titulo="La palabra">
             <CampoFecha id={idDe('fecha')} etiqueta="Día" valor={d.fecha} min={hoy} error={errores.fecha} onCambiar={(v) => cambiar('fecha', v)} />
