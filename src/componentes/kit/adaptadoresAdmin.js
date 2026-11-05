@@ -49,6 +49,8 @@ export const MENU_ADMIN = [
     id: 'catalogo', titulo: 'Catálogo', icono: 'catalogo', tono: 'degradado',
     items: [
       { to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS_O_STOCK },
+      // Destacados ordena la fila «Destacados» del inicio y las marcas (Productos solo marca cuáles).
+      { to: '/admin/destacados', texto: 'Destacados', icono: 'destacados', permiso: DISENO },
       { to: '/admin/categorias', texto: 'Categorías', icono: 'categorias', permiso: PRODUCTOS },
       { to: '/admin/colecciones', texto: 'Colecciones', icono: 'colecciones', permiso: PRODUCTOS },
       { to: '/admin/marcas', texto: 'Marcas', icono: 'marcas', permiso: PRODUCTOS },
@@ -93,7 +95,6 @@ export const MENU_ADMIN = [
   {
     id: 'diseno', titulo: 'Diseño y juegos', icono: 'diseno', tono: 'rosa',
     items: [
-      { to: '/admin/destacados', texto: 'Destacados', icono: 'destacados', permiso: DISENO },
       { to: '/admin/mascota', texto: 'Kapi', icono: 'kapi', permiso: DISENO },
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: DISENO },
       { to: '/admin/ruleta', texto: 'Ruleta semanal', icono: 'ruleta', permiso: DISENO },
