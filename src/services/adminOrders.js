@@ -185,7 +185,8 @@ function productosDe(pedido) {
       l?.subtotal != null ? toNum(l.subtotal) : toNum(l?.precio) * cantidad;
     return {
       productoId: l?.productoId ?? null,
-      nombre: l?.producto || 'Producto',
+      // Las copias de Walá guardan `nombre`; el ERP, `producto` (antes salía «Producto»).
+      nombre: l?.producto || l?.nombre || 'Producto',
       brandId: l?.brandId ?? null,
       cantidad,
       talla: l?.talla ?? null,
@@ -278,6 +279,8 @@ export function normalizarPedidoRecepcion(rawPedido) {
     costoEnvio,
     descuentoMonedas: toNum(pedido.descuentoMonedas),
     montoPendiente,
+    // Lo ya cobrado (un adelanto por Culqi/PayPal o el que anota el ERP).
+    montoPagado: toNum(pedido.montoPagado ?? pedido.montoAdelanto),
 
     // Estado unificado (producción + pago) derivado.
     estado: {

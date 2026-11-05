@@ -91,6 +91,13 @@ export function TarjetaEnvio({ pedido: p, detalle }) {
       <div className={s.montos}>
         <span><small>Total</small><strong>{soles(p.montoTotal)}</strong></span>
         <span><small>Envío</small>{soles(p.costoEnvio)}</span>
+        {/* Pagó una parte: cuánto ya entró y cuánto falta cobrar. */}
+        {p.montoPendiente > 0 && (
+          <>
+            <span><small>Pagado</small>{soles(p.montoPagado || Math.max(0, (p.montoTotal || 0) - p.montoPendiente))}</span>
+            <span className={s.falta}><small>Falta</small><strong>{soles(p.montoPendiente)}</strong></span>
+          </>
+        )}
         <span className={s.unidades}>{p.cantidadTotal || 0} und.</span>
       </div>
 

@@ -3049,7 +3049,10 @@ async function quitarCopiasEliminadasEnErp(encontrados) {
       [p.origenPedidoWebId, p.portalPseudoOrderId].forEach((v) => { if (v) conocidos.add(String(v)); });
     }
   });
-  const dudosas = encontrados.filter((p) => p._coleccion === "wala_pedidos" && !p.pagado &&
+  // Una copia con un pago real (montoPagado: un adelanto por Culqi/PayPal) no se
+  // da por borrada aunque falte en el ERP: el cliente pagó y debe verla (con su
+  // saldo si lo tiene).
+  const dudosas = encontrados.filter((p) => p._coleccion === "wala_pedidos" && !p.pagado && !(Number(p.montoPagado) > 0) &&
     (p.estadoWala || "pendiente_pago") === "pendiente_pago" && clave(p) && !conocidos.has(clave(p)));
   const eliminadas = new Set();
   await Promise.all(dudosas.map(async (p) => {

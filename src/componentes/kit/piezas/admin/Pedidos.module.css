@@ -211,6 +211,14 @@
   font-weight: 900;
 }
 
+.falta strong {
+  color: #b45309;
+}
+
+:global([data-theme='dark']) .falta strong {
+  color: #fbbf24;
+}
+
 .unidades {
   margin-left: auto;
   color: var(--color-text-muted);
