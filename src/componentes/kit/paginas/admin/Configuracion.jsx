@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Lock, LockOpen, RefreshCw, Languages, ImageDown } from 'lucide-react';
+import { Lock, LockOpen, RefreshCw, ImageDown } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
 import { Campo, Casilla } from '../../Formulario';
@@ -13,7 +13,7 @@ import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { PaginaListaAdmin } from './Lista';
 import {
   PERMISOS_ADMIN, erroresDeAdmin, textoPermisos, menuAdminPara, normalizarBusqueda,
-  textoConteoImagenes, textoResultadoImagenes, traduccionesPorIdioma,
+  textoConteoImagenes, textoResultadoImagenes,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Configuracion.module.css';
@@ -22,9 +22,9 @@ import { EsqueletoTexto } from '../../Esqueletos';
 /*
  * D8a · Configuración (/admin/configuracion, solo Super Admin): quién del
  * equipo entra al panel y con qué permisos (y qué ve con ellos), qué
- * páginas no se pueden guardar desde el editor, y dos tareas de
- * mantenimiento: pasar las imágenes viejas a WebP y publicar las
- * traducciones que se juntaron navegando.
+ * páginas no se pueden guardar desde el editor, y pasar las imágenes viejas
+ * a WebP. (Publicar las traducciones se quitó el 2026-11-05: nunca se usó;
+ * cada visitante traduce al navegar.)
  */
 
 const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
@@ -195,50 +195,6 @@ function Imagenes({ onRevisar, onConvertir }) {
   );
 }
 
-/** Publicar las traducciones que el traductor fue juntando en este navegador. */
-function Idiomas({ onRevisar, onPublicar }) {
-  const toast = useToast();
-  const [pendientes, setPendientes] = useState(null);
-  const [publicando, setPublicando] = useState(false);
-  const revisar = async () => {
-    try { setPendientes(traduccionesPorIdioma(await onRevisar?.())); } catch { setPendientes([]); }
-  };
-  useEffect(() => { revisar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const total = (pendientes || []).reduce((t, x) => t + x.cuantas, 0);
-  const publicar = async () => {
-    setPublicando(true);
-    try {
-      const r = await onPublicar?.();
-      if (r?.error) throw new Error(r.error);
-      toast({ tipo: 'exito', titulo: r?.guardadas ? `${entero(r.guardadas)} traducci${r.guardadas === 1 ? 'ón publicada' : 'ones publicadas'}` : 'No había nada nuevo', texto: 'Los visitantes las reciben ya hechas.' });
-      await revisar();
-    } catch (err) {
-      toast({ tipo: 'error', titulo: 'No se pudieron publicar', texto: errorDe(err) });
-    } finally {
-      setPublicando(false);
-    }
-  };
-  return (
-    <div className={s.tarea}>
-      <GrupoCampos titulo="Publicar las traducciones" ayuda="Los nombres de producto y los textos del editor se traducen al vuelo cuando alguien navega en inglés o portugués. Publicadas, el resto de visitantes las recibe ya hechas.">
-        {pendientes === null && <EsqueletoTexto lineas={1} />}
-        {pendientes && (total
-          ? (
-            <FilaCifras etiqueta="Sin publicar">
-              {pendientes.map((x) => <Cifra key={x.idioma} nombre={`${x.nombre}, sin publicar`} valor={entero(x.cuantas)} />)}
-            </FilaCifras>
-          )
-          : <p className={s.nota}>No hay traducciones nuevas sin publicar.</p>)}
-        <p className={s.nota}>Se juntan en este navegador: para llenar la lista, cambia el idioma y recorre la tienda; después vuelve aquí. Solo un administrador puede publicarlas.</p>
-        <div className={s.botones}>
-          <Boton variante="secundario" icono={<RefreshCw aria-hidden="true" />} disabled={publicando} onClick={revisar}>Volver a revisar</Boton>
-          <Boton icono={<Languages aria-hidden="true" />} disabled={!total} cargando={publicando} onClick={publicar}>Publicar traducciones</Boton>
-        </div>
-      </GrupoCampos>
-    </div>
-  );
-}
-
 /**
  * Configuración (/admin/configuracion).
  *  - esSuperadmin (si no, solo un aviso) · yo (el correo de quien mira) · pestana + onPestana
@@ -247,13 +203,12 @@ function Idiomas({ onRevisar, onPublicar }) {
  *  - paginas: [paginasBloqueables] · cargandoPaginas · errorPaginas · onReintentarPaginas · onBloquear(id, bloquear)
  *  - onRevisarImagenes(ambito: 'diseno' | 'productos') → { imagenes, documentos, apariciones }
  *    onConvertirImagenes(ambito, { alAvanzar({ hechas, total, actual }) }) → { convertidas, documentos, saltadas, errores }
- *  - onRevisarTraducciones() → { en: n, pt: n } · onPublicarTraducciones() → { guardadas, error }
  */
 export function PaginaConfiguracionAdmin({
   esSuperadmin = true, yo = '', pestana: pestanaFuera, onPestana,
   admins = [], cargando = false, error, onReintentar, onGuardarAdmin, onEliminarAdmin,
   paginas = [], cargandoPaginas = false, errorPaginas, onReintentarPaginas, onBloquear,
-  onRevisarImagenes, onConvertirImagenes, onRevisarTraducciones, onPublicarTraducciones,
+  onRevisarImagenes, onConvertirImagenes,
 }) {
   const [pestanaDentro, setPestanaDentro] = useState('equipo');
   const pestana = pestanaFuera || pestanaDentro;
@@ -272,13 +227,22 @@ export function PaginaConfiguracionAdmin({
   }
 
   if (pestana === 'equipo') {
+    // Sin permisos, o un registro que no salió del panel: se avisa arriba.
+    const revisar = admins.filter((r) => r.raro || r.sinPermisos);
     return (
       <PaginaListaAdmin
         cabeza={cabeza}
         antes={(
           <>
             {secciones}
-            <p className={s.nota}>Cada persona entra con su cuenta de Google; los permisos deciden qué ve en el menú.</p>
+            <p className={s.nota}>Cada persona entra con su cuenta de Google; cada permiso abre un grupo del menú, con lo que tiene dentro.</p>
+            {revisar.length > 0 && (
+              <Aviso tipo="aviso" titulo={revisar.length === 1 ? `Revisa a ${revisar[0].nombre}` : `Revisa a ${revisar.length} personas`}>
+                {revisar.some((r) => r.raro)
+                  ? 'Hay un registro en el equipo que no se creó desde aquí (sin nombre ni permisos). Si no la conoces, quítala: estar en el equipo ya le da acceso de admin a la base de datos.'
+                  : 'No tiene permisos: no ve nada del panel. Dale los que necesite o quítala del equipo.'}
+              </Aviso>
+            )}
           </>
         )}
         registros={admins}
@@ -291,7 +255,7 @@ export function PaginaConfiguracionAdmin({
         placeholder="Buscar por nombre o correo"
         filtros={[{ id: 'permiso', etiqueta: 'Permiso', todos: 'Todos', opciones: PERMISOS_ADMIN, filtrar: (r, v) => r.permisos.includes(v) }]}
         columnas={[
-          { id: 'nombre', titulo: 'Persona', tarjeta: 'titulo', celda: (r) => <span className={s.persona}><span>{r.nombre}<span className={l.sub}>{r.correo}</span></span>{esYo(r) && <Etiqueta tono="violeta">Tú</Etiqueta>}</span> },
+          { id: 'nombre', titulo: 'Persona', tarjeta: 'titulo', celda: (r) => <span className={s.persona}><span>{r.nombre}<span className={l.sub}>{r.correo}</span></span>{esYo(r) && <Etiqueta tono="violeta">Tú</Etiqueta>}{(r.raro || r.sinPermisos) && <Etiqueta tono={r.raro ? 'peligro' : 'aviso'}>{r.raro ? 'Revisar' : 'Sin permisos'}</Etiqueta>}</span> },
           { id: 'permisos', titulo: 'Permisos', tarjeta: 'detalle', celda: (r) => textoPermisos(r.permisos) },
           { id: 've', titulo: 'Ve', ancho: 140, alinear: 'fin', tarjeta: 'detalle', celda: (r) => (r.permisos.includes('superadmin')
             ? 'Todo'
@@ -362,12 +326,7 @@ export function PaginaConfiguracionAdmin({
       <CabezaAdmin {...cabeza} />
       {secciones}
       {pestana === 'bloqueos' && <Bloqueos paginas={paginas} cargando={cargandoPaginas} error={errorPaginas} onReintentar={onReintentarPaginas} onBloquear={onBloquear} />}
-      {pestana === 'optimizar' && (
-        <>
-          <Imagenes onRevisar={onRevisarImagenes} onConvertir={onConvertirImagenes} />
-          <Idiomas onRevisar={onRevisarTraducciones} onPublicar={onPublicarTraducciones} />
-        </>
-      )}
+      {pestana === 'optimizar' && <Imagenes onRevisar={onRevisarImagenes} onConvertir={onConvertirImagenes} />}
     </div>
   );
 }

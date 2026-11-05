@@ -41,7 +41,9 @@ test('un grupo sin opciones no sale', () => {
 
 test('la barra inferior rellena con lo que el admin puede abrir', () => {
   assert.deepEqual(accesosAdminPara(['superadmin']).map((a) => a.id), ['inicio', 'pedidos', 'productos', 'resultados']);
-  assert.deepEqual(accesosAdminPara(['manage_clients']).map((a) => a.id), ['inicio', 'resultados', 'reclamos', 'referidos']);
+  // Los permisos de antes siguen valiendo (manage_clients = Clientes + Resultados; los reclamos van en Pedidos).
+  assert.deepEqual(accesosAdminPara(['manage_clients']).map((a) => a.id), ['inicio', 'resultados', 'referidos']);
+  assert.deepEqual(accesosAdminPara(['pedidos']).map((a) => a.id), ['inicio', 'pedidos', 'reclamos']);
   assert.deepEqual(accesosAdminPara(['manage_inventory']).map((a) => a.id), ['inicio', 'productos']);
 });
 
@@ -826,9 +828,16 @@ test('la ruleta: días, premios, por qué no sale hoy y entregas', () => {
 
 test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () => {
   const a = m2.adminDesdeFirestore({ id: 'ana@gmail.com', email: 'Ana@Gmail.com', permissions: ['manage_products'] });
-  assert.deepEqual(a, { id: 'ana@gmail.com', correo: 'ana@gmail.com', nombre: 'ana', permisos: ['manage_products'] });
-  assert.deepEqual(m2.adminAFirestore({ correo: ' Luis@X.pe ', nombre: '', permisos: ['manage_inventory', 'superadmin'] }), { correo: 'luis@x.pe', datos: { name: 'luis', permissions: ['superadmin'] } });
-  assert.deepEqual(m2.adminAFirestore({ correo: 'a@b.c', nombre: 'A', permisos: ['manage_clients', 'manage_design'] }).datos.permissions, ['manage_design', 'manage_clients']);
+  // Un permiso de antes se lee como el de ahora (al guardar, queda el nuevo).
+  assert.deepEqual(a, { id: 'ana@gmail.com', correo: 'ana@gmail.com', nombre: 'ana', permisos: ['catalogo'], sinPermisos: false, raro: false });
+  assert.deepEqual(m2.adminAFirestore({ correo: ' Luis@X.pe ', nombre: '', permisos: ['inventario', 'superadmin'] }), { correo: 'luis@x.pe', datos: { name: 'luis', permissions: ['superadmin'] } });
+  assert.deepEqual(m2.adminAFirestore({ correo: 'a@b.c', nombre: 'A', permisos: ['clientes', 'pedidos'] }).datos.permissions, ['pedidos', 'clientes']);
+  // Un registro que no salió del panel (como el de hack_test_2026: solo { monedas }).
+  assert.deepEqual([m2.adminDesdeFirestore({ id: 'x@gmail.com', monedas: 999 }).raro, m2.adminDesdeFirestore({ id: 'x@gmail.com', monedas: 999 }).sinPermisos], [true, true]);
+  // Cada grupo del menú es un permiso, con sus secciones.
+  assert.deepEqual(m2.PERMISOS_ADMIN.map((p) => p.valor), ['superadmin', 'pedidos', 'catalogo', 'inventario', 'resultados', 'clientes', 'campanas', 'diseno', 'ajustes']);
+  assert.ok(m2.PERMISOS_ADMIN.find((p) => p.valor === 'catalogo').detalle.includes('Destacados'));
+  assert.deepEqual(m2.permisosEfectivos(['manage_design']).sort(), ['ajustes', 'campanas', 'diseno', 'manage_design', 'pedidos', 'resultados']);
   const reg = [a];
   assert.equal(m2.erroresDeAdmin({ correo: 'ana@gmail.com', permisos: ['x'] }, { registros: reg }).correo, 'Ya está en el equipo: edítalo en la lista.');
   assert.equal(m2.erroresDeAdmin({ correo: 'ana@gmail.com', permisos: ['x'] }, { id: 'ana@gmail.com', registros: reg }).correo, undefined);

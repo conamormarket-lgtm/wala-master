@@ -13,6 +13,7 @@ import { CLAVE_ENLACES_ROTOS } from '../../pages/admin/dashboard/EnlacesRotos';
 import { cosasPorMejorar } from '../../pages/admin/resultados/cosasPorMejorar.mjs';
 import { PESTANAS, DESTINOS, BASE_RESULTADOS } from '../../pages/admin/resultados/rutas';
 import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
+import { puedeVer } from '../../componentes/kit/adaptadoresAdmin';
 import {
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados,
 } from '../../componentes/kit/paginas/admin/Resultados';
@@ -106,7 +107,7 @@ export default function ResultadosDelPanel() {
   const { adminPermissions } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const conClientes = adminPermissions?.includes('superadmin') || adminPermissions?.includes('manage_clients');
+  const conClientes = puedeVer({ permiso: ['clientes'] }, adminPermissions || []);
   const pestanas = PESTANAS.filter((p) => !p.soloClientes || conClientes);
   const filtros = useDashboardFilters(30);
   const analitica = useDashboardAnalytics(filtros);

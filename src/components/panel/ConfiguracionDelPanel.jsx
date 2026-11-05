@@ -5,7 +5,6 @@ import { getAdminRoles, setAdminRole, deleteAdminRole } from '../../services/adm
 import { getLockedPages, saveLockedPages } from '../../services/lockedPages';
 import { getLandingPages } from '../../pages/Tienda/services/landingPages';
 import { reconvertirImagenesAWebp, contarImagenesPorConvertir, AMBITO_DISENO, AMBITO_PRODUCTOS } from '../../services/imagenesWebp';
-import { guardarTraduccionesEnNube, traduccionesPendientes } from '../../services/translate';
 import { PaginaConfiguracionAdmin } from '../../componentes/kit/paginas/admin/Configuracion';
 import { adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useInvalidar } from './comun';
@@ -87,9 +86,6 @@ export default function ConfiguracionDelPanel() {
       }}
       onRevisarImagenes={(ambito) => contarImagenesPorConvertir({ colecciones: coleccionesDe(ambito) })}
       onConvertirImagenes={(ambito, { alAvanzar } = {}) => reconvertirImagenesAWebp({ colecciones: coleccionesDe(ambito), onProgreso: alAvanzar })}
-      onRevisarTraducciones={traduccionesPendientes}
-      // → { guardadas, error }: la página lanza el error si viene.
-      onPublicarTraducciones={guardarTraduccionesEnNube}
     />
   );
 }

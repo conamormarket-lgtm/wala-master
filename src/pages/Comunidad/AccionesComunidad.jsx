@@ -8,7 +8,8 @@ import { publicarEnComunidad, retirarDeComunidad } from '../../services/comunida
 import { Confirmar } from '../../componentes/kit/Feedback';
 import styles from './Comunidad.module.css';
 
-const PERMISOS = ['superadmin', 'manage_design'];
+// Publicar en la comunidad: Diseño y juegos (o el permiso de diseño de antes).
+const PERMISOS = ['superadmin', 'diseno', 'manage_design'];
 
 /** ¿Puede esta cuenta publicar esta creación? (El servidor lo vuelve a comprobar.) */
 export const usePuedePublicar = (design) => {

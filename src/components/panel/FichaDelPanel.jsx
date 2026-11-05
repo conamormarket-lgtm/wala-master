@@ -223,7 +223,7 @@ export default function FichaDelPanel({ modo = 'producto' }) {
 
   // La ficha es de quien edita productos: quien solo tiene inventario cambia
   // el stock en la lista (/admin/productos ya le abre por eso).
-  if (!puedeVer({ permiso: ['manage_products'] }, adminPermissions || [])) return <SinPermiso permiso="Catálogo" />;
+  if (!puedeVer({ permiso: ['catalogo'] }, adminPermissions || [])) return <SinPermiso permiso="Catálogo" />;
 
   return (
     <PaginaFichaProducto

@@ -789,7 +789,6 @@ function PanelDePrueba() {
   const [admins, setAdmins] = useState(ADMINS_DEMO);
   const [bloqueadas, setBloqueadas] = useState(['footer']);
   const imagenesPendientes = useRef(IMAGENES_DEMO); // un ref: revisar justo después de convertir lee lo nuevo
-  const traduccionesDemo = useRef({ en: 14, pt: 3 });
   const [configPestana, setConfigPestana] = useState('equipo');
   const [whatsappDemo, setWhatsappDemo] = useState(WHATSAPP_DEMO);
   const [copias, setCopias] = useState(COPIAS_DEMO);
@@ -1521,14 +1520,6 @@ function PanelDePrueba() {
           return ambito === 'productos'
             ? { convertidas: c.imagenes - 2, documentos: c.documentos, saltadas: 1, errores: ['producto-12.jpg: no se pudo descargar (es una prueba).'] }
             : { convertidas: c.imagenes, documentos: c.documentos, saltadas: 0, errores: [] };
-        }}
-        onRevisarTraducciones={async () => { await espera(300); return traduccionesDemo.current; }}
-        onPublicarTraducciones={async () => {
-          await espera(800);
-          fallar();
-          const guardadas = Object.values(traduccionesDemo.current).reduce((t, n) => t + n, 0);
-          traduccionesDemo.current = {};
-          return { guardadas };
         }}
       />
     );

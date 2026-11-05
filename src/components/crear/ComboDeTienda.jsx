@@ -27,7 +27,8 @@ import { capasEnOtraPrenda } from '../../pages/Crear/zonasEquivalentes';
  * Lo de antes: pages/Crear/ComboCrearViejo.jsx (interruptor crearViejo).
  */
 
-const PERMISOS = ['superadmin', 'manage_design'];
+// Publicar en la comunidad: Diseño y juegos (o el permiso de diseño de antes).
+const PERMISOS = ['superadmin', 'diseno', 'manage_design'];
 const HECHO = { publicar: 'Publicada en la comunidad.', actualizar: 'Publicación actualizada.', retirar: 'Retirada de la comunidad.' };
 
 /** El color de una creación para el kit: su nombre y el fondo de la muestra. */

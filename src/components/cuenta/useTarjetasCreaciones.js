@@ -15,7 +15,8 @@ import { useLlevarEnCombo } from '../../pages/Crear/LlevarEnCombo';
 import { consultaProducto } from '../regalar/regaloDeLista';
 import { creacionDesdeDiseno } from '../../componentes/kit/adaptadores';
 
-const PERMISOS = ['superadmin', 'manage_design'];
+// Publicar en la comunidad: Diseño y juegos (o el permiso de diseño de antes).
+const PERMISOS = ['superadmin', 'diseno', 'manage_design'];
 
 /*
  * Las tarjetas de las creaciones del cliente (TarjetaCreacion del kit) y lo

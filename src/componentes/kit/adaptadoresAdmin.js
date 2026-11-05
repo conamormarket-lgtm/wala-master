@@ -8,29 +8,38 @@
 /* ── Menú y permisos ───────────────────────────────────── */
 
 /*
- * Permisos (los de AdminConfiguracion): 'superadmin' lo abre todo.
+ * Permisos (Configuración › Equipo): uno por grupo del menú (2026-11-05), para
+ * que lo que se marca sea lo que esa persona ve. 'superadmin' lo abre todo.
  * Cada opción dice qué permiso pide (`permiso`: uno de la lista basta;
- * `todos`: hacen falta todos). Sin `permiso`, la ve cualquier admin.
- * Las reglas son las mismas de AdminLayout:
- *  - diseño (manage_design): recepción, pagos, sorteos, enlaces, avisos,
- *    datos para recomendar, editar la tienda, destacados, WhatsApp,
- *    backups, Kapi y los juegos
- *  - productos (manage_products): el catálogo y las recompensas; landing
- *    pages y temas piden además manage_landing_pages
- *  - inventario (manage_inventory): Productos, solo para cambiar el stock
- *    (Inventario se unió a Productos el 2026-11-04)
- *  - clientes (manage_clients): reclamos,
- *    referidos, encuesta, popups, fechas, retos, misiones
- *  - Resultados: diseño o clientes; Clientes y Opiniones, solo clientes
- *  - Configuración: solo superadmin
- * Diferencia a propósito: "Inicio" lo ve cualquier admin (antes el enlace
- * estaba en el grupo de diseño, aunque /admin ya abría para todos).
+ * `todos`: hacen falta todos; `[]`: solo superadmin). Sin `permiso`, la ve
+ * cualquier admin. Productos lo abre también Inventario (solo el stock).
+ * Los permisos de antes (manage_*) siguen valiendo: permisosEfectivos los
+ * traduce a los grupos; al editar a esa persona se guardan los nuevos.
+ * Resultados › Clientes y Opiniones (datos personales) piden además Clientes.
  */
-const DISENO = ['manage_design'];
-const PRODUCTOS = ['manage_products'];
-// Productos también lleva el stock (Inventario se unió el 2026-11-04): quien solo tiene inventario lo cambia ahí.
-const PRODUCTOS_O_STOCK = ['manage_products', 'manage_inventory'];
-const CLIENTES = ['manage_clients'];
+const PEDIDOS = ['pedidos'];
+const CATALOGO = ['catalogo'];
+const CATALOGO_O_STOCK = ['catalogo', 'inventario'];
+const RESULTADOS = ['resultados'];
+const CLIENTES = ['clientes'];
+const CAMPANAS = ['campanas'];
+const DISENO = ['diseno'];
+const AJUSTES = ['ajustes'];
+
+/** Lo que daba cada permiso de antes, en los grupos de ahora. */
+export const PERMISOS_DE_ANTES = {
+  manage_design: ['pedidos', 'campanas', 'diseno', 'ajustes', 'resultados'],
+  manage_products: ['catalogo'],
+  manage_inventory: ['inventario'],
+  manage_clients: ['clientes', 'resultados'],
+  manage_landing_pages: ['campanas'],
+};
+
+/** Los permisos de una persona con los de antes ya traducidos (sin repetir). */
+export function permisosEfectivos(permisos = []) {
+  const lista = Array.isArray(permisos) ? permisos : [];
+  return [...new Set(lista.flatMap((p) => [p, ...(PERMISOS_DE_ANTES[p] || [])]))];
+}
 
 export const MENU_ADMIN = [
   {
@@ -40,23 +49,23 @@ export const MENU_ADMIN = [
   {
     id: 'pedidos', titulo: 'Pedidos y pagos', icono: 'pedidos', tono: 'menta',
     items: [
-      { to: '/admin/recepcion-pedidos', texto: 'Recepción de pedidos', icono: 'pedidos', permiso: DISENO },
-      { to: '/admin/gestion-pagos', texto: 'Gestión de pagos', icono: 'pagos', permiso: DISENO },
-      { to: '/admin/libro-reclamaciones', texto: 'Libro de reclamaciones', icono: 'reclamos', permiso: CLIENTES },
+      { to: '/admin/recepcion-pedidos', texto: 'Recepción de pedidos', icono: 'pedidos', permiso: PEDIDOS },
+      { to: '/admin/gestion-pagos', texto: 'Gestión de pagos', icono: 'pagos', permiso: PEDIDOS },
+      { to: '/admin/libro-reclamaciones', texto: 'Libro de reclamaciones', icono: 'reclamos', permiso: PEDIDOS },
     ],
   },
   {
     id: 'catalogo', titulo: 'Catálogo', icono: 'catalogo', tono: 'degradado',
     items: [
-      { to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS_O_STOCK },
+      { to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: CATALOGO_O_STOCK },
       // Destacados ordena la fila «Destacados» del inicio y las marcas (Productos solo marca cuáles).
-      { to: '/admin/destacados', texto: 'Destacados', icono: 'destacados', permiso: DISENO },
-      { to: '/admin/categorias', texto: 'Categorías', icono: 'categorias', permiso: PRODUCTOS },
-      { to: '/admin/colecciones', texto: 'Colecciones', icono: 'colecciones', permiso: PRODUCTOS },
-      { to: '/admin/marcas', texto: 'Marcas', icono: 'marcas', permiso: PRODUCTOS },
-      { to: '/admin/atributos-catalogo', texto: 'Atributos del catálogo', icono: 'atributos', permiso: PRODUCTOS },
-      { to: '/admin/envios', texto: 'Zonas de envío', icono: 'envios', permiso: PRODUCTOS },
-      { to: '/admin/publico-productos', texto: 'Datos para recomendar', icono: 'recomendar', permiso: DISENO },
+      { to: '/admin/destacados', texto: 'Destacados', icono: 'destacados', permiso: CATALOGO },
+      { to: '/admin/categorias', texto: 'Categorías', icono: 'categorias', permiso: CATALOGO },
+      { to: '/admin/colecciones', texto: 'Colecciones', icono: 'colecciones', permiso: CATALOGO },
+      { to: '/admin/marcas', texto: 'Marcas', icono: 'marcas', permiso: CATALOGO },
+      { to: '/admin/atributos-catalogo', texto: 'Atributos del catálogo', icono: 'atributos', permiso: CATALOGO },
+      { to: '/admin/envios', texto: 'Zonas de envío', icono: 'envios', permiso: CATALOGO },
+      { to: '/admin/publico-productos', texto: 'Datos para recomendar', icono: 'recomendar', permiso: CATALOGO },
     ],
   },
   {
@@ -65,7 +74,7 @@ export const MENU_ADMIN = [
     id: 'resultados', titulo: 'Resultados', icono: 'resultados', tono: 'oro', suelto: true,
     items: [
       {
-        to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: [...DISENO, ...CLIENTES],
+        to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: RESULTADOS,
         claves: 'resumen métricas ventas productos más vistos visitantes clientes carritos abandonados cumpleaños opiniones encuestas detalle técnico mapa de calor',
       },
     ],
@@ -74,10 +83,10 @@ export const MENU_ADMIN = [
     id: 'clientes', titulo: 'Clientes', icono: 'clientes', tono: 'rosa',
     items: [
       { to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: CLIENTES },
-      { to: '/admin/recompensas', texto: 'Recompensas', icono: 'recompensas', permiso: PRODUCTOS },
+      { to: '/admin/recompensas', texto: 'Recompensas', icono: 'recompensas', permiso: CLIENTES },
       { to: '/admin/misiones', texto: 'Misiones diarias', icono: 'misiones', permiso: CLIENTES },
       { to: '/admin/retos', texto: 'Retos semanales', icono: 'retos', permiso: CLIENTES },
-      { to: '/admin/notificaciones', texto: 'Notificaciones y ofertas', icono: 'notificaciones', permiso: DISENO },
+      { to: '/admin/notificaciones', texto: 'Notificaciones y ofertas', icono: 'notificaciones', permiso: CLIENTES },
       { to: '/admin/fechas-importantes', texto: 'Fechas importantes', icono: 'fechas', permiso: CLIENTES },
       { to: '/admin/encuestas', texto: 'Encuesta de suscripción', icono: 'encuesta', permiso: CLIENTES },
     ],
@@ -85,11 +94,11 @@ export const MENU_ADMIN = [
   {
     id: 'campanas', titulo: 'Campañas', icono: 'campanas', tono: 'oro',
     items: [
-      { to: '/admin/sorteos', texto: 'Sorteos y rifas', icono: 'sorteos', permiso: DISENO },
-      { to: '/admin/sorteos-suscripcion', texto: 'Sorteo por suscripción', icono: 'suscripcion', permiso: DISENO },
-      { to: '/admin/enlaces', texto: 'Enlaces útiles', icono: 'enlaces', permiso: DISENO },
-      { to: '/admin/popups', texto: 'Popups y anuncios', icono: 'popups', permiso: CLIENTES },
-      { to: '/admin/landing-pages', texto: 'Landing pages', icono: 'landings', permiso: [...PRODUCTOS, 'manage_landing_pages'], todos: true },
+      { to: '/admin/sorteos', texto: 'Sorteos y rifas', icono: 'sorteos', permiso: CAMPANAS },
+      { to: '/admin/sorteos-suscripcion', texto: 'Sorteo por suscripción', icono: 'suscripcion', permiso: CAMPANAS },
+      { to: '/admin/enlaces', texto: 'Enlaces útiles', icono: 'enlaces', permiso: CAMPANAS },
+      { to: '/admin/popups', texto: 'Popups y anuncios', icono: 'popups', permiso: CAMPANAS },
+      { to: '/admin/landing-pages', texto: 'Landing pages', icono: 'landings', permiso: CAMPANAS },
     ],
   },
   {
@@ -104,15 +113,15 @@ export const MENU_ADMIN = [
     id: 'ajustes', titulo: 'Ajustes', icono: 'ajustes', tono: 'plata',
     items: [
       { to: '/admin/configuracion', texto: 'Configuración', icono: 'admins', permiso: [] },
-      { to: '/admin/whatsapp', texto: 'WhatsApp', icono: 'whatsapp', permiso: DISENO },
-      { to: '/admin/backups', texto: 'Historial y backups', icono: 'historial', permiso: DISENO },
+      { to: '/admin/whatsapp', texto: 'WhatsApp', icono: 'whatsapp', permiso: AJUSTES },
+      { to: '/admin/backups', texto: 'Historial y backups', icono: 'historial', permiso: AJUSTES },
     ],
   },
 ];
 
 /** ¿Estos permisos abren esta opción? `permiso: []` = solo superadmin. */
 export function puedeVer(item, permisos = []) {
-  const lista = Array.isArray(permisos) ? permisos : [];
+  const lista = permisosEfectivos(permisos);
   if (lista.includes('superadmin')) return true;
   if (!item.permiso) return true;
   if (!item.permiso.length) return false;
@@ -133,10 +142,10 @@ export function menuAdminPara(permisos, menu = MENU_ADMIN) {
  */
 const ACCESOS = [
   { id: 'inicio', to: '/admin', texto: 'Inicio', icono: 'inicio', exacto: true },
-  { id: 'pedidos', to: '/admin/recepcion-pedidos', texto: 'Pedidos', icono: 'pedidos', permiso: DISENO },
-  { id: 'productos', to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: PRODUCTOS_O_STOCK },
-  { id: 'resultados', to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: [...DISENO, ...CLIENTES] },
-  { id: 'reclamos', to: '/admin/libro-reclamaciones', texto: 'Reclamos', icono: 'reclamos', permiso: CLIENTES },
+  { id: 'pedidos', to: '/admin/recepcion-pedidos', texto: 'Pedidos', icono: 'pedidos', permiso: PEDIDOS },
+  { id: 'productos', to: '/admin/productos', texto: 'Productos', icono: 'productos', permiso: CATALOGO_O_STOCK },
+  { id: 'resultados', to: '/admin/resultados', texto: 'Resultados', icono: 'resultados', permiso: RESULTADOS },
+  { id: 'reclamos', to: '/admin/libro-reclamaciones', texto: 'Reclamos', icono: 'reclamos', permiso: PEDIDOS },
   { id: 'referidos', to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: CLIENTES },
 ];
 
@@ -3292,22 +3301,44 @@ export function ganadoRuletaDesde(g = {}) {
 
 /* ── D8a · Configuración: el equipo, los bloqueos, las imágenes y los idiomas ── */
 
-/** Los permisos de adminRoles (los mismos ids de siempre; el menú los lee con puedeVer). */
+/**
+ * Los permisos de Configuración › Equipo: Super Admin y uno por grupo del
+ * menú, con las secciones que abre (salen de MENU_ADMIN: no se desfasan).
+ * Inventario va aparte: abre Productos solo para cambiar el stock.
+ */
+const DETALLE_PERMISO = {
+  resultados: 'El resumen, productos, visitantes y lo técnico (Clientes y Opiniones, con Clientes).',
+  inventario: 'El stock en Productos (sin crear ni editar).',
+};
 export const PERMISOS_ADMIN = [
   { valor: 'superadmin', texto: 'Super Admin', detalle: 'Todo, también el equipo y esta página.' },
-  { valor: 'manage_design', texto: 'Diseño y pedidos', detalle: 'Pedidos y pagos, la tienda, campañas, WhatsApp y los juegos.' },
-  { valor: 'manage_products', texto: 'Catálogo', detalle: 'Productos, categorías, marcas y recompensas.' },
-  { valor: 'manage_inventory', texto: 'Inventario', detalle: 'El stock en Productos (sin crear ni editar).' },
-  { valor: 'manage_clients', texto: 'Clientes', detalle: 'Reclamos, referidos, la encuesta, popups, fechas, retos y misiones.' },
-  { valor: 'manage_landing_pages', texto: 'Landing pages', detalle: 'Con Catálogo: las landing pages y los temas.' },
+  ...MENU_ADMIN.filter((g) => g.id !== 'inicio').flatMap((g) => {
+    const secciones = g.items.filter((it) => it.permiso?.includes(g.id)).map((it) => it.texto);
+    const fila = { valor: g.id, texto: g.titulo, detalle: DETALLE_PERMISO[g.id] || `${secciones.join(', ')}.` };
+    return g.id === 'catalogo' ? [fila, { valor: 'inventario', texto: 'Inventario', detalle: DETALLE_PERMISO.inventario }] : [fila];
+  }),
 ];
+const VALORES_PERMISO = new Set(PERMISOS_ADMIN.map((p) => p.valor));
+
+/** Los permisos guardados → los de ahora (los de antes, traducidos). */
+export const permisosDeAhora = (permisos = []) => permisosEfectivos(permisos).filter((p) => VALORES_PERMISO.has(p));
 
 const correoLimpio = (c) => String(c || '').trim().toLowerCase();
 
 /** Un doc de adminRoles (el id es el correo) → la lista. */
 export function adminDesdeFirestore(doc = {}) {
   const correo = correoLimpio(doc.email || doc.id);
-  return { id: doc.id || correo, correo, nombre: String(doc.name || '').trim() || correo.split('@')[0], permisos: Array.isArray(doc.permissions) ? doc.permissions : [] };
+  const guardados = Array.isArray(doc.permissions) ? doc.permissions : [];
+  return {
+    id: doc.id || correo,
+    correo,
+    nombre: String(doc.name || '').trim() || correo.split('@')[0],
+    permisos: permisosDeAhora(guardados),
+    // Para avisar en la lista: sin permisos, o un registro que no salió del
+    // panel (sin nombre ni permisos: lo creó otro, como hack_test_2026).
+    sinPermisos: !permisosDeAhora(guardados).length,
+    raro: !Array.isArray(doc.permissions) || (!doc.name && !doc.email),
+  };
 }
 
 /** La hoja → setAdminRole(correo, datos). Super Admin va solo: ya lo abre todo. */
@@ -3332,7 +3363,8 @@ export function erroresDeAdmin(d = {}, { id, registros = [], yo = '' } = {}) {
 /** "Super Admin" · "Catálogo · Inventario" (con puntos: "Diseño y pedidos" ya lleva una "y") · "Sin permisos". */
 export function textoPermisos(permisos = []) {
   if (permisos.includes('superadmin')) return 'Super Admin';
-  const n = PERMISOS_ADMIN.filter((p) => permisos.includes(p.valor)).map((p) => p.texto);
+  const ahora = permisosDeAhora(permisos);
+  const n = PERMISOS_ADMIN.filter((p) => ahora.includes(p.valor)).map((p) => p.texto);
   return n.length ? n.join(' · ') : 'Sin permisos';
 }
 

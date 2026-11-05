@@ -71,7 +71,7 @@ export default function ProductosDelPanel() {
   const [searchParams] = useSearchParams();
   const { user, adminPermissions } = useAuth();
   const permisos = adminPermissions || [];
-  const soloStock = !puedeVer({ permiso: ['manage_products'] }, permisos);
+  const soloStock = !puedeVer({ permiso: ['catalogo'] }, permisos);
   const colecciones = useLectura(['collections'], getCollections);
   const tipos = useLectura(['productTypes'], getProductTypes);
   const pedida = VISTAS.includes(searchParams.get('ver')) ? searchParams.get('ver') : 'tienda';
@@ -107,7 +107,7 @@ export default function ProductosDelPanel() {
       error={productos.error}
       onReintentar={productos.onReintentar}
       soloStock={soloStock}
-      urlHistorial={puedeVer({ permiso: ['manage_design'] }, permisos) ? '/admin/backups?ver=inventario' : undefined}
+      urlHistorial={puedeVer({ permiso: ['ajustes'] }, permisos) ? '/admin/backups?ver=inventario' : undefined}
       onGuardarStock={async (p, nuevo, anterior) => {
         await updateProductField(p.id, { inStock: nuevo });
         await logInventoryChange(p.id, porId.get(p.id)?.name || p.nombre, anterior, nuevo, user?.email || 'Admin');
