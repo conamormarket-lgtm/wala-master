@@ -167,17 +167,36 @@ function semanaAnterior(semana) {
 }
 
 /**
- * Lo que se guarda de cada jugador para las métricas, al ganar: el primer día,
- * el último, cuántos días distintos jugó y el nivel más alto.
+ * Lo que se guarda de cada jugador para las métricas y el top de niveles, al
+ * ganar: el primer día, el último, cuántos días distintos jugó, el nivel más
+ * alto y cuándo llegó a él (nivelMaxEn, en ms: desempata el top), y el nombre
+ * corto con el que sale en el top.
+ *  - extra: { nombre, ahora } (opcional)
  */
-function sumarJugador(antes, hoy, nivel) {
+function sumarJugador(antes, hoy, nivel, extra = {}) {
   const a = antes || {};
-  return {
+  const nivelMax = Math.max(a.nivelMax || 0, nivel || 0);
+  const j = {
     primerDia: a.primerDia || hoy,
     ultimoDia: hoy,
     dias: (a.dias || 0) + (a.ultimoDia === hoy ? 0 : 1),
-    nivelMax: Math.max(a.nivelMax || 0, nivel || 0),
+    nivelMax,
   };
+  const nivelMaxEn = nivelMax > (a.nivelMax || 0) ? extra.ahora : a.nivelMaxEn;
+  if (nivelMaxEn) j.nivelMaxEn = nivelMaxEn;
+  const nombre = extra.nombre || a.nombre;
+  if (nombre) j.nombre = nombre;
+  return j;
+}
+
+/**
+ * El top de niveles: el nivel más alto primero; empate, quien llegó antes
+ * (sin fecha, los de antes de guardarla: llegaron antes).
+ */
+function ordenarTopNiveles(filas) {
+  return [...filas]
+    .filter((f) => (f.nivelMax || 0) > 0)
+    .sort((a, b) => (b.nivelMax || 0) - (a.nivelMax || 0) || (a.nivelMaxEn || 0) - (b.nivelMaxEn || 0));
 }
 
 /** Días entre dos fechas 'AAAA-MM-DD'. */
@@ -222,5 +241,6 @@ module.exports = {
   premioDePuesto,
   semanaAnterior,
   sumarJugador,
+  ordenarTopNiveles,
   metricasJugadores,
 };

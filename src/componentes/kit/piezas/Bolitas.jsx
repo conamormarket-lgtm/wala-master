@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight, Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone, PawPrint } from 'lucide-react';
 import { Estallido } from '../Efectos';
 import { Destello } from '../Marca';
+import { Hueso } from '../Esqueletos';
 import { Pestanas } from '../Navegacion';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
@@ -222,6 +223,66 @@ export function RankingBolitas({ ranking, cargando = false, sesion = true, urlLo
       {!sesion && (
         <div className={s.rankingNota}>
           <Texto>Inicia sesión para aparecer en el ranking.</Texto>
+          <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * El top de niveles: quién llegó más lejos (el nivel más alto comprobado por
+ * el servidor); empate, quien llegó antes.
+ *  - top: { top: [{ puesto, nombre, nivel, dias, yo }], yo: { puesto, nivel, jugadores } }
+ *  - cargando (sin top todavía: esqueleto) · sesion · urlLogin
+ */
+export function TopBolitas({ top, cargando = false, sesion = true, urlLogin = '/login' }) {
+  const t = { tu: useTexto('Tú'), titulo: useTexto('Top de jugadores') };
+  const lista = top?.top || [];
+  const yo = top?.yo || {};
+  const fuera = yo.puesto && !lista.some((f) => f.yo);
+  let cuerpo;
+  if (cargando && !top) {
+    cuerpo = (
+      <ol className={s.rankingLista} aria-busy="true" aria-label="Cargando el top">
+        {[0, 1, 2, 3].map((k) => (
+          <li key={k}><Hueso forma="circulo" ancho="1.6rem" alto="1.6rem" /><Hueso ancho={`${70 - k * 10}%`} /><Hueso ancho="3.2rem" /></li>
+        ))}
+      </ol>
+    );
+  } else if (!lista.length) {
+    cuerpo = <p className={s.rankingVacio}><Texto>Todavía nadie pasó un nivel. ¡Sé la primera persona!</Texto></p>;
+  } else {
+    cuerpo = (
+      <ol className={s.rankingLista}>
+        {lista.map((f) => (
+          <li key={`${f.puesto}-${f.nombre}`} className={f.yo ? s.rankingYo : undefined}>
+            <span className={[s.rankingPuesto, f.puesto <= 3 && s[`podio${f.puesto}`]].filter(Boolean).join(' ')}>{f.puesto}</span>
+            <span className={s.rankingNombre}>{f.nombre}{f.yo && <small>{t.tu}</small>}</span>
+            <span className={s.rankingValor}><Texto>{`Nivel ${f.nivel}`}</Texto></span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  return (
+    <section className={s.ranking} aria-label={t.titulo} data-componente="TopBolitas">
+      <p className={s.rankingTitulo}><Trophy aria-hidden="true" />{t.titulo}</p>
+      <p className={s.rankingNota}><Texto>Quién llegó más lejos en los niveles.</Texto></p>
+      {cuerpo}
+      {fuera && (
+        <p className={s.rankingNota}>
+          <TextoResaltado resaltar={[yo.puesto, yo.nivel]}>
+            {yo.jugadores ? `Vas en el puesto ${yo.puesto} de ${yo.jugadores}, en el nivel ${yo.nivel}.` : `Vas en el puesto ${yo.puesto}, en el nivel ${yo.nivel}.`}
+          </TextoResaltado>
+        </p>
+      )}
+      {sesion && !yo.puesto && lista.length > 0 && (
+        <p className={s.rankingNota}><Texto>Gana un nivel para entrar al top.</Texto></p>
+      )}
+      {!sesion && (
+        <div className={s.rankingNota}>
+          <Texto>Inicia sesión para aparecer en el top.</Texto>
           <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
         </div>
       )}

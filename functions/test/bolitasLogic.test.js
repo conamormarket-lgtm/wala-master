@@ -153,6 +153,19 @@ async function run() {
     assert.deepStrictEqual(j, { primerDia: "2026-10-01", ultimoDia: "2026-10-01", dias: 1, nivelMax: 5 });
     j = b.sumarJugador(j, "2026-10-09", 4);
     assert.deepStrictEqual(j, { primerDia: "2026-10-01", ultimoDia: "2026-10-09", dias: 2, nivelMax: 5 });
+    // El top: nombre y cuándo llegó al nivel más alto (solo cambia si sube).
+    const k = b.sumarJugador(j, "2026-10-10", 6, { nombre: "Lucía R.", ahora: 1000 });
+    assert.strictEqual(k.nivelMaxEn, 1000);
+    assert.strictEqual(k.nombre, "Lucía R.");
+    const k2 = b.sumarJugador(k, "2026-10-11", 3, { nombre: "Lucía R.", ahora: 2000 });
+    assert.strictEqual(k2.nivelMaxEn, 1000);
+    assert.strictEqual(k2.nivelMax, 6);
+    assert.deepStrictEqual(b.ordenarTopNiveles([
+      { uid: "a", nivelMax: 6, nivelMaxEn: 2000 },
+      { uid: "b", nivelMax: 9, nivelMaxEn: 5000 },
+      { uid: "c", nivelMax: 6, nivelMaxEn: 1000 },
+      { uid: "d", nivelMax: 0 },
+    ]).map((f) => f.uid), ["b", "c", "a"]);
     const m = b.metricasJugadores([
       j, // volvió y siguió 8 días; no juega hace 12 → trabado en el 5
       { primerDia: "2026-10-20", ultimoDia: "2026-10-20", dias: 1, nivelMax: 12 }, // empezó ayer

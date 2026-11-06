@@ -15,7 +15,7 @@ import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
 import {
-  TuboBolitas, EstrellasNivel, RankingBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca,
+  TuboBolitas, EstrellasNivel, RankingBolitas, TopBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca,
 } from '../piezas/Bolitas';
 import { efectoBolitas } from '../piezas/efectosBolitas';
 import { progresoBolitas } from '../piezas/bolitasProgreso.mjs';
@@ -170,6 +170,8 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
  *  - ranking (del reto: ver RankingBolitas) · cargandoRanking ·
  *    onPedirRanking(): al entrar al reto, para traerlo
+ *  - top (de niveles: ver TopBolitas) · cargandoTop · onPedirTop(): al
+ *    jugar los niveles, para traerlo
  *  - marcasMundos: [{ id, nombre, logo, url, color, color2 }] las marcas de
  *    los mundos, en orden (se repiten): el mundo toma sus colores y su logo
  *  - patrocinio (del reto de hoy): { marca, texto, quedan }
@@ -185,7 +187,7 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  */
 export function PaginaBolitas({
   sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, onCompletar, hoy, progreso, onProgreso,
-  ranking, cargandoRanking = false, onPedirRanking,
+  ranking, cargandoRanking = false, onPedirRanking, top, cargandoTop = false, onPedirTop,
   marcasMundos = [], patrocinio, onPedirProductos, onClicMarca,
   inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
 }) {
@@ -248,6 +250,12 @@ export function PaginaBolitas({
   // El ranking del reto se trae al entrar al reto.
   useEffect(() => {
     if (modo === 'reto' && estado !== 'cargando') onPedirRanking?.();
+  }, [modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // El top de niveles, al jugar los niveles (una vez: después lo refresca
+  // quien registra la partida, si subió su nivel más alto).
+  useEffect(() => {
+    if (modo === 'niveles' && estado !== 'cargando' && !top) onPedirTop?.();
   }, [modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (estado === 'cargando' || !p) return <EsqueletoPagina forma="bolitas" />;
@@ -674,6 +682,7 @@ export function PaginaBolitas({
                     )}
                   </div>
                 )}
+                {!esReto && onPedirTop && <TopBolitas top={top} cargando={cargandoTop} sesion={sesion} urlLogin={urlLogin} />}
               </div>
             </aside>
           </div>

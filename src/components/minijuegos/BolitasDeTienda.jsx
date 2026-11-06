@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  claimBallSortReward, registrarPartidaBolitas, getRankingBolitas, leerProgresoBolitas, guardarProgresoBolitas, REWARD_AMOUNT,
+  claimBallSortReward, registrarPartidaBolitas, getRankingBolitas, getTopBolitas, leerProgresoBolitas, guardarProgresoBolitas, REWARD_AMOUNT,
   leerPatrocinioBolitas, leerMundosBolitas, contarClicBolitas,
 } from '../../services/firebase/ballSort';
 import { getBrands } from '../../services/brands';
@@ -109,6 +109,8 @@ export default function BolitasDeTienda() {
   const [progreso, setProgreso] = useState(null);
   const [ranking, setRanking] = useState(null);
   const [cargandoRanking, setCargandoRanking] = useState(false);
+  const [top, setTop] = useState(null);
+  const [cargandoTop, setCargandoTop] = useState(false);
   const [marcas, setMarcas] = useState({ marcasMundos: [], patrocinio: null });
   const pendiente = useRef(null);
 
@@ -182,8 +184,21 @@ export default function BolitasDeTienda() {
     }
   };
 
+  const pedirTop = async () => {
+    setCargandoTop(true);
+    try {
+      setTop(await getTopBolitas());
+    } catch {
+      setTop((antes) => antes || { top: [], yo: {} });
+    } finally {
+      setCargandoTop(false);
+    }
+  };
+
   const registrar = async (partida) => {
     const r = await registrarPartidaBolitas(partida);
+    // Subió su nivel más alto: puede cambiar de puesto en el top.
+    if (r.record) pedirTop();
     if (partida.modo === 'reto') {
       pedirRanking();
       // Un cupón menos para el resto (el contador del patrocinio).
@@ -235,6 +250,9 @@ export default function BolitasDeTienda() {
       ranking={ranking}
       cargandoRanking={cargandoRanking}
       onPedirRanking={pedirRanking}
+      top={top}
+      cargandoTop={cargandoTop}
+      onPedirTop={pedirTop}
       marcasMundos={marcas.marcasMundos}
       patrocinio={marcas.patrocinio}
       onPedirProductos={productosDeMarca}

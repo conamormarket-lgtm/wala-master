@@ -40,6 +40,12 @@ export const getRankingBolitas = async () => {
   return res.data || { hoy: [], semanal: [], yo: {} };
 };
 
+/** El top de niveles: { top: [{ puesto, nombre, nivel, dias, yo }], yo: { puesto, nivel, jugadores } }. */
+export const getTopBolitas = async () => {
+  const res = await httpsCallable(getFunctions(), 'getTopBolitasSecure')();
+  return res.data || { top: [], yo: {} };
+};
+
 /* El progreso del juego en la cuenta (bolitasProgreso/{uid}): lo escribe el
    dueño; no vale dinero (ver firestore.rules). */
 export const leerProgresoBolitas = async (uid) => {

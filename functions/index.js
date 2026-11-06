@@ -3428,13 +3428,17 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
         t.update(patrocinioRef, { entregados: FieldValue.increment(1) });
       }
 
-      t.set(jugadorRef, bolitas.sumarJugador(jugadorSnap.exists ? jugadorSnap.data() : null, hoy, partida.nivel || 0));
+      const jugadorAntes = jugadorSnap.exists ? jugadorSnap.data() : null;
+      const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre: bolitas.nombrePublico(u), ahora: Date.now() });
+      t.set(jugadorRef, jugador);
+      // Subió su nivel más alto: el celular vuelve a pedir el top de niveles.
+      const record = jugador.nivelMax > ((jugadorAntes && jugadorAntes.nivelMax) || 0);
       t.set(statsRef, esReto
         ? { fecha: hoy, partidas: FieldValue.increment(1), retos: FieldValue.increment(1) }
         : { fecha: hoy, partidas: FieldValue.increment(1), niveles: { [partida.nivel]: FieldValue.increment(1) } },
       { merge: true });
 
-      return { success: true, reward, ya, movimientos: partida.movimientos, mejor, cupon };
+      return { success: true, reward, ya, movimientos: partida.movimientos, mejor, cupon, record };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -3482,6 +3486,60 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
   } catch (e) {
     console.error("getRankingBolitasSecure error:", e);
     throw new functions.https.HttpsError("internal", "No se pudo cargar el ranking.");
+  }
+});
+
+// ── Las Bolitas de Kapi: el top de niveles ────────────────────────────────────
+// Quién llegó más lejos en los niveles (el nivel más alto que el servidor
+// comprobó, en bolitasJugadores/{uid}); empate, quien llegó antes. Los 20
+// primeros con el nombre corto, cuántos días jugaron, y dónde va quien
+// pregunta. Los jugadores de antes de guardar el nombre lo toman del perfil.
+const TOP_NIVELES_LEER = 500;
+
+exports.getTopBolitasSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  try {
+    const col = db.collection("bolitasJugadores");
+    const [snap, totalSnap] = await Promise.all([
+      col.orderBy("nivelMax", "desc").limit(TOP_NIVELES_LEER).get(),
+      col.where("nivelMax", ">", 0).count().get(),
+    ]);
+    const filas = bolitas.ordenarTopNiveles(snap.docs.map((d) => ({ ...d.data(), uid: d.id })));
+    const top = filas.slice(0, RANKING_BOLITAS_TOP);
+
+    const sinNombre = top.filter((f) => !f.nombre);
+    if (sinNombre.length) {
+      const perfiles = await db.getAll(...sinNombre.map((f) => db.collection(PORTAL_USERS_COLLECTION).doc(f.uid)));
+      perfiles.forEach((p, k) => { sinNombre[k].nombre = p.exists ? bolitas.nombrePublico(p.data()) : null; });
+    }
+
+    let puesto = null;
+    let nivelYo = null;
+    if (uid) {
+      const k = filas.findIndex((f) => f.uid === uid);
+      if (k >= 0) {
+        puesto = k + 1;
+        nivelYo = filas[k].nivelMax;
+      } else {
+        const mio = await col.doc(uid).get();
+        nivelYo = mio.exists ? mio.data().nivelMax || 0 : 0;
+        if (nivelYo > 0) puesto = (await col.where("nivelMax", ">", nivelYo).count().get()).data().count + 1;
+      }
+    }
+
+    return {
+      top: top.map((f, k) => ({
+        puesto: k + 1,
+        nombre: f.nombre || "Jugador",
+        nivel: f.nivelMax,
+        dias: f.dias || 1,
+        yo: Boolean(uid) && f.uid === uid,
+      })),
+      yo: { puesto, nivel: nivelYo, jugadores: totalSnap.data().count },
+    };
+  } catch (e) {
+    console.error("getTopBolitasSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo cargar el top.");
   }
 });
 
