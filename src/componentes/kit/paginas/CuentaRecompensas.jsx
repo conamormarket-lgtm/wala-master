@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Gift, Ticket, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send } from 'lucide-react';
+import { Gift, Ticket, Sticker, History, ChevronDown, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio } from '../Feedback';
@@ -114,17 +114,20 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
 /* ── Mis cupones (/cuenta/cupones) ──────────────────────── */
 
 /**
- * Mis cupones: los disponibles primero; el código se copia con un toque.
+ * Mis cupones, en tres partes: los stickers (tuyos para siempre), los cupones
+ * para usar y, plegados, los usados y vencidos (para que no tapen lo útil).
+ * El código se copia con un toque.
  *  - cupones: [{ id, texto, codigo, origen, estado, vence, conAsesor }]
  *    (cuponDesdeFirestore)
  *  - stickers: [{ id, nombre, cantidad, muestras, modo, agregado, procesando, error }]
- *    (packs de WhatsApp canjeados, arriba) · onAgregarStickers(id) · urlPlayStore
+ *    (packs de WhatsApp canjeados) · onAgregarStickers(id) · urlPlayStore
  *  - cargando · error · onReintentar · onCopiar(codigo): promesa
- *  - urlRuleta, urlCatalogo: salidas del estado vacío
+ *  - urlRuleta, urlCatalogo: de dónde salen más cupones
  */
 export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, urlPlayStore, cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo' }) {
-  const ordenados = useMemo(() => [...cupones].sort((a, b) => Number(b.estado === 'activo') - Number(a.estado === 'activo')), [cupones]);
-  const disponibles = cupones.filter((c) => c.estado === 'activo').length;
+  const activos = useMemo(() => cupones.filter((c) => c.estado === 'activo'), [cupones]);
+  const pasados = useMemo(() => cupones.filter((c) => c.estado !== 'activo'), [cupones]);
+  const lista = (cs) => <ul className={s.cupones}>{cs.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}</ul>;
   return (
     <>
       <CabezaCuenta
@@ -133,33 +136,56 @@ export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, 
         titulo={<Texto>Mis cupones</Texto>}
         subtitulo={<Texto>Escribe el código en el carrito, en el paso de pago, para aplicar el descuento.</Texto>}
       />
-      {cupones.length > 0 && !cargando && (
-        <p className={s.cuenta}><TextoResaltado resaltar={[disponibles]}>{`${disponibles} ${disponibles === 1 ? 'disponible' : 'disponibles'} de ${cupones.length}`}</TextoResaltado></p>
-      )}
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar tus cupones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
           Revisa tu conexión e inténtalo de nuevo.
         </Aviso>
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
-      ) : ordenados.length === 0 && stickers.length === 0 ? (
-        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en La Ruleta de Kapinal o canjeando tus monedas en el catálogo.</Texto>}>
+      ) : cupones.length === 0 && stickers.length === 0 ? (
+        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en La Ruleta de Kapi o canjeando tus monedas en el catálogo.</Texto>}>
           <Boton to={urlRuleta}><Texto>Ir a la ruleta</Texto></Boton>
           <Boton to={urlCatalogo} variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
         </EstadoVacio>
       ) : (
-        <>
+        <div className={s.secciones}>
           {stickers.length > 0 && (
-            <ul className={s.cupones}>
-              {stickers.map((st) => <li key={st.id}><TarjetaStickers {...st} urlPlayStore={urlPlayStore} onAgregar={() => onAgregarStickers?.(st.id)} /></li>)}
-            </ul>
+            <section className={s.seccion}>
+              <CabezaCuenta nivel={2} icono={<Sticker />} tono="violeta" titulo={<Texto>Tus stickers</Texto>} subtitulo={<Texto>Son tuyos para siempre: se añaden a WhatsApp desde la app de Walá.</Texto>} />
+              <ul className={s.cupones}>
+                {stickers.map((st) => <li key={st.id}><TarjetaStickers {...st} urlPlayStore={urlPlayStore} onAgregar={() => onAgregarStickers?.(st.id)} /></li>)}
+              </ul>
+            </section>
           )}
-          {ordenados.length > 0 && (
-            <ul className={s.cupones}>
-              {ordenados.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}
-            </ul>
+          <section className={s.seccion}>
+            <CabezaCuenta
+              nivel={2}
+              icono={<Ticket />}
+              tono="oro"
+              titulo={<Texto>Para usar</Texto>}
+              subtitulo={<Texto>{activos.length ? `${activos.length} ${activos.length === 1 ? 'cupón disponible' : 'cupones disponibles'}` : 'No tienes cupones disponibles ahora.'}</Texto>}
+            />
+            {activos.length > 0 ? lista(activos) : (
+              <div className={s.sinCupones}>
+                <p><Texto>Gana más en La Ruleta de Kapi o canjeando tus monedas en el catálogo.</Texto></p>
+                <span className={s.sinCuponesBotones}>
+                  <Boton to={urlRuleta} tamano="sm"><Texto>Ir a la ruleta</Texto></Boton>
+                  <Boton to={urlCatalogo} tamano="sm" variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
+                </span>
+              </div>
+            )}
+          </section>
+          {pasados.length > 0 && (
+            <details className={s.pasados}>
+              <summary>
+                <History aria-hidden="true" />
+                <TextoResaltado resaltar={[pasados.length]}>{`Usados y vencidos · ${pasados.length}`}</TextoResaltado>
+                <ChevronDown className={s.pasadosFlecha} aria-hidden="true" />
+              </summary>
+              {lista(pasados)}
+            </details>
           )}
-        </>
+        </div>
       )}
     </>
   );
