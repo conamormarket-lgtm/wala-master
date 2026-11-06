@@ -574,7 +574,7 @@ function FichaFecha({ fecha: f, productos, sugerirProductos, onGuardarPaquete, o
             <ul className={s.productos}>
               {armando.productos.map((p) => (
                 <li key={p.id}>
-                  <FotoCelda src={p.imagen} tamano={40} />
+                  <FotoCelda src={p.imagen} forma="producto" tamano={40} />
                   <span className={s.productoTexto}><strong>{p.nombre}</strong>{soles(p.precio)}</span>
                   <Boton soloIcono tamano="sm" variante="fantasma" icono={<X aria-hidden="true" />} aria-label={`Quitar ${p.nombre}`} onClick={() => setArmando((a) => ({ ...a, productos: a.productos.filter((x) => x.id !== p.id) }))} />
                 </li>
@@ -627,7 +627,7 @@ function FichaFecha({ fecha: f, productos, sugerirProductos, onGuardarPaquete, o
                 <span className={s.paqueteTotal}>{soles(p.productos.reduce((t, x) => t + x.precio, 0))}</span>
               </span>
               <ul className={s.miniaturas}>
-                {p.productos.map((x) => <li key={x.id}><FotoCelda src={x.imagen} tamano={36} /><span>{x.nombre}</span></li>)}
+                {p.productos.map((x) => <li key={x.id}><FotoCelda src={x.imagen} forma="producto" tamano={36} /><span>{x.nombre}</span></li>)}
               </ul>
               <span className={s.paqueteAcciones}>
                 {!p.elegido && <Boton tamano="sm" variante="secundario" icono={<Star aria-hidden="true" />} onClick={() => intentar(() => onElegirPaquete?.(p, f), 'Paquete elegido')}>Elegir este</Boton>}

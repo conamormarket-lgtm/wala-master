@@ -634,7 +634,8 @@
 .selectorFoto {
   flex: none;
   width: 44px;
-  height: 44px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 55px;
   border-radius: 10px;
 }
 

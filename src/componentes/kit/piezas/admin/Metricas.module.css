@@ -415,7 +415,8 @@
   flex: none;
   place-items: center;
   width: 38px;
-  height: 38px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 48px;
   overflow: hidden;
   border-radius: 10px;
   background: var(--color-bg, var(--gris-fondo));
@@ -425,7 +426,7 @@
 .miniatura img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .miniatura svg {

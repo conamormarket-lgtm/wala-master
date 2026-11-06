@@ -89,7 +89,7 @@ export function PaginaPersonalizables({ prendas = [], cargando, error, onReinten
       <TablaAdmin
         etiqueta="Personalizables"
         columnas={[
-          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.foto} /> },
+          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.foto} forma="producto" /> },
           {
             id: 'nombre',
             titulo: 'Personalizable',
@@ -299,7 +299,7 @@ export function PaginaPacks({
       <TablaAdmin
         etiqueta="Packs de Crear"
         columnas={[
-          { id: 'foto', titulo: 'Portada', ancho: 72, tarjeta: 'foto', celda: (k) => <FotoCelda src={k.portada || k.piezas[0]?.imagen || productoDe(k.piezas[0] || {})?.foto} /> },
+          { id: 'foto', titulo: 'Portada', ancho: 72, tarjeta: 'foto', celda: (k) => <FotoCelda src={k.portada || k.piezas[0]?.imagen || productoDe(k.piezas[0] || {})?.foto} forma="producto" /> },
           { id: 'nombre', titulo: 'Pack', tarjeta: 'titulo', celda: (k) => <>{k.nombre}<span className={l.sub}>{textoPiezas(k)}</span></> },
           { id: 'precio', titulo: 'Precio', ancho: 110, alinear: 'fin', tarjeta: 'detalle', celda: (k) => <span className={l.numero}>{soles(Number(k.oferta) > 0 ? k.oferta : k.precio)}</span> },
           { id: 'tallas', titulo: 'Tallas', ancho: 140, tarjeta: 'detalle', celda: (k) => MODOS_TALLA_PACK.find((m) => m.valor === k.tallas)?.texto },

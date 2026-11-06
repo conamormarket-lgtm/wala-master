@@ -423,7 +423,8 @@
 .piezaFoto {
   flex: none;
   width: 48px;
-  height: 48px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 60px;
   border-radius: 10px;
 }
 

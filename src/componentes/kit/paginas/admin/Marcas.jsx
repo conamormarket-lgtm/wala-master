@@ -460,7 +460,7 @@ export function PaginaProductosMarca({ marca, marcas = [], productos = [], carga
       <TablaAdmin
         etiqueta={vista === 'en' ? `Productos de ${marca.nombre}` : 'Productos para agregar'}
         columnas={[
-          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
+          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} forma="producto" /> },
           { id: 'nombre', titulo: 'Producto', tarjeta: 'titulo', celda: (p) => p.nombre },
           { id: 'precio', titulo: 'Precio', ancho: 110, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <span className={l.numero}>{soles(p.precio)}</span> },
           ...(vista === 'otros' ? [{ id: 'marca', titulo: 'Marca ahora', tarjeta: 'detalle', celda: (p) => (p.marcaId ? nombreDeMarca.get(p.marcaId) || 'Otra marca' : <span className={l.sub}>Sin marca</span>) }] : []),

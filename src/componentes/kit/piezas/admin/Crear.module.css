@@ -540,7 +540,8 @@
   align-items: center;
   justify-content: center;
   width: 84px;
-  height: 84px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 105px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--escenario-foto, #fff);

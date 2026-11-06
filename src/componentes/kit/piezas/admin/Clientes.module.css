@@ -76,7 +76,8 @@
   flex: none;
   place-items: center;
   width: 44px;
-  height: 44px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 55px;
   overflow: hidden;
   border-radius: 10px;
   background: var(--color-bg, var(--gris-fondo));
@@ -86,7 +87,7 @@
 .foto img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .foto svg {
