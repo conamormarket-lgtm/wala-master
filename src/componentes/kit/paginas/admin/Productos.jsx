@@ -271,12 +271,12 @@ export function PaginaProductos({
   };
 
   const columnas = vista === 'todos' ? [
-    { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
+    { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} forma="producto" /> },
     { id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo', celda: (p) => p.nombre },
     { id: 'etiquetas', titulo: 'Qué es', tarjeta: 'detalle', celda: (p) => <span className={s.marcas}>{etiquetasDeProducto(p).map((e) => <Etiqueta key={e} tono={/Oculto|Borrador|Reemplazado/.test(e) ? 'neutro' : 'violeta'}>{e}</Etiqueta>)}</span> },
     { id: 'stock', titulo: 'Stock', ordenable: true, ancho: 170, alinear: 'fin', tarjeta: guardarStock ? 'control' : 'detalle', celda: (p) => <StockCelda p={p} onGuardar={guardarStock} /> },
   ] : [
-    { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
+    { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} forma="producto" /> },
     { id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo', celda: (p) => <>{p.nombre}<Marcas p={p} pieza={piezas.has(p.id)} /></> },
     { id: 'categoria', titulo: 'Categoría', tarjeta: 'detalle', celda: (p) => nombresDe(p.categorias, porCategoria).join(', ') || <span className={l.sub}>Sin categoría</span> },
     { id: 'precio', titulo: 'Precio', ordenable: true, ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <Precio p={p} /> },
@@ -594,7 +594,7 @@ function PapeleraProductos({ papelera = [], cargando, error, onReintentar, onRes
       <TablaAdmin
         etiqueta="Papelera"
         columnas={[
-          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
+          { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} forma="producto" /> },
           {
             id: 'nombre', titulo: 'Producto', ordenable: true, tarjeta: 'titulo',
             celda: (p) => {
@@ -838,7 +838,7 @@ export function PaginaRecomendar({ productos = [], categorias = [], sugerenciaDe
       <TablaAdmin
         etiqueta="Datos para recomendar"
         columnas={[
-          { id: 'foto', titulo: 'Foto', ancho: 64, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} /> },
+          { id: 'foto', titulo: 'Foto', ancho: 64, tarjeta: 'foto', celda: (p) => <FotoCelda src={p.imagen} forma="producto" /> },
           { id: 'nombre', titulo: 'Producto', tarjeta: 'titulo', celda: (p) => <>{p.nombre}<span className={l.sub}>{nombresDe(p.categorias, porCategoria).join(', ')}{p.oculto ? ' · oculto' : ''}</span></> },
           { id: 'publico', titulo: 'Para quién', tarjeta: 'control', celda: (p) => <ElegirUno etiqueta={`Para quién es ${p.nombre}`} opciones={PUBLICOS} valor={p.publico} sugerido={(sugerenciaDe(p) || {}).publico} onElegir={(v) => guardar(p, { publico: v })} /> },
           { id: 'edad', titulo: 'Edad', tarjeta: 'control', celda: (p) => <ElegirUno etiqueta={`Edad para ${p.nombre}`} opciones={EDADES} valor={p.edadMinima} sugerido={(sugerenciaDe(p) || {}).edadMinima} onElegir={(v) => guardar(p, { edadMinima: v })} /> },

@@ -11,12 +11,12 @@ import s from './Lista.module.css';
 
 /**
  * La foto de un registro (o el hueco sin foto).
- *  - forma: 'cuadro' | 'circulo' | 'ancha' (banners) · contener: sin recortar (logos) · tamano (44)
+ *  - forma: 'cuadro' | 'circulo' | 'ancha' (banners) | 'producto' (4:5 entera, como la tarjeta de la tienda) · contener: sin recortar (logos) · tamano (44)
  */
 export function FotoCelda({ src, forma = 'cuadro', contener = false, tamano = 44 }) {
   return (
     <span
-      className={[s.foto, forma === 'circulo' && s.fotoCirculo, forma === 'ancha' && s.fotoAncha, contener && s.fotoContener].filter(Boolean).join(' ')}
+      className={[s.foto, forma === 'circulo' && s.fotoCirculo, forma === 'ancha' && s.fotoAncha, forma === 'producto' && s.fotoProducto, contener && s.fotoContener].filter(Boolean).join(' ')}
       style={{ '--tam': `${tamano}px` }}
     >
       {src ? <img src={src} alt="" loading="lazy" /> : <ImageOff aria-hidden="true" />}

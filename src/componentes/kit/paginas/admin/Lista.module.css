@@ -36,10 +36,21 @@
   width: calc(var(--tam, 44px) * 2.2);
 }
 
+/* Productos: la misma proporción que la tarjeta de la tienda (4:5), con la
+   foto entera en vez de recortada al cuadrado. */
+.fotoProducto {
+  height: calc(var(--tam, 44px) * 1.25);
+  border-radius: 10px;
+}
+
 .foto img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.fotoProducto img {
+  object-fit: contain;
 }
 
 .fotoContener img {

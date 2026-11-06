@@ -297,7 +297,10 @@ function CabeceraConDatos() {
             cargando: !productosDelMenu && !errorMenu,
             error: Boolean(errorMenu) && !productosDelMenu,
             onReintentar: () => reintentarMenu(),
-            verTodo: { texto: 'Ver todo el catálogo', url: marcaActual ? `/${slugMarca}` : '/tienda' },
+            // Dentro de una marca las categorías son solo las suyas; el enlace
+            // de abajo sí lleva al catálogo entero (antes volvía a la marca).
+            ...(marcaActual?.name && { titulo: `Categorías de ${marcaActual.name}` }),
+            verTodo: { texto: 'Ver todo el catálogo', url: '/tienda' },
           },
         };
       }
