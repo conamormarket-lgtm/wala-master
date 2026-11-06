@@ -782,6 +782,9 @@ export const recompensaDesdeFirestore = (r = {}, beneficio) => ({
   costo: Number(r.cost) || 0,
   // Stickers de WhatsApp: se añaden desde la app (el aviso del canje lo dice).
   stickers: r.tipo === 'stickers_whatsapp',
+  // Los packs de stickers son de una sola vez por persona (redeemRewardSecure
+  // no deja canjear el mismo dos veces); los cupones se canjean las veces que sea.
+  packId: r.tipo === 'stickers_whatsapp' ? r.packId || '' : '',
 });
 
 /**

@@ -28,15 +28,17 @@ const miles = (n) => Number(n || 0).toLocaleString('es-PE');
  *  - onCanjear(): promesa; antes pide confirmar en la misma tarjeta
  *  - confirmando, onConfirmar(abierta): la confirmación controlada por la
  *    página (una sola abierta a la vez); sin ellas, la tarjeta la lleva sola
+ *  - obtenida: una recompensa de una sola vez (un pack de stickers) que la
+ *    persona ya tiene: "Ya es tuyo" y el enlace a urlObtenida, sin canjear
  */
-export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, costo = 0, saldo = 0, onCanjear, confirmando, onConfirmar }) {
+export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, costo = 0, saldo = 0, onCanjear, confirmando, onConfirmar, obtenida = false, urlObtenida = '/cuenta/cupones' }) {
   const [confirmarPropio, setConfirmarPropio] = useState(false);
   const controlada = confirmando !== undefined;
   const confirmar = controlada ? confirmando : confirmarPropio;
   const setConfirmar = (v) => (controlada ? onConfirmar?.(v) : setConfirmarPropio(v));
   const [canjeando, setCanjeando] = useState(false);
   const etiquetaCanjear = useTexto('Canjear');
-  const faltan = Math.max(0, costo - saldo);
+  const faltan = obtenida ? 0 : Math.max(0, costo - saldo);
   const canjear = async () => {
     setCanjeando(true);
     try { await onCanjear?.(); } finally { setCanjeando(false); setConfirmar(false); }
@@ -54,7 +56,12 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
         {descripcion && <p className={s.recompensaTexto}><Texto>{descripcion}</Texto></p>}
       </div>
       <div className={s.recompensaPie}>
-        {confirmar ? (
+        {obtenida ? (
+          <>
+            <span className={s.obtenida}><CheckCircle2 aria-hidden="true" /> <Texto>Ya es tuyo</Texto></span>
+            <Boton to={urlObtenida} tamano="sm" variante="contorno" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver en Mis cupones</Texto></Boton>
+          </>
+        ) : confirmar ? (
           <div className={s.confirmar} role="group" aria-label={`${etiquetaCanjear} ${titulo}`}>
             <span className={s.confirmarTexto}><Texto>¿Canjear por</Texto> <Moneda /> <strong>{miles(costo)}</strong>?</span>
             <span className={s.confirmarBotones}>

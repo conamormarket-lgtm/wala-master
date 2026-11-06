@@ -113,6 +113,21 @@
   color: var(--color-text);
 }
 
+/* Una recompensa de una sola vez que ya tiene (un pack de stickers). */
+.obtenida {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--verde-exito, #10b981);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.obtenida svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .lejos .recompensaFoto {
   filter: saturate(0.6);
 }

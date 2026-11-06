@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCollection } from '../../services/firebase/firestore';
 import { recordMissionAction } from '../../services/loyalty';
+import { getMisCupones } from '../../services/cupones';
 import { textoPremio } from '../../utils/ruletaModel';
 import { PaginaCatalogo } from '../../componentes/kit/paginas/CuentaRecompensas';
 import { recompensaDesdeFirestore } from '../../componentes/kit/adaptadores';
@@ -58,6 +59,26 @@ export default function CatalogoDeCuenta() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Los packs de stickers son de una sola vez: los que ya tiene salen como
+  // "Ya es tuyo". Misma consulta (y caché) que Mis cupones; un canje la renueva.
+  const misCupones = useQuery({
+    queryKey: ['mis-cupones', user?.uid],
+    queryFn: async () => {
+      const { data, error } = await getMisCupones(user.uid);
+      if (error) throw new Error(error);
+      return data || [];
+    },
+    enabled: Boolean(user?.uid),
+  });
+  const packsTuyos = useMemo(
+    () => new Set((misCupones.data || []).filter((c) => c.entrega === 'stickers_whatsapp' && c.packId).map((c) => c.packId)),
+    [misCupones.data],
+  );
+  const recompensas = useMemo(
+    () => (catalogo.data || []).map((r) => (r.packId && packsTuyos.has(r.packId) ? { ...r, obtenida: true } : r)),
+    [catalogo.data, packsTuyos],
+  );
+
   // Para Misiones diarias: el cliente entró aquí de verdad (si falla, no avisa).
   useEffect(() => {
     if (user?.uid) recordMissionAction('visit_catalogo_recompensas').catch(() => {});
@@ -77,7 +98,7 @@ export default function CatalogoDeCuenta() {
 
   return (
     <PaginaCatalogo
-      recompensas={catalogo.data || []}
+      recompensas={recompensas}
       saldo={Number(activeMainCoins) || 0}
       cargando={catalogo.isPending}
       error={catalogo.isError}
