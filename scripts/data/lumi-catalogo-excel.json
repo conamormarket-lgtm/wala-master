@@ -1,0 +1,941 @@
+{
+ "generado": "2026-11-06",
+ "fuente": "LUMI_Base_Productos.xlsx + fotos de WhatsApp 2026-11-05",
+ "stockNuevos": 4,
+ "categorias": {
+  "crear": [
+   {
+    "nombre": "Contorno de ojos",
+    "tipo": "Belleza"
+   }
+  ],
+  "renombrar": [
+   {
+    "de": "Tónicos",
+    "a": "Tónicos y esencias"
+   }
+  ],
+  "menu": [
+   "Limpiadores",
+   "Tónicos y esencias",
+   "Hidratantes",
+   "Sérums y tratamientos",
+   "Contorno de ojos",
+   "Protectores solares",
+   "Mascarillas",
+   "Kits de skincare"
+  ]
+ },
+ "colecciones": [
+  "Anti-edad",
+  "Manchas",
+  "Acné",
+  "Piel sensible",
+  "Piel deshidratada"
+ ],
+ "existentes": [
+  {
+   "id": "mussa-abib-quick-sunstick-protection-bar",
+   "codigo": "P5",
+   "nombre": "Abib Quick Sunstick Protection Bar SPF50+ PA++++",
+   "sku": {
+    "antes": "MUSSA-ABIB-SUNSTICK",
+    "despues": "LUMI-ABIB-SUNSTICK"
+   },
+   "colecciones": [],
+   "precio": {
+    "antes": 88.5,
+    "despues": 79
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>El stick para reaplicar durante el día. Sin fragancia — es el más compatible con pieles sensibles y con activos agresivos. PA++++ — máxima protección UVA disponible. El formato stick permite reaplicar en 10 segundos sin estropear el maquillaje.</p><h3>Cómo usarlo</h3><p>Deslizar suave en forma de X y T sobre toda la cara. Reaplicar cada 2 horas en exposición solar. Puede usarse directamente sobre maquillaje.</p><p><strong>Contenido:</strong> 22 g</p>"
+   }
+  },
+  {
+   "id": "mussa-anua-azelaic-acid-serum",
+   "codigo": "S10",
+   "nombre": "Anua Azelaic Acid 10+ Hyaluron Redness Soothing Serum",
+   "sku": {
+    "antes": "MUSSA-ANUA-AZE10",
+    "despues": "LUMI-ANUA-AZE10"
+   },
+   "colecciones": [
+    "Acné"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 109
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>El ácido azelaico tiene 5 mecanismos en uno: mata bacterias del acné, inhibe la tirosinasa (reduce manchas), exfolia suavemente, calma la inflamación y controla el sebo. A diferencia del retinol y el AHA, NO sensibiliza la piel al sol — se puede usar de mañana y de noche. Más de 30,000 rutinas verificadas. Sin fragancia, apto para acné fúngico.</p><h3>Cómo usarlo</h3><p>1–2 gotas al inicio. Aplicar entre el tónico y el hidratante. Empezar 1–2 veces por semana y aumentar gradualmente hasta dos veces al día. Puede usarse mañana y noche. Con SPF si se usa de mañana (buena práctica aunque no sea obligatorio como con otros ácidos).</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-anua-niacinamide-txa4-serum",
+   "codigo": "S7",
+   "nombre": "Anua Niacinamide 10 + TXA4 Serum",
+   "sku": {
+    "antes": "MUSSA-ANUA-NIA10",
+    "despues": "LUMI-ANUA-NIA10"
+   },
+   "colecciones": [
+    "Manchas"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 109
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Triple mecanismo anti-manchas. Niacinamida 10% bloquea la transferencia de melanina hacia la superficie. TXA 4% frena la producción de melanina desde el inicio. Alpha-Arbutin 2% inhibe directamente la tirosinasa. Ceramida NP refuerza la barrera. Sin fragancia.</p><h3>Cómo usarlo</h3><p>3–4 gotas. Toquecitos suaves. SOLO NOCHE B (martes, jueves, sábado en rutina manchas). Nunca la misma noche que el retinol. SPF obligatorio al día siguiente.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-anua-pdrn-hyaluron-capsule-100-serum",
+   "codigo": "S13",
+   "nombre": "Anua PDRN Hyaluronic Acid Capsule 100 Serum",
+   "sku": {
+    "antes": "MUSSA-ANUA-PDRN100",
+    "despues": "LUMI-ANUA-PDRN100"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Sérum regenerante con PDRN (ADN de salmón) encapsulado + ácido hialurónico. Estimula la reparación celular, hidrata intensamente y mejora la firmeza. Complementa rutinas anti-edad y de deshidratación.</p><h3>Cómo usarlo</h3><p>3–4 gotas por la noche después del tónico, antes de la crema. También de día bajo protector solar.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-beautyofjoseon-relief-sun-rice",
+   "codigo": "P2",
+   "nombre": "Beauty of Joseon Relief Sun: Rice + Probiotics SPF50+ PA++++",
+   "sku": {
+    "antes": "MUSSA-BOJ-RELIEFSUN",
+    "despues": "LUMI-BOJ-RELIEFSUN"
+   },
+   "colecciones": [
+    "Anti-edad",
+    "Manchas",
+    "Piel sensible",
+    "Piel deshidratada"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Último paso de la rutina de mañana. Extender suave en toda la cara. Reaplicar cada 2 horas.</p>"
+   }
+  },
+  {
+   "id": "mussa-celimax-jojoba-cleansing-oil",
+   "codigo": "L4",
+   "nombre": "celimax Derma Nature Fresh Blackhead Jojoba Cleansing Oil",
+   "sku": {
+    "antes": "MUSSA-CELIMAX-JOJOBA",
+    "despues": "LUMI-CELIMAX-JOJOBA"
+   },
+   "colecciones": [
+    "Anti-edad",
+    "Manchas",
+    "Acné",
+    "Piel sensible",
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 79
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Aceite limpiador que se usa en TODAS las rutinas Lumi como primer paso de la limpieza nocturna. El aceite disuelve el SPF waterproof, maquillaje y sebo — principio \"aceite disuelve aceite\". Emulsifica con agua y se enjuaga limpio. Sin fragancia.</p><h3>Cómo usarlo</h3><p>Cara COMPLETAMENTE SECA (obligatorio). Masajear 90 segundos. Agregar agua — emulsifica y se vuelve lechoso. Enjuagar bien. Seguir siempre con un limpiador en agua (2do paso).</p><p><strong>Contenido:</strong> 150 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-celimax-noni-toner",
+   "codigo": "T1",
+   "nombre": "celimax Noni Toner",
+   "sku": {
+    "antes": "MUSSA-CELIMAX-NONI",
+    "despues": "LUMI-CELIMAX-NONI"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 80
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Tónico con Noni al 80.1% — el primer ingrediente activo. 17 tipos de amino acids que son idénticos a los de la piel humana. HYDROVANCE, un humectante más potente que el glicerol. Prepara la piel para absorber mejor los activos que vienen después. pH bajo, sin alcohol.</p><h3>Cómo usarlo</h3><p>4–5 gotas. Calentar entre las palmas. Toquecitos suaves en toda la cara. Esperar 30 segundos antes de la esencia. Mañana y noche.</p><p><strong>Contenido:</strong> 150 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-centellian24-360-shot-eye-cream",
+   "codigo": "C3",
+   "nombre": "Centellian24 360° Shot PDRN Lifting Eye Cream",
+   "sku": {
+    "antes": "MUSSA-CENT24-360",
+    "despues": "LUMI-CENT24-360"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 109
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>El contorno más potente del catálogo. PDRN regenera células a nivel profundo. Triple Retinal actúa en múltiples capas del contorno. El rodillo 360° no es decorativo — activa el drenaje linfático y mejora la absorción del PDRN. Para anti-edad serio del contorno.</p><h3>Cómo usarlo</h3><p>Tamaño de un grano de arroz. Masajear con el rodillo 360° durante 30 segundos por ojo: párpado superior, patas de gallo, bolsas, ojeras. El masaje es parte del tratamiento — no saltarlo.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   },
+   "categoria": {
+    "antes": "Sérums y tratamientos",
+    "despues": "Contorno de ojos"
+   }
+  },
+  {
+   "id": "mussa-cosrx-advanced-snail-96-mucin-essence",
+   "codigo": "T3",
+   "nombre": "COSRX Advanced Snail 96 Mucin Power Essence",
+   "sku": {
+    "antes": "MUSSA-COSRX-SNAIL96",
+    "despues": "LUMI-COSRX-SNAIL96"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 89
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Esencia con 96% de mucina de caracol — best-seller mundial. Hidrata en profundidad, repara la barrera, atenúa marcas de acné y da efecto piel rebotada (glass skin). Muy versátil.</p><h3>Cómo usarlo</h3><p>2–3 gotas mañana y noche después del tónico. Palmaditas suaves hasta absorber; luego sellar con crema.</p><p><strong>Contenido:</strong> 100 ml</p>"
+   },
+   "categoria": {
+    "antes": "Sérums y tratamientos",
+    "despues": "Tónicos y esencias"
+   }
+  },
+  {
+   "id": "mussa-dralthea-147-barrier-cream",
+   "codigo": "H3",
+   "nombre": "Dr.Althea 147 Barrier Cream",
+   "sku": {
+    "antes": "MUSSA-DRALT-147",
+    "despues": "LUMI-DRALT-147"
+   },
+   "colecciones": [
+    "Anti-edad",
+    "Piel sensible"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>La crema reconstructora de barrera del catálogo. Las 4 ceramidas en las proporciones correctas replican exactamente los lípidos que la piel pierde con los activos agresivos. Más ceramidas = menos peeling con el retinol. El Guaiazulene (azuleno de manzanilla) calma la irritación activa. Sin fragancia.</p><h3>Cómo usarlo</h3><p>Capa generosa — más de lo que parece necesario. Siempre después de 15 minutos de espera del retinol. NOCHE.</p><p><strong>Contenido:</strong> 50 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-dralthea-345-relief-cream",
+   "codigo": "H1",
+   "nombre": "Dr.Althea 345 Relief Cream",
+   "sku": {
+    "antes": "MUSSA-DRALT-345",
+    "despues": "LUMI-DRALT-345"
+   },
+   "colecciones": [
+    "Manchas",
+    "Acné",
+    "Piel sensible",
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Su nombre refleja exactamente sus ingredientes: 3-4-5. Calma, protege y restaura la barrera ligeramente. Una de las cremas más compatibles del mercado K-beauty — pH neutro, fórmula minimalista. La Centella Asiatica reduce la descamación y el eritema causados por el retinol. Sin fragancia, no comedogénico.</p><h3>Cómo usarlo</h3><p>Tamaño de un garbanzo. Principalmente NOCHE: sella el BHA o como capa después del retinol (antes de la 147). En piel sensible también mañana.</p><p><strong>Contenido:</strong> 50 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-dralthea-aqua-marine-deep-serum",
+   "codigo": "S6",
+   "nombre": "Dr.Althea Aqua Marine Deep Serum",
+   "sku": {
+    "antes": "MUSSA-DRALT-AQDEEP",
+    "despues": "LUMI-DRALT-AQDEEP"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Sérum de hidratación profunda (línea Aqua Marine) con minerales marinos + ácido hialurónico. Repone agua en las capas profundas; ideal para piel seca o deshidratada severa. Textura ligera, absorción rápida.</p><h3>Cómo usarlo</h3><p>3–4 gotas mañana y noche después del tónico, antes de la crema. Toquecitos suaves hasta absorber.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-dralthea-aqua-marine-watery-cream",
+   "codigo": "H2",
+   "nombre": "Dr.Althea Aqua Marine Watery Cream",
+   "sku": {
+    "antes": "MUSSA-DRALT-AQCREAM",
+    "despues": "LUMI-DRALT-AQCREAM"
+   },
+   "colecciones": [
+    "Acné"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Crema gel ultra-ligera con textura de agua. 70% Bamboo Water como base. 10 tipos de HA en distintos pesos moleculares para hidratación en capas. Sin aceites comedogénicos. Apta para acné fúngico. La piel grasa también necesita hidratación — sin crema produce más sebo.</p><h3>Cómo usarlo</h3><p>Tamaño de un garbanzo. Extender en movimientos suaves hacia arriba. Mañana: antes del SPF. Noche: después del BHA.</p><p><strong>Contenido:</strong> 50 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-dralthea-gentle-vitamin-c-serum",
+   "codigo": "S5",
+   "nombre": "Dr.Althea Gentle Vitamin C Serum 20%",
+   "sku": {
+    "antes": "MUSSA-DRALT-VITC",
+    "despues": "LUMI-DRALT-VITC"
+   },
+   "colecciones": [
+    "Manchas"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 89
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>La entrada perfecta a la Vitamina C. El Sea Buckthorn aporta Vitamina C natural estabilizada — no irrita como el ácido ascórbico puro. Inhibe la tirosinasa (enzima que produce melanina) y frena la formación de manchas desde el origen. Niacinamida 5% complementa bloqueando la transferencia.</p><h3>Cómo usarlo</h3><p>4 gotas. Cara limpia y SECA. Toquecitos suaves. SOLO MAÑANA. Esperar 2 minutos antes del hidratante. SPF inmediatamente después — sin SPF pierde el 50% de su efecto.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-dralthea-pore-refresh-grinding-cleansing-balm",
+   "codigo": "L8",
+   "nombre": "Dr.Althea Pore Refresh Grinding Cleansing Balm",
+   "sku": {
+    "antes": "MUSSA-DRALT-POREBALM",
+    "despues": "LUMI-DRALT-POREBALM"
+   },
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Media cucharadita. Cara húmeda. Masajear en círculos 60 segundos — énfasis en nariz y zona T. Enjuagar agua fría. Solo mañana.</p>"
+   }
+  },
+  {
+   "id": "mussa-dralthea-pure-grinding-cleansing-balm",
+   "codigo": "L1",
+   "nombre": "Dr.Althea Pure Grinding Cleansing Balm",
+   "sku": {
+    "antes": "MUSSA-DRALT-BALM",
+    "despues": "LUMI-DRALT-BALM"
+   },
+   "colecciones": [
+    "Anti-edad",
+    "Manchas",
+    "Piel sensible",
+    "Piel deshidratada"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Media cucharadita. Cara húmeda. Masajear suave 60 segundos. Enjuagar con agua tibia. Solo mañana — es base oleosa, no funciona como 2do paso nocturno.</p>"
+   }
+  },
+  {
+   "id": "mussa-jumiso-niacinamide-20-serum",
+   "codigo": "S11",
+   "nombre": "JUMISO Niacinamide 20 Serum",
+   "sku": {
+    "antes": "MUSSA-JUMISO-NIA20",
+    "despues": "LUMI-JUMISO-NIA20"
+   },
+   "colecciones": [
+    "Manchas"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 109
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>La concentración más alta de Niacinamida del catálogo — 20%. Combinado con TXA, Glutatión, Centella y Hexylresorcinol forma el sistema anti-manchas más potente disponible. Sin fragancia, sin alcohol. Para manchas resistentes que no responden a concentraciones menores.</p><h3>Cómo usarlo</h3><p>3–4 gotas. Toquecitos suaves. SOLO NOCHE B. Comenzar solo 2 noches por semana las primeras 2 semanas. Puede causar enrojecimiento temporal (niacin flush) — es normal, no es alergia.</p><p><strong>Contenido:</strong> 40 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-kseoul1988-eye-cream-retinal-liposome",
+   "codigo": "C2",
+   "nombre": "K-Secret Seoul 1988 Eye Cream: Retinal Liposome 4% + Fermented Bean",
+   "sku": {
+    "antes": "MUSSA-KSEC-EYE4",
+    "despues": "LUMI-KSEC-EYE4"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Contorno de ojos con 4% de retinal encapsulado en liposomas. El retinal es la vitamina A más potente de venta libre —hasta 11 veces más fuerte que el retinol— y la cápsula liposomal lo libera de forma gradual, suave para la piel fina del contorno. Mejora líneas finas, arrugas y ojeras, mientras el frijol de soya fermentado ilumina y empareja el tono; suma bakuchiol, vitaminas C y E y 3 péptidos para colágeno y elasticidad. Ideal para piel madura o con primeros signos de edad.</p><h3>Cómo usarlo</h3><p>De noche, después de tu crema, aplica un poco alrededor del ojo con toquecitos (sin acercarte a la línea de pestañas). Empieza gradual: 2 veces por semana las primeras 1–2 semanas y ve subiendo. Úsalo de noche (el retinal se oxida con el sol); si lo usas de día, siempre con protector solar.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   },
+   "categoria": {
+    "antes": "Sérums y tratamientos",
+    "despues": "Contorno de ojos"
+   }
+  },
+  {
+   "id": "mussa-kseoul1988-serum-retinal-liposome",
+   "codigo": "S1",
+   "nombre": "K-Secret Seoul 1988 Serum: Retinal Liposome 2% + Black Ginseng",
+   "sku": {
+    "antes": "MUSSA-KSEC-SER2",
+    "despues": "LUMI-KSEC-SER2"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Sérum anti-edad para todo el rostro con 2% de retinal encapsulado. Renueva la piel, suaviza líneas finas y arrugas y afina la textura. Combina el retinal con niacinamida, bakuchiol y 58% de ginseng negro que aporta antioxidantes y vitalidad. Es la versión más suave que el contorno (2% vs 4%), pensada para tratar toda la cara. Apto para todo tipo de piel, especialmente madura.</p><h3>Cómo usarlo</h3><p>De noche, tras limpiar y tonificar, aplica 3–4 gotas con toquecitos. Empieza gradual (2–3 noches por semana) y sube según tolere tu piel. Sella con tu crema. Protector solar de día, imprescindible.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-medicube-collagen-glow-booster-serum",
+   "codigo": "S2",
+   "nombre": "medicube Collagen Glow Booster Serum",
+   "sku": {
+    "antes": "MUSSA-MEDICUBE-GLOW",
+    "despues": "LUMI-MEDICUBE-GLOW"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 89
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Sérum booster de colágeno en packaging airless para preservar la potencia del activo. El colágeno de triple densidad (260 Dalton) es de bajo peso molecular para mejor penetración. Siempre va antes de la crema de colágeno de mañana — el sérum penetra, la crema sella.</p><h3>Cómo usarlo</h3><p>3–4 gotas. Girar la tapa (packaging airless). Toquecitos suaves en cara y cuello. SOLO MAÑANA. Seguir inmediatamente con el Collagen Jelly Cream.</p><p><strong>Contenido:</strong> 15 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-medicube-collagen-jelly-cream",
+   "codigo": null,
+   "nombre": "medicube Collagen Jelly Cream",
+   "sku": {
+    "antes": "MUSSA-MEDICUBE-JELLY",
+    "despues": "LUMI-MEDICUBE-JELLY"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ]
+  },
+  {
+   "id": "mussa-medicube-pdrn-pink-collagen-gel-mask",
+   "codigo": "TP2",
+   "nombre": "medicube PDRN Pink Collagen Gel Mask",
+   "sku": {
+    "antes": "MUSSA-MEDICUBE-PDRNMASK",
+    "despues": "LUMI-MEDICUBE-PDRNMASK"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 25
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Mascarilla en gel con PDRN (ADN de salmón), niacinamida y colágeno hidrolizado. Regenera y calma la piel, ilumina el tono y aporta firmeza e hidratación intensa con efecto rebote inmediato. Complementa rutinas anti-edad y de luminosidad, e ideal como refuerzo antes de un evento.</p><h3>Cómo usarlo</h3><p>Sobre la piel limpia, aplica la mascarilla ajustándola bien al rostro. Déjala 15–20 minutos, retírala y da toquecitos para que absorba el resto del suero. Úsala 2–3 veces por semana o antes de un evento.</p><p><strong>Contenido:</strong> 28 g (1 unidad)</p>"
+   }
+  },
+  {
+   "id": "mussa-medicube-pdrn-pink-peptide-serum",
+   "codigo": "S8",
+   "nombre": "medicube PDRN Pink Peptide Serum",
+   "sku": {
+    "antes": "MUSSA-MEDICUBE-PDRNSER",
+    "despues": "LUMI-MEDICUBE-PDRNSER"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 109
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>El PDRN (ácido polidesoxirribonucleico) regenera células dañadas, mejora la firmeza y reduce arrugas profundas. El color rosa viene de la Vitamina B12 natural — no mancha la piel. Péptidos adicionales potencian la producción de colágeno. Sin fragancia.</p><h3>Cómo usarlo</h3><p>4–5 gotas. Cara y cuello. SOLO NOCHE. Después del retinol y sus 15 minutos de espera. Se añade desde semana 5 cuando la piel ya está adaptada al retinol.</p><p><strong>Contenido:</strong> 30 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-mixsoon-centella-cleansing-foam",
+   "codigo": "L5",
+   "nombre": "Mixsoon Centella Cleansing Foam",
+   "sku": {
+    "antes": "MUSSA-MIXSOON-FOAM",
+    "despues": "LUMI-MIXSOON-FOAM"
+   },
+   "colecciones": [
+    "Piel sensible",
+    "Piel deshidratada"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Cara húmeda · masajear suave 45 segundos · enjuagar. El más recomendado para piel sensible y deshidratada en mañana y 2do paso de noche.</p>"
+   }
+  },
+  {
+   "id": "mussa-mixsoon-collagen-glass-skin-mask",
+   "codigo": "H4",
+   "nombre": "mixsoon Collagen Glass Skin Mask",
+   "sku": {
+    "antes": "MUSSA-MIXSOON-GLASSMASK",
+    "despues": "LUMI-MIXSOON-GLASSMASK"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Mascarilla nocturna que no se enjuaga. Al quedarse en la piel 7–8 horas, entrega colágeno de bajo peso molecular, 8 péptidos, PDRN y ceramidas de manera continua. El resultado al despertar es inmediato: piel más suave, firme y luminosa. Testada clínicamente: líneas reducidas en 4 semanas de uso regular.</p><h3>Cómo usarlo</h3><p>Último paso de la rutina nocturna. Capa fina con espátula en toda la cara. NO enjuagar. Dormir con ella. Retirar suavemente en la mañana antes de la rutina de día. Usar 2–3 veces por semana mínimo.</p><p><strong>Contenido:</strong> 80 ml</p>"
+   }
+  },
+  {
+   "id": "mussa-mixsoon-soondy-centella-essence",
+   "codigo": "T2",
+   "nombre": "mixsoon Soondy Centella Asiatica Essence",
+   "sku": {
+    "antes": "MUSSA-MIXSOON-SOONDY",
+    "despues": "LUMI-MIXSOON-SOONDY"
+   },
+   "colecciones": [
+    "Piel sensible"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 89
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>La esencia más pura del catálogo — solo 3 ingredientes: Centella Asiatica, Agua y Butylene Glycol. EWG Green Grade en todos. Centella cultivada en las granjas propias de Mixsoon en Jeju. Calma, hidrata, repara barrera y reduce rojeces. Sin fragancia, sin aceites, sin alcohol.</p><h3>Cómo usarlo</h3><p>4–5 gotas. Toquecitos suaves con yemas. Mañana y noche. Para glass skin: técnica 7-skin — 3 capas delgadas consecutivas esperando absorción entre cada una.</p><p><strong>Contenido:</strong> 100 ml</p>"
+   },
+   "categoria": {
+    "antes": "Sérums y tratamientos",
+    "despues": "Tónicos y esencias"
+   }
+  },
+  {
+   "id": "mussa-numbuzin-no9-eye-cream",
+   "codigo": "C1",
+   "nombre": "numbuzin No.9 NAD+ Retinol Volumetox Eye Cream",
+   "sku": {
+    "antes": "MUSSA-NUMBUZIN-NO9",
+    "despues": "LUMI-NUMBUZIN-NO9"
+   },
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "precio": {
+    "antes": 88.5,
+    "despues": 99
+   },
+   "descripcion": {
+    "modo": "reemplazar",
+    "html": "<p>Contorno de ojos anti-edad de alta gama. Combina NAD+ (repara la piel a nivel celular), retinol puro (reduce líneas y arrugas), 50 tipos de péptidos (firmeza y colágeno) y niacinamida (aclara ojeras). Rellena y levanta el contorno, suaviza arrugas y elimina ojeras y bolsas, dejando la mirada fresca y descansada. Textura ligera con brillo perlado que se absorbe rápido. Fórmula suave de baja irritación, apta para uso diario y todo tipo de piel</p><h3>Cómo usarlo</h3><p>Gira la base del aplicador para destrabar, bombea 1–2 veces y aplica con el dedo anular alrededor del ojo con toquecitos suaves, sin frotar, hasta absorber. Se puede usar mañana y noche; como lleva retinol, acompaña siempre con protector solar de día.</p><p><strong>Contenido:</strong> 10 ml</p>"
+   },
+   "categoria": {
+    "antes": "Sérums y tratamientos",
+    "despues": "Contorno de ojos"
+   }
+  },
+  {
+   "id": "mussa-skin1004-centella-ampoule",
+   "codigo": "S3",
+   "nombre": "SKIN1004 Madagascar Centella Ampoule",
+   "sku": {
+    "antes": "MUSSA-SK1004-AMP",
+    "despues": "LUMI-SK1004-AMP"
+   },
+   "colecciones": [
+    "Piel sensible",
+    "Piel deshidratada"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>3–4 gotas. Toquecitos suaves. Mañana y noche. En piel sensible muy irritada puede aplicarse en capas (2–3 veces).</p>"
+   }
+  },
+  {
+   "id": "mussa-skin1004-hyalucica-sun-serum-spf50",
+   "codigo": "P4",
+   "nombre": "SKIN1004 Madagascar Centella Hyalu-Cica Water-Fit Sun Serum SPF50+ PA++++",
+   "sku": {
+    "antes": "MUSSA-SK1004-SUNSERUM",
+    "despues": "LUMI-SK1004-SUNSERUM"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Como último paso de la rutina de la mañana, aplica 2 líneas de dedo en todo el rostro (y cuello) con toquecitos, sin restregar. Reaplica cada 2–3 horas si hay exposición solar directa.</p>"
+   }
+  },
+  {
+   "id": "mussa-skin1004-poremizing-ampoule",
+   "codigo": "S4",
+   "nombre": "SKIN1004 Madagascar Centella Poremizing Fresh Ampoule",
+   "sku": {
+    "antes": "MUSSA-SK1004-PORE",
+    "despues": "LUMI-SK1004-PORE"
+   },
+   "colecciones": [
+    "Piel deshidratada"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>AM: 3–4 gotas · PM: 4–5 gotas. Toquecitos suaves — nunca frotar. Énfasis en zona T y granitos. Esperar 1–2 minutos antes del hidratante para que el BHA se active.</p>"
+   }
+  },
+  {
+   "id": "mussa-skin1004-centella-soothing-cream",
+   "codigo": "H6",
+   "nombre": "SKIN1004 Madagascar Centella Soothing Cream",
+   "sku": {
+    "antes": "MUSSA-SK1004-SOOTH",
+    "despues": "LUMI-SK1004-SOOTH"
+   },
+   "colecciones": [
+    "Piel sensible"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Mañana y noche como último paso hidratante (antes del SPF en la mañana). Sobre rostro limpio.</p>"
+   }
+  },
+  {
+   "id": "mussa-skin1004-teatrica-bha-foam",
+   "codigo": "L2",
+   "nombre": "SKIN1004 Madagascar Centella Tea-Trica BHA Foam",
+   "sku": {
+    "antes": "MUSSA-SK1004-BHA",
+    "despues": "LUMI-SK1004-BHA"
+   },
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Echa una pequeña cantidad en la mano, agrega agua y haz espuma; masajea suavemente el rostro húmedo y enjuaga con agua tibia. Úsalo mañana y noche.</p>"
+   }
+  },
+  {
+   "id": "mussa-skin1004-teatrica-sun-milk-spf50",
+   "codigo": "P3",
+   "nombre": "SKIN1004 Madagascar Centella Tea-Trica Soothing Sun Milk SPF50+ PA++++",
+   "sku": {
+    "antes": "MUSSA-SK1004-SUNMILK",
+    "despues": "LUMI-SK1004-SUNMILK"
+   },
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Último paso de la rutina de la mañana. Aplicar en toda la cara. Reaplicar cada 2 horas si hay exposición solar directa.</p>"
+   }
+  },
+  {
+   "id": "mussa-skin1004-tone-brightening-cleansing-foam",
+   "codigo": "L7",
+   "nombre": "SKIN1004 Madagascar Centella Tone Brightening Cleansing Gel Foam",
+   "sku": {
+    "antes": "MUSSA-SK1004-TBFOAM",
+    "despues": "LUMI-SK1004-TBFOAM"
+   },
+   "colecciones": [
+    "Anti-edad",
+    "Manchas"
+   ],
+   "descripcion": {
+    "modo": "agregar uso",
+    "html": "<h3>Cómo usarlo</h3><p>Cara húmeda · masajear 60 segundos · enjuagar. Mañana y 2do paso de noche en rutinas de manchas y anti-edad.</p>"
+   }
+  }
+ ],
+ "nuevos": [
+  {
+   "id": "lumi-sk1004-deepfoam",
+   "codigo": "L9",
+   "foto": 10,
+   "nombre": "SKIN1004 Madagascar Centella Poremizing Deep Cleansing Foam",
+   "sku": "LUMI-SK1004-DEEPFOAM",
+   "precio": 69,
+   "categoria": "Limpiadores",
+   "linea": "SKIN1004",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Limpiador en espuma cremoso y denso de la línea Poremizing, ideal para piel grasa, mixta y con poros. Combina sal rosa del Himalaya (más de 80 minerales que purifican), kaolín (absorbe el sebo) y papaína (enzima de la papaya que remueve células muertas y afina la textura) → actúan como un imán que saca las impurezas y el exceso de grasa, dejando los poros más limpios y la piel suave. Con centella de Madagascar en alta concentración que calma e hidrata, para que limpie a fondo sin dejar la piel tirante ni reseca. Apto incluso para piel sensible.</p><h3>Cómo usarlo</h3><p>Echa una cantidad pequeña en las manos húmedas, frota para crear espuma y masajea suavemente todo el rostro. Enjuaga con agua tibia. Úsalo mañana y noche.</p><p><strong>Contenido:</strong> 125 ml</p>"
+  },
+  {
+   "id": "lumi-celimax-retinal",
+   "codigo": "S9",
+   "foto": 3,
+   "nombre": "celimax The Vita-A Retinal Shot Tightening Booster",
+   "sku": "LUMI-CELIMAX-RETINAL",
+   "precio": 89,
+   "categoria": "Sérums y tratamientos",
+   "linea": "celimax",
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "descripcion": "<p>El siguiente nivel después del Retinol Shot. El Retinal es un retinoide de 2da generación — más potente que el retinol pero menos irritante que el ácido retinoico. Para quien ya completó 8 semanas con el Retinol Shot sin reacción y quiere avanzar.</p><h3>Cómo usarlo</h3><p>SOLO desde semana 9 de uso del Retinol Shot. Alternar: Noche A del lunes = Retinol Shot · Noche A del miércoles = Retinal Booster. NUNCA los dos la misma noche.</p><p><strong>Contenido:</strong> 15 ml</p>"
+  },
+  {
+   "id": "lumi-celimax-retinol",
+   "codigo": "S12",
+   "foto": 5,
+   "nombre": "celimax The Vita-A Retinol Shot Tightening Serum",
+   "sku": "LUMI-CELIMAX-RETINOL",
+   "precio": 89,
+   "categoria": "Sérums y tratamientos",
+   "linea": "celimax",
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "descripcion": "<p>Sérum de retinol microencapsulado — más suave que el retinol convencional. Acelera la renovación celular, aclara manchas y reduce arrugas. La microencapsulación libera el activo gradualmente para minimizar irritación. Sin fragancia.</p><h3>Cómo usarlo</h3><p>Cara limpia y COMPLETAMENTE SECA. Tamaño grano de arroz. Extender suave. SOLO NOCHE A. Esperar 15 minutos obligatorios antes de la crema selladora. Sem 1–2: noches alternas para adaptar la piel.</p><p><strong>Contenido:</strong> 30 ml</p>"
+  },
+  {
+   "id": "lumi-cent24-madeca",
+   "codigo": "H5",
+   "foto": 30,
+   "nombre": "Centellian24 Madeca Cream Time Reverse",
+   "sku": "LUMI-CENT24-MADECA",
+   "precio": 99,
+   "categoria": "Hidratantes",
+   "linea": "Centellian24",
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "descripcion": "<p>Crema anti-edad de la marca más famosa de centella de Corea. Combina un complejo TECA de centella de alta concentración con Retinol, Ceramida NP y Sodium DNA para reducir visiblemente líneas finas, reafirmar, hidratar en profundidad y reparar la barrera. Trabaja sobre 10 signos del envejecimiento a la vez —arrugas, firmeza, tono desigual y falta de luminosidad— y se absorbe rápido, sin pegajosidad. Perfecta para clientas con enfoque anti-edad y piel que necesita firmeza + reparación</p><h3>Cómo usarlo</h3><p>De noche, como último paso de tratamiento, aplica una capa fina sobre el rostro limpio. Contiene Retinol: úsala solo de noche, empieza gradual y no la uses en embarazo o lactancia. Acompaña siempre con protector solar de día</p><p><strong>Contenido:</strong> 50 ml</p>"
+  },
+  {
+   "id": "lumi-medicube-pdrncream",
+   "codigo": "H8",
+   "foto": 20,
+   "nombre": "medicube PDRN Pink Collagen Capsule Cream",
+   "sku": "LUMI-MEDICUBE-PDRNCREAM",
+   "precio": 109,
+   "categoria": "Hidratantes",
+   "linea": "medicube",
+   "colecciones": [
+    "Anti-edad"
+   ],
+   "descripcion": "<p>Crema anti-edad de doble textura (gel + cápsulas rosadas). Con PDRN de salmón + triple colágeno + niacinamida 5% + péptidos (cobre) + glutatión + ceramidas + HA. Da firmeza, elasticidad y glass glow, empareja el tono e hidrata. No comedogénica, apta para todo tipo de piel. Sin retinol → mañana y noche. (También sirve para sellar el retinol de noche.)</p><h3>Cómo usarlo</h3><p>Como crema, mañana y noche, después de los sérums. Aplica tamaño garbanzo con toquecitos hasta absorber (las cápsulas se disuelven al masajear). De día, sigue con protector solar.</p><p><strong>Contenido:</strong> 55 g</p>"
+  },
+  {
+   "id": "lumi-celimax-oilcream",
+   "codigo": "H9",
+   "foto": 21,
+   "nombre": "celimax Oil Control Moisturizing Cream",
+   "sku": "LUMI-CELIMAX-OILCREAM",
+   "precio": 99,
+   "categoria": "Hidratantes",
+   "linea": "celimax",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Crema hidratante matificante para piel grasa y mixta. Con niacinamida + Zinc PCA (controla el sebo) + pantenol + adenosina + beta-glucano + árbol de té. Hidrata sin engrasar, controla el brillo y calma la piel. Textura ligera que se absorbe rápido.</p><h3>Cómo usarlo</h3><p>Como crema, mañana y noche, después de los sérums. Aplica poca cantidad con toquecitos. De día, sigue con protector solar.</p><p><strong>Contenido:</strong> 80 ml</p>"
+  },
+  {
+   "id": "lumi-sk1004-gelcream",
+   "codigo": "H10",
+   "foto": 11,
+   "nombre": "SKIN1004 Madagascar Centella Poremizing Light Gel Cream",
+   "sku": "LUMI-SK1004-GELCREAM",
+   "precio": 99,
+   "categoria": "Hidratantes",
+   "linea": "SKIN1004",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Gel-crema ligera y fresca para piel grasa/mixta con poros. Con centella + niacinamida + aloe + adenosina + sal rosa del Himalaya + hamamelis. Afina y cierra los poros, controla el brillo, refresca y calma. Se absorbe al toque, sin sensación pesada.</p><h3>Cómo usarlo</h3><p>Como crema, mañana y noche, después de los sérums. De día, sigue con protector solar.</p><p><strong>Contenido:</strong> 75 ml</p>"
+  },
+  {
+   "id": "lumi-sk1004-b5cream",
+   "codigo": "H11",
+   "foto": 12,
+   "nombre": "SKIN1004 Madagascar Centella Tea-Trica B5 Cream",
+   "sku": "LUMI-SK1004-B5CREAM",
+   "precio": 99,
+   "categoria": "Hidratantes",
+   "linea": "SKIN1004",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Crema en gel ligera para piel grasa, mixta y con tendencia al acné. Con agua de árbol de té 9,4% + pantenol (B5) 5% + centella asiática + ceramida NP + ácido hialurónico + beta-glucano. Hidrata sin engrasar, calma granitos y rojeces, controla el exceso de sebo y repara la barrera. Textura fresca que absorbe rápido, sin pegajosidad. Sin fragancia artificial, aceite mineral ni alcohol secante. Apta para piel sensible.</p><h3>Cómo usarlo</h3><p>Como crema, mañana y noche, después de los sérums. Aplica tamaño garbanzo con toquecitos hasta absorber (también en el cuello). De día, sigue con protector solar.</p><p><strong>Contenido:</strong> 75 ml</p>"
+  },
+  {
+   "id": "lumi-medicube-txacream",
+   "codigo": "H12",
+   "foto": 37,
+   "nombre": "medicube TXA Niacinamide Capsule Cream",
+   "sku": "LUMI-MEDICUBE-TXACREAM",
+   "precio": 199,
+   "categoria": "Hidratantes",
+   "linea": "medicube",
+   "colecciones": [
+    "Manchas"
+   ],
+   "descripcion": "<p>Crema en gel con cápsulas rojas para piel con manchas, tono disparejo y marcas que deja el acné. Con niacinamida 5% (50.000 ppm, 3.ª en la lista) + ácido tranexámico (TXA) dentro de las cápsulas + alfa-arbutina + glutatión + vitamina C estable (3-O-etil ascórbico) + adenosina. Suma ceramida NP, ácido hialurónico en 7 formas, pantenol y bisabolol, así que aclara el tono sin resecar ni irritar. Textura ligera que absorbe rápido. Sin fragancia añadida, sin alcohol secante y sin retinol → se usa mañana y noche. Lleva trazas de aceites esenciales (limoncillo y anís) al final de la lista: ojo si la piel es muy reactiva.</p><h3>Cómo usarlo</h3><p>Como crema, mañana y noche, después de los sérums. Mezcla el gel rojo con las cápsulas de TXA en el dorso de la mano (más cápsulas = más efecto antimanchas) y aplica tamaño garbanzo con toquecitos hasta absorber, también en el cuello. De día, sigue con protector solar: sin bloqueador las manchas vuelven.</p><p><strong>Contenido:</strong> 55 g</p>"
+  },
+  {
+   "id": "lumi-boj-aquafresh",
+   "codigo": "P1",
+   "foto": 28,
+   "nombre": "Beauty of Joseon Relief Sun Aqua-Fresh: Rice + B5 SPF50+ PA++++",
+   "sku": "LUMI-BOJ-AQUAFRESH",
+   "precio": 99,
+   "categoria": "Protectores solares",
+   "linea": "Beauty of Joseon",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>El protector solar principal para piel grasa, mixta, acné y poros. 5 filtros UV modernos — la cobertura espectral más completa del catálogo. Acabado semi-matte sin dejar piel blanca. Ceramida NP + Panthenol + Ferulic Acid añaden valor más allá del SPF. Sin fragancia, sin alcohol. No deja cast blanco en ningún tono de piel.</p><h3>Cómo usarlo</h3><p>Último paso de la rutina de mañana. Deslizar suave en toda la cara. Reaplicar cada 2 horas en exposición solar directa.</p><p><strong>Contenido:</strong> 50 ml</p>"
+  },
+  {
+   "id": "lumi-celimax-sunstick",
+   "codigo": "P7",
+   "foto": 29,
+   "nombre": "celimax Oil Control Mattifying Sun Stick SPF50+ PA++++",
+   "sku": "LUMI-CELIMAX-SUNSTICK",
+   "precio": 89,
+   "categoria": "Protectores solares",
+   "linea": "celimax",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Protector solar en barra con SPF50+ PA++++, ideal para piel grasa, mixta y acneica. Controla el brillo y difumina los poros dejando un acabado mate suave que dura todo el día. Su complejo Anti-Sebum P (onagra, kudzu, pino, olmo) + sílice + calamina absorbe el exceso de grasa al contacto; la centella y el bisabolol calman la piel. No comedogénico, sin fragancia, resistente al sudor y se desliza sin pegajosidad — se puede reaplicar encima del maquillaje. Su aplicador en forma de gota permite llegar bien a nariz, contorno de ojos y zonas puntuales.</p><h3>Cómo usarlo</h3><p>Último paso de la mañana. Desliza la barra por el rostro (y zonas expuestas al sol) 20-30 min antes de exponerte. Reaplica cada 2-3 horas o cuando lo necesites — ideal para retocar durante el día.</p><p><strong>Contenido:</strong> 19 g</p>"
+  },
+  {
+   "id": "lumi-celimax-sunscreen",
+   "codigo": "P8",
+   "foto": 26,
+   "nombre": "celimax Oil Control Light Sunscreen SPF50+ PA++++",
+   "sku": "LUMI-CELIMAX-SUNSCREEN",
+   "precio": 99,
+   "categoria": "Protectores solares",
+   "linea": "celimax",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Protector solar SPF50+ PA++++ híbrido (óxido de zinc + titanio + filtros modernos) para piel grasa, mixta y sensible. Con niacinamida + control de sebo (Anti-Sebum-P) + ácido hialurónico. Protege sin engrasar ni dejar velo blanco y controla el brillo. Perfecto bajo maquillaje.</p><h3>Cómo usarlo</h3><p>Último paso de la mañana. Aplica 2 líneas de dedo en toda la cara, 15-20 min antes de exponerte. Reaplica cada 2-3 horas si hay exposición solar.</p><p><strong>Contenido:</strong> 40 ml</p>"
+  },
+  {
+   "id": "lumi-sk1004-spotpatch",
+   "codigo": "TP1",
+   "foto": 22,
+   "nombre": "SKIN1004 Madagascar Centella Spot Cover Patch",
+   "sku": "LUMI-SK1004-SPOTPATCH",
+   "precio": 19,
+   "categoria": "Sérums y tratamientos",
+   "linea": "SKIN1004",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Parches de hidrocoloide que absorben el contenido del granito por osmosis mientras protegen la zona de bacterias y del roce de los dedos (que empeoran el acné). Al retirar en la mañana el parche estará blanco — eso es el contenido absorbido. Los más vendidos del mundo en su categoría.</p><h3>Cómo usarlo</h3><p>Pegar después de la crema reparadora. Presionar suave para fijar. Dejar toda la noche. Retirar suavemente en la mañana. Máximo 2–3 parches por noche.</p><p><strong>Contenido:</strong> 22 parches</p>"
+  },
+  {
+   "id": "lumi-sk1004-claystick",
+   "codigo": "TP3",
+   "foto": 8,
+   "nombre": "SKIN1004 Madagascar Centella Poremizing Quick Clay Stick Mask",
+   "sku": "LUMI-SK1004-CLAYSTICK",
+   "precio": 89,
+   "categoria": "Mascarillas",
+   "linea": "SKIN1004",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Mascarilla de arcilla en barra con 5 arcillas (caolín 18%, bentonita, illita, montmorillonita y barro blanco), polvo de frijol rojo y centella asiática. Absorbe el exceso de sebo, destapa puntos negros y blancos, y exfolia suavemente para alisar la textura. Se aplica directo del stick, sin manos ni espátula. Ideal para rutinas de poros y piel grasa.</p><h3>Cómo usarlo</h3><p>sobre piel limpia y seca, deslizar evitando ojos y boca, dejar 3-5 minutos y enjuagar con agua tibia. 1-2 veces por semana.</p><p><strong>Contenido:</strong> 27 g</p>"
+  },
+  {
+   "id": "lumi-sk1004-toner",
+   "codigo": "F2 (solo foto)",
+   "foto": 2,
+   "nombre": "SKIN1004 Madagascar Centella Poremizing Clear Toner",
+   "sku": "LUMI-SK1004-TONER",
+   "precio": 199,
+   "categoria": "Tónicos y esencias",
+   "linea": "SKIN1004",
+   "colecciones": [
+    "Acné"
+   ],
+   "descripcion": "<p>Tónico de la línea Poremizing con centella de Madagascar. Refresca, retira los restos de grasa que deja la limpieza y ayuda a afinar la apariencia de los poros, dejando la piel lista para el sérum. Ideal para piel mixta y grasa.</p><h3>Cómo usarlo</h3><p>Después de la limpieza, aplica unas gotas en un algodón o en las manos y pásalo suavemente por todo el rostro. Mañana y noche.</p><p><strong>Contenido:</strong> 210 ml</p>"
+  },
+  {
+   "id": "lumi-celimax-darkspotsun",
+   "codigo": "F9 (solo foto)",
+   "foto": 9,
+   "nombre": "celimax Pore + Dark Spot Brightening Care Sunscreen SPF50+ PA++++",
+   "sku": "LUMI-CELIMAX-DARKSPOTSUN",
+   "precio": 199,
+   "categoria": "Protectores solares",
+   "linea": "celimax",
+   "colecciones": [
+    "Manchas"
+   ],
+   "descripcion": "<p>Protector solar SPF50+ PA++++ con niacinamida 5% + ácido tranexámico 1% + pantenol. Protege del sol mientras aclara manchas, afina poros y calma la piel. Ligero y apto para todo tipo de piel.</p><h3>Cómo usarlo</h3><p>Último paso de la rutina de la mañana. Aplica una cantidad generosa en todo el rostro y cuello. Reaplica cada 2–3 horas si hay exposición solar directa.</p>"
+  },
+  {
+   "id": "lumi-medicube-txa15",
+   "codigo": "F38 (solo foto)",
+   "foto": 38,
+   "nombre": "medicube TXA Niacinamide 15 Serum",
+   "sku": "LUMI-MEDICUBE-TXA15",
+   "precio": 199,
+   "categoria": "Sérums y tratamientos",
+   "linea": "medicube",
+   "colecciones": [
+    "Manchas"
+   ],
+   "descripcion": "<p>Sérum antimanchas con ácido tranexámico + niacinamida (15% en total). Aclara manchas, melasma leve y marcas de acné, unifica el tono y da luz a la piel.</p><h3>Cómo usarlo</h3><p>De noche, después de la limpieza, aplica 2–3 gotas en todo el rostro con toquecitos y luego tu crema. De día usa siempre protector solar.</p><p><strong>Contenido:</strong> 30 ml</p>"
+  }
+ ]
+}
