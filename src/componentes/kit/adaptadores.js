@@ -785,6 +785,8 @@ export const recompensaDesdeFirestore = (r = {}, beneficio) => ({
   // Los packs de stickers son de una sola vez por persona (redeemRewardSecure
   // no deja canjear el mismo dos veces); los cupones se canjean las veces que sea.
   packId: r.tipo === 'stickers_whatsapp' ? r.packId || '' : '',
+  // Las demás, solo si el admin las marcó «Una vez por persona».
+  unaVez: r.tipo === 'stickers_whatsapp' || r.unaVezPorPersona === true,
 });
 
 /**

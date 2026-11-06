@@ -59,8 +59,9 @@ export default function CatalogoDeCuenta() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Los packs de stickers son de una sola vez: los que ya tiene salen como
-  // "Ya es tuyo". Misma consulta (y caché) que Mis cupones; un canje la renueva.
+  // Las de una sola vez (los packs de stickers y las que el admin marcó «Una
+  // vez por persona») que ya canjeó salen como obtenidas, sin canjear. Misma
+  // consulta (y caché) que Mis cupones; un canje la renueva.
   const misCupones = useQuery({
     queryKey: ['mis-cupones', user?.uid],
     queryFn: async () => {
@@ -70,13 +71,21 @@ export default function CatalogoDeCuenta() {
     },
     enabled: Boolean(user?.uid),
   });
-  const packsTuyos = useMemo(
-    () => new Set((misCupones.data || []).filter((c) => c.entrega === 'stickers_whatsapp' && c.packId).map((c) => c.packId)),
-    [misCupones.data],
-  );
+  const tuyas = useMemo(() => {
+    const packs = new Set();
+    const recompensas = new Set();
+    (misCupones.data || []).forEach((c) => {
+      if (c.entrega === 'stickers_whatsapp' && c.packId) packs.add(c.packId);
+      if (c.rewardId) recompensas.add(c.rewardId);
+    });
+    return { packs, recompensas };
+  }, [misCupones.data]);
   const recompensas = useMemo(
-    () => (catalogo.data || []).map((r) => (r.packId && packsTuyos.has(r.packId) ? { ...r, obtenida: true } : r)),
-    [catalogo.data, packsTuyos],
+    () => (catalogo.data || []).map((r) => {
+      const obtenida = r.packId ? tuyas.packs.has(r.packId) : r.unaVez && tuyas.recompensas.has(r.id);
+      return obtenida ? { ...r, obtenida: true } : r;
+    }),
+    [catalogo.data, tuyas],
   );
 
   // Para Misiones diarias: el cliente entró aquí de verdad (si falla, no avisa).

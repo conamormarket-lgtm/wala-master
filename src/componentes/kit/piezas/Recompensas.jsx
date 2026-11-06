@@ -28,10 +28,11 @@ const miles = (n) => Number(n || 0).toLocaleString('es-PE');
  *  - onCanjear(): promesa; antes pide confirmar en la misma tarjeta
  *  - confirmando, onConfirmar(abierta): la confirmación controlada por la
  *    página (una sola abierta a la vez); sin ellas, la tarjeta la lleva sola
- *  - obtenida: una recompensa de una sola vez (un pack de stickers) que la
- *    persona ya tiene: "Ya es tuyo" y el enlace a urlObtenida, sin canjear
+ *  - obtenida: una recompensa de una sola vez (un pack de stickers, o una que
+ *    el admin marcó «Una vez por persona») que la persona ya canjeó: "Ya es
+ *    tuyo" (los stickers) o "Ya la canjeaste" y el enlace a urlObtenida
  */
-export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, costo = 0, saldo = 0, onCanjear, confirmando, onConfirmar, obtenida = false, urlObtenida = '/cuenta/cupones' }) {
+export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, costo = 0, saldo = 0, onCanjear, confirmando, onConfirmar, obtenida = false, stickers = false, urlObtenida = '/cuenta/cupones' }) {
   const [confirmarPropio, setConfirmarPropio] = useState(false);
   const controlada = confirmando !== undefined;
   const confirmar = controlada ? confirmando : confirmarPropio;
@@ -58,7 +59,7 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
       <div className={s.recompensaPie}>
         {obtenida ? (
           <>
-            <span className={s.obtenida}><CheckCircle2 aria-hidden="true" /> <Texto>Ya es tuyo</Texto></span>
+            <span className={s.obtenida}><CheckCircle2 aria-hidden="true" /> <Texto>{stickers ? 'Ya es tuyo' : 'Ya la canjeaste'}</Texto></span>
             <Boton to={urlObtenida} tamano="sm" variante="contorno" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver en Mis cupones</Texto></Boton>
           </>
         ) : confirmar ? (

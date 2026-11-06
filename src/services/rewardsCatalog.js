@@ -19,6 +19,7 @@ import { getCollection, getDocument, createDocument, updateDocument, deleteDocum
 //   tipo, descuentoPct, descuentoMonto, topeDescuento, productId, productName,
 //   vigenciaDias (días de validez del cupón generado), imageUrl,
 //   packId (stickers_whatsapp), brandId + marcaNombre (cupón de una marca),
+//   unaVezPorPersona (bool: redeemRewardSecure no deja canjearla dos veces),
 //   value (nota interna, texto libre: el cliente no la ve), active (bool), order (number) }.
 const COLLECTION = 'rewardsCatalog';
 
@@ -26,7 +27,7 @@ const CAMPOS = [
   'title', 'description', 'cost', 'value', 'active', 'order',
   'tipo', 'descuentoPct', 'descuentoMonto', 'topeDescuento',
   'productId', 'productName', 'vigenciaDias', 'imageUrl', 'packId',
-  'brandId', 'marcaNombre',
+  'brandId', 'marcaNombre', 'unaVezPorPersona',
 ];
 
 export const getRewards = async () => {
@@ -56,6 +57,7 @@ export const createReward = async (data) => {
     packId: data.packId || '',
     brandId: data.brandId || '',
     marcaNombre: data.marcaNombre || '',
+    unaVezPorPersona: data.unaVezPorPersona === true,
   });
 };
 

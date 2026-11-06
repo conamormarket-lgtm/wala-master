@@ -5236,6 +5236,14 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
         if (!ya.empty) {
           throw new functions.https.HttpsError("already-exists", "Ya tienes estos stickers: añádelos a WhatsApp desde la app de Walá, en Mis cupones.");
         }
+      } else if (reward.unaVezPorPersona === true) {
+        // Una sola vez por persona (lo marca el admin): cuenta cualquier canje
+        // de esta recompensa, también los de antes de encender la opción.
+        const ya = await t.get(db.collection("userCoupons")
+          .where("uid", "==", uid).where("rewardId", "==", String(rewardId)).limit(1));
+        if (!ya.empty) {
+          throw new functions.https.HttpsError("already-exists", "Ya canjeaste esta recompensa: es una sola vez por persona. La tienes en Mis cupones.");
+        }
       }
 
       // Costo SERVER-AUTHORITATIVE: se toma del catálogo, no del cliente.

@@ -473,7 +473,7 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
  */
 export function PaginaRecompensasAdmin({ recompensas = [], productos = [], marcas = [], packsStickers = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, pestanas }) {
   const tipoTexto = (v) => TIPOS_RECOMPENSA.find((x) => x.valor === v)?.texto || v;
-  const queDa = (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</>;
+  const queDa = (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.unaVez && <span className={l.sub}>Una vez por persona</span>}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</>;
   const estadoDe = (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado>;
   return (
     <PaginaListaAdmin
@@ -541,7 +541,7 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], marca
         vacio: ({ registros }) => ({
           // Una nueva va al final.
           nombre: '', descripcion: '', cuesta: 0, nota: '', orden: registros.reduce((x, r) => Math.max(x, (Number(r.orden) || 0) + 1), 0), activa: true, tipo: 'manual',
-          descuentoPct: 0, descuentoMonto: 0, topeDescuento: 0, productoId: '', productoNombre: '', vigenciaDias: 30, imagen: '',
+          descuentoPct: 0, descuentoMonto: 0, topeDescuento: 0, productoId: '', productoNombre: '', vigenciaDias: 30, imagen: '', unaVez: false,
         }),
         desde: (r) => ({ ...r }),
         validar: (d) => erroresDeRecompensa(d),
@@ -560,6 +560,13 @@ export function PaginaRecompensasAdmin({ recompensas = [], productos = [], marca
                 <Campo etiqueta="Cuesta" type="number" inputMode="numeric" min={0} sufijo="monedas" value={datos.cuesta} onChange={(e) => cambiar('cuesta', e.target.value)} />
                 {/* Con la lista para arrastrar, el orden no se escribe. */}
                 {!onGuardarOrden && <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />}
+              </GrupoCampos>
+              <GrupoCampos titulo="Cuántas veces">
+                {datos.tipo === 'stickers_whatsapp' ? (
+                  <Interruptor etiqueta="Una vez por persona" descripcion="Los packs de stickers siempre son de una sola vez." activo disabled onChange={() => {}} />
+                ) : (
+                  <Interruptor etiqueta="Una vez por persona" descripcion={datos.unaVez ? 'Cada persona la canjea una sola vez; en el catálogo le sale «Ya la canjeaste». Cuentan también los canjes de antes.' : 'Apagado: la canjea las veces que quiera, si le alcanzan las monedas.'} activo={Boolean(datos.unaVez)} onChange={(v) => cambiar('unaVez', v)} />
+                )}
               </GrupoCampos>
               <GrupoCampos titulo="Qué da" ayuda={AYUDA_TIPO[datos.tipo] || AYUDA_TIPO.cupon}>
                 <Campo etiqueta="Tipo" opciones={TIPOS_RECOMPENSA} value={datos.tipo} onChange={(e) => { cambiar('tipo', e.target.value); if (e.target.value === 'stickers_whatsapp' && !datos.packId && packsStickers[0]) cambiar('packId', packsStickers[0].valor); }} />

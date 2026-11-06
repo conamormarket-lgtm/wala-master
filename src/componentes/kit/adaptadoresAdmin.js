@@ -2081,6 +2081,9 @@ export function recompensaAdminDesdeFirestore(doc = {}) {
     packId: doc.packId || '',
     marcaId: doc.brandId || '',
     marcaNombre: doc.brandId ? doc.marcaNombre || '' : '',
+    // Una sola vez por persona (los stickers, siempre): redeemRewardSecure no
+    // deja canjearla otra vez y el catálogo la muestra como «Ya es tuyo».
+    unaVez: doc.tipo === 'stickers_whatsapp' || doc.unaVezPorPersona === true,
   };
 }
 
@@ -2106,6 +2109,7 @@ export function recompensaAdminAFirestore(r = {}) {
     // Un cupón de una marca: solo descuenta sus productos.
     brandId: CUPON_CON_MARCA.includes(r.tipo) ? r.marcaId || '' : '',
     marcaNombre: CUPON_CON_MARCA.includes(r.tipo) && r.marcaId ? r.marcaNombre || '' : '',
+    unaVezPorPersona: r.tipo === 'stickers_whatsapp' || Boolean(r.unaVez),
   };
 }
 

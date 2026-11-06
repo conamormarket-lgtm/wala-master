@@ -524,6 +524,14 @@ test('canjes: por entregar primero, cupones y vencidos', () => {
   assert.equal(m2.recompensaAdminAFirestore({ ...rs, tipo: 'manual' }).packId, '');
   assert.equal(m2.erroresDeRecompensa({ ...rs, packId: '' }).packId, 'Elige el pack de stickers.');
   assert.equal(m2.beneficioDeRecompensa(rs), 'Stickers para WhatsApp, en la app de Walá');
+  // Una vez por persona: los stickers siempre; las demás, si el admin lo marca.
+  assert.equal(rs.unaVez, true);
+  assert.equal(m2.recompensaAdminAFirestore(rs).unaVezPorPersona, true);
+  const env = m2.recompensaAdminDesdeFirestore({ id: 'e', tipo: 'envio_gratis', title: 'Envío' });
+  assert.equal(env.unaVez, false);
+  assert.equal(m2.recompensaAdminAFirestore(env).unaVezPorPersona, false);
+  assert.equal(m2.recompensaAdminAFirestore({ ...env, unaVez: true }).unaVezPorPersona, true);
+  assert.equal(m2.recompensaAdminDesdeFirestore({ id: 'e', tipo: 'envio_gratis', unaVezPorPersona: true }).unaVez, true);
 });
 
 test('fidelidad: referidos, misiones y retos', () => {
