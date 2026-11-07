@@ -231,8 +231,8 @@ export function RankingBolitas({ ranking, cargando = false, sesion = true, urlLo
 }
 
 /**
- * El top de niveles: quién llegó más lejos (el nivel más alto comprobado por
- * el servidor); empate, quien llegó antes.
+ * El top de niveles: quién llegó más lejos (el nivel más alto que pasó,
+ * comprobado por el servidor; no el que está jugando); empate, quien llegó antes.
  *  - top: { top: [{ puesto, nombre, nivel, dias, yo }], yo: { puesto, nivel, jugadores } }
  *  - cargando (sin top todavía: esqueleto) · sesion · urlLogin
  */
@@ -259,7 +259,7 @@ export function TopBolitas({ top, cargando = false, sesion = true, urlLogin = '/
           <li key={`${f.puesto}-${f.nombre}`} className={f.yo ? s.rankingYo : undefined}>
             <span className={[s.rankingPuesto, f.puesto <= 3 && s[`podio${f.puesto}`]].filter(Boolean).join(' ')}>{f.puesto}</span>
             <span className={s.rankingNombre}>{f.nombre}{f.yo && <small>{t.tu}</small>}</span>
-            <span className={s.rankingValor}><Texto>{`Nivel ${f.nivel}`}</Texto></span>
+            <span className={s.rankingValor}><Texto>{`Pasó el nivel ${f.nivel}`}</Texto></span>
           </li>
         ))}
       </ol>
@@ -268,12 +268,12 @@ export function TopBolitas({ top, cargando = false, sesion = true, urlLogin = '/
   return (
     <section className={s.ranking} aria-label={t.titulo} data-componente="TopBolitas">
       <p className={s.rankingTitulo}><Trophy aria-hidden="true" />{t.titulo}</p>
-      <p className={s.rankingNota}><Texto>Quién llegó más lejos en los niveles.</Texto></p>
+      <p className={s.rankingNota}><Texto>El nivel más alto que pasó cada persona.</Texto></p>
       {cuerpo}
       {fuera && (
         <p className={s.rankingNota}>
           <TextoResaltado resaltar={[yo.puesto, yo.nivel]}>
-            {yo.jugadores ? `Vas en el puesto ${yo.puesto} de ${yo.jugadores}, en el nivel ${yo.nivel}.` : `Vas en el puesto ${yo.puesto}, en el nivel ${yo.nivel}.`}
+            {yo.jugadores ? `Vas en el puesto ${yo.puesto} de ${yo.jugadores}: pasaste el nivel ${yo.nivel}.` : `Vas en el puesto ${yo.puesto}: pasaste el nivel ${yo.nivel}.`}
           </TextoResaltado>
         </p>
       )}
