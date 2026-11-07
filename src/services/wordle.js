@@ -4,6 +4,7 @@ import { getCurrentUser } from './firebase/auth';
 import { DAILY_WORDS, PALABRAS_FIJAS } from '../data/wordleDictionary';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { limaTodayStr, limaYesterdayStr } from '../utils/fechaLima';
+import { nombreParaRanking, acortarNombre } from '../utils/nombrePublico.mjs';
 
 const DAILY_WORDS_COLLECTION = 'wordle_daily_words';
 const USERS_COLLECTION = 'portal_clientes_users';
@@ -123,12 +124,13 @@ export const deleteDailyWord = async (dateStr) => {
 };
 
 // Publica las estadísticas acumuladas del jugador para el ranking global.
-// Es best-effort: si falla, la partida ya quedó guardada igual.
-const publishWordleStats = async (user, stats) => {
+// Es best-effort: si falla, la partida ya quedó guardada igual. El nombre va
+// corto ("Lucía R."): la colección es pública.
+const publishWordleStats = async (user, stats, nombre) => {
   try {
     await setDoc(doc(db, WORDLE_COLLECTION, statsDocId(user.uid)), {
       userId: user.uid,
-      displayName: user.displayName || stats.displayName || 'Anónimo',
+      displayName: nombre || null,
       maxStreak: stats.wordleMaxStreak || 0,
       currentStreak: stats.wordleCurrentStreak || 0,
       wins: stats.wordleWins || 0,
@@ -218,9 +220,9 @@ const guardarPartidaDelDia = async (user, datos) => {
   await setDoc(ref, datos);
 };
 
-const partidaDelDia = (user, { date, word, length, attempts, timeSeconds, won, streak }) => ({
+const partidaDelDia = (user, nombre, { date, word, length, attempts, timeSeconds, won, streak }) => ({
   userId: user.uid,
-  displayName: user.displayName || 'Anónimo',
+  displayName: nombre || null,
   date,
   word: word || '',
   length: length || 0,
@@ -258,15 +260,18 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
         email: user.email
       };
       await setDoc(userRef, initialData, { merge: true });
-      await guardarPartidaDelDia(user, partidaDelDia(user, {
+      const nombre = nombreParaRanking(null, user);
+      await guardarPartidaDelDia(user, partidaDelDia(user, nombre, {
         date: today, word, length, attempts: attemptsUsed, timeSeconds, won,
         streak: won ? 1 : 0
       }));
-      await publishWordleStats(user, initialData);
+      await publishWordleStats(user, initialData, nombre);
       return { success: true, stats: initialData };
     }
 
     const userData = userSnap.data();
+    // El nombre del ranking: el de la ficha o, si no tiene, el de la cuenta de Google.
+    const nombre = nombreParaRanking(userData, user);
     
     // Evitar sumar dos veces el mismo día si hay recarga extraña. Las
     // estadísticas no se tocan, pero la partida de hoy SÍ se guarda: es lo que
@@ -275,7 +280,7 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
     // desde el panel deja `lastWordleDate` en hoy sin partida guardada) acertaba
     // la palabra, no cobraba y podía volver a jugarla una y otra vez.
     if (userData.lastWordleDate === today) {
-      await guardarPartidaDelDia(user, partidaDelDia(user, {
+      await guardarPartidaDelDia(user, partidaDelDia(user, nombre, {
         date: today, word, length, attempts: attemptsUsed, timeSeconds, won,
         streak: userData.wordleCurrentStreak || 0
       }));
@@ -317,13 +322,13 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
     await setDoc(userRef, newData, { merge: true });
 
     // Guardar la partida de hoy (la que cierra el día y valida la recompensa).
-    await guardarPartidaDelDia(user, partidaDelDia(user, {
+    await guardarPartidaDelDia(user, partidaDelDia(user, nombre, {
       date: today, word, length, attempts: attemptsUsed, timeSeconds, won,
       streak: newStreak
     }));
 
     // Publicar estadísticas acumuladas para el ranking global (colección pública).
-    await publishWordleStats(user, { ...userData, ...newData });
+    await publishWordleStats(user, { ...userData, ...newData }, nombre);
 
     return { success: true, stats: { ...userData, ...newData } };
 
@@ -355,7 +360,8 @@ export const getWordleRanking = async () => {
         const data = d.data();
         return {
           id: data.userId || d.id,
-          displayName: data.displayName || 'Anónimo',
+          // Corto también lo que se publicó completo antes; sin nombre, null ("Anónimo").
+          displayName: acortarNombre(data.displayName),
           maxStreak: data.maxStreak || 0,
           currentStreak: data.currentStreak || 0,
           wins: data.wins || 0,
@@ -405,7 +411,7 @@ export const getWordleRankingToday = async () => {
 
     return todayWinners.map(w => ({
       id: w.userId,
-      displayName: w.displayName,
+      displayName: acortarNombre(w.displayName),
       todayAttempts: w.attempts,
       timeSeconds: w.timeSeconds,
       currentStreak: w.currentStreak
