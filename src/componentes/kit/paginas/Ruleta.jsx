@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Share2, Gamepad2, LogIn, RotateCcw } from 'lucide-react';
+import { Share2, Gamepad2, LogIn, RotateCcw, History } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio } from '../Feedback';
 import { BloqueSeccion } from '../Seccion';
@@ -8,7 +8,7 @@ import CuentaRegresiva from '../CuentaRegresiva';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { CodigoCopiable } from '../piezas/Legales';
-import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
+import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
 import { RuedaRuleta, HistorialRuleta } from '../piezas/Ruleta';
 import { Texto, useTexto } from '../Traduccion';
 import { anguloDeParada } from '../../../utils/ruletaModel';
@@ -38,11 +38,12 @@ const SIN_HISTORIAL = [];
  *    (con onReintentar) · error: un aviso bajo la rueda
  *  - resultadoInicial: lo de onGirar, para abrir la hoja sin girar (el modo diseño)
  *  - ayudaVista · onAyudaVista · urlLogin · urlCupones
+ *  - monedas: { saldo, cargando } para la barra del juego en el celular (MarcoJuego)
  * Los textos pasan por la traducción.
  */
 export function PaginaRuleta({
   premios = [], tema = {}, reglas = {}, eleccion = {}, historial: historialInicial = SIN_HISTORIAL, hasta, onGirar, onParar, sesion = true,
-  estado, error: errorCarga, onReintentar, resultadoInicial = null, ayudaVista = true, onAyudaVista, urlLogin = '/login', urlCupones = '/cuenta/cupones',
+  estado, error: errorCarga, onReintentar, resultadoInicial = null, ayudaVista = true, onAyudaVista, urlLogin = '/login', urlCupones = '/cuenta/cupones', monedas,
 }) {
   const [rotacion, setRotacion] = useState(0);
   const [duracion, setDuracion] = useState(0);
@@ -54,6 +55,8 @@ export function PaginaRuleta({
   const [error, setError] = useState('');
   const [ayuda, setAyuda] = useState(!ayudaVista);
   const temporizador = useRef(null);
+  // El historial: en el celular va bajo la rueda y la barra baja hasta él.
+  const panelRef = useRef(null);
   useEffect(() => () => clearTimeout(temporizador.current), []);
   // El historial puede llegar después (o refrescarse): se toma mientras no se haya girado aquí.
   useEffect(() => { if (!ganado) setHistorial(historialInicial); }, [historialInicial]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -122,8 +125,8 @@ export function PaginaRuleta({
       );
     }
     return (
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)} ancho="md">
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)} ancho="md" monedas={monedas}>
           {vacio}
         </MarcoJuego>
         {ayudaNodo}
@@ -159,8 +162,10 @@ export function PaginaRuleta({
 
   return (
     <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)}>
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)} monedas={monedas}
+          acciones={<BotonIrAlPanel destino={panelRef} etiqueta="Ver tu historial" icono={<History aria-hidden="true" />} />}
+        >
           <div className={s.ruleta} data-componente="PaginaRuleta">
             <div className={s.zonaRueda}>
               {!siempre && (
@@ -188,7 +193,7 @@ export function PaginaRuleta({
                 {girada && hasta && !porDias && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Vuelve el lunes, en" textoFin="¡Ya empezó otra semana!" /></p>}
               </div>
             </div>
-            <aside className={s.lado}>
+            <aside ref={panelRef} className={s.lado}>
               <HistorialRuleta historial={historial} urlCupones={urlCupones} />
             </aside>
           </div>

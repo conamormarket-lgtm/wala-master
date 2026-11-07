@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
+import useMonedasDelJuego from './useMonedasDelJuego';
 import {
   getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getEstadoPartidaDeHoy, claimWordleReward,
 } from '../../services/wordle';
@@ -51,6 +52,7 @@ const ayudaYaVista = () => {
 
 export default function PalabraDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
+  const monedas = useMonedasDelJuego();
   const queryClient = useQueryClient();
   const anonimo = useTexto('Anónimo');
   const sesion = tieneCuenta(user);
@@ -160,6 +162,7 @@ export default function PalabraDeTienda() {
 
   return (
     <PaginaPalabra
+      monedas={monedas}
       // Al llegar lo jugado hoy (o cambiar de cuenta), el tablero empieza de ahí.
       key={listo ? `${user?.uid || 'invitado'}-${hoy}` : 'cargando'}
       estado={listo ? undefined : 'cargando'}

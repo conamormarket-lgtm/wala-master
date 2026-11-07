@@ -5,6 +5,7 @@ import { useLayoutContext } from '../../contexts/LayoutContext';
 import useLoViejo from '../../hooks/useLoViejo';
 import { tieneCuenta } from '../../utils/rutaPrivada';
 import { BarraInferior } from '../../componentes/kit/BarraInferior';
+import { esRutaDeJuego } from './modoJuego';
 import s from './BarraInferiorDeTienda.module.css';
 
 // La barra de antes, solo con el interruptor barraVieja (guia/ELIMINAR.md).
@@ -23,7 +24,8 @@ const pestanaDeRuta = (ruta) => {
  * Barra inferior del celular (M6) con el kit. Mismas reglas que BottomNav:
  *  - Solo hasta 768 px, fija abajo, 56 px (--bottom-nav-height) + la zona segura.
  *  - No sale si la página la apaga (landings del builder con "sin pie", el
- *    editor visual) ni en el estudio (/crear/…) y el editor viejo (/editor).
+ *    editor visual) ni en el estudio (/crear/…), el editor viejo (/editor) y
+ *    los minijuegos (modo juego: la salida va en la barra del juego).
  * Diferencias a propósito (guia/INICIO.md): sin pestaña "Admin" (el panel se
  * abre desde BarraAdmin) y sin el "?" de la sesión anónima (el ícono de
  * persona); sin número en "Tienda" (el carrito lo tiene en la cabecera).
@@ -36,7 +38,7 @@ export default function BarraInferiorDeTienda() {
   const barraVieja = useLoViejo('barra');
 
   if (barraVieja) return <Suspense fallback={null}><BottomNav /></Suspense>;
-  if (!isFooterVisible || pathname.startsWith('/editor') || pathname.startsWith('/crear/')) return null;
+  if (!isFooterVisible || pathname.startsWith('/editor') || pathname.startsWith('/crear/') || esRutaDeJuego(pathname)) return null;
 
   // La misma foto y el mismo nombre que la cabecera y Mi cuenta.
   const usuario = tieneCuenta(user) ? {

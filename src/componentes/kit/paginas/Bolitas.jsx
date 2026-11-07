@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup } from 'framer-motion';
 import {
   Gamepad2, RotateCcw, Undo2, Eye, Plus, Lightbulb, ArrowRight, Map as IconoMapa, Crown, Lock, ChevronLeft, ChevronRight,
-  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star,
+  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star, Trophy,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { BloqueSeccion } from '../Seccion';
@@ -13,7 +13,7 @@ import { Estallido } from '../Efectos';
 import { FondoBolitas, escenaDelMundo } from '../piezas/FondoBolitas';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
-import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
+import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
 import {
   TuboBolitas, EstrellasNivel, RankingBolitas, TopBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca,
 } from '../piezas/Bolitas';
@@ -182,6 +182,7 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  *    patrocinado): { code, titulo, texto, expiraEn, marcaNombre }
  *  - inicial: { estado, colores, par } para empezar en un tablero puesto (la demo)
  *  - vistaInicial: 'juego' | 'mapa' · ayudaVista · onAyudaVista · estado: 'cargando'
+ *  - monedas: { saldo, cargando } para la barra del juego en el celular (MarcoJuego)
  * Mientras se acredita, la hoja no se cierra y no se pasa de nivel.
  * Los textos pasan por la traducción.
  */
@@ -189,7 +190,7 @@ export function PaginaBolitas({
   sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, onCompletar, hoy, progreso, onProgreso,
   ranking, cargandoRanking = false, onPedirRanking, top, cargandoTop = false, onPedirTop,
   marcasMundos = [], patrocinio, onPedirProductos, onClicMarca,
-  inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
+  inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado, monedas,
 }) {
   const [prog, setProg] = useState(() => progresoBolitas(progreso));
   const [modo, setModo] = useState('niveles');
@@ -213,6 +214,8 @@ export function PaginaBolitas({
   // Los productos de la marca que se muestran en el resultado: { marca, lista, cargando }.
   const [vitrina, setVitrina] = useState(null);
   const inicialUsado = useRef(false);
+  // El panel (racha, top, ranking): en el celular va bajo la mesa y la barra baja hasta él.
+  const panelRef = useRef(null);
   const t = {
     sonido: useTexto(prog.sonido ? 'Silenciar' : 'Activar el sonido'),
     vibracion: useTexto(prog.vibracion ? 'Quitar la vibración' : 'Activar la vibración'),
@@ -486,6 +489,7 @@ export function PaginaBolitas({
 
   const interruptores = (
     <>
+      <BotonIrAlPanel destino={panelRef} etiqueta={esReto ? 'Ver el ranking' : 'Ver la racha y el top'} icono={<Trophy aria-hidden="true" />} />
       <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.sonido} aria-pressed={prog.sonido} onClick={() => guardar({ sonido: !prog.sonido })}
         icono={prog.sonido ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
       />
@@ -497,8 +501,8 @@ export function PaginaBolitas({
 
   return (
     <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores}>
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
           <div className={s.bolitas} data-componente="PaginaBolitas">
             <div
               className={[s.mesa, (!esReto || marcaMesa) && s.mesaMundo].filter(Boolean).join(' ')}
@@ -653,7 +657,7 @@ export function PaginaBolitas({
                 </>
               )}
             </div>
-            <aside className={s.lado}>
+            <aside ref={panelRef} className={s.lado}>
               <div className={s.panel}>
                 {promesa}
                 <CifrasJuego cifras={[

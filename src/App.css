@@ -42,6 +42,23 @@
     padding-bottom: calc(72px + var(--safe-bottom, 0px));
   }
 }
+
+/* Modo juego (components/marco/modoJuego.js): en el celular, los minijuegos
+   ocupan la pantalla. Sin cabecera, aviso de la app ni pie; la barra de abajo
+   y los flotantes se apagan solos. Salir y las monedas van en MarcoJuego. */
+@media (max-width: 768px) {
+  .App.modo-juego > [data-componente="Cabecera"],
+  .App.modo-juego > #app-top-banner-slot,
+  .App.modo-juego [data-componente="PiePagina"] {
+    display: none !important;
+  }
+
+  .App.modo-juego #main-content-area {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: 0;
+  }
+}
 /* ====== MODO PREVISUALIZACION MOVIL (VISUAL EDITOR) ====== */
 body.mobile-preview-active {
   background-color: #cbd5e1 !important;

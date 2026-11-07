@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import useMonedasDelJuego from './useMonedasDelJuego';
 import { getRuletaBoard, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { CONFIG_POR_DEFECTO } from '../../utils/ruletaModel';
@@ -90,6 +91,7 @@ const ayudaYaVista = () => {
 
 export default function RuletaDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
+  const monedas = useMonedasDelJuego();
   const sesionForzada = diseno('sesion') === 'activa';
   const premiosDemo = diseno('premios') === 'demo';
   const resultadoDemo = diseno('resultado');
@@ -175,6 +177,7 @@ export default function RuletaDeTienda() {
 
   return (
     <PaginaRuleta
+      monedas={monedas}
       key={user?.uid || 'sin-cuenta'}
       estado={estado}
       error={estado === 'error' ? tablero.error : undefined}

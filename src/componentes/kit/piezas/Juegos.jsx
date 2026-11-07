@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowLeft, HelpCircle, Check, AlertCircle, LogIn } from 'lucide-react';
 import Boton from '../Boton';
 import { HojaInferior } from '../Feedback';
-import { GananciaMonedas } from '../Etiquetas';
+import { GananciaMonedas, SaldoMonedas } from '../Etiquetas';
 import { Sello, Trazo } from '../Marca';
 import { Cargando } from '../Cargando';
 import { Texto, useTexto } from '../Traduccion';
@@ -32,8 +32,13 @@ export { TextoResaltado } from './TextoResaltado';
  * "Cómo jugar"; debajo, el juego.
  *  - titulo · urlVolver · onAyuda · acciones (más botones a la derecha)
  *  - ancho: 'md' (760px) | 'lg' (1100px)
+ *  - monedas: { saldo, cargando } (sin cuenta, nada). Solo en el celular: allí
+ *    el juego va a pantalla completa (modo juego, sin la cabecera de la
+ *    tienda) y las monedas ganadas vuelan a esta píldora.
+ * En el celular la barra queda pegada arriba (con la zona segura) y el juego
+ * ocupa el alto de la pantalla (--alto-juego, para la página).
  */
-export function MarcoJuego({ titulo, urlVolver = '/minijuegos', onAyuda, acciones, ancho = 'lg', children }) {
+export function MarcoJuego({ titulo, urlVolver = '/minijuegos', onAyuda, acciones, ancho = 'lg', monedas, children }) {
   const t = { volver: useTexto('Volver a la Zona Arcade'), ayuda: useTexto('Cómo jugar') };
   return (
     <div className={[s.marco, ancho === 'md' && s.marcoMedio].filter(Boolean).join(' ')} data-componente="MarcoJuego">
@@ -43,6 +48,11 @@ export function MarcoJuego({ titulo, urlVolver = '/minijuegos', onAyuda, accione
         </Boton>
         <h1 className={s.titulo}><Texto>{titulo}</Texto><Trazo className={s.trazo} /></h1>
         <div className={s.acciones}>
+          {monedas && (
+            <span className={s.soloCelular}>
+              <SaldoMonedas saldo={monedas.cargando ? undefined : monedas.saldo} cargando={monedas.cargando} />
+            </span>
+          )}
           {acciones}
           {onAyuda && (
             <Boton variante="secundario" tamano="sm" icono={<HelpCircle aria-hidden="true" />} onClick={onAyuda} aria-label={t.ayuda}>
@@ -53,6 +63,23 @@ export function MarcoJuego({ titulo, urlVolver = '/minijuegos', onAyuda, accione
       </div>
       {children}
     </div>
+  );
+}
+
+/**
+ * En el celular, el panel del juego (ranking, racha, historial) queda debajo
+ * del tablero: este botón de la barra baja hasta él. En escritorio no sale
+ * (el panel está al costado).
+ *  - destino: ref del panel · etiqueta · icono
+ */
+export function BotonIrAlPanel({ destino, etiqueta, icono }) {
+  const texto = useTexto(etiqueta);
+  return (
+    <span className={s.soloCelular}>
+      <Boton variante="fantasma" tamano="sm" soloIcono aria-label={texto} icono={icono}
+        onClick={() => destino?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      />
+    </span>
   );
 }
 

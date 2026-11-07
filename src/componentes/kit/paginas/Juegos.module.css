@@ -569,3 +569,70 @@
     100% { opacity: 0; }
   }
 }
+
+/* ── Modo juego (celular) ──
+   Sin la cabecera de la tienda (components/marco/modoJuego.js), el juego
+   ocupa el alto de la pantalla (--alto-juego, de MarcoJuego): el tablero en
+   medio y lo que se toca (teclado, botones, girar) abajo, al alcance del
+   pulgar. El panel (ranking, racha, historial) queda debajo; la barra baja
+   hasta él. */
+@media (max-width: 768px) {
+  .seccionJuego {
+    padding-top: 0 !important;
+    padding-bottom: calc(1rem + var(--safe-bottom, 0px)) !important;
+  }
+
+  .juego,
+  .zonaRueda,
+  .mesa {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--alto-juego);
+  }
+
+  /* Palabra: el teclado (o el cierre del día) abajo. */
+  .juego > :last-child {
+    margin-top: auto;
+  }
+
+  /* Ruleta: la rueda al centro y el botón de girar abajo. */
+  .zonaRueda {
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Bolitas: los tubos al centro de lo que sobra y los botones pegados
+     abajo mientras se baja (por encima de la regla de .mesa > …). */
+  .mesa {
+    gap: 1rem;
+    padding-top: 1rem;
+  }
+
+  .mesa .tubos {
+    margin-block: auto;
+  }
+
+  /* Al bajar con el botón de la barra, el panel no queda debajo de ella. */
+  .lado {
+    scroll-margin-top: calc(var(--alto-barra-juego, 3.25rem) + var(--safe-top, 0px) + 0.75rem);
+  }
+
+  .mesa > .botonesMesa:not(.adornos):not(.fiesta) {
+    position: sticky;
+    bottom: calc(0.5rem + var(--safe-bottom, 0px));
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-self: stretch;
+    gap: 0.4rem;
+  }
+
+  /* Dos por fila: entran las cuatro ayudas sin comerse el tablero. */
+  .mesa > .botonesMesa > * {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0.4rem;
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+}

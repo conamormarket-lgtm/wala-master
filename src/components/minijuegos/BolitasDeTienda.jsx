@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import useMonedasDelJuego from './useMonedasDelJuego';
 import {
   claimBallSortReward, registrarPartidaBolitas, getRankingBolitas, getTopBolitas, leerProgresoBolitas, guardarProgresoBolitas, REWARD_AMOUNT,
   leerPatrocinioBolitas, leerMundosBolitas, contarClicBolitas,
@@ -99,6 +100,7 @@ const productosDeMarca = async (marcaId) => {
 
 export default function BolitasDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
+  const monedas = useMonedasDelJuego();
   const sesion = tieneCuenta(user);
   const uid = sesion ? user.uid : null;
   const forzar = diseno('bolitas');
@@ -235,6 +237,7 @@ export default function BolitasDeTienda() {
 
   return (
     <PaginaBolitas
+      monedas={monedas}
       // La página toma el progreso al montarse: se vuelve a montar cuando llega.
       key={`${uid || 'invitado'}-${progreso ? 'listo' : 'cargando'}`}
       estado={loading || !progreso ? 'cargando' : undefined}

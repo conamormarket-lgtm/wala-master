@@ -53,6 +53,7 @@ import FlotantesDeLaTienda from './components/marco/FlotantesDeLaTienda';
 import CabeceraDeTienda from './components/marco/CabeceraDeTienda';
 // Barra inferior con el kit (paso 7); con barraVieja, BottomNav.
 import BarraInferiorDeTienda from './components/marco/BarraInferiorDeTienda';
+import { esRutaDeJuego } from './components/marco/modoJuego';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
@@ -315,8 +316,9 @@ const GlobalLayout = ({ children }) => {
     );
   }
 
+  // Los minijuegos, a pantalla completa en el celular (marco/modoJuego.js).
   return (
-    <div className="App">
+    <div className={esRutaDeJuego(location.pathname) ? 'App modo-juego' : 'App'}>
       {rastreoCalor}
       <AvisoDelSistema />
       <NavProgressBar />

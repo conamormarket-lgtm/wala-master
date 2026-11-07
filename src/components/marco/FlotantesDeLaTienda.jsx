@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { PilaFlotante, BotonWhatsApp, PildoraRecompensa } from '../../componentes/kit/piezas/Flotantes';
 import useWhatsAppDeLaRuta from './useWhatsAppDeLaRuta';
+import { esRutaDeJuego } from './modoJuego';
 
 // Kapi (con su ventana, el reto y el recorrido) llega en su propio archivo,
 // como antes: no hace falta para ver la página.
@@ -59,7 +60,8 @@ export default function FlotantesDeLaTienda() {
 
   return (
     <PilaFlotante
-      ocultarEnCelular={CON_BOTON_FIJO.some((r) => pathname.startsWith(r))}
+      // Y en los minijuegos (modo juego): Kapi y WhatsApp tapaban los tubos.
+      ocultarEnCelular={CON_BOTON_FIJO.some((r) => pathname.startsWith(r)) || esRutaDeJuego(pathname)}
       izquierda={conPildora && (
         <PildoraRecompensa
           titulo="Gana 15 monedas"
