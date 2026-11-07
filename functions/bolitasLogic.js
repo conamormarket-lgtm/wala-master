@@ -63,8 +63,9 @@ async function semanaBolitas(fecha) {
 
 /**
  * El nombre que se ve en el ranking: el primer nombre y la inicial del
- * apellido ("Lucía R."). Nunca el correo; si no hay nombre, null (la
- * persona sale como "Jugador").
+ * apellido ("Lucía R."). Nunca el correo; si no hay nombre, null. El
+ * servidor prueba luego con el nombre de la cuenta de Google y, sin ninguno,
+ * la persona sale como "Jugador".
  */
 function nombrePublico(perfil) {
   const p = perfil || {};

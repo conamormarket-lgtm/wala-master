@@ -3386,6 +3386,8 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
       ]);
       if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = userSnap.data();
+      // Sin nombre en la ficha (entró con Google y no completó el perfil): el de su cuenta.
+      const nombrePublico = bolitas.nombrePublico(u) || bolitas.nombrePublico({ displayName: context.auth.token.name });
 
       let reward = 0;
       const ya = u.lastBallSortReward === hoy;
@@ -3405,7 +3407,7 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
         const antes = retoSnap.exists ? retoSnap.data().movimientos : null;
         mejor = antes == null || partida.movimientos < antes;
         if (mejor) {
-          const nombre = bolitas.nombrePublico(u);
+          const nombre = nombrePublico;
           t.set(retoRef, {
             uid, fecha: hoy, semana, nombre, movimientos: partida.movimientos, tubos: partida.tubos,
             hecho: FieldValue.serverTimestamp(),
@@ -3429,7 +3431,7 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
       }
 
       const jugadorAntes = jugadorSnap.exists ? jugadorSnap.data() : null;
-      const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre: bolitas.nombrePublico(u), ahora: Date.now() });
+      const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre: nombrePublico, ahora: Date.now() });
       t.set(jugadorRef, jugador);
       // Subió su nivel más alto: el celular vuelve a pedir el top de niveles.
       const record = jugador.nivelMax > ((jugadorAntes && jugadorAntes.nivelMax) || 0);
@@ -3455,6 +3457,27 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
 const RANKING_BOLITAS_TOP = 20;
 const RANKING_BOLITAS_LEER = 1000;
 
+/**
+ * Pone el nombre corto a las filas que no lo guardaron: el de su ficha y, si
+ * la ficha no tiene (entró con Google y no completó el perfil), el de su
+ * cuenta en Firebase Auth. Sin nombre en ninguno, sale como "Jugador".
+ */
+async function completarNombresBolitas(filas) {
+  const sinNombre = filas.filter((f) => !f.nombre && f.uid);
+  if (!sinNombre.length) return;
+  const perfiles = await db.getAll(...sinNombre.map((f) => db.collection(PORTAL_USERS_COLLECTION).doc(f.uid)));
+  perfiles.forEach((p, k) => { sinNombre[k].nombre = p.exists ? bolitas.nombrePublico(p.data()) : null; });
+  const aun = sinNombre.filter((f) => !f.nombre);
+  if (!aun.length) return;
+  try {
+    const { users } = await auth.getUsers([...new Set(aun.map((f) => f.uid))].map((uid) => ({ uid })));
+    const porUid = new Map(users.map((u) => [u.uid, u.displayName]));
+    aun.forEach((f) => { f.nombre = bolitas.nombrePublico({ displayName: porUid.get(f.uid) }); });
+  } catch (e) {
+    console.warn("completarNombresBolitas (auth):", e.message);
+  }
+}
+
 exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) => {
   const uid = context.auth ? context.auth.uid : null;
   const hoy = limaTodayStr();
@@ -3470,6 +3493,7 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
     });
     const dia = bolitas.ordenarRankingDia(filas(diaSnap));
     const sem = bolitas.ordenarRankingSemana(filas(semanaSnap));
+    await completarNombresBolitas([...dia.slice(0, RANKING_BOLITAS_TOP), ...sem.slice(0, RANKING_BOLITAS_TOP)]);
     const publico = (f, k) => ({
       puesto: k + 1,
       nombre: f.nombre || "Jugador",
@@ -3493,7 +3517,8 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
 // Quién llegó más lejos en los niveles (el nivel más alto que el servidor
 // comprobó, en bolitasJugadores/{uid}); empate, quien llegó antes. Los 20
 // primeros con el nombre corto, cuántos días jugaron, y dónde va quien
-// pregunta. Los jugadores de antes de guardar el nombre lo toman del perfil.
+// pregunta. Los jugadores sin nombre guardado lo toman del perfil o de su
+// cuenta de Google (completarNombresBolitas).
 const TOP_NIVELES_LEER = 500;
 
 exports.getTopBolitasSecure = functions.https.onCall(async (data, context) => {
@@ -3507,11 +3532,7 @@ exports.getTopBolitasSecure = functions.https.onCall(async (data, context) => {
     const filas = bolitas.ordenarTopNiveles(snap.docs.map((d) => ({ ...d.data(), uid: d.id })));
     const top = filas.slice(0, RANKING_BOLITAS_TOP);
 
-    const sinNombre = top.filter((f) => !f.nombre);
-    if (sinNombre.length) {
-      const perfiles = await db.getAll(...sinNombre.map((f) => db.collection(PORTAL_USERS_COLLECTION).doc(f.uid)));
-      perfiles.forEach((p, k) => { sinNombre[k].nombre = p.exists ? bolitas.nombrePublico(p.data()) : null; });
-    }
+    await completarNombresBolitas(top);
 
     let puesto = null;
     let nivelYo = null;
