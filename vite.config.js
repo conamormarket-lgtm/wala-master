@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createDocumentByteMeter } from './src/observability/firestore-byte-meter.mjs';
 import { storefrontBootstrap } from './scripts/storefront-bootstrap.mjs';
 
 // Migración CRA -> Vite (Fase 1). Para NO obligar a renombrar el .env ni el código,
@@ -50,7 +51,7 @@ export default defineConfig(({ command, mode }) => {
         if (mode !== 'production' || env.VITE_USE_EMULATORS === 'true' ||
             !env.REACT_APP_FIREBASE_PROJECT_ID || !env.REACT_APP_FIREBASE_API_KEY) return [];
         const config = JSON.stringify([env.REACT_APP_FIREBASE_PROJECT_ID, env.REACT_APP_FIREBASE_API_KEY]).replace(/</g, '\\u003c');
-        return [{ tag: 'script', injectTo: 'head-prepend', children: `(${storefrontBootstrap.toString()})(...${config});` }];
+        return [{ tag: 'script', injectTo: 'head-prepend', children: `(${storefrontBootstrap.toString()})(...${config}, (${createDocumentByteMeter.toString()})());` }];
       },
     }],
     define,

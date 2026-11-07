@@ -1,3 +1,4 @@
+import * as byteMeter from '../../src/observability/firestore-byte-meter.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -27,7 +28,7 @@ async function fixture(extra = {}) {
   const context = vm.createContext({ console });
   const root = new vm.SourceTextModule(await readFile(new URL('../../src/services/firebase/observed.js', import.meta.url),'utf8'), { context });
   await root.link(specifier => {
-    const values = specifier === 'firebase/firestore' ? sdk : telemetry;
+    const values = specifier === 'firebase/firestore' ? sdk : specifier.endsWith('firestore-byte-meter.mjs') ? byteMeter : telemetry;
     return new vm.SyntheticModule(Object.keys(values), function() { for(const k of Object.keys(values)) this.setExport(k,values[k]); }, { context });
   });
   await root.evaluate();

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import { createDocumentByteMeter } from '../../src/observability/firestore-byte-meter.mjs';
 import { storefrontBootstrap } from '../storefront-bootstrap.mjs';
 
 function encode(value) {
@@ -15,8 +16,8 @@ function encode(value) {
 async function run({ pathname = '/', search = '', mobile = false, response, fail = false } = {}) {
   const requests = [], links = [], timers = new Map();
   const window = { location: { pathname, search }, matchMedia: () => ({ matches: mobile }) };
-  vm.runInNewContext(`(${storefrontBootstrap.toString()})('public-project', 'public-key')`, {
-    window, URLSearchParams, AbortController,
+  vm.runInNewContext(`(${storefrontBootstrap.toString()})('public-project', 'public-key', (${createDocumentByteMeter.toString()})())`, {
+    window, URLSearchParams, AbortController, TextEncoder,
     document: { createElement: () => ({}), head: { appendChild: link => links.push(link) } },
     setTimeout: fn => { timers.set(1, fn); return 1; }, clearTimeout: id => timers.delete(id),
     fetch: async (url, options) => {

@@ -1,6 +1,6 @@
 // Serialized into the production HTML by Vite. Keep this function standalone:
 // it runs before React and the Firebase SDK, with only public client identifiers.
-export function storefrontBootstrap(projectId, apiKey) {
+export function storefrontBootstrap(projectId, apiKey, measureBytes) {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
   const pageId = { '/': 'home', '/home': 'home', '/tienda': 'tienda' }[pathname];
   if (!pageId || new URLSearchParams(window.location.search).has('t') || window.__walaStorefrontBootstrap) return;
@@ -38,6 +38,10 @@ export function storefrontBootstrap(projectId, apiKey) {
       return response.ok ? response.json() : null;
     })
     .then((data) => {
+      if (data && measureBytes) {
+        try { report({ byteMeterSnapshots: 1, serverDocumentBytesEstimate: measureBytes(data), serverByteMeasuredDocuments: 1 }); }
+        catch { report({ serverByteMeasurementErrors: 1 }); }
+      }
       if (!data?.fields?.sections) return null;
       const sections = decode(data.fields.sections);
       if (!Array.isArray(sections) || !sections.every((section) => section && typeof section.type === 'string')) return null;
