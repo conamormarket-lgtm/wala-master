@@ -23,7 +23,7 @@ async function run({ pathname = '/', search = '', mobile = false, response, fail
     fetch: async (url, options) => {
       requests.push({ url, options });
       if (fail) throw new Error('offline');
-      return response || { ok: false };
+      return response ? { ...response, text: response.text || (async () => JSON.stringify(await response.json?.() ?? {})) } : { ok: false, text: async () => '{}' };
     },
   });
   const result = await window.__walaStorefrontBootstrap?.promise;
@@ -42,6 +42,8 @@ test('HTML bootstrap reads only public page sections and preloads the correct mo
   assert.equal(result.requests[0].options.credentials, 'omit');
   assert.equal(result.requests[0].options.cache, 'no-store');
   assert.equal(result.timers.size, 0);
+  const events = result.window.__bootstrapFirestoreReads;
+  assert.ok(events.some(e => e.counts.transportResponseBytes > 0));
 });
 
 test('private routes and editor previews never issue a public bootstrap read', async () => {

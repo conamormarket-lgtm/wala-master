@@ -6,14 +6,18 @@ export function storefrontBootstrap(projectId, apiKey, measureBytes) {
   if (!pageId || new URLSearchParams(window.location.search).has('t') || window.__walaStorefrontBootstrap) return;
 
   // This read happens before React/the SDK. Observe the existing response only.
-  function report(counts) {
+  function report(counts, transport = false) {
     try {
-      const event = { project: projectId, database: '(default)', collection: 'pages', originScreen: pathname, counts };
+      const event = { project: projectId, database: '(default)', collection: transport ? '(transport)' : 'pages', originScreen: pathname, counts };
       if (window.__reportBootstrapFirestoreRead) window.__reportBootstrapFirestoreRead(event);
       else (window.__bootstrapFirestoreReads ||= []).push(event);
     } catch { /* Never delay the storefront for diagnostics. */ }
   }
   report({ readCalls: 1 });
+  // Normally this script precedes SDK startup. If installed already, the shared
+  // fetch observer owns this request so its body is not counted a second time.
+  const ownsTransport = !window.__firestoreReads?.transport;
+  if (ownsTransport) report({ transportRequests: 1 }, true);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2500);
@@ -31,11 +35,16 @@ export function storefrontBootstrap(projectId, apiKey, measureBytes) {
   const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/pages/${pageId}?mask.fieldPaths=sections&key=${encodeURIComponent(apiKey)}`;
   let responseReceived = false;
   const promise = fetch(url, { credentials: 'omit', cache: 'no-store', signal: controller.signal })
-    .then((response) => {
+    .then(async (response) => {
       responseReceived = true;
       report(response.ok ? { successfulReadCalls: 1, serverDocuments: 1 } : response.status === 404
         ? { successfulReadCalls: 1, missingDocumentResults: 1 } : { failedReadCalls: 1 });
-      return response.ok ? response.json() : null;
+      const body = await response.text();
+      if (ownsTransport) {
+        try { report({ transportResponseBytes: new TextEncoder().encode(body).length, transportResponses: 1,
+          ...(!response.ok ? { transportFailedResponses: 1 } : {}) }, true); } catch { /* passive */ }
+      }
+      return response.ok ? JSON.parse(body) : null;
     })
     .then((data) => {
       if (data && measureBytes) {
@@ -76,7 +85,11 @@ export function storefrontBootstrap(projectId, apiKey, measureBytes) {
       }
       return sections;
     })
-    .catch(() => { if (!responseReceived) report({ failedReadCalls: 1 }); return null; })
+    .catch(() => {
+      if (!responseReceived) report({ failedReadCalls: 1 });
+      if (ownsTransport) report({ transportFailedResponses: 1, transportMeasurementErrors: 1 }, true);
+      return null;
+    })
     .finally(() => clearTimeout(timeout));
   window.__walaStorefrontBootstrap = { pageId, promise, consumed: false };
 }

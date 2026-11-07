@@ -52,10 +52,12 @@ test('CORS preflight does no auth work and log failures remain retryable', async
 
 test('accepts byte estimates above 100 MB, separates applications and still excludes payloads', async () => {
   const f = fixture(), b = batch(); b.app = 'visor-pedidos';
-  b.rows[0].counts = { byteMeterSnapshots: 1, serverDocumentBytesEstimate: 300000000, serverByteMeasuredDocuments: 1000, cacheDocumentBytesEstimate: 10000 };
+  b.rows[0].counts = { byteMeterSnapshots: 1, serverDocumentBytesEstimate: 300000000, serverByteMeasuredDocuments: 1000, cacheDocumentBytesEstimate: 10000,
+    transportRequests: 4, transportResponses: 3, transportResponseBytes: 500000000, transportFailedResponses: 1, transportMeasurementErrors: 0 };
   assert.equal((await f.send(b)).code, 401);
   assert.equal((await f.send(b, { authorization: 'Bearer valid' })).code, 204);
   assert.equal(f.logged[0].rows[0].counts.serverDocumentBytesEstimate, 300000000);
+  assert.equal(f.logged[0].rows[0].counts.transportResponseBytes, 500000000);
   const bad = batch(); bad.rows[0].counts.serverDocumentBytesEstimate = 1000000000001;
   assert.equal(validateBatch(bad, project, time), null);
 });

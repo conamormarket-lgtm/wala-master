@@ -1,5 +1,6 @@
 /** Central ingestion only. Never imports or calls Firestore, Storage or a business permission lookup. */
 const COUNTS = new Set([
+  'transportRequests', 'transportResponses', 'transportResponseBytes', 'transportFailedResponses', 'transportMeasurementErrors',
   'byteMeterSnapshots', 'byteSnapshotErrors', 'serverDocumentBytesEstimate', 'cacheDocumentBytesEstimate',
   'serverByteMeasuredDocuments', 'cacheByteMeasuredDocuments', 'serverByteMeasurementErrors', 'cacheByteMeasurementErrors',
   'readCalls', 'successfulReadCalls', 'failedReadCalls', 'snapshots', 'serverDocuments',
@@ -22,7 +23,7 @@ function validateBatch(body, project, now) {
     if (!exactKeys(row, [...DIMENSIONS, 'minute', 'counts'])) return null;
     if (!DIMENSIONS.every(k => typeof row[k] === 'string' && /^[a-zA-Z0-9_().*:/-]{1,160}$/.test(row[k]))) return null;
     if (row.project !== project || !Number.isSafeInteger(row.minute) || row.minute % 60000 || Math.abs(now - row.minute) > 86400000) return null;
-    if (!exactKeys(row.counts, [...COUNTS]) || !Object.keys(row.counts).length || !Object.entries(row.counts).every(([name, n]) => integer(n, name.endsWith('BytesEstimate') ? 1000000000000 : 100000000))) return null;
+    if (!exactKeys(row.counts, [...COUNTS]) || !Object.keys(row.counts).length || !Object.entries(row.counts).every(([name, n]) => integer(n, (name.endsWith('BytesEstimate') || name === 'transportResponseBytes') ? 1000000000000 : 100000000))) return null;
   }
   // Construct a fresh allowlisted object. Never log request headers, tokens, IPs or raw rejected bodies.
   return { schema: 1, app: body.app, device: body.device, session: body.session, batch: body.batch, createdAt: body.createdAt, dropped: body.dropped,

@@ -23,7 +23,7 @@ export function summarize(entries, { by = ['app', 'database', 'originScreen', 'c
       rows.set(key, target);
     }
   }
-  return { warning: 'Byte estimates cover document protobuf payloads delivered by the SDK, not billed network bytes. Cache/initial-synchronized sizes must not be added to network estimates. Missing byte counters mean uninstrumented versions. SDK observations, not billable reads. IDs identify browser profiles per app, not people or physical computers. Uninstrumented versions, backend/Admin SDK and server-side rule/index reads are excluded.',
+  return { warning: 'transportResponseBytes counts decoded HTTP response-body bytes (including reconnects and RPC envelopes), not compressed wire bytes or billed bytes. Document byte estimates cover SDK-delivered protobuf payloads and can miss unchanged retransmissions. Do not add transport, payload estimates, cache or initial-synchronized sizes together. Missing counters mean uninstrumented versions. IDs identify browser profiles per app, not people or physical computers. Backend/Admin SDK, other apps and server-side rule/index work are excluded.',
     batches: batches.size, duplicateBatchesIgnored: duplicates, browserProfiles: devices.size, excludedRows: excluded, maximumReportedDroppedRows: dropped,
     rows: [...rows.values()].sort((a,b) => (b.counts.serverDocumentBytesEstimate || 0) - (a.counts.serverDocumentBytesEstimate || 0) || (b.counts.serverDocuments || 0) - (a.counts.serverDocuments || 0) || (b.counts.initialServerDocuments || 0) - (a.counts.initialServerDocuments || 0)) };
 }
@@ -40,6 +40,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(result.warning);
     console.log(`Batches: ${result.batches}; browser profiles: ${result.browserProfiles}; duplicate retries excluded: ${result.duplicateBatchesIgnored}; maximum reported dropped rows: ${result.maximumReportedDroppedRows}`);
     console.table(result.rows.slice(0,50).map(({ counts, ...dimensions }) => ({ ...dimensions,
+      httpBodyMiB: counts.transportResponseBytes == null ? null : +(counts.transportResponseBytes / 1048576).toFixed(3),
+      transportErrors: counts.transportMeasurementErrors || 0,
       payloadMiBEstimate: counts.serverDocumentBytesEstimate == null ? null : +(counts.serverDocumentBytesEstimate / 1048576).toFixed(3),
       byteMeasuredDocuments: counts.serverByteMeasuredDocuments || 0, byteErrors: (counts.serverByteMeasurementErrors || 0) + (counts.byteSnapshotErrors || 0),
       serverDocuments: counts.serverDocuments || 0, initialServerDocuments: counts.initialServerDocuments || 0,

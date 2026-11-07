@@ -1,3 +1,4 @@
+import { installFirestoreTransportMeter } from './firestore-transport-meter.mjs';
 import { createReadRecorder, routeScreen } from './firestore-read-recorder.mjs';
 // Literal route templates only: IDs, slugs and URL search strings never leave the browser.
 const routes = [
@@ -139,7 +140,16 @@ export function registerReadScreen(base, tab) {
   const key = Symbol(); details.set(key, { base, tab });
   return () => details.delete(key);
 }
-export function configureReadTelemetry(options) { readRecorder.configure(options); }
+export function configureReadTelemetry(options) {
+  readRecorder.configure(options);
+  if (typeof window !== 'undefined' && readRecorder.status().enabled) {
+    try {
+      const meter = installFirestoreTransportMeter({ observe: readRecorder.observe,
+        enabled: () => readRecorder.status().enabled, screen: readRecorder.currentScreen }, window);
+      window.__firestoreReads.transport = meter.snapshot;
+    } catch { /* Diagnostics must never affect app startup. */ }
+  }
+}
 if (typeof window !== 'undefined') {
   window.__firestoreReads = { status: readRecorder.status, snapshot: readRecorder.snapshot, flush: readRecorder.flush, verifyConnection: () => readRecorder.verifyConnection() };
   window.addEventListener('pagehide', () => { readRecorder.checkpoint(); void readRecorder.flush(); });

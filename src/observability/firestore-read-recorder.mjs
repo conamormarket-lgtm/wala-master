@@ -1,5 +1,6 @@
 /** Passive, bounded counters. No Firebase imports, document contents or query values. */
 export const COUNT_NAMES = new Set([
+  'transportRequests', 'transportResponses', 'transportResponseBytes', 'transportFailedResponses', 'transportMeasurementErrors',
   'byteMeterSnapshots', 'byteSnapshotErrors', 'serverDocumentBytesEstimate', 'cacheDocumentBytesEstimate',
   'serverByteMeasuredDocuments', 'cacheByteMeasuredDocuments', 'serverByteMeasurementErrors', 'cacheByteMeasurementErrors',
   'readCalls', 'successfulReadCalls', 'failedReadCalls', 'snapshots', 'serverDocuments',
@@ -56,7 +57,7 @@ export function createReadRecorder({ app, screen = () => '/', now = Date.now, st
       if (!pending.has(key) && pending.size >= 160) { dropped++; return; }
       const row = pending.get(key) || { ...dims, counts: {} };
       for (const [name, count] of Object.entries(counts)) {
-        if (COUNT_NAMES.has(name) && Number.isSafeInteger(count) && count >= 0) row.counts[name] = Math.min(name.endsWith('BytesEstimate') ? 1000000000000 : 100000000, (row.counts[name] || 0) + count);
+        if (COUNT_NAMES.has(name) && Number.isSafeInteger(count) && count >= 0) row.counts[name] = Math.min((name.endsWith('BytesEstimate') || name === 'transportResponseBytes') ? 1000000000000 : 100000000, (row.counts[name] || 0) + count);
       }
       pending.set(key, row);
       arm();

@@ -110,3 +110,31 @@ npm run test:startup
 
 El SDK real se prueba con red desactivada. Los fallos de envío/Auth/almacenamiento se
 simulan; ninguna prueba llama al receptor publicado, lee Firestore remoto ni envía multimedia.
+
+
+## Bytes HTTP observados (2026-11-06)
+
+Las tres aplicaciones web también registran `transportResponseBytes`: bytes
+del cuerpo HTTP decodificado recibidos por XHR/fetch desde firestore.googleapis.com.
+Incluye retransmisiones aunque el SDK no emita cambios, sobres RPC y respuestas
+de agregación/escritura. La colección es `(transport)`; la atribución precisa es
+por app, base y operación, no por colección (Listen multiplexa varias consultas).
+Walá incluye el REST del HTML anterior al inicio del SDK, sin contarlo dos veces.
+
+No son bytes comprimidos del enlace ni los bytes del SKU facturado. NO sumarlos
+con `serverDocumentBytesEstimate`: son dos vistas del mismo tráfico. Las estimaciones
+por colección ayudan a localizar consultas; el cuerpo HTTP permite comparar tráfico
+web con una unidad común. Clientes antiguos, workers, apps nativas y backends
+no quedan cubiertos. El CRM conserva su medidor independiente de protobuf.
+
+El observador no registra cuerpos, URLs completas ni IDs, no añade peticiones,
+no modifica opciones/reintentos ni consume la respuesta del negocio. XHR cuenta
+incrementos y fetch recorre un clon del stream. Errores se contabilizan con
+`transportMeasurementErrors`; `__firestoreReads.transport()` muestra los contadores
+locales de la carga actual y los lotes se conservan en el receptor existente.
+
+La confirmación de activos admite 60 segundos desde la conexión del stream,
+porque comparte transporte con la consulta histórica grande. La caché completa
+permanece visible; un fallo o timeout vuelve a la consulta canónica. Las pruebas
+cubren confirmación tardía, conexión detenida, Unicode, XHR reutilizado, abortos,
+fetch fallido y conservación del Promise/Response original.
