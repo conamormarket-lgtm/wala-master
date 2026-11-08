@@ -10598,6 +10598,24 @@ exports.grantChancesSuscripcion = functions.https.onCall(async (data, context) =
 // Solo observa cambios futuros de estadoGeneral. Kenta decide, según la
 // configuración del tenant, si existe una plantilla activa y si corresponde
 // enviar. La firma y el eventId hacen el callback autenticado e idempotente.
+// Foundation only: no messages, payment writes, or additional Firestore reads.
+exports.notifyKentaCollectionChanged = functions.runWith({
+  failurePolicy: true, timeoutSeconds: 30, memory: '128MB', maxInstances: 2,
+}).firestore.document('pedidos/{pedidoId}').onWrite(async (change, context) => {
+  const { buildSignal, deliver } = require('./kentaCollectionSignal');
+  const signal = buildSignal(change, context, {
+    owner: process.env.KENTA_COLLECTION_SOURCE_TENANT,
+    project: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT,
+  });
+  if (!signal) return null;
+  const result = await deliver(signal, {
+    url: process.env.KENTA_COLLECTION_CALLBACK_URL || 'https://kenta.pe/api/integrations/wala/order-collection-webhook',
+    secret: process.env.KENTA_ORDER_STAGE_CALLBACK_SECRET || process.env.KENTA_PAYMENT_CALLBACK_SECRET,
+  });
+  console.info('kenta_collection_signal', result);
+  return null;
+});
+
 exports.notifyKentaOrderStageChanged = functions.firestore
   .document("pedidos/{pedidoId}")
   .onUpdate(async (change, context) => {
