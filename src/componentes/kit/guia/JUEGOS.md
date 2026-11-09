@@ -777,3 +777,18 @@ pelota puede entrar: para las chapas, la línea del arco es pared. Con gol, la
 pelota se dibuja al fondo de la red (también después de la animación). Los
 porteros van más adentro (830 en el partido, 832 en los niveles) y las chapas
 del centro de abajo bajaron a 752 para no encimarse.
+
+**Michi ya no se queda parado (2026-11-09)**: en los niveles y el reto del día,
+después de cada toque tuyo que no fue gol, autogol ni pase (y si te quedan
+toques), Michi responde con un tiro (`respuestaRival`): con sus dos chapas
+más cerca de la pelota prueba despejarla a tu arco o a la banda
+(`tiroDirigido`, que le pega a la pelota del lado justo para mandarla a un
+punto) y elige la que la deja más lejos de su arco. Sin azar ni trigonometría:
+el servidor la repite igual dentro de `jugarTiro`. Si Michi te mete gol, la
+jugada vuelve atrás y el toque se gasta (como un autogol); si se hace autogol,
+el gol es tuyo. En la cancha se marca su chapa, sale "Responde Michi…" y se ve
+su tiro. En el partido, `jugadaDeKapi` ahora apunta con `tiroDirigido` (a tu
+arco, a las esquinas, de pase y de despeje) además de los tiros directos, y
+castiga los que no tocan la pelota: nunca tira al aire. Fácil elige entre los
+4 mejores con algo de mala puntería; difícil, siempre el mejor. Todos los
+niveles y retos se resolvieron otra vez con Michi respondiendo.

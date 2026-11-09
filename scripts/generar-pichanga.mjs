@@ -84,6 +84,9 @@ function resolverNormal(lv) {
           if (holgado(abierto, nodo.partida, tiro)) return [...nodo.tiros, tiro];
           continue;
         }
+        // Una partida ya ganada (autogol de Michi) o perdida no sigue: la
+        // solución tiene que ser un gol tuyo, holgado.
+        if (partida.ganada || partida.perdida) continue;
         siguientes.push({ partida, tiros: [...nodo.tiros, tiro], d: distancia(partida.mesa) });
       }
     }

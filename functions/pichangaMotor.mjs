@@ -581,7 +581,7 @@ export const toquesQuedan = (lv, partida, extras = 0) => Math.max(0, lv.toques +
  * En los penales, con gol o sin gol, todo vuelve a su lugar (el reloj de Kapi
  * sigue).
  */
-export function despuesDelTiro(lv, partida, tiro, sim, extras = 0) {
+export function despuesDelTiro(lv, partida, tiro, sim, extras = 0, respuesta = null) {
   const tiros = [...partida.tiros, tiro];
   const pasesAntes = partida.pases || 0;
   if (lv.penales) {
@@ -599,28 +599,104 @@ export function despuesDelTiro(lv, partida, tiro, sim, extras = 0) {
       ultimo: { pase: false, autogol: sim.gol === 'abajo' },
     };
   }
-  const ganada = sim.gol === 'arriba';
+  // La respuesta de Michi (si hubo): un autogol suyo es gol tuyo; un gol suyo
+  // en tu arco es como un autogol (la jugada vuelve atrás).
+  const golRival = respuesta?.sim.gol || null;
+  const ganada = sim.gol === 'arriba' || golRival === 'arriba';
   // Autogol: la jugada vuelve atrás (el reloj del arquero sigue) y el toque se gasta.
   const autogol = sim.gol === 'abajo';
+  const golDeMichi = !autogol && golRival === 'abajo';
   const pase = !ganada && !autogol && pasesAntes < PASES_MAX && huboPase(partida.mesa, tiro, sim);
   const pases = pasesAntes + (pase ? 1 : 0);
+  const ultimaMesa = respuesta ? respuesta.sim.mesa : sim.mesa;
   return {
-    mesa: autogol ? { t: sim.mesa.t, cuerpos: partida.mesa.cuerpos.map((c) => ({ ...c })) } : sim.mesa,
+    mesa: autogol || golDeMichi ? { t: ultimaMesa.t, cuerpos: partida.mesa.cuerpos.map((c) => ({ ...c })) } : ultimaMesa,
     tiros,
     pases,
     receptor: pase && sim.receptor != null ? sim.receptor : null,
     goles: ganada ? 1 : 0,
     ganada,
     perdida: !ganada && tiros.length - pases >= lv.toques + extras,
-    ultimo: { pase, autogol },
+    ultimo: { pase, autogol, golDeMichi, autogolDeMichi: golRival === 'arriba' && sim.gol !== 'arriba', respondio: Boolean(respuesta) },
   };
 }
 
-/** Un tiro de la persona en un nivel: simula y aplica las reglas. → { partida, sim } */
+/**
+ * Un tiro "con efecto": el de la chapa i que le pega a la pelota del lado
+ * justo para mandarla hacia `objetivo` ({ x, y }), con la fuerza dada (0 a 1;
+ * sin fuerza, la que hace falta para llegar con impulso). Solo sumas,
+ * productos y raíces: da lo mismo en cualquier lado. → [i, dx, dy] o null.
+ */
+export function tiroDirigido(mesa, i, objetivo, fuerza = null) {
+  const c = mesa.cuerpos[i];
+  const p = mesa.cuerpos[indicePelota(mesa)];
+  const [ux, uy] = unidad(objetivo.x - p.x, objetivo.y - p.y);
+  // Dónde tiene que pegar: detrás de la pelota, del lado contrario al objetivo.
+  const px = p.x - ux * (c.r + p.r - 6);
+  const py = p.y - uy * (c.r + p.r - 6);
+  const vx = px - c.x;
+  const vy = py - c.y;
+  const largo = Math.sqrt(vx * vx + vy * vy);
+  if (largo < 1) return null;
+  const f = fuerza ?? Math.min(1, 0.4 + largo / 700);
+  const v = normalizarTiro((vx / largo) * f * MAX_TIRO, (vy / largo) * f * MAX_TIRO);
+  return v ? [i, v[0], v[1]] : null;
+}
+
+/**
+ * La respuesta de Michi en un nivel o en el reto, después de tu toque: con
+ * sus dos chapas más cerca de la pelota prueba despejarla hacia tu arco o
+ * hacia la banda, y elige la que deja la pelota más lejos de su arco (un gol
+ * en tu arco, mejor; un autogol, nunca). Sin azar ni trigonometría: el
+ * servidor la repite igual. → el tiro, o null si no tiene chapas.
+ */
+export function respuestaRival(mesa, def) {
+  const rivales = chapasDe(mesa, 'rival');
+  if (!rivales.length) return null;
+  const p = mesa.cuerpos[indicePelota(mesa)];
+  const cerca = rivales
+    .map((i) => ({ i, d: (mesa.cuerpos[i].x - p.x) ** 2 + (mesa.cuerpos[i].y - p.y) ** 2 }))
+    .sort((a, b) => a.d - b.d || a.i - b.i)
+    .slice(0, 2);
+  const objetivos = [
+    { x: ANCHO / 2, y: ALTO },
+    { x: p.x < ANCHO / 2 ? 0 : ANCHO, y: Math.min(ALTO, p.y + 260) },
+  ];
+  let mejor = null;
+  for (const { i } of cerca) {
+    for (const objetivo of objetivos) {
+      const tiro = tiroDirigido(mesa, i, objetivo);
+      if (!tiro) continue;
+      const sim = simular(mesa, def, tiro);
+      const bola = sim.mesa.cuerpos[indicePelota(sim.mesa)];
+      let valor = bola.y;
+      if (sim.gol === 'abajo') valor = 100000;
+      if (sim.gol === 'arriba') valor = -100000;
+      if (!mejor || valor > mejor.valor) mejor = { tiro, valor };
+    }
+  }
+  return mejor ? mejor.tiro : null;
+}
+
+/**
+ * Un tiro de la persona en un nivel: simula, deja que Michi responda (si
+ * tiene chapas y la jugada sigue) y aplica las reglas.
+ * → { partida, sim, respuesta: { tiro, sim } | null }
+ * Michi no responde si hubo gol, autogol o pase (sigues tú), ni si ese toque
+ * fue el último (el nivel ya se perdió).
+ */
 export function jugarTiro(lv, partida, tiro, { extras = 0, cuadros = false } = {}) {
   const iman = !lv.penales && (partida.pases || 0) < PASES_MAX;
   const sim = simular(partida.mesa, lv.def, tiro, { cuadros, iman });
-  return { partida: despuesDelTiro(lv, partida, tiro, sim, extras), sim };
+  let respuesta = null;
+  if (!lv.penales && !sim.gol && sim.receptor == null) {
+    const usados = partida.tiros.length + 1 - (partida.pases || 0);
+    if (usados < lv.toques + extras) {
+      const suyo = respuestaRival(sim.mesa, lv.def);
+      if (suyo) respuesta = { tiro: suyo, sim: simular(sim.mesa, lv.def, suyo, { cuadros }) };
+    }
+  }
+  return { partida: despuesDelTiro(lv, partida, tiro, sim, extras, respuesta), sim, respuesta };
 }
 
 /**
@@ -754,48 +830,81 @@ function valorParaKapi(sim) {
 }
 
 /**
- * El tiro de Kapi en el partido: prueba tiros hacia la pelota (más o menos
- * según la dificultad), simula cada uno y elige. Fácil se equivoca a
- * propósito. rnd: el azar (con semilla en las pruebas). → [cuerpo, dx, dy]
+ * El tiro de Michi en el partido. Prueba tiros "con efecto" (tiroDirigido)
+ * con sus chapas mejor puestas: a tu arco (al centro y a las esquinas), de
+ * pase a sus compañeros y de despeje a las bandas; más unos cuantos directos
+ * a la pelota. Simula cada uno y elige el mejor (valorParaKapi). Un tiro que
+ * ni toca la pelota casi no vale: así nunca se queda "sin hacer nada". Fácil
+ * elige entre los mejores y apunta un poco peor (pero siempre tocando la
+ * pelota); difícil, siempre el mejor. → [cuerpo, dx, dy]
  */
 export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.random, pases = 0, receptor = null } = {}) {
   const ajustes = {
-    facil: { abanico: 6, paso: 0.24, fuerzas: [0.55, 0.85], ruido: 0.18, entre: 6 },
-    normal: { abanico: 8, paso: 0.14, fuerzas: [0.45, 0.7, 1], ruido: 0.05, entre: 2 },
-    dificil: { abanico: 11, paso: 0.09, fuerzas: [0.45, 0.7, 1], ruido: 0, entre: 1 },
-  }[dificultad] || {};
-  const p = mesa.cuerpos[indicePelota(mesa)];
+    facil: { chapas: 2, fuerzas: [null, 0.8], abanico: 2, ruido: 0.07, entre: 4 },
+    normal: { chapas: 3, fuerzas: [null, 0.75, 1], abanico: 3, ruido: 0.025, entre: 2 },
+    dificil: { chapas: 4, fuerzas: [null, 0.65, 0.85, 1], abanico: 4, ruido: 0, entre: 1 },
+  }[dificultad] || { chapas: 3, fuerzas: [null, 0.75, 1], abanico: 3, ruido: 0.025, entre: 2 };
+  const kb = indicePelota(mesa);
+  const p = mesa.cuerpos[kb];
+  const rivales = chapasDe(mesa, 'rival');
+  // Las que juegan: las más cerca de la pelota y la mejor puesta detrás de
+  // ella (mirando a tu arco). Después de un pase, solo la que lo recibió.
+  let cerca;
+  if (receptor != null) cerca = [receptor];
+  else {
+    const porDistancia = rivales
+      .map((i) => ({ i, d: (mesa.cuerpos[i].x - p.x) ** 2 + (mesa.cuerpos[i].y - p.y) ** 2 }))
+      .sort((a, b) => a.d - b.d);
+    cerca = porDistancia.slice(0, ajustes.chapas - 1).map((o) => o.i);
+    const detras = porDistancia.find((o) => !cerca.includes(o.i) && mesa.cuerpos[o.i].y < p.y && o.d < 300 * 300);
+    cerca.push((detras || porDistancia[ajustes.chapas - 1] || porDistancia[0]).i);
+    cerca = [...new Set(cerca)];
+  }
+  const objetivos = [
+    { x: ANCHO / 2, y: ALTO + 20 },
+    { x: ANCHO / 2 - 70, y: ALTO + 20 },
+    { x: ANCHO / 2 + 70, y: ALTO + 20 },
+    { x: p.x < ANCHO / 2 ? 0 : ANCHO, y: Math.min(ALTO, p.y + 300) },
+  ];
   const opciones = [];
-  // Solo las chapas más cerca de la pelota (con seis por lado, probar todas tarda).
-  // Después de un pase, solo tira la chapa que lo recibió.
-  const cerca = receptor != null ? [receptor] : chapasDe(mesa, 'rival')
-    .map((i) => ({ i, d: (mesa.cuerpos[i].x - p.x) ** 2 + (mesa.cuerpos[i].y - p.y) ** 2 }))
-    .sort((a, b) => a.d - b.d)
-    .slice(0, 3)
-    .map((o) => o.i);
+  const probar = (tiro) => {
+    if (!tiro) return;
+    const sim = simular(mesa, def, tiro, { iman: pases < PASES_MAX });
+    let valor = valorParaKapi(sim);
+    // Un pase le da otro tiro: vale un poco más. Sin tocar la pelota, casi nada.
+    if (!sim.gol && sim.receptor != null) valor += 140;
+    if (!sim.tocaron.includes(tiro[0]) && !sim.gol) valor -= 900;
+    opciones.push({ tiro, valor, toca: sim.tocaron.includes(tiro[0]) || Boolean(sim.gol) });
+  };
   for (const i of cerca) {
     const c = mesa.cuerpos[i];
-    const base = Math.atan2(p.y - c.y, p.x - c.x);
-    for (let k = -ajustes.abanico; k <= ajustes.abanico; k += 1) {
-      for (const f of ajustes.fuerzas) {
-        const tiro = tiroDesdeAngulo(i, base + k * ajustes.paso, f);
-        if (!tiro) continue;
-        const sim = simular(mesa, def, tiro, { iman: pases < PASES_MAX });
-        // Un pase le da otro tiro: vale un poco más.
-        const extra = !sim.gol && sim.receptor != null ? 120 : 0;
-        opciones.push({ tiro, valor: valorParaKapi(sim) + extra });
-      }
+    // De pase: a los compañeros que estén más adelante que la pelota.
+    const pasesA = pases < PASES_MAX
+      ? rivales.filter((k) => k !== i && mesa.cuerpos[k].y > p.y + 40).map((k) => ({ x: mesa.cuerpos[k].x, y: mesa.cuerpos[k].y }))
+      : [];
+    for (const objetivo of [...objetivos, ...pasesA.slice(0, 2)]) {
+      for (const f of ajustes.fuerzas) probar(tiroDirigido(mesa, i, objetivo, f));
     }
+    // Y unos directos a la pelota, abriendo un poco el ángulo.
+    const base = Math.atan2(p.y - c.y, p.x - c.x);
+    for (let k = -ajustes.abanico; k <= ajustes.abanico; k += 1) probar(tiroDesdeAngulo(i, base + k * 0.1, 0.8));
   }
   opciones.sort((a, b) => b.valor - a.valor);
-  const elegida = opciones[Math.floor(rnd() * Math.min(ajustes.entre, opciones.length))] || opciones[0];
+  const buenas = opciones.filter((o) => o.toca);
+  const lista = buenas.length ? buenas : opciones;
+  const elegida = lista[Math.floor(rnd() * Math.min(ajustes.entre, lista.length))] || lista[0];
   if (!elegida) return null;
   if (!ajustes.ruido) return elegida.tiro;
-  // Un poco de mala puntería.
+  // Un poco de mala puntería, sin dejar de tocar la pelota.
   const [i, dx, dy] = elegida.tiro;
   const angulo = Math.atan2(dy, dx) + (rnd() * 2 - 1) * ajustes.ruido;
   const fuerza = Math.sqrt(dx * dx + dy * dy) / MAX_TIRO;
-  return tiroDesdeAngulo(i, angulo, fuerza) || elegida.tiro;
+  const torcido = tiroDesdeAngulo(i, angulo, fuerza);
+  if (torcido) {
+    const sim = simular(mesa, def, torcido, { iman: pases < PASES_MAX });
+    if (sim.tocaron.includes(i) || sim.gol) return torcido;
+  }
+  return elegida.tiro;
 }
 
 /**

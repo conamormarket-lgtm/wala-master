@@ -42,7 +42,7 @@ const PASTO_RETO = ['#4ade80', '#3fc574'];
 
 /* Cómo se explica cada obstáculo la primera vez que aparece. */
 const OBSTACULOS = {
-  rivales: { titulo: 'Nuevo: el equipo de Michi', texto: 'Las chapas rojas son del equipo de Michi, el gato. Estorban, pero también se pueden empujar: úsalas para rebotar.' },
+  rivales: { titulo: 'Nuevo: el equipo de Michi', texto: 'Las chapas rojas son del equipo de Michi, el gato. Después de cada toque tuyo, Michi responde con la que esté más cerca de la pelota: la despeja o tira a tu arco. Si te mete gol, la jugada vuelve atrás; si se mete un autogol, ¡ganas!' },
   conos: { titulo: 'Nuevo: conos', texto: 'Los conos naranjas no se mueven. La pelota rebota en ellos: búscale el ángulo.' },
   kapi: { titulo: 'Nuevo: Michi de arquero', texto: 'Michi cuida el arco y va de lado a lado mientras la pelota rueda. Míralo bien antes de tirar: se mueve después de que sueltas.' },
   barro: { titulo: 'Nuevo: barro', texto: 'En el barro todo frena. Tira con más fuerza o pasa por un costado.' },
@@ -231,6 +231,8 @@ export function PaginaPichanga({
   const [anim, setAnim] = useState(null);
   const [ruta, setRuta] = useState(null);
   const [resaltar, setResaltar] = useState(null);
+  // Mientras Michi responde en un nivel (entre tu tiro y el suyo) no se tira.
+  const [respondiendo, setRespondiendo] = useState(false);
   const [pensando, setPensando] = useState(false);
   const [resultado, setResultado] = useState(false);
   const [logro, setLogro] = useState(null);
@@ -366,7 +368,7 @@ export function PaginaPichanga({
   const escena = esPartido ? escenaDelEstadio(prog.estadio) : esReto ? 'reto' : escenaDelMundoPichanga(mundo);
   const lv = juego?.lv;
   const partida = juego?.partida;
-  const ocupado = Boolean(anim);
+  const ocupado = Boolean(anim) || respondiendo;
   const acreditando = premio?.estado === 'acreditando';
   const verMapa = vista === 'mapa' && modo === 'niveles';
 
@@ -465,15 +467,33 @@ export function PaginaPichanga({
   const tirarNivel = (tiro) => {
     if (ocupado || !juego || partida.ganada || partida.perdida) return;
     const antes = juego;
-    const { partida: nueva, sim } = jugarTiro(lv, partida, tiro, { extras: juego.extras, cuadros: true });
+    const { partida: nueva, sim, respuesta } = jugarTiro(lv, partida, tiro, { extras: juego.extras, cuadros: true });
     const usos = antes.vistaActiva ? gastar('vista') : antes.usos;
     setRuta(null);
     fx('tiro');
     setCaraArquero('feliz');
     setAnimos({ mia: 'feliz', rival: 'feliz' });
     setJuego({ ...antes, usos, vistaActiva: false });
-    animar(sim, partida.mesa.cuerpos, partida.mesa.t, () => {
+    // Al final de todo (tu tiro y, si hubo, la respuesta de Michi).
+    const terminar = () => {
+      setRespondiendo(false);
       setJuego((j) => ({ ...j, partida: nueva, pasados: [...j.pasados, partida] }));
+      if (nueva.ultimo?.golDeMichi) {
+        fx('golKapi');
+        setGol({ id: Date.now(), tuyo: false });
+        setAnimos({ mia: 'triste', rival: 'feliz' });
+        setAviso('¡Gol de Michi! La jugada vuelve atrás y el toque se gasta.');
+      } else if (nueva.ultimo?.autogolDeMichi) {
+        fx('gol');
+        setGol({ id: Date.now(), tuyo: true });
+        setAnimos({ mia: 'feliz', rival: 'triste' });
+        repeticion.current = { sim: respuesta.sim, cuerpos: sim.mesa.cuerpos, t0: sim.mesa.t, tirador: respuesta.tiro[0] };
+        setAviso('¡Autogol de Michi!');
+      }
+      if (nueva.ganada) (lv.reto ? ganarReto : ganarNivel)(lv, nueva, antes.extras);
+      else if (nueva.perdida) { fx('fallo'); setSinToques(true); }
+    };
+    animar(sim, partida.mesa.cuerpos, partida.mesa.t, () => {
       const atajo = sim.golpes.some(([, tipo]) => tipo === 'kapi');
       if (sim.gol === 'arriba') {
         fx('gol');
@@ -494,8 +514,17 @@ export function PaginaPichanga({
       } else if (atajo) {
         setAviso('¡Atajó Michi!');
       }
-      if (nueva.ganada) (lv.reto ? ganarReto : ganarNivel)(lv, nueva, antes.extras);
-      else if (nueva.perdida) { fx('fallo'); setSinToques(true); }
+      if (!respuesta) { terminar(); return; }
+      // Responde Michi: se ve dónde quedó todo, marca su chapa y tira.
+      setRespondiendo(true);
+      setJuego((j) => ({ ...j, partida: { ...j.partida, mesa: sim.mesa } }));
+      setResaltar(respuesta.tiro[0]);
+      if (!atajo) setAviso('Responde Michi…');
+      setTimeout(() => {
+        setResaltar(null);
+        fx('tiro');
+        animar(respuesta.sim, sim.mesa.cuerpos, sim.mesa.t, terminar, 1, respuesta.tiro[0]);
+      }, 550);
     }, 1, tiro[0]);
   };
 

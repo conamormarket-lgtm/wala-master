@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizarTiro, MAX_TIRO, crearMesa, definirCancha, simular, posicionKapi, estrellasPara, partidaNivel, jugarTiro,
   comprobarPartida, tiroValido, partidoNuevo, despuesDelTiroPartido, jugadaDeKapi, azar, canchaPartido, chapasDe,
-  GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO, indicePelota, huboPase, toquesUsados, PASES_MAX, simularPartido, tiroDesdeAngulo, ANCHO,
+  GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO, indicePelota, huboPase, toquesUsados, PASES_MAX, simularPartido, tiroDesdeAngulo, ANCHO, respuestaRival, tiroDirigido,
 } from './pichangaMotor.mjs';
 import {
   NIVELES_PICHANGA, TOTAL_NIVELES_PICHANGA, nivelPichanga, RETOS_PICHANGA, retoPichanga, indiceRetoDe, semanaDe, mesDe,
@@ -240,4 +240,44 @@ test('el pase: la pelota se pega sin saltar y el receptor la rodea hasta mirar a
   assert.ok(alineado > 0.98, `alineado ${alineado}`);
   // Y el mismo pase da siempre lo mismo.
   assert.deepEqual(simularPartido(pt, tiroPase).mesa, encontrado.mesa);
+});
+
+test('en los niveles, Michi responde después de tu toque (siempre igual)', () => {
+  const lv = armarNivel(5, { mias: [[300, 760]], pelota: [300, 620], rivales: [[300, 300]] }, { par: 1 });
+  // Un toque suave que deja la pelota en la cancha: Michi responde.
+  const a = jugarTiro(lv, partidaNivel(lv), [0, 0, -40], { cuadros: true });
+  assert.ok(a.respuesta, 'Michi respondió');
+  assert.equal(a.partida.mesa, a.respuesta.sim.mesa);
+  assert.equal(a.partida.mesa.cuerpos[2].equipo, 'rival');
+  // La misma jugada da siempre la misma respuesta.
+  const b = jugarTiro(lv, partidaNivel(lv), [0, 0, -40]);
+  assert.deepEqual(b.respuesta.tiro, a.respuesta.tiro);
+  assert.deepEqual(b.partida.mesa, a.partida.mesa);
+  assert.deepEqual(respuestaRival(a.sim.mesa, lv.def), a.respuesta.tiro);
+  // Sin rivales no hay respuesta; tampoco en el último toque.
+  const solo = armarNivel(1, { mias: [[300, 760]], pelota: [300, 620] }, { par: 1 });
+  assert.equal(jugarTiro(solo, partidaNivel(solo), [0, 0, -40]).respuesta, null);
+  let p = partidaNivel(lv);
+  for (let k = 0; k < lv.toques - 1; k += 1) ({ partida: p } = jugarTiro(lv, p, [0, 0, 20]));
+  assert.equal(jugarTiro(lv, p, [0, 0, 20]).respuesta, null);
+});
+
+test('un tiro dirigido manda la pelota hacia su objetivo', () => {
+  const def = definirCancha({ mias: [[200, 700]], pelota: [300, 600], arcos: { arriba: 0, abajo: 0 } });
+  const mesa = crearMesa(def);
+  const tiro = tiroDirigido(mesa, 0, { x: 300, y: 0 }, 0.9);
+  const sim = simular(mesa, def, tiro);
+  const p = sim.mesa.cuerpos[indicePelota(sim.mesa)];
+  assert.ok(p.y < 400, `la pelota subió (${p.y})`);
+  assert.ok(Math.abs(p.x - 300) < 120, `y fue derecha (${p.x})`);
+});
+
+test('en el partido, Michi siempre toca la pelota', () => {
+  const def = canchaPartido();
+  const mesa = crearMesa(def);
+  for (const dificultad of ['facil', 'normal', 'dificil']) {
+    const tiro = jugadaDeKapi(mesa, def, { dificultad, rnd: azar(11) });
+    const sim = simular(mesa, def, tiro, { iman: true });
+    assert.ok(sim.tocaron.includes(tiro[0]) || sim.gol, dificultad);
+  }
 });
