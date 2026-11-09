@@ -964,13 +964,13 @@ export function PaginaPichanga({
                       onPestana={(id) => { if (!rankings[id]) onPedirRanking?.(id); }}
                       pestanas={[
                         {
-                          id: 'niveles', texto: 'Top de niveles', lista: rankings.niveles?.top, puesto: rankings.niveles?.yo?.puesto, total: rankings.niveles?.yo?.jugadores,
+                          id: 'niveles', texto: 'Niveles', lista: rankings.niveles?.top, puesto: rankings.niveles?.yo?.puesto, total: rankings.niveles?.yo?.jugadores,
                           valor: (f) => `Pasó el nivel ${f.nivel}`, nota: 'El nivel más alto que pasó cada persona.',
                           vacio: 'Todavía nadie pasó un nivel. ¡Sé la primera persona!',
                         },
                         {
-                          id: 'goleadores', texto: 'Goleadores del mes', lista: rankings.goleadores?.top, puesto: rankings.goleadores?.yo?.puesto, total: rankings.goleadores?.yo?.jugadores,
-                          valor: (f) => (f.goles === 1 ? '1 gol' : `${f.goles} goles`), nota: 'Goles de los niveles y del reto. Cada nivel cuenta una vez por día; se reinicia cada mes.',
+                          id: 'goleadores', texto: 'Goleadores', lista: rankings.goleadores?.top, puesto: rankings.goleadores?.yo?.puesto, total: rankings.goleadores?.yo?.jugadores,
+                          valor: (f) => (f.goles === 1 ? '1 gol' : `${f.goles} goles`), nota: 'Goles de este mes en los niveles y el reto. Cada nivel cuenta una vez por día.',
                           vacio: 'Todavía nadie metió un gol este mes.',
                         },
                       ]}

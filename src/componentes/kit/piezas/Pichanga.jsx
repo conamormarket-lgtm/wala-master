@@ -622,14 +622,20 @@ function dibujarApunte(ctx, c, dedo, tiro) {
   ctx.beginPath();
   ctx.arc(c.x, c.y, c.r + 12, -Math.PI / 2, -Math.PI / 2 + fuerza * Math.PI * 2);
   ctx.stroke();
-  // La flecha.
+  // La flecha: crece con la fuerza, pero nunca sale de la cancha (cerca de
+  // un borde se acorta; el aro sigue mostrando la fuerza).
   const ux = dx / largo;
   const uy = dy / largo;
-  const fin = 40 + fuerza * 180;
-  const x1 = c.x + ux * (c.r + 20);
-  const y1 = c.y + uy * (c.r + 20);
-  const x2 = c.x + ux * (c.r + 20 + fin);
-  const y2 = c.y + uy * (c.r + 20 + fin);
+  const hastaBorde = Math.min(
+    ux > 0 ? (ANCHO - c.x) / ux : ux < 0 ? -c.x / ux : Infinity,
+    uy > 0 ? (ALTO - c.y) / uy : uy < 0 ? -c.y / uy : Infinity,
+  );
+  const inicio = Math.min(c.r + 20, Math.max(c.r + 6, hastaBorde - 24 - 30));
+  const fin = Math.max(6, Math.min(40 + fuerza * 180, hastaBorde - inicio - 24));
+  const x1 = c.x + ux * inicio;
+  const y1 = c.y + uy * inicio;
+  const x2 = c.x + ux * (inicio + fin);
+  const y2 = c.y + uy * (inicio + fin);
   ctx.strokeStyle = 'rgba(0,0,0,0.25)';
   ctx.lineWidth = 14;
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
@@ -660,11 +666,64 @@ function dibujarApunte(ctx, c, dedo, tiro) {
   ctx.strokeStyle = 'rgba(255,255,255,0.55)';
   ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.moveTo(x2 + ux * 32, y2 + uy * 32);
-  ctx.lineTo(x2 + ux * 150, y2 + uy * 150);
+  const guia = Math.min(150, hastaBorde - inicio - fin);
+  if (guia > 40) {
+    ctx.moveTo(x2 + ux * 32, y2 + uy * 32);
+    ctx.lineTo(x2 + ux * guia, y2 + uy * guia);
+  }
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.lineCap = 'butt';
+}
+
+/**
+ * "Ver el tiro": el camino de la pelota como una fila de puntos parejos (uno
+ * cada 18 unidades, no uno por cuadro: así no se amontonan donde va lenta),
+ * que se apagan hacia el final, y una pelota fantasma donde se detiene (o al
+ * fondo de la red, si es gol).
+ */
+function dibujarRuta(ctx, ruta) {
+  const [x0, y0] = ruta[0];
+  const [xf, yf] = ruta[ruta.length - 1];
+  if ((xf - x0) ** 2 + (yf - y0) ** 2 < 4) return;
+  const puntos = [];
+  let falta = 0;
+  for (let k = 1; k < ruta.length; k += 1) {
+    const [ax, ay] = ruta[k - 1];
+    const [bx, by] = ruta[k];
+    const tramo = Math.sqrt((bx - ax) ** 2 + (by - ay) ** 2);
+    let d = falta;
+    while (d <= tramo && tramo > 0) {
+      puntos.push([ax + ((bx - ax) * d) / tramo, ay + ((by - ay) * d) / tramo]);
+      d += 18;
+    }
+    falta = d - tramo;
+  }
+  const gol = yf < 0 || yf > ALTO;
+  const color = gol ? '253,224,71' : '255,255,255';
+  puntos.forEach(([x, y], k) => {
+    if (k === 0) return; // el primero queda debajo de la pelota
+    const f = 1 - k / (puntos.length + 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    circulo(ctx, x + 1.5, y + 2, 5 * f + 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(${color},${0.45 + 0.5 * f})`;
+    circulo(ctx, x, y, 5 * f + 2);
+    ctx.fill();
+  });
+  // La pelota fantasma donde termina.
+  let fy = yf;
+  if (yf < 0) fy = FONDO_RED_ARRIBA;
+  if (yf > ALTO) fy = FONDO_RED_ABAJO;
+  ctx.fillStyle = `rgba(${color},0.35)`;
+  circulo(ctx, xf, fy, RADIO.pelota);
+  ctx.fill();
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = `rgba(${color},0.95)`;
+  ctx.lineWidth = 3;
+  circulo(ctx, xf, fy, RADIO.pelota);
+  ctx.stroke();
+  ctx.setLineDash([]);
 }
 
 /** Los colores de la bandeja (cara, cara, canto, piso) según la escena. */
@@ -737,13 +796,7 @@ export function CanchaPichanga({
     dibujarArco(ctx, p.def.arcos.abajo, false, ahora?.bulto && !ahora.bulto.arriba ? ahora.bulto : null);
     dibujarConos(ctx, p.def);
     // La trayectoria prevista (debajo de todo lo que se mueve).
-    if (p.ruta?.length > 1 && !ahora) {
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      for (let k = 0; k < p.ruta.length; k += 4) {
-        circulo(ctx, p.ruta[k][0], p.ruta[k][1], 4);
-        ctx.fill();
-      }
-    }
+    if (p.ruta?.length > 1 && !ahora) dibujarRuta(ctx, p.ruta);
     // El aro del tiro, donde salió la chapa.
     if (ahora?.impulso) {
       const { x, y, edad } = ahora.impulso;
