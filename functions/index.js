@@ -2986,7 +2986,7 @@ async function leerCuentaPedidos(uid, token) {
  * Todas las consultas EN PARALELO (antes el navegador encadenaba hasta ~9
  * consultas una detrás de otra). Devuelve docs únicos por ruta.
  */
-async function buscarPedidosDeCuenta(cuenta) {
+async function buscarPedidosDeCuenta(cuenta, { estricto = false } = {}) {
   const erpDb = getErpDb() || db;
   const consultas = [];
   const docs = new Map();
@@ -3027,10 +3027,14 @@ async function buscarPedidosDeCuenta(cuenta) {
   }
 
   // Una consulta que falle (índice, permisos del ERP…) no tumba las demás.
+  // Con `estricto` (borrar la cuenta) sí: sin todas no se sabe si queda un
+  // pedido en curso.
   const resultados = await Promise.allSettled(consultas);
-  resultados
-    .filter((r) => r.status === "rejected")
-    .forEach((r) => console.warn("misPedidosSecure: consulta fallida:", r.reason?.message));
+  const fallidas = resultados.filter((r) => r.status === "rejected");
+  fallidas.forEach((r) => console.warn("misPedidosSecure: consulta fallida:", r.reason?.message));
+  if (estricto && fallidas.length) {
+    throw new functions.https.HttpsError("unavailable", "No pudimos revisar tus pedidos. Inténtalo de nuevo en un momento.");
+  }
   return [...docs.values()];
 }
 
@@ -3107,6 +3111,39 @@ exports.misPedidosSecure = functions
       throw new functions.https.HttpsError("internal", "No se pudieron cargar tus pedidos.");
     }
   });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BORRAR MI CUENTA — la app (Mi cuenta › Ajustes) y la web (/cuenta/ajustes)
+// ════════════════════════════════════════════════════════════════════════════
+// Qué se borra, qué se conserva (pedidos y registros de pago) y qué impide
+// borrar todavía: ./eliminarCuentaLogic.js. El manejador: ./eliminarCuenta.js.
+// Página pública para Google Play: /eliminar-cuenta (la web).
+const { crearEliminarCuenta } = require("./eliminarCuenta");
+
+/** Los pedidos de la cuenta, como misPedidosSecure (visibles = los que demostró que son suyos). */
+async function pedidosParaBorrarCuenta(uid, token) {
+  const cuenta = await leerCuentaPedidos(uid, token);
+  const encontrados = await quitarCopiasEliminadasEnErp(await buscarPedidosDeCuenta(cuenta, { estricto: true }));
+  const { visibles } = misPedidos.clasificarPedidos(encontrados, cuenta);
+  return { visibles, todos: encontrados };
+}
+
+exports.eliminarCuentaSecure = functions
+  .runWith({ timeoutSeconds: 540, memory: "512MB", secrets: ["CUENTAS_ELIMINADAS_SAL"] })
+  .https.onCall((data, context) => crearEliminarCuenta({
+    db,
+    auth,
+    bucket: admin.storage().bucket(),
+    FieldValue,
+    HttpsError: functions.https.HttpsError,
+    logger: functions.logger,
+    buscarPedidos: pedidosParaBorrarCuenta,
+    // Sal del hash del registro (cuentasEliminadas/{hash}): secreto de Secret
+    // Manager (firebase functions:secrets:set CUENTAS_ELIMINADAS_SAL). NO
+    // cambiarla después: los reintentos de una cuenta a medio borrar dejarían de
+    // encontrar su registro. El valor fijo es solo para emuladores y pruebas.
+    sal: process.env.CUENTAS_ELIMINADAS_SAL || "wala-cuentas-eliminadas-v1",
+  })(data, context));
 
 /**
  * Vincula a la cuenta un pedido que coincide por DNI, probando que se conoce:

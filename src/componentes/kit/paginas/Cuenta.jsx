@@ -621,9 +621,10 @@ export function PaginaTarjetas({ tarjetas = [], cargando = false, onQuitar, quit
  *    muestra (la tienda lo pasa solo en el celular, donde hay dedo)
  *  - idioma: código actual · idiomas: [{ valor, texto, detalle }] · onIdioma(codigo)
  *  - onCerrarSesion
+ *  - borrarCuenta: la tarjeta "Borrar mi cuenta" (TarjetaBorrarCuenta), al final
  */
 export function PaginaAjustes({
-  tema = 'claro', onTema, brillo = true, onBrillo, idioma = 'es', onIdioma, onCerrarSesion,
+  tema = 'claro', onTema, brillo = true, onBrillo, idioma = 'es', onIdioma, onCerrarSesion, borrarCuenta,
   idiomas = [
     { valor: 'es', texto: 'Español', detalle: 'Perú' },
     { valor: 'en', texto: 'English', detalle: 'Inglés' },
@@ -670,6 +671,8 @@ export function PaginaAjustes({
           />
         </TarjetaCuenta>
       </div>
+      {/* Al final: "Borrar mi cuenta" (piezas/BorrarCuenta.jsx, TarjetaBorrarCuenta). */}
+      {borrarCuenta}
       {onCerrarSesion && (
         <button type="button" className={`${s.salir} ${s.soloAngosto}`} onClick={onCerrarSesion}>
           <LogOut aria-hidden="true" /> <Texto>Cerrar sesión</Texto>

@@ -28,7 +28,7 @@ const SIN_KAPI_EN_PIE = [
   // Regalar: la lista pública, regalar para una fecha y abrir el regalo.
   '/wishlist/', '/regalar/',
   // Privacidad y términos terminan con la tarjeta de ayuda (Kapi asomado).
-  '/politicas-privacidad', '/terminos-y-condiciones', '/terminos-condiciones',
+  '/politicas-privacidad', '/terminos-y-condiciones', '/terminos-condiciones', '/eliminar-cuenta',
   // Pagar: solo pagar.
   '/checkout', '/pago-rapido/',
 ];

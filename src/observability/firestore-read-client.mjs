@@ -93,6 +93,7 @@ const routes = [
   "/politicas-privacidad",
   "/terminos-y-condiciones",
   "/terminos-condiciones",
+  "/eliminar-cuenta",
   "/libro-de-reclamaciones",
   "/regalos-con-amor",
   "/nuevos-usuarios",
