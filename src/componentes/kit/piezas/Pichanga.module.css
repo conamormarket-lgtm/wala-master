@@ -25,6 +25,16 @@
     align-items: stretch;
   }
 
+  /* El nivel y el marcador, sobre una tarjeta: se leen sobre cualquier
+     escena del fondo (el estadio de noche es oscuro). */
+  .cabeza,
+  .marcador {
+    padding: 0.7rem 0.8rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.55);
+  }
+
   .cabezaMundo,
   .cabezaNivel,
   .cabezaMeta {

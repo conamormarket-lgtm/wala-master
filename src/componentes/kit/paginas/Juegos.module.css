@@ -603,11 +603,16 @@
     align-self: center;
   }
 
-  /* Los botones, uno debajo de otro en la columna. */
+  /* Los botones, uno debajo de otro en la columna, sobre una tarjeta: se
+     leen sobre cualquier escena del fondo (el estadio de noche es oscuro). */
   .mesa:has(> .tablero) > .botonesMesa:not(.adornos) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     justify-self: stretch;
+    padding: 0.5rem;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.55);
   }
 
   .mesa:has(> .tablero) > .botonesMesa > * {
@@ -626,7 +631,15 @@
     place-items: start;
   }
 
-  .mesa:has(> .tablero) .tubos {
+  /* Los tubos se achican solos para entrar a lo ancho de su columna (el
+     reto puede traer 13: 7 por fila). */
+  .mesa:has(> .tablero) > .tubos {
+    container-type: inline-size;
+    --mesa-tubo-grande: min(62px, calc(100cqi / var(--col-escritorio) - 1.15rem));
+    --mesa-bola-grande: calc(var(--mesa-tubo-grande) * 0.77);
+    --mesa-tubo: var(--mesa-tubo-grande);
+    --mesa-bola: var(--mesa-bola-grande);
+    --mesa-base-extra: 6px;
     padding-top: 0.5rem;
   }
 
