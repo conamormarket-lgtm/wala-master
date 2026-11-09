@@ -8,6 +8,8 @@ import {
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
+import { TarjetaBorrarCuenta } from './kit/piezas/BorrarCuenta';
+import { SE_BORRA, SE_CONSERVA } from '../config/legales/eliminarCuenta';
 import CREAR from './demo/crear.json';
 import { leerPrendaBase } from '../utils/prendaBase';
 import { volarMonedasGanadas } from '../utils/animations';
@@ -619,6 +621,7 @@ export function CuentaDemo({
         idioma={idioma}
         onIdioma={(i) => { setIdioma(i); if (i !== 'es') avisar('Idioma', 'En la tienda, Walá se vería en ese idioma', 'info'); }}
         onCerrarSesion={onCerrarSesion}
+        borrarCuenta={<DemoBorrarCuenta avisar={avisar} />}
       />
     );
   } else {
@@ -1178,6 +1181,40 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
       agotado={estados.includes('agotado')}
       borradorAdmin={estados.includes('borradorAdmin')}
       cargandoDiseno={estados.includes('cargandoDiseno')}
+    />
+  );
+}
+
+/**
+ * "Borrar mi cuenta" sin servidor: la primera revisión encuentra un pedido
+ * pendiente; "Revisar de nuevo" ya no, y abre la hoja para confirmar.
+ */
+function DemoBorrarCuenta({ avisar }) {
+  const [estado, setEstado] = useState('inicio');
+  const [vueltas, setVueltas] = useState(0);
+  const esperar = (ms) => new Promise((r) => { setTimeout(r, ms); });
+  const revisar = async () => {
+    setEstado('revisando');
+    await esperar(600);
+    setVueltas((v) => v + 1);
+    setEstado(vueltas === 0 ? 'pendientes' : 'listo');
+  };
+  return (
+    <TarjetaBorrarCuenta
+      seBorra={SE_BORRA}
+      seConserva={SE_CONSERVA}
+      estado={estado}
+      pendientes={[{ tipo: 'pedido', texto: 'Tu pedido #1234 todavía no se entrega.' }, { tipo: 'saldo', texto: 'El pedido #1198 tiene un saldo de S/ 45.00 por pagar.' }]}
+      metodos={{ contrasena: true, google: true }}
+      onRevisar={revisar}
+      onCancelar={() => setEstado('inicio')}
+      onBorrar={async ({ contrasena }) => {
+        await esperar(800);
+        if (contrasena && contrasena !== 'walá') throw new Error('La contraseña no es correcta.');
+        setEstado('inicio');
+        setVueltas(0);
+        avisar?.('Cuenta borrada', 'En la tienda se cierra la sesión y vuelve al inicio');
+      }}
     />
   );
 }

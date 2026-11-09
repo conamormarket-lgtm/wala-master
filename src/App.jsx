@@ -132,6 +132,7 @@ const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
+const EliminarCuentaPage = lazy(() => import('./pages/EliminarCuentaPage'));
 const LibroReclamacionesPage = lazy(() => import('./pages/LibroReclamacionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
@@ -587,6 +588,8 @@ function App() {
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                                  {/* Pública: cómo borrar la cuenta (el enlace de Google Play). */}
+                                  <Route path="/eliminar-cuenta" element={<EliminarCuentaPage />} />
                                   {/* El registro enlazaba aquí y daba página no encontrada. */}
                                   <Route path="/terminos-condiciones" element={<Navigate to="/terminos-y-condiciones" replace />} />
                                   <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />

@@ -17,7 +17,8 @@
 export const DIA_MS = 24 * 60 * 60 * 1000;
 
 // Rutas donde NUNCA sale un popup: pagar, carrito, admin, login, la propia
-// encuesta, el editor de prendas y las páginas de enlaces (link-in-bio).
+// encuesta, el editor de prendas, las páginas de enlaces (link-in-bio) y cómo
+// borrar la cuenta (la página que revisa Google Play).
 export const RUTAS_SIN_POPUP = [
   '/admin',
   '/checkout',
@@ -30,6 +31,7 @@ export const RUTAS_SIN_POPUP = [
   '/editor',
   '/l/',
   '/regalos-con-amor',
+  '/eliminar-cuenta',
 ];
 
 export const OPCIONES = {

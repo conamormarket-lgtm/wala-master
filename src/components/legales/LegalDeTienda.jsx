@@ -15,6 +15,8 @@ import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
  * Lo de antes: pages/PoliticasPrivacidadViejo.jsx y
  * pages/TerminosCondicionesViejo.jsx (interruptor legalesViejo).
  *  - tipo: 'privacidad' | 'terminos' · documento: el de config/legales/
+ *  - otro: { pregunta, texto, url } en vez del otro documento (/eliminar-cuenta
+ *    lleva a la cuenta) · mensaje: el texto con el que abre WhatsApp
  */
 const MENSAJE = '¡Hola Walá! Tengo una consulta sobre sus políticas.';
 
@@ -29,7 +31,7 @@ const OTRO = {
   terminos: { pregunta: '¿Buscabas cómo tratamos tus datos?', texto: 'Política de Privacidad', url: '/politicas-privacidad' },
 };
 
-export default function LegalDeTienda({ tipo, documento }) {
+export default function LegalDeTienda({ tipo, documento, otro, mensaje = MENSAJE }) {
   const { userProfile } = useAuth();
   // El WhatsApp general de /admin/whatsapp (el mismo del botón flotante en
   // estas páginas). Antes iba fijo el de config/empresa, que es otro número.
@@ -38,14 +40,14 @@ export default function LegalDeTienda({ tipo, documento }) {
     queryFn: async () => conPrefijo((await getMessage('whatsapp_number')).data),
     staleTime: 10 * 60 * 1000,
   });
-  const urlWhatsApp = enlaceWhatsApp(numero || empresa.whatsapp, MENSAJE);
+  const urlWhatsApp = enlaceWhatsApp(numero || empresa.whatsapp, mensaje);
   return (
     <PaginaLegal
       tipo={tipo}
       documento={documento}
       empresa={empresa}
       urlWhatsApp={urlWhatsApp}
-      otro={OTRO[tipo]}
+      otro={otro || OTRO[tipo]}
       sinKapi={Boolean(userProfile)}
     />
   );
