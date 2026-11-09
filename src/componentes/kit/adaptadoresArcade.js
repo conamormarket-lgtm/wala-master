@@ -138,7 +138,7 @@ export function juegosDelArcade({
       id: 'pichanga',
       ...banner(banners.pichanga),
       titulo: 'La Pichanga de Kapi',
-      descripcion: 'Fútbol de chapas: mete goles con tus chapas, vence a Kapi y gana 2 monedas al día.',
+      descripcion: 'Fútbol de chapas: juega con el equipo de Kapi, vence a Michi y gana 2 monedas al día.',
       estado: pichangaHecha ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Nuevo', tono: 'violeta', punto: true },
       recompensa: { texto: '+2 monedas al día' },
       atenuada: pichangaHecha,

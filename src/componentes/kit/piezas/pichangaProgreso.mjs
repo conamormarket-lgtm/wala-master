@@ -94,7 +94,7 @@ export function textoDesbloqueo(item) {
   switch (d.tipo) {
     case 'estrellas': return `Junta ${d.n} estrellas`;
     case 'jefe': return `Vence al jefe del mundo ${d.mundo}`;
-    case 'partidos': return d.n === 1 ? 'Gánale un partido a Kapi' : `Gánale ${d.n} partidos a Kapi`;
+    case 'partidos': return d.n === 1 ? 'Gánale un partido a Michi' : `Gánale ${d.n} partidos a Michi`;
     case 'goles': return `Haz ${d.n} goles`;
     default: return 'Desde el inicio';
   }

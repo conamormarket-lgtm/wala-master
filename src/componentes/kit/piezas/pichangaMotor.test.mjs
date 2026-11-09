@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizarTiro, MAX_TIRO, crearMesa, definirCancha, simular, posicionKapi, estrellasPara, partidaNivel, jugarTiro,
   comprobarPartida, tiroValido, partidoNuevo, despuesDelTiroPartido, jugadaDeKapi, azar, canchaPartido, chapasDe,
-  GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO,
+  GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO, indicePelota, huboPase, toquesUsados, PASES_MAX,
 } from './pichangaMotor.mjs';
 import {
   NIVELES_PICHANGA, TOTAL_NIVELES_PICHANGA, nivelPichanga, RETOS_PICHANGA, retoPichanga, indiceRetoDe, semanaDe, mesDe,
@@ -104,7 +104,7 @@ test('una partida no vale con tiros de más, de otra chapa o después de ganar',
   const lv = nivelPichanga(1);
   const [gol] = lv.solucion;
   assert.equal(comprobarPartida(lv, [gol, gol]).valida, false); // seguir después de ganar
-  assert.equal(comprobarPartida(lv, [[1, 0, -150]]).valida, false); // la pelota no es una chapa
+  assert.equal(comprobarPartida(lv, [[indicePelota(partidaNivel(lv).mesa), 0, -150]]).valida, false); // la pelota no es una chapa
   assert.equal(comprobarPartida(lv, [[0, 1, 1]]).valida, false); // sin fuerza
   assert.equal(tiroValido(partidaNivel(lv).mesa, [0, 0, -100]), true);
   // Sin gol en los toques que hay: perdida.
@@ -155,4 +155,46 @@ test('ningún nivel ni reto empieza con algo encimado o fuera de la cancha', asy
   const { problemasDeCancha } = await import('./pichangaMotor.mjs');
   NIVELES_PICHANGA.forEach((d, k) => assert.deepEqual(problemasDeCancha(definirCancha(d)), [], `nivel ${k + 1}`));
   RETOS_PICHANGA.forEach((d, k) => assert.deepEqual(problemasDeCancha(definirCancha(d)), [], `reto ${k + 1}`));
+});
+
+test('un pase no gasta toque (hasta PASES_MAX por nivel)', () => {
+  // La chapa empuja la pelota hacia su compañera: pase.
+  const lv = armarNivel(1, { mias: [[300, 760], [300, 400]], pelota: [300, 620], arcos: { arriba: 0 } }, { par: 1 });
+  const { partida, sim } = jugarTiro(lv, partidaNivel(lv), [0, 0, -120]);
+  assert.ok(sim.tocaron.includes(1));
+  assert.ok(huboPase(partidaNivel(lv).mesa, [0, 0, -120], sim));
+  assert.equal(partida.pases, 1);
+  assert.equal(toquesUsados(partida), 0);
+  assert.equal(partida.ultimo.pase, true);
+  // Un tiro que solo toca la pelota (sin compañero) no es pase.
+  const solo = armarNivel(1, { mias: [[300, 760]], pelota: [300, 620], arcos: { arriba: 0 } }, { par: 1 });
+  assert.equal(jugarTiro(solo, partidaNivel(solo), [0, 0, -120]).partida.pases, 0);
+});
+
+test('un autogol vuelve la jugada atrás y gasta el toque', () => {
+  const lv = armarNivel(1, { mias: [[300, 420]], pelota: [300, 640] }, { par: 1 });
+  const inicio = partidaNivel(lv);
+  const { partida, sim } = jugarTiro(lv, inicio, [0, 0, 150]);
+  assert.equal(sim.gol, 'abajo');
+  assert.equal(partida.ultimo.autogol, true);
+  assert.equal(partida.ganada, false);
+  assert.equal(toquesUsados(partida), 1);
+  assert.deepEqual(partida.mesa.cuerpos.map((c) => [c.x, c.y]), inicio.mesa.cuerpos.map((c) => [c.x, c.y]));
+});
+
+test('el partido: un pase da otro turno, hasta PASES_MAX seguidos', () => {
+  let pt = partidoNuevo();
+  const companero = 1; // otra chapa tuya
+  const pase = { gol: null, tocaron: [companero], mesa: pt.mesa, pasos: 5 };
+  for (let k = 1; k <= PASES_MAX; k += 1) {
+    pt = despuesDelTiroPartido(pt, { ...pase, mesa: pt.mesa }, [0, 0, -100]);
+    assert.equal(pt.turno, 'yo');
+    assert.equal(pt.pases, k);
+  }
+  pt = despuesDelTiroPartido(pt, { ...pase, mesa: pt.mesa }, [0, 0, -100]);
+  assert.equal(pt.turno, 'kapi');
+  assert.equal(pt.pases, 0);
+  // Seis chapas por lado, con arquero.
+  assert.equal(chapasDe(pt.mesa, 'mia').length, 6);
+  assert.equal(chapasDe(pt.mesa, 'rival').length, 6);
 });

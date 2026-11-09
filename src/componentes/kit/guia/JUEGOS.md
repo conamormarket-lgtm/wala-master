@@ -733,3 +733,29 @@ teléfono real, la misión activada, la versión en inglés.
 - **Barra del juego** (kit, `piezas/Juegos.module.css`): en pantallas de hasta
   480 px el título queda solo para lectores de pantalla; antes se montaban los
   botones encima (pasaba en todos los juegos).
+
+## La Pichanga de Kapi: como se juega en Plato (2026-11-09)
+
+- **Dos equipos con personaje**: el tuyo es Kapi y el rival es Michi, el gato
+  (`/assets/kapi/pichanga/{kapi,michi}-{feliz,triste}.webp`, 256 px). El polo es
+  transparente: la chapa pone el color y el dibujo del equipo debajo
+  (`dibujarChapa`). Después de un gol, el que lo recibió pone cara triste.
+  Michi también es el arquero que va de lado a lado en los niveles.
+- **Pases** (`PASES_MAX` = 3, `huboPase`): si después de tu tiro la pelota toca
+  otra de tus chapas, ese tiro no gasta toque (hasta 3 por nivel; el par y las
+  estrellas cuentan los toques gastados, `toquesUsados`). En el partido, el
+  mismo equipo vuelve a tirar, hasta 3 seguidos.
+- **Tu arco y tu portero**: todos los niveles tienen arco abajo y un portero
+  tuyo (con guantes; se tira como cualquier chapa). Un autogol devuelve la
+  jugada y gasta el toque.
+- **Partido de 6 contra 6**, con arquero en cada lado; después de un gol saca
+  quien lo recibió. Michi prueba tiros con sus 3 chapas más cerca de la pelota
+  (130-200 ms) y valora un poco más los pases.
+- **Arrastre más suave**: la fuerza completa pide 235 unidades de arrastre (antes
+  125) y sube en curva (`CURVA_FUERZA`), así los tiros suaves se controlan.
+- **La pelota rueda en 3D**: 12 parches en los vértices de un icosaedro y una
+  orientación que gira sobre el eje perpendicular al camino (`rodar`); las
+  chapas que corren dejan una estela blanca.
+- Todos los niveles y retos se resolvieron otra vez con estas reglas (hay
+  soluciones con pase: niveles 5, 8, 18 y 34) y las funciones se desplegaron
+  antes de publicar la web.

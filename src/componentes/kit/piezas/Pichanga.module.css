@@ -472,3 +472,8 @@
   justify-content: center;
   pointer-events: none;
 }
+
+.pases {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}

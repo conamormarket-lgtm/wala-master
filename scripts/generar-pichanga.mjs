@@ -141,8 +141,9 @@ for (const tarea of elegidas) {
   const lv = armarNivel(tarea.numero, tarea.dato, { par: tiros.length, tiros });
   const r = comprobarPartida(lv, tiros);
   if (!r.ganada) throw new Error(`${tarea.nombre}: la solución no se comprueba`);
-  soluciones[tarea.clave] = { par: tiros.length, tiros };
-  console.log(`${tarea.nombre}: ${tiros.length} ${tiros.length === 1 ? 'toque' : 'toques'} (${seg} s)`);
+  // El par cuenta los toques gastados: un pase no gasta toque.
+  soluciones[tarea.clave] = { par: r.toques, tiros };
+  console.log(`${tarea.nombre}: ${r.toques} ${r.toques === 1 ? 'toque' : 'toques'}${r.pases ? ` (+${r.pases} pase${r.pases > 1 ? 's' : ''})` : ''} (${seg} s)`);
 }
 
 const orden = (k) => (k.startsWith('r') ? 1000 + Number(k.slice(1)) : Number(k));

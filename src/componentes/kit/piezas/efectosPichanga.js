@@ -47,6 +47,7 @@ const SONIDOS = {
   gol: (ctx) => { arpegio(ctx, [523, 659, 784, 1047, 1319, 1568], 0.08, 0.1); nota(ctx, { onda: 'sawtooth', desde: 220, hasta: 330, inicio: 0.05, dura: 0.7, volumen: 0.025 }); },
   golKapi: (ctx) => arpegio(ctx, [392, 330, 262], 0.12, 0.09),
   fallo: (ctx) => arpegio(ctx, [440, 370, 311], 0.1, 0.08),
+  pase: (ctx) => arpegio(ctx, [784, 1047, 1319], 0.06, 0.08),
   silbato: (ctx) => { nota(ctx, { desde: 2300, hasta: 2500, dura: 0.16, volumen: 0.05 }); nota(ctx, { desde: 2300, hasta: 2600, inicio: 0.2, dura: 0.32, volumen: 0.05 }); },
   ganar: (ctx) => arpegio(ctx, [523, 659, 784, 1047, 1319], 0.09, 0.1),
   cofre: (ctx) => arpegio(ctx, [1568, 1976, 2349, 3136], 0.05, 0.06),
@@ -60,6 +61,7 @@ const VIBRACIONES = {
   kapi: 18,
   gol: [40, 60, 40, 60, 90],
   golKapi: [60, 40, 60],
+  pase: [12, 30, 12],
   fallo: [50, 40, 50],
   ganar: [30, 50, 30, 50, 70],
   cofre: [15, 30, 15, 30, 15],
@@ -68,7 +70,7 @@ const VIBRACIONES = {
 
 /**
  * Lo que pasa en la cancha, con su sonido y su vibración.
- *  - tipo: tiro | pelota | choque | pared | cono | poste | kapi | gol | golKapi | fallo | silbato | ganar | cofre | error
+ *  - tipo: tiro | pelota | choque | pared | cono | poste | kapi | gol | golKapi | fallo | pase | silbato | ganar | cofre | error
  *  - fuerza: la del golpe (los choques suenan más o menos fuerte)
  *  - sonido, vibracion: los interruptores de la persona
  */

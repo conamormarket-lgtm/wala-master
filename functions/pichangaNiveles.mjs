@@ -25,7 +25,11 @@ const K = (x, vel, rango = 60, fase = 0) => ({ x, y: 46, rango, vel, fase });
 const barro = (x, y, w, h) => ({ tipo: 'barro', x, y, w, h });
 const hielo = (x, y, w, h) => ({ tipo: 'hielo', x, y, w, h });
 
-export const NIVELES_PICHANGA = [
+/** Tu portero: cuida tu arco (abajo) y también se puede tirar. */
+const PORTERO = [300, 858];
+const conPortero = (d) => (d.penales || d.portero === null ? d : { portero: PORTERO, ...d });
+
+const DATOS = [
   /* ── Mundo 1: La canchita del barrio ── */
   // 1-4: tirar, apuntar, usar dos chapas, rebotar en la banda.
   { mias: [[300, 640]], pelota: [300, 520] },
@@ -39,14 +43,14 @@ export const NIVELES_PICHANGA = [
   // 8-11: conos fijos.
   { mias: [[300, 720]], pelota: [300, 560], conos: [[300, 330], [235, 300], [365, 300]] },
   { mias: [[150, 740], [450, 740]], pelota: [300, 600], conos: [[220, 260], [380, 260], [300, 400]], rivales: [[300, 190]] },
-  { mias: [[300, 790]], pelota: [300, 690], rivales: [[225, 410], [375, 410], [300, 250]] },
+  { mias: [[300, 770]], pelota: [300, 690], rivales: [[225, 410], [375, 410], [300, 250]] },
   { mias: [[100, 620], [500, 620]], pelota: [300, 470], conos: [[300, 310]], rivales: [[200, 200], [400, 200]] },
   // 12-19: Kapi de arquero.
   { mias: [[300, 650]], pelota: [300, 500], kapi: K(300, 1.5) },
   { mias: [[200, 690], [400, 690]], pelota: [300, 530], conos: [[300, 340]], kapi: K(300, 2) },
   { mias: [[300, 760]], pelota: [450, 460], rivales: [[320, 300]], kapi: K(300, 2, 60, 30) },
   { mias: [[120, 710], [480, 710]], pelota: [300, 430], rivales: [[240, 260], [360, 260]], kapi: K(300, 2) },
-  { mias: [[300, 790], [150, 610]], pelota: [150, 460], conos: [[210, 280], [300, 250], [390, 280]], kapi: K(300, 2.5) },
+  { mias: [[300, 770], [150, 610]], pelota: [150, 460], conos: [[210, 280], [300, 250], [390, 280]], kapi: K(300, 2.5) },
   { mias: [[460, 770]], pelota: [520, 320], rivales: [[410, 200]], kapi: K(300, 2, 70, 70) },
   { mias: [[200, 770], [400, 770], [300, 640]], pelota: [300, 490], rivales: [[250, 310], [350, 310], [300, 205]], kapi: K(300, 2) },
   { mias: [[100, 790], [500, 790]], pelota: [300, 330], conos: [[200, 430], [400, 430]], kapi: K(300, 2.5, 60, 120) },
@@ -72,7 +76,7 @@ export const NIVELES_PICHANGA = [
   { mias: [[300, 760]], pelota: [130, 460], arcos: { arriba: 160 }, conos: [[240, 260], [360, 260]], kapi: K(300, 1.5, 40) },
   { mias: [[300, 770]], pelota: [300, 620], arcos: { arriba: 160 }, zonas: [barro(150, 330, 300, 100)], kapi: K(300, 2, 40) },
   { mias: [[160, 770], [440, 770]], pelota: [300, 600], arcos: { arriba: 160 }, zonas: [hielo(0, 250, 600, 250)], rivales: [[250, 300], [350, 300]] },
-  { mias: [[300, 790], [140, 640], [460, 640]], pelota: [300, 520], arcos: { arriba: 160 }, conos: [[200, 330], [400, 330], [300, 250]], kapi: K(300, 2, 40, 40) },
+  { mias: [[300, 770], [140, 640], [460, 640]], pelota: [300, 520], arcos: { arriba: 160 }, conos: [[200, 330], [400, 330], [300, 250]], kapi: K(300, 2, 40, 40) },
   { mias: [[470, 780]], pelota: [530, 420], arcos: { arriba: 160 }, rivales: [[430, 220]], zonas: [barro(0, 120, 250, 300)], kapi: K(300, 2, 40) },
   { mias: [[200, 780], [400, 780]], pelota: [300, 460], arcos: { arriba: 160 }, zonas: [hielo(100, 520, 400, 200)], rivales: [[240, 280], [360, 280], [300, 360]], kapi: K(300, 2, 40) },
   { mias: [[120, 790], [480, 790], [300, 700]], pelota: [300, 420], arcos: { arriba: 160 }, zonas: [barro(0, 200, 160, 300), barro(440, 200, 160, 300)], conos: [[230, 300], [370, 300]], kapi: K(300, 2.5, 40, 20) },
@@ -80,6 +84,7 @@ export const NIVELES_PICHANGA = [
   { mias: [[300, 300]], pelota: [300, 235], arcos: { arriba: 180 }, kapi: K(300, 3, 50), penales: { tiros: 5, goles: 3 } },
 ];
 
+export const NIVELES_PICHANGA = DATOS.map(conPortero);
 export const TOTAL_NIVELES_PICHANGA = NIVELES_PICHANGA.length;
 
 const armados = new Map();
@@ -103,15 +108,15 @@ const RETOS_BASE = [
   { mias: [[160, 760], [440, 760]], pelota: [230, 520], rivales: [[300, 300], [380, 360]], kapi: K(300, 2) },
   { mias: [[300, 780]], pelota: [120, 470], conos: [[250, 300], [350, 300], [300, 420]], kapi: K(300, 2, 60, 40) },
   { mias: [[200, 760], [420, 700]], pelota: [300, 560], zonas: [barro(130, 300, 340, 110)], rivales: [[260, 200]], kapi: K(300, 2) },
-  { mias: [[300, 790], [120, 650]], pelota: [460, 520], zonas: [hielo(0, 330, 600, 260)], conos: [[300, 260]] },
+  { mias: [[300, 770], [120, 650]], pelota: [460, 520], zonas: [hielo(0, 330, 600, 260)], conos: [[300, 260]] },
   { mias: [[150, 780], [450, 780]], pelota: [300, 640], arcos: { arriba: 160 }, rivales: [[240, 360], [360, 360]], kapi: K(300, 1.5, 40) },
   { mias: [[480, 760]], pelota: [520, 520], rivales: [[420, 300], [300, 220]], conos: [[180, 300]], kapi: K(300, 2, 60, 90) },
-  { mias: [[300, 800], [160, 700], [440, 700]], pelota: [300, 600], conos: [[220, 420], [380, 420], [300, 330]], kapi: K(300, 2.5) },
+  { mias: [[300, 770], [160, 700], [440, 700]], pelota: [300, 600], conos: [[220, 420], [380, 420], [300, 330]], kapi: K(300, 2.5) },
   { mias: [[220, 770]], pelota: [300, 500], zonas: [barro(0, 380, 250, 200), hielo(350, 150, 250, 300)], rivales: [[300, 280]] },
   { mias: [[100, 780], [500, 780]], pelota: [150, 420], arcos: { arriba: 170 }, conos: [[300, 300]], kapi: K(300, 2, 45, 30) },
   { mias: [[300, 760]], pelota: [300, 620], rivales: [[240, 450], [360, 450], [300, 330]], zonas: [hielo(100, 480, 400, 120)], kapi: K(300, 2) },
   { mias: [[140, 760], [460, 760]], pelota: [470, 400], zonas: [barro(330, 150, 270, 180)], rivales: [[300, 260]], kapi: K(300, 2, 60, 120) },
-  { mias: [[300, 790], [200, 690]], pelota: [380, 560], arcos: { arriba: 160 }, conos: [[250, 260], [350, 260]], zonas: [barro(100, 380, 400, 80)], kapi: K(300, 2, 40, 20) },
+  { mias: [[300, 770], [200, 690]], pelota: [380, 560], arcos: { arriba: 160 }, conos: [[250, 260], [350, 260]], zonas: [barro(100, 380, 400, 80)], kapi: K(300, 2, 40, 20) },
 ];
 
 /** Una jugada en espejo (lo de la izquierda pasa a la derecha). */
@@ -121,10 +126,11 @@ const espejo = (d) => ({
   rivales: (d.rivales || []).map(([x, y]) => [600 - x, y]),
   conos: (d.conos || []).map(([x, y]) => [600 - x, y]),
   pelota: [600 - d.pelota[0], d.pelota[1]],
+  ...(d.portero ? { portero: [600 - d.portero[0], d.portero[1]] } : {}),
   zonas: (d.zonas || []).map((z) => ({ ...z, x: 600 - z.x - z.w })),
 });
 
-export const RETOS_PICHANGA = [...RETOS_BASE, ...RETOS_BASE.map(espejo)];
+export const RETOS_PICHANGA = [...RETOS_BASE, ...RETOS_BASE.map(espejo)].map(conPortero);
 
 /** Un número para cada fecha 'AAAA-MM-DD' (el mismo siempre). */
 function semillaFecha(fecha) {

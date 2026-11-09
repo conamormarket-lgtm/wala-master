@@ -5,7 +5,6 @@ import { Hueso } from '../Esqueletos';
 import { Pestanas } from '../Navegacion';
 import { TextoResaltado } from './TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
-import { CARAS_KAPI_MINI } from './Flotantes';
 import {
   ANCHO, ALTO, FONDO_ARCO, RADIO, MAX_TIRO, normalizarTiro, posicionKapi, postes,
 } from './pichangaMotor.mjs';
@@ -26,30 +25,47 @@ import b from './Bolitas.module.css';
 const BANDEJA = { lado: 30, fondo: FONDO_ARCO + 22, radio: 48 };
 /** Lo que se ve (unidades del motor): la bandeja y un margen para su sombra. */
 const VISTA = { x: -BANDEJA.lado - 8, y: -BANDEJA.fondo - 8, w: ANCHO + 2 * (BANDEJA.lado + 8), h: ALTO + 2 * (BANDEJA.fondo + 8) + 10 };
-/** Cuánto del arrastre se vuelve tiro (con 125 unidades de arrastre, fuerza completa). */
-const GANANCIA = MAX_TIRO / 125;
+/**
+ * El arrastre: hace falta llevar el dedo ARRASTRE_MAX unidades para la fuerza
+ * completa, y la fuerza sube en curva (los tiros suaves se controlan mejor).
+ * Un arrastre más corto que ARRASTRE_MIN no es un tiro.
+ */
+const ARRASTRE_MAX = 235;
+const ARRASTRE_MIN = 16;
+const CURVA_FUERZA = 1.35;
 /** Los pasos que dura un destello de choque. */
 const VIDA_DESTELLO = 16;
 
 export const ASPECTO_CANCHA = `${VISTA.w} / ${VISTA.h}`;
+const ANIMOS_FELICES = { mia: 'feliz', rival: 'feliz' };
 
-/* Las caras de Kapi (sus chapas y el arquero): se bajan una vez. */
-const caras = {};
+/**
+ * Los dos equipos: Kapi (el tuyo) y Michi, el gato (el rival). Cada uno feliz
+ * o triste; el polo es transparente, así que toma el color de la chapa.
+ */
+export const PERSONAJES = {
+  kapi: { feliz: '/assets/kapi/pichanga/kapi-feliz.webp', triste: '/assets/kapi/pichanga/kapi-triste.webp' },
+  michi: { feliz: '/assets/kapi/pichanga/michi-feliz.webp', triste: '/assets/kapi/pichanga/michi-triste.webp' },
+};
+
+/* Las imágenes se bajan una vez; al llegar, se vuelve a dibujar. */
+const imagenes = {};
 const esperando = new Set();
-function cara(tipo, alListo) {
-  if (typeof Image === 'undefined') return null;
-  const img = caras[tipo];
+function imagen(src, alListo) {
+  if (typeof Image === 'undefined' || !src) return null;
+  const img = imagenes[src];
   if (img?.complete && img.naturalWidth) return img;
   if (alListo) esperando.add(alListo);
   if (!img) {
     const nueva = new Image();
     nueva.decoding = 'async';
     nueva.onload = () => { esperando.forEach((f) => f()); esperando.clear(); };
-    nueva.src = CARAS_KAPI_MINI[tipo] || CARAS_KAPI_MINI.feliz;
-    caras[tipo] = nueva;
+    nueva.src = src;
+    imagenes[src] = nueva;
   }
   return null;
 }
+const personaje = (quien, animo, alListo) => imagen(PERSONAJES[quien]?.[animo] || PERSONAJES[quien]?.feliz, alListo);
 
 /* ── Dibujos sueltos ──────────────────────────────────── */
 
@@ -118,11 +134,29 @@ function dientes(ctx, x, y, r) {
   ctx.stroke();
 }
 
+/** Los guantes del arquero, a los costados de la chapa. */
+function guantes(ctx, x, y, radio) {
+  for (const lado of [-1, 1]) {
+    ctx.fillStyle = '#f59e0b';
+    circulo(ctx, x + lado * radio * 1.02, y + radio * 0.12, radio * 0.3);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#b45309';
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    circulo(ctx, x + lado * radio * 1.02 - radio * 0.08, y + radio * 0.04, radio * 0.09);
+    ctx.fill();
+  }
+}
+
 /**
- * Una chapa (una tapita con su borde plateado) con el dibujo de su equipo.
- *  - equipo: { colores: [fondo, detalle], dibujo, borde? } · imagen: la cara de Kapi (sus chapas)
+ * Una chapa (una tapita con su borde plateado): el color y el dibujo de su
+ * equipo (se ven en el polo) y, encima, su personaje.
+ *  - equipo: { colores: [fondo, detalle], dibujo, borde? } · cara: la imagen
+ *    del personaje (o null: solo el dibujo) · portero: con guantes
  */
-export function dibujarChapa(ctx, x, y, radio, equipo, imagen = null) {
+export function dibujarChapa(ctx, x, y, radio, equipo, cara = null, portero = false) {
+  if (portero) guantes(ctx, x, y, radio);
   sombra(ctx, x, y, radio);
   dientes(ctx, x, y, radio);
   const r = radio * 0.8;
@@ -144,9 +178,11 @@ export function dibujarChapa(ctx, x, y, radio, equipo, imagen = null) {
       ctx.fillRect(x, y - r, r, 2 * r);
       break;
     case 'banda':
+      ctx.save();
       ctx.translate(x, y);
       ctx.rotate(-Math.PI / 4);
       ctx.fillRect(-r, -r * 0.24, 2 * r, r * 0.48);
+      ctx.restore();
       break;
     case 'estrella':
       estrella(ctx, x, y, r * 0.58);
@@ -158,12 +194,11 @@ export function dibujarChapa(ctx, x, y, radio, equipo, imagen = null) {
       circulo(ctx, x, y, r * 0.52);
       ctx.stroke();
       break;
-    case 'cara':
-      if (imagen) ctx.drawImage(imagen, x - r * 0.98, y - r * 0.92, r * 1.96, r * 1.96);
-      break;
     default:
       break;
   }
+  // El personaje: la cabeza arriba y el polo (transparente) abajo, sobre el color.
+  if (cara) ctx.drawImage(cara, x - r * 0.95, y - r * 0.86, r * 1.9, r * 1.9);
   // El canto de la tapa: más oscuro abajo, como en relieve.
   const canto = ctx.createLinearGradient(x, y - r, x, y + r);
   canto.addColorStop(0, 'rgba(255,255,255,0.18)');
@@ -179,8 +214,48 @@ export function dibujarChapa(ctx, x, y, radio, equipo, imagen = null) {
   brillo(ctx, x, y, r);
 }
 
-/** La pelota: fondo y parches, girada `giro` radianes (rueda al moverse). */
-export function dibujarPelota(ctx, x, y, r, pelota, giro = 0) {
+/* ── La pelota que rueda (en 3D) ── */
+/* Los 12 parches de una pelota de fútbol están en los vértices de un
+   icosaedro; cada uno es un pentágono alrededor de su vértice. La pelota
+   guarda su orientación (una matriz de 3 × 3) y, al moverse, gira sobre el eje
+   perpendicular al camino: los parches corren en la dirección del tiro
+   (también hacia arriba o en diagonal), como una pelota de verdad. */
+const unitario = ([a, b2, c2]) => { const l = Math.sqrt(a * a + b2 * b2 + c2 * c2); return [a / l, b2 / l, c2 / l]; };
+const PHI = (1 + Math.sqrt(5)) / 2;
+const VERTICES = [[-1, PHI, 0], [1, PHI, 0], [-1, -PHI, 0], [1, -PHI, 0], [0, -1, PHI], [0, 1, PHI], [0, -1, -PHI], [0, 1, -PHI], [PHI, 0, -1], [PHI, 0, 1], [-PHI, 0, -1], [-PHI, 0, 1]].map(unitario);
+const PARCHES = VERTICES.map((v) => {
+  const ref = Math.abs(v[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const u = unitario([v[1] * ref[2] - v[2] * ref[1], v[2] * ref[0] - v[0] * ref[2], v[0] * ref[1] - v[1] * ref[0]]);
+  const w = [v[1] * u[2] - v[2] * u[1], v[2] * u[0] - v[0] * u[2], v[0] * u[1] - v[1] * u[0]];
+  const ang = 0.37;
+  return { centro: v, puntos: Array.from({ length: 5 }, (_, k) => {
+    const a = (k * 2 * Math.PI) / 5;
+    return unitario(v.map((vi, i) => vi * Math.cos(ang) + (u[i] * Math.cos(a) + w[i] * Math.sin(a)) * Math.sin(ang)));
+  }) };
+});
+/** La orientación de la pelota sin girar. */
+export const ORIENTACION_INICIAL = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+const aplicar = (m, [a, b2, c2]) => [m[0] * a + m[1] * b2 + m[2] * c2, m[3] * a + m[4] * b2 + m[5] * c2, m[6] * a + m[7] * b2 + m[8] * c2];
+/** La orientación después de rodar (dx, dy) unidades con una pelota de radio r. */
+export function rodar(m, dx, dy, r) {
+  const largo = Math.sqrt(dx * dx + dy * dy);
+  if (largo < 1e-6) return m;
+  const [ax, ay] = [-dy / largo, dx / largo];
+  const th = largo / r;
+  const c = Math.cos(th);
+  const sn = Math.sin(th);
+  const t = 1 - c;
+  // La rotación de ángulo th sobre el eje (ax, ay, 0) (Rodrigues), aplicada antes que m.
+  const g = [t * ax * ax + c, t * ax * ay, ay * sn, t * ax * ay, t * ay * ay + c, -ax * sn, -ay * sn, ax * sn, c];
+  const out = new Array(9);
+  for (let i = 0; i < 3; i += 1) {
+    for (let j = 0; j < 3; j += 1) out[i * 3 + j] = g[i * 3] * m[j] + g[i * 3 + 1] * m[3 + j] + g[i * 3 + 2] * m[6 + j];
+  }
+  return out;
+}
+
+/** La pelota: fondo y parches, con la orientación de cuando rodó. */
+export function dibujarPelota(ctx, x, y, r, pelota, orientacion = ORIENTACION_INICIAL) {
   sombra(ctx, x, y, r, 0.3);
   const [a, b2] = pelota.colores;
   ctx.fillStyle = a;
@@ -189,23 +264,19 @@ export function dibujarPelota(ctx, x, y, r, pelota, giro = 0) {
   ctx.save();
   circulo(ctx, x, y, r);
   ctx.clip();
-  ctx.translate(x, y);
-  ctx.rotate(giro);
   ctx.fillStyle = b2;
-  // El pentágono del centro y los cinco de alrededor (cortados por el borde).
-  const penta = (cx, cy, rr, rot) => {
+  ctx.strokeStyle = b2;
+  ctx.lineWidth = 1;
+  for (const parche of PARCHES) {
+    const z = aplicar(orientacion, parche.centro)[2];
+    if (z < -0.25) continue; // detrás: no se ve
     ctx.beginPath();
-    for (let k = 0; k < 5; k += 1) {
-      const ang = rot + (k * 2 * Math.PI) / 5;
-      ctx.lineTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
-    }
+    parche.puntos.forEach((pt, k) => {
+      const [px, py] = aplicar(orientacion, pt);
+      if (k) ctx.lineTo(x + px * r, y + py * r); else ctx.moveTo(x + px * r, y + py * r);
+    });
     ctx.closePath();
     ctx.fill();
-  };
-  penta(0, 0, r * 0.36, -Math.PI / 2);
-  for (let k = 0; k < 5; k += 1) {
-    const ang = -Math.PI / 2 + (k * 2 * Math.PI) / 5 + Math.PI / 5;
-    penta(Math.cos(ang) * r * 0.98, Math.sin(ang) * r * 0.98, r * 0.32, ang);
   }
   ctx.restore();
   // Relieve: más oscuro abajo a la derecha.
@@ -222,8 +293,8 @@ export function dibujarPelota(ctx, x, y, r, pelota, giro = 0) {
   ctx.stroke();
 }
 
-/** Las chapas de Kapi (los rivales): rojas, como en la portada, con su cara. */
-export const EQUIPO_KAPI = { colores: ['#ef4444', '#ffffff'], dibujo: 'cara' };
+/** El equipo rival (el de Michi): polo rojo, como en la portada. */
+export const EQUIPO_RIVAL = { colores: ['#ef4444', '#ffffff'], dibujo: 'liso' };
 
 /* ── La mesita ───────────────────────────────────────── */
 
@@ -485,19 +556,10 @@ function dibujarConos(ctx, def) {
   }
 }
 
-/** Kapi de arquero: una chapa grande con su cara (feliz o triste) y guantes. */
-function dibujarKapi(ctx, pos, carita) {
+/** El arquero que va de lado a lado (Michi): una chapa grande, con guantes. */
+function dibujarArquero(ctx, pos, carita) {
   if (!pos) return;
-  const r = RADIO.kapi;
-  for (const lado of [-1, 1]) {
-    ctx.fillStyle = '#f59e0b';
-    circulo(ctx, pos.x + lado * r * 1.02, pos.y + r * 0.15, r * 0.3);
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#b45309';
-    ctx.stroke();
-  }
-  dibujarChapa(ctx, pos.x, pos.y, r, { colores: ['#fde68a', '#facc15'], dibujo: 'cara', borde: '#ca8a04' }, carita);
+  dibujarChapa(ctx, pos.x, pos.y, RADIO.kapi, { colores: ['#facc15', '#ffffff'], dibujo: 'liso', borde: '#ca8a04' }, carita, true);
 }
 
 /** Un destello de choque: un aro que se abre y cuatro rayitas. */
@@ -607,7 +669,9 @@ const BANDEJAS = {
  *  - equipo, pelota: cómo se ven tus chapas y la pelota (vestuario) · pasto,
  *    linea: los colores del mundo o del estadio · escena: la del fondo
  *    ('invierno' pone escarcha en el pasto; 'noche', la bandeja oscura)
- *  - caraArquero: 'feliz' | 'triste' (Kapi ataja o le meten gol)
+ *  - caraArquero: 'feliz' | 'triste' (el arquero rival ataja o le meten gol)
+ *  - animos: { mia, rival }: 'feliz' | 'triste' la cara de cada equipo
+ *    (Kapi en las tuyas, Michi en las del rival)
  *  - puedeTirar: se puede apuntar con tus chapas · onTiro([chapa, dx, dy]) ·
  *    onApuntar(tiro | null): mientras se arrastra (para la vista del tiro)
  *  - ruta: [[x, y]] la trayectoria prevista de la pelota (la ayuda "Ver el tiro")
@@ -617,16 +681,16 @@ const BANDEJAS = {
  *  - resaltar: el índice de una chapa a marcar (la que va a tirar Kapi)
  */
 export function CanchaPichanga({
-  def, cuerpos, t = 0, equipo, pelota, pasto, linea, escena, caraArquero = 'feliz', puedeTirar = false, onTiro, onApuntar, ruta,
+  def, cuerpos, t = 0, equipo, pelota, pasto, linea, escena, caraArquero = 'feliz', animos = ANIMOS_FELICES, puedeTirar = false, onTiro, onApuntar, ruta,
   animacion, onFinAnimacion, onGolpe, resaltar = null, etiqueta = 'La cancha',
 }) {
   const lienzo = useRef(null);
   const marco = useRef(null);
   const apunte = useRef(null); // { i, dedo: { x, y }, tiro }
   const cuadro = useRef(null); // lo que se ve mientras rueda
-  const giro = useRef(0); // cuánto giró la pelota (queda girada al parar)
+  const orientacion = useRef(ORIENTACION_INICIAL); // cómo quedó girada la pelota
   const props = useRef({});
-  props.current = { def, cuerpos, t, equipo, pelota, pasto, linea, escena, caraArquero, ruta, resaltar, puedeTirar };
+  props.current = { def, cuerpos, t, equipo, pelota, pasto, linea, escena, caraArquero, animos, ruta, resaltar, puedeTirar };
   const nombre = useTexto(etiqueta);
 
   const dibujar = () => {
@@ -638,8 +702,9 @@ export function CanchaPichanga({
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, cv.width, cv.height);
     ctx.setTransform(escala, 0, 0, escala, -VISTA.x * escala, -VISTA.y * escala);
-    const feliz = cara('feliz', dibujar);
-    const arquero = cara(p.caraArquero, dibujar) || feliz;
+    const caraMia = personaje('kapi', p.animos.mia, dibujar);
+    const caraRival = personaje('michi', p.animos.rival, dibujar);
+    const arquero = personaje('michi', p.caraArquero, dibujar);
     const ahora = cuadro.current;
     dibujarBandeja(ctx, BANDEJAS[p.escena] || BANDEJAS.default);
     dibujarPasto(ctx, p.pasto, p.escena);
@@ -665,6 +730,22 @@ export function CanchaPichanga({
       circulo(ctx, x, y, RADIO.chapa + 6 + edad * 40);
       ctx.stroke();
     }
+    // Las estelas de las chapas que corren (una franja blanca que se apaga).
+    if (ahora?.estelasChapas?.length) {
+      ctx.lineCap = 'round';
+      for (const tramo of ahora.estelasChapas) {
+        for (let k = 1; k < tramo.length; k += 1) {
+          const f = k / tramo.length;
+          ctx.strokeStyle = `rgba(255,255,255,${0.28 * f})`;
+          ctx.lineWidth = RADIO.chapa * 1.5 * (0.35 + 0.65 * f);
+          ctx.beginPath();
+          ctx.moveTo(tramo[k - 1][0], tramo[k - 1][1]);
+          ctx.lineTo(tramo[k][0], tramo[k][1]);
+          ctx.stroke();
+        }
+      }
+      ctx.lineCap = 'butt';
+    }
     // La estela de la pelota.
     if (ahora?.estela?.length) {
       ahora.estela.forEach(([x, y], k) => {
@@ -675,7 +756,7 @@ export function CanchaPichanga({
       });
     }
     dibujarPostes(ctx, p.def);
-    dibujarKapi(ctx, posicionKapi(p.def.kapi, ahora ? ahora.t : p.t), arquero);
+    dibujarArquero(ctx, posicionKapi(p.def.kapi, ahora ? ahora.t : p.t), arquero);
     lista.forEach((c, i) => {
       if (c.tipo === 'pelota') return;
       if (p.puedeTirar && !ahora && c.equipo === 'mia') {
@@ -692,10 +773,11 @@ export function CanchaPichanga({
         circulo(ctx, c.x, c.y, c.r + 9);
         ctx.stroke();
       }
-      dibujarChapa(ctx, c.x, c.y, c.r, c.equipo === 'mia' ? p.equipo : EQUIPO_KAPI, feliz);
+      const mia = c.equipo === 'mia';
+      dibujarChapa(ctx, c.x, c.y, c.r, mia ? p.equipo : EQUIPO_RIVAL, mia ? caraMia : caraRival, c.portero);
     });
     const bola = lista.find((c) => c.tipo === 'pelota');
-    if (bola) dibujarPelota(ctx, bola.x, bola.y, bola.r, p.pelota, giro.current);
+    if (bola) dibujarPelota(ctx, bola.x, bola.y, bola.r, p.pelota, orientacion.current);
     if (ahora?.destellos) for (const d of ahora.destellos) dibujarDestello(ctx, d, d.edad);
     const a = apunte.current;
     if (a?.tiro && !ahora) dibujarApunte(ctx, lista[a.i], a.dedo, a.tiro);
@@ -737,14 +819,8 @@ export function CanchaPichanga({
     const { cuadros, golpes = [], t0 = 0, velocidad = 1, id, tirador = null, gol = null } = animacion;
     const base = cuerpos;
     const kb = base.findIndex((c) => c.tipo === 'pelota');
-    // Lo que recorrió la pelota hasta cada paso (para que gire al rodar).
-    const recorrido = [0];
-    for (let k = 1; k < cuadros.length; k += 1) {
-      const [x0, y0] = cuadros[k - 1][kb];
-      const [x1, y1] = cuadros[k][kb];
-      recorrido.push(recorrido[k - 1] + Math.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2));
-    }
-    const giro0 = giro.current;
+    // La pelota rueda desde donde se la vio por última vez.
+    let ultimaBola = [cuadros[0][kb][0], cuadros[0][kb][1]];
     const ultimo = cuadros.length - 1;
     const extra = gol ? 16 : 0; // pasos de la pelota metiéndose en la red
     const fin = cuadros[ultimo][kb];
@@ -776,7 +852,22 @@ export function CanchaPichanga({
       });
       const bola = lista[kb];
       const kk = Math.min(k, ultimo);
-      giro.current = giro0 + recorrido[Math.floor(kk)] / RADIO.pelota + (enRed > 0 ? enRed * 0.8 : 0);
+      orientacion.current = rodar(orientacion.current, bola.x - ultimaBola[0], bola.y - ultimaBola[1], RADIO.pelota);
+      ultimaBola = [bola.x, bola.y];
+      // Las chapas que corren dejan una franja detrás.
+      const estelasChapas = [];
+      base.forEach((c, n) => {
+        if (c.tipo !== 'chapa') return;
+        const tramo = [];
+        for (let s2 = 10; s2 >= 0; s2 -= 2) {
+          const kp = kk - s2;
+          if (kp >= 0) tramo.push(posEn(kp, n));
+        }
+        if (tramo.length < 2) return;
+        const [x0, y0] = tramo[0];
+        const [x1, y1] = tramo[tramo.length - 1];
+        if ((x1 - x0) ** 2 + (y1 - y0) ** 2 > 400) estelasChapas.push(tramo);
+      });
       const estela = [];
       for (let s2 = 8; s2 >= 1; s2 -= 1) {
         const kp = kk - s2 * 1.5;
@@ -790,7 +881,9 @@ export function CanchaPichanga({
       const bulto = enRed > 0 || (gol && k > ultimo - 3)
         ? { x: bola.x, y: bola.y, fuerza: 1 - Math.max(0, enRed - 0.6) * 1.5, arriba: gol !== 'abajo' }
         : null;
-      cuadro.current = { t: t0 + Math.min(k, ultimo), cuerpos: lista, estela: enRed > 0 ? [] : estela, destellos, impulso, bulto };
+      cuadro.current = {
+        t: t0 + Math.min(k, ultimo), cuerpos: lista, estela: enRed > 0 ? [] : estela, estelasChapas: enRed > 0 ? [] : estelasChapas, destellos, impulso, bulto,
+      };
       dibujar();
     };
     const avanzar = (ahora) => {
@@ -844,7 +937,14 @@ export function CanchaPichanga({
     if (!a) return;
     const d = enCancha(e);
     const c = cuerpos[a.i];
-    const tiro = normalizarTiro((c.x - d.x) * GANANCIA, (c.y - d.y) * GANANCIA);
+    const vx = c.x - d.x;
+    const vy = c.y - d.y;
+    const largo = Math.sqrt(vx * vx + vy * vy);
+    let tiro = null;
+    if (largo >= ARRASTRE_MIN) {
+      const fuerza = Math.min(1, largo / ARRASTRE_MAX) ** CURVA_FUERZA;
+      tiro = normalizarTiro((vx / largo) * fuerza * MAX_TIRO, (vy / largo) * fuerza * MAX_TIRO);
+    }
     a.dedo = d;
     const antes = a.tiro;
     a.tiro = tiro;
@@ -881,9 +981,10 @@ export function CanchaPichanga({
 }
 
 /**
- * Una chapa o una pelota sola (el vestuario). tipo: 'chapa' | 'pelota'.
+ * Una chapa o una pelota sola (el vestuario, el marcador). tipo: 'chapa' |
+ * 'pelota' · personaje: 'kapi' (tu equipo) | 'michi' (el rival) | null.
  */
-export function MuestraPichanga({ tipo = 'chapa', item, tamano = 56 }) {
+export function MuestraPichanga({ tipo = 'chapa', item, tamano = 56, personaje: quien = 'kapi', animo = 'feliz' }) {
   const lienzo = useRef(null);
   useEffect(() => {
     let vivo = true;
@@ -897,12 +998,12 @@ export function MuestraPichanga({ tipo = 'chapa', item, tamano = 56 }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, tamano, tamano);
       const r = tamano * 0.4;
-      if (tipo === 'pelota') dibujarPelota(ctx, tamano / 2, tamano / 2, r * 0.8, item, 0.3);
-      else dibujarChapa(ctx, tamano / 2, tamano / 2, r, item, item.dibujo === 'cara' ? cara('feliz', pintar) : null);
+      if (tipo === 'pelota') dibujarPelota(ctx, tamano / 2, tamano / 2, r * 0.8, item, rodar(ORIENTACION_INICIAL, 6, 9, 10));
+      else dibujarChapa(ctx, tamano / 2, tamano / 2, r, item, quien ? personaje(quien, animo, pintar) : null);
     };
     pintar();
     return () => { vivo = false; };
-  }, [tipo, item, tamano]);
+  }, [tipo, item, tamano, quien, animo]);
   return <canvas ref={lienzo} className={s.muestra} style={{ width: tamano, height: tamano }} aria-hidden="true" />;
 }
 
