@@ -428,17 +428,26 @@ function dibujarLineas(ctx, def, linea) {
   ctx.fillStyle = linea;
   circulo(ctx, ANCHO / 2, ALTO / 2, 5);
   ctx.fill();
+  // Las áreas, como en una cancha de verdad: el área grande, el área chica,
+  // el punto penal adentro del área grande y la medialuna pegada a su borde
+  // (solo la parte que queda afuera del área).
+  const AREA = { ancho: 400, alto: 170 };
+  const CHICA = { ancho: 250, alto: 66 };
+  const PUNTO = 120;
   for (const arriba of [true, false]) {
     const y = arriba ? 6 : ALTO - 6;
     const sg = arriba ? 1 : -1;
-    ctx.strokeRect(110, Math.min(y, y + sg * 160), 380, 160);
-    ctx.strokeRect(195, Math.min(y, y + sg * 64), 210, 64);
-    circulo(ctx, ANCHO / 2, y + sg * 215, 5);
+    ctx.strokeRect((ANCHO - AREA.ancho) / 2, Math.min(y, y + sg * AREA.alto), AREA.ancho, AREA.alto);
+    ctx.strokeRect((ANCHO - CHICA.ancho) / 2, Math.min(y, y + sg * CHICA.alto), CHICA.ancho, CHICA.alto);
+    circulo(ctx, ANCHO / 2, y + sg * PUNTO, 5);
     ctx.fill();
-    // El arco del área.
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(ANCHO / 2, y + sg * 215, 70, arriba ? 0.2 * Math.PI : 1.2 * Math.PI, arriba ? 0.8 * Math.PI : 1.8 * Math.PI);
+    ctx.rect(0, arriba ? y + AREA.alto : y - AREA.alto - 200, ANCHO, 200);
+    ctx.clip();
+    circulo(ctx, ANCHO / 2, y + sg * PUNTO, 84);
     ctx.stroke();
+    ctx.restore();
   }
   // Las esquinas.
   for (const [x, y, a0] of [[6, 6, 0], [ANCHO - 6, 6, 0.5], [ANCHO - 6, ALTO - 6, 1], [6, ALTO - 6, 1.5]]) {
@@ -566,8 +575,8 @@ function dibujarArquero(ctx, pos, carita) {
 function dibujarDestello(ctx, d, edad) {
   const vida = 1 - edad;
   if (vida <= 0) return;
-  const color = d.tipo === 'poste' ? '255, 230, 120' : d.tipo === 'kapi' ? '253, 186, 116' : d.tipo === 'gol' ? '255, 255, 255' : '255, 255, 255';
-  const grande = d.tipo === 'gol' ? 2.2 : d.tipo === 'poste' ? 1.4 : Math.min(1.2, 0.5 + (d.fuerza || 4) / 14);
+  const color = d.tipo === 'poste' ? '255, 230, 120' : d.tipo === 'kapi' ? '253, 186, 116' : d.tipo === 'pase' ? '253, 224, 71' : '255, 255, 255';
+  const grande = d.tipo === 'gol' ? 2.2 : d.tipo === 'pase' ? 1.7 : d.tipo === 'poste' ? 1.4 : Math.min(1.2, 0.5 + (d.fuerza || 4) / 14);
   ctx.strokeStyle = `rgba(${color}, ${0.85 * vida})`;
   ctx.lineWidth = 3 * vida + 1;
   circulo(ctx, d.x, d.y, (10 + edad * 30) * grande);
@@ -678,11 +687,13 @@ const BANDEJAS = {
  *  - animacion: { id, cuadros, golpes, t0, velocidad, tirador, gol } lo que
  *    rueda (lo arma simular); al terminar, onFinAnimacion(id). onGolpe(tipo,
  *    fuerza): cada choque (para el sonido)
- *  - resaltar: el índice de una chapa a marcar (la que va a tirar Kapi)
+ *  - resaltar: el índice de una chapa a marcar (la que va a tirar Michi)
+ *  - receptor: después de un pase, la única chapa tuya que puede tirar (se
+ *    marca en dorado) o null
  */
 export function CanchaPichanga({
   def, cuerpos, t = 0, equipo, pelota, pasto, linea, escena, caraArquero = 'feliz', animos = ANIMOS_FELICES, puedeTirar = false, onTiro, onApuntar, ruta,
-  animacion, onFinAnimacion, onGolpe, resaltar = null, etiqueta = 'La cancha',
+  animacion, onFinAnimacion, onGolpe, resaltar = null, receptor = null, etiqueta = 'La cancha',
 }) {
   const lienzo = useRef(null);
   const marco = useRef(null);
@@ -690,7 +701,7 @@ export function CanchaPichanga({
   const cuadro = useRef(null); // lo que se ve mientras rueda
   const orientacion = useRef(ORIENTACION_INICIAL); // cómo quedó girada la pelota
   const props = useRef({});
-  props.current = { def, cuerpos, t, equipo, pelota, pasto, linea, escena, caraArquero, animos, ruta, resaltar, puedeTirar };
+  props.current = { def, cuerpos, t, equipo, pelota, pasto, linea, escena, caraArquero, animos, ruta, resaltar, receptor, puedeTirar };
   const nombre = useTexto(etiqueta);
 
   const dibujar = () => {
@@ -759,10 +770,12 @@ export function CanchaPichanga({
     dibujarArquero(ctx, posicionKapi(p.def.kapi, ahora ? ahora.t : p.t), arquero);
     lista.forEach((c, i) => {
       if (c.tipo === 'pelota') return;
-      if (p.puedeTirar && !ahora && c.equipo === 'mia') {
-        ctx.setLineDash([8, 7]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-        ctx.lineWidth = 3;
+      if (p.puedeTirar && !ahora && c.equipo === 'mia' && (p.receptor == null || p.receptor === i)) {
+        // Después de un pase, solo la que recibió, en dorado.
+        const recibio = p.receptor === i;
+        ctx.setLineDash(recibio ? [] : [8, 7]);
+        ctx.strokeStyle = recibio ? '#fde047' : 'rgba(255,255,255,0.95)';
+        ctx.lineWidth = recibio ? 5 : 3;
         circulo(ctx, c.x, c.y, c.r + 8);
         ctx.stroke();
         ctx.setLineDash([]);
@@ -922,7 +935,7 @@ export function CanchaPichanga({
     const d = enCancha(e);
     let mejor = null;
     cuerpos.forEach((c, i) => {
-      if (c.equipo !== 'mia') return;
+      if (c.equipo !== 'mia' || (receptor != null && i !== receptor)) return;
       const dist = Math.sqrt((c.x - d.x) ** 2 + (c.y - d.y) ** 2);
       if (dist <= c.r + 26 && (!mejor || dist < mejor.dist)) mejor = { i, dist };
     });

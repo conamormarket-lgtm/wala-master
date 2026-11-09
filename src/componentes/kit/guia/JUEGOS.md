@@ -759,3 +759,12 @@ teléfono real, la misión activada, la versión en inglés.
 - Todos los niveles y retos se resolvieron otra vez con estas reglas (hay
   soluciones con pase: niveles 5, 8, 18 y 34) y las funciones se desplegaron
   antes de publicar la web.
+
+**El pase con imán (2026-11-09)**: con pases disponibles, la primera vez que la
+pelota toca a un compañero de la chapa que tiró, se queda pegada a él, del
+lado del arco que ataca su equipo, y los dos se frenan (`controlarPelota`,
+opción `iman` de `simular`, `sim.receptor`). El próximo tiro es con esa chapa
+(`partida.receptor` / `partido.receptor`; `tiroValido` lo exige y la cancha
+solo deja arrastrar esa, marcada en dorado). Michi hace lo mismo
+(`jugadaDeKapi` con `receptor`). Las áreas de la cancha se corrigieron: punto
+penal adentro del área grande y la medialuna pegada a su borde.

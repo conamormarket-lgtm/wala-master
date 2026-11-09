@@ -32,10 +32,10 @@ const FUERZAS = [0.35, 0.5, 0.65, 0.8, 1];
 const BEAM = [0, 30, 18, 10];
 
 /** Los tiros que se prueban desde una mesa. */
-function candidatos(mesa) {
+function candidatos(mesa, receptor = null) {
   const p = mesa.cuerpos[indicePelota(mesa)];
   const lista = [];
-  for (const i of chapasDe(mesa, 'mia')) {
+  for (const i of receptor != null ? [receptor] : chapasDe(mesa, 'mia')) {
     const c = mesa.cuerpos[i];
     const base = Math.atan2(p.y - c.y, p.x - c.x);
     for (let g = -60; g <= 60; g += 2.5) {
@@ -78,7 +78,7 @@ function resolverNormal(lv) {
   for (let prof = 1; prof <= 4; prof += 1) {
     const siguientes = [];
     for (const nodo of capa) {
-      for (const tiro of candidatos(nodo.partida.mesa)) {
+      for (const tiro of candidatos(nodo.partida.mesa, nodo.partida.receptor)) {
         const { partida, sim } = jugarTiro(abierto, nodo.partida, tiro);
         if (sim.gol === 'arriba') {
           if (holgado(abierto, nodo.partida, tiro)) return [...nodo.tiros, tiro];

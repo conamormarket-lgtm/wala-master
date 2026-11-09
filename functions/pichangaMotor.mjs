@@ -296,14 +296,41 @@ export function paso(mesa, def) {
 }
 
 /**
+ * El imán del pase: la pelota se queda pegada a la chapa que la recibe, del
+ * lado del arco que ataca su equipo (lista para patear), y las dos se frenan.
+ * → la mesa nueva.
+ */
+function controlarPelota(mesa, receptor) {
+  const cuerpos = mesa.cuerpos.map((c) => ({ ...c }));
+  const c = cuerpos[receptor];
+  const p = cuerpos.find((x) => x.tipo === 'pelota');
+  const arcoY = c.equipo === 'mia' ? 0 : ALTO;
+  const dx = ANCHO / 2 - c.x;
+  const dy = arcoY - c.y;
+  const largo = Math.sqrt(dx * dx + dy * dy) || 1;
+  const d = c.r + p.r + 2;
+  p.x = q(Math.min(ANCHO - p.r, Math.max(p.r, c.x + (dx / largo) * d)));
+  p.y = q(Math.min(ALTO - p.r, Math.max(p.r, c.y + (dy / largo) * d)));
+  p.vx = 0; p.vy = 0;
+  c.vx = 0; c.vy = 0;
+  return { t: mesa.t, cuerpos };
+}
+
+/**
  * Un tiro completo: hasta que todo se detiene o hay gol.
- * → { mesa, gol, pasos, tocaron, cuadros?, golpes? }. tocaron: las chapas
- * que tocaron la pelota (en orden, sin repetir). Si se piden los cuadros: las
+ *  - iman: con pases disponibles, la primera vez que la pelota toca a un
+ *    compañero de la chapa que tiró, se queda pegada a él (controlarPelota):
+ *    ese compañero es el receptor y tira después
+ * → { mesa, gol, pasos, tocaron, receptor, cuadros?, golpes? }. tocaron: las
+ * chapas que tocaron la pelota (en orden, sin repetir); receptor: el índice
+ * de la chapa que recibió el pase (o null). Si se piden los cuadros: las
  * posiciones [[x, y]…] de cada paso, para dibujar la trayectoria o la
  * repetición, y los golpes [[paso, tipo, fuerza, x, y]…], el más fuerte de cada
- * paso, para el sonido).
+ * paso, para el sonido ('pase' cuando la pelota se pega).
  */
-export function simular(mesa, def, tiro, { cuadros = false } = {}) {
+export function simular(mesa, def, tiro, { cuadros = false, iman = false } = {}) {
+  const equipo = tiro ? mesa.cuerpos[tiro[0]]?.equipo : null;
+  let receptor = null;
   let m = tiro ? tirar(mesa, tiro) : mesa;
   const lista = cuadros ? [m.cuerpos.map((c) => [c.x, c.y])] : null;
   const golpes = cuadros ? [] : null;
@@ -315,27 +342,43 @@ export function simular(mesa, def, tiro, { cuadros = false } = {}) {
     m = r.mesa;
     pasos += 1;
     for (const k of r.tocaron) if (!tocaron.includes(k)) tocaron.push(k);
+    if (r.gol) gol = r.gol;
+    // El pase: la pelota se pega al compañero que la recibe.
+    if (iman && !gol && receptor === null && equipo) {
+      const k = r.tocaron.find((n) => n !== tiro[0] && m.cuerpos[n]?.equipo === equipo);
+      if (k !== undefined) {
+        receptor = k;
+        m = controlarPelota(m, k);
+      }
+    }
     if (lista) {
       lista.push(m.cuerpos.map((c) => [c.x, c.y]));
-      const fuerte = r.eventos.reduce((a, e) => (!a || e.fuerza > a.fuerza ? e : a), null);
-      if (fuerte && fuerte.fuerza > 0.8) golpes.push([pasos, fuerte.tipo, fuerte.fuerza, Math.round(fuerte.x), Math.round(fuerte.y)]);
+      if (receptor !== null && golpes.every((g) => g[1] !== 'pase')) {
+        const pel = m.cuerpos.find((c) => c.tipo === 'pelota');
+        golpes.push([pasos, 'pase', 10, Math.round(pel.x), Math.round(pel.y)]);
+      } else {
+        const fuerte = r.eventos.reduce((a, e) => (!a || e.fuerza > a.fuerza ? e : a), null);
+        if (fuerte && fuerte.fuerza > 0.8) golpes.push([pasos, fuerte.tipo, fuerte.fuerza, Math.round(fuerte.x), Math.round(fuerte.y)]);
+      }
     }
-    if (r.gol) { gol = r.gol; break; }
+    if (gol) break;
     if (quieta(m)) break;
   }
   // Si se pasó del tiempo (no debería), todo se detiene donde está.
   if (!gol && !quieta(m)) m = { t: m.t, cuerpos: m.cuerpos.map((c) => ({ ...c, vx: 0, vy: 0 })) };
-  return lista ? { mesa: m, gol, pasos, tocaron, cuadros: lista, golpes } : { mesa: m, gol, pasos, tocaron };
+  return lista ? { mesa: m, gol, pasos, tocaron, receptor, cuadros: lista, golpes } : { mesa: m, gol, pasos, tocaron, receptor };
 }
 
 /** Los pases que dan otro toque (por nivel) o seguir tirando (por turno, en el partido). */
 export const PASES_MAX = 3;
 
 /**
- * ¿Hubo pase? La pelota tocó otra chapa del mismo equipo que la que tiró
- * (después del tiro; la que tiró no cuenta).
+ * ¿Hubo pase? Con imán, si la pelota se pegó a un compañero (sim.receptor);
+ * sin imán, si la pelota tocó otra chapa del mismo equipo que la que tiró
+ * (la que tiró no cuenta).
  */
 export function huboPase(mesa, tiro, sim) {
+  if (sim.receptor != null) return true;
   const equipo = mesa.cuerpos[tiro[0]]?.equipo;
   return Boolean(equipo) && (sim.tocaron || []).some((k) => k !== tiro[0] && mesa.cuerpos[k]?.equipo === equipo);
 }
@@ -444,12 +487,15 @@ export function armarNivel(numero, dato, solucion) {
 /* ── Una partida de un nivel ──────────────────────────── */
 
 /**
- * La partida de un nivel: { mesa, tiros, pases, goles, ganada, perdida, ultimo }.
+ * La partida de un nivel: { mesa, tiros, pases, receptor, goles, ganada, perdida, ultimo }.
  * tiros: los que valen (repetir saca el último), para comprobarla. pases: los
- * tiros que no gastaron toque (la pelota tocó a un compañero). ultimo: lo que
- * pasó en el último tiro ({ pase, autogol }), para avisarlo.
+ * tiros que no gastaron toque (la pelota se pegó a un compañero). receptor:
+ * la chapa que recibió el último pase: el próximo tiro es con ella (o null).
+ * ultimo: lo que pasó en el último tiro ({ pase, autogol }), para avisarlo.
  */
-export const partidaNivel = (lv) => ({ mesa: crearMesa(lv.def), tiros: [], pases: 0, goles: 0, ganada: false, perdida: false, ultimo: null });
+export const partidaNivel = (lv) => ({
+  mesa: crearMesa(lv.def), tiros: [], pases: 0, receptor: null, goles: 0, ganada: false, perdida: false, ultimo: null,
+});
 
 /** Los toques que ya se gastaron (los pases no cuentan). */
 export const toquesUsados = (partida) => partida.tiros.length - (partida.pases || 0);
@@ -476,6 +522,7 @@ export function despuesDelTiro(lv, partida, tiro, sim, extras = 0) {
       mesa: crearMesa(lv.def, sim.mesa.t),
       tiros,
       pases: 0,
+      receptor: null,
       goles,
       ganada,
       perdida: !ganada && goles + quedan < lv.penales.goles,
@@ -491,6 +538,7 @@ export function despuesDelTiro(lv, partida, tiro, sim, extras = 0) {
     mesa: autogol ? { t: sim.mesa.t, cuerpos: partida.mesa.cuerpos.map((c) => ({ ...c })) } : sim.mesa,
     tiros,
     pases,
+    receptor: pase && sim.receptor != null ? sim.receptor : null,
     goles: ganada ? 1 : 0,
     ganada,
     perdida: !ganada && tiros.length - pases >= lv.toques + extras,
@@ -500,14 +548,19 @@ export function despuesDelTiro(lv, partida, tiro, sim, extras = 0) {
 
 /** Un tiro de la persona en un nivel: simula y aplica las reglas. → { partida, sim } */
 export function jugarTiro(lv, partida, tiro, { extras = 0, cuadros = false } = {}) {
-  const sim = simular(partida.mesa, lv.def, tiro, { cuadros });
+  const iman = !lv.penales && (partida.pases || 0) < PASES_MAX;
+  const sim = simular(partida.mesa, lv.def, tiro, { cuadros, iman });
   return { partida: despuesDelTiro(lv, partida, tiro, sim, extras), sim };
 }
 
-/** ¿Es un tiro válido de la persona? (una chapa suya, con fuerza). */
-export function tiroValido(mesa, tiro) {
+/**
+ * ¿Es un tiro válido de la persona? Una chapa suya, con fuerza; después de un
+ * pase, la que lo recibió (receptor).
+ */
+export function tiroValido(mesa, tiro, receptor = null) {
   if (!Array.isArray(tiro) || tiro.length !== 3) return false;
   const [i, dx, dy] = tiro;
+  if (receptor != null && i !== receptor) return false;
   return Number.isInteger(i) && mesa.cuerpos[i]?.equipo === 'mia' && Boolean(normalizarTiro(dx, dy));
 }
 
@@ -519,7 +572,7 @@ export function tiroValido(mesa, tiro) {
 export function comprobarPartida(lv, tiros, extras = 0) {
   let partida = partidaNivel(lv);
   for (const tiro of tiros || []) {
-    if (partida.ganada || partida.perdida || !tiroValido(partida.mesa, tiro)) return { valida: false, ganada: false, toques: 0, goles: 0 };
+    if (partida.ganada || partida.perdida || !tiroValido(partida.mesa, tiro, partida.receptor)) return { valida: false, ganada: false, toques: 0, goles: 0 };
     ({ partida } = jugarTiro(lv, partida, tiro, { extras }));
   }
   return { valida: true, ganada: partida.ganada, toques: toquesUsados(partida), goles: partida.goles, pases: partida.pases };
@@ -548,22 +601,33 @@ export const canchaPartido = () => definirCancha({
   arcos: { arriba: ARCO_NORMAL, abajo: ARCO_NORMAL },
 });
 
-/** Un partido nuevo: { mesa, goles: { yo, kapi }, tiros: { yo, kapi }, turno, pases, fin }. */
+/**
+ * Un partido nuevo: { mesa, goles: { yo, kapi }, tiros: { yo, kapi }, turno,
+ * pases, receptor, fin }. receptor: la chapa que recibió el último pase (el
+ * próximo tiro es con ella) o null.
+ */
 export const partidoNuevo = () => ({
   mesa: crearMesa(canchaPartido()),
   goles: { yo: 0, kapi: 0 },
   tiros: { yo: 0, kapi: 0 },
   turno: 'yo',
   pases: 0,
+  receptor: null,
   fin: null,
+});
+
+/** Un tiro del partido (con el imán del pase si quedan pases en el turno). */
+export const simularPartido = (partido, tiro, opciones = {}) => simular(partido.mesa, canchaPartido(), tiro, {
+  ...opciones, iman: (partido.pases || 0) < PASES_MAX,
 });
 
 /**
  * Lo que queda después de un tiro del partido (sim: lo que devolvió simular;
  * tiro: el que se hizo). Gol arriba es tuyo; abajo, del rival (los autogoles
  * cuentan para el otro). Después de un gol, todo vuelve a su lugar y saca
- * quien lo recibió. Si hubo pase (la pelota tocó a un compañero), el mismo
- * equipo vuelve a tirar, hasta PASES_MAX seguidos; si no, el turno pasa.
+ * quien lo recibió. Si hubo pase (la pelota se pegó a un compañero), el mismo
+ * equipo vuelve a tirar con esa chapa (receptor), hasta PASES_MAX seguidos;
+ * si no, el turno pasa.
  * fin: null | 'yo' | 'kapi' | 'empate'.
  */
 export function despuesDelTiroPartido(partido, sim, tiro = null) {
@@ -589,6 +653,7 @@ export function despuesDelTiroPartido(partido, sim, tiro = null) {
     tiros,
     turno,
     pases: pase ? (partido.pases || 0) + 1 : 0,
+    receptor: pase && sim.receptor != null ? sim.receptor : null,
     pase,
     fin,
   };
@@ -623,7 +688,7 @@ function valorParaKapi(sim) {
  * según la dificultad), simula cada uno y elige. Fácil se equivoca a
  * propósito. rnd: el azar (con semilla en las pruebas). → [cuerpo, dx, dy]
  */
-export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.random, pases = 0 } = {}) {
+export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.random, pases = 0, receptor = null } = {}) {
   const ajustes = {
     facil: { abanico: 6, paso: 0.24, fuerzas: [0.55, 0.85], ruido: 0.18, entre: 6 },
     normal: { abanico: 8, paso: 0.14, fuerzas: [0.45, 0.7, 1], ruido: 0.05, entre: 2 },
@@ -632,7 +697,8 @@ export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.rand
   const p = mesa.cuerpos[indicePelota(mesa)];
   const opciones = [];
   // Solo las chapas más cerca de la pelota (con seis por lado, probar todas tarda).
-  const cerca = chapasDe(mesa, 'rival')
+  // Después de un pase, solo tira la chapa que lo recibió.
+  const cerca = receptor != null ? [receptor] : chapasDe(mesa, 'rival')
     .map((i) => ({ i, d: (mesa.cuerpos[i].x - p.x) ** 2 + (mesa.cuerpos[i].y - p.y) ** 2 }))
     .sort((a, b) => a.d - b.d)
     .slice(0, 3)
@@ -644,9 +710,9 @@ export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.rand
       for (const f of ajustes.fuerzas) {
         const tiro = tiroDesdeAngulo(i, base + k * ajustes.paso, f);
         if (!tiro) continue;
-        const sim = simular(mesa, def, tiro);
+        const sim = simular(mesa, def, tiro, { iman: pases < PASES_MAX });
         // Un pase le da otro tiro: vale un poco más.
-        const extra = !sim.gol && pases < PASES_MAX && huboPase(mesa, tiro, sim) ? 120 : 0;
+        const extra = !sim.gol && sim.receptor != null ? 120 : 0;
         opciones.push({ tiro, valor: valorParaKapi(sim) + extra });
       }
     }

@@ -166,6 +166,16 @@ test('un pase no gasta toque (hasta PASES_MAX por nivel)', () => {
   assert.equal(partida.pases, 1);
   assert.equal(toquesUsados(partida), 0);
   assert.equal(partida.ultimo.pase, true);
+  // El imán: la pelota quedó pegada al receptor, del lado del arco de arriba,
+  // y el próximo tiro tiene que ser con él.
+  assert.equal(partida.receptor, 1);
+  const rec = partida.mesa.cuerpos[1];
+  const pel = partida.mesa.cuerpos[indicePelota(partida.mesa)];
+  assert.ok(pel.y < rec.y, 'la pelota queda hacia el arco rival');
+  assert.ok(Math.abs(Math.hypot(pel.x - rec.x, pel.y - rec.y) - (rec.r + pel.r + 2)) < 1);
+  assert.equal(pel.vx, 0); assert.equal(pel.vy, 0);
+  assert.equal(tiroValido(partida.mesa, [0, 0, -100], partida.receptor), false);
+  assert.equal(tiroValido(partida.mesa, [1, 0, -100], partida.receptor), true);
   // Un tiro que solo toca la pelota (sin compañero) no es pase.
   const solo = armarNivel(1, { mias: [[300, 760]], pelota: [300, 620], arcos: { arriba: 0 } }, { par: 1 });
   assert.equal(jugarTiro(solo, partidaNivel(solo), [0, 0, -120]).partida.pases, 0);

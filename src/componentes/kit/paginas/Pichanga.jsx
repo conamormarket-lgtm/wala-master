@@ -21,7 +21,7 @@ import {
   EQUIPOS_PICHANGA, PELOTAS_PICHANGA, ESTADIOS_PICHANGA,
 } from '../piezas/pichangaProgreso.mjs';
 import {
-  simular, jugarTiro, partidaNivel, indicePelota, mundoDe, infoMundo, esJefe, estrellasPara, premioCofre,
+  simular, simularPartido, jugarTiro, partidaNivel, indicePelota, mundoDe, infoMundo, esJefe, estrellasPara, premioCofre,
   RACHA_COFRE, AYUDAS_PICHANGA, partidoNuevo, canchaPartido, despuesDelTiroPartido, jugadaDeKapi, GOLES_PARTIDO, PASES_MAX, toquesUsados,
 } from '../piezas/pichangaMotor.mjs';
 import { nivelPichanga, retoPichanga, TOTAL_NIVELES_PICHANGA } from '../piezas/pichangaNiveles.mjs';
@@ -340,7 +340,7 @@ export function PaginaPichanga({
     // Primero se ve "Kapi está pensando…"; después piensa (tarda un poco) y marca su chapa.
     ids.push(setTimeout(() => {
       if (!vivo) return;
-      const tiro = jugadaDeKapi(partido.mesa, CANCHA_PARTIDO, { dificultad: prog.dificultad, pases: partido.pases || 0 });
+      const tiro = jugadaDeKapi(partido.mesa, CANCHA_PARTIDO, { dificultad: prog.dificultad, pases: partido.pases || 0, receptor: partido.receptor });
       if (!tiro) { setPensando(false); return; }
       setResaltar(tiro[0]);
       ids.push(setTimeout(() => {
@@ -490,8 +490,7 @@ export function PaginaPichanga({
         setAnimos({ mia: 'triste', rival: 'feliz' });
         setAviso('¡Autogol! La jugada vuelve atrás y el toque se gasta.');
       } else if (nueva.ultimo?.pase) {
-        fx('pase');
-        setAviso(`¡Pase! Ese toque es gratis (${nueva.pases}/${PASES_MAX}).`);
+        setAviso(`¡Pase! Toque gratis: ahora tira la chapa que la recibió (${nueva.pases}/${PASES_MAX}).`);
       } else if (atajo) {
         setAviso('¡Atajó Michi!');
       }
@@ -502,7 +501,7 @@ export function PaginaPichanga({
 
   const alApuntar = (tiro) => {
     if (!juego?.vistaActiva || !tiro) { if (ruta) setRuta(null); return; }
-    const sim = simular(partida.mesa, lv.def, tiro, { cuadros: true });
+    const sim = simular(partida.mesa, lv.def, tiro, { cuadros: true, iman: !lv.penales && (partida.pases || 0) < PASES_MAX });
     const k = indicePelota(partida.mesa);
     setRuta(sim.cuadros.map((f) => f[k]));
   };
@@ -593,15 +592,15 @@ export function PaginaPichanga({
   function tirarPartido(tiro, quien) {
     const antes = partido;
     if (quien === 'yo' && (ocupado || antes.turno !== 'yo' || antes.fin)) return;
-    const sim = simular(antes.mesa, CANCHA_PARTIDO, tiro, { cuadros: true });
+    if (quien === 'yo' && antes.receptor != null && tiro[0] !== antes.receptor) return;
+    const sim = simularPartido(antes, tiro, { cuadros: true });
     fx('tiro');
     setAnimos({ mia: 'feliz', rival: 'feliz' });
     animar(sim, antes.mesa.cuerpos, antes.mesa.t, () => {
       const nuevo = despuesDelTiroPartido({ ...antes, turno: quien }, sim, tiro);
       setPartido(nuevo);
       if (nuevo.pase && !nuevo.fin) {
-        fx('pase');
-        setAviso(quien === 'yo' ? `¡Pase! Vuelves a tirar (${nuevo.pases}/${PASES_MAX}).` : `Pase de Michi: vuelve a tirar (${nuevo.pases}/${PASES_MAX}).`);
+        setAviso(quien === 'yo' ? `¡Pase! Tira la chapa que la recibió (${nuevo.pases}/${PASES_MAX}).` : `Pase de Michi: vuelve a tirar (${nuevo.pases}/${PASES_MAX}).`);
       }
       if (sim.gol) {
         const mio = sim.gol === 'arriba';
@@ -803,6 +802,7 @@ export function PaginaPichanga({
                       onFinAnimacion={alFinAnimacion}
                       onGolpe={alGolpe}
                       resaltar={resaltar}
+                      receptor={esPartido ? (partido.turno === 'yo' ? partido.receptor : null) : partida.receptor}
                       etiqueta={esPartido ? 'La cancha del partido contra Michi' : esReto ? 'La cancha del reto del día' : `La cancha del nivel ${numero}`}
                     />
                     {/* El confeti sale del arco; la cinta con el degradado de la marca. */}
