@@ -3129,7 +3129,7 @@ async function pedidosParaBorrarCuenta(uid, token) {
 }
 
 exports.eliminarCuentaSecure = functions
-  .runWith({ timeoutSeconds: 540, memory: "512MB" })
+  .runWith({ timeoutSeconds: 540, memory: "512MB", secrets: ["CUENTAS_ELIMINADAS_SAL"] })
   .https.onCall((data, context) => crearEliminarCuenta({
     db,
     auth,
@@ -3138,9 +3138,10 @@ exports.eliminarCuentaSecure = functions
     HttpsError: functions.https.HttpsError,
     logger: functions.logger,
     buscarPedidos: pedidosParaBorrarCuenta,
-    // Sal del hash del registro (cuentasEliminadas/{hash}). Si se configura
-    // CUENTAS_ELIMINADAS_SAL, NO cambiarla después: los reintentos de una
-    // cuenta a medio borrar dejarían de encontrar su registro.
+    // Sal del hash del registro (cuentasEliminadas/{hash}): secreto de Secret
+    // Manager (firebase functions:secrets:set CUENTAS_ELIMINADAS_SAL). NO
+    // cambiarla después: los reintentos de una cuenta a medio borrar dejarían de
+    // encontrar su registro. El valor fijo es solo para emuladores y pruebas.
     sal: process.env.CUENTAS_ELIMINADAS_SAL || "wala-cuentas-eliminadas-v1",
   })(data, context));
 
