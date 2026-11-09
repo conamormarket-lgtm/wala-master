@@ -706,3 +706,30 @@ navegador: el progreso de la cuenta al entrar, el reto ganado con
 "+2 acreditadas" y el saldo de la barra, y la tarjeta en la Zona Arcade
 ("Completado — jugar igual" con la cuenta regresiva). **No probado:** en un
 teléfono real, la misión activada, la versión en inglés.
+
+## La Pichanga de Kapi: el diseño (2026-11-09)
+
+- **Proporción**: chapas de radio 38, pelota 21, conos 17, Kapi 40 y arco de
+  210 (antes 26, 15, 13, 34 y 180); los arcos chicos, 150-180. Todos los
+  niveles y retos se volvieron a resolver (`npm run gen:pichanga`, que también
+  regenera las copias del servidor) y una prueba revisa que nada empiece
+  encimado ni fuera de la cancha (`problemasDeCancha`). Cambiar la física
+  obliga a volver a desplegar las tres funciones antes de publicar la web.
+- **La mesita** (`piezas/Pichanga.jsx`): la bandeja violeta de la portada
+  (borde con relieve, sombra y piso), pasto con textura (escarcha en
+  invierno), arcos con postes, travesaño y red con profundidad. Las chapas son
+  tapitas con canto y la pelota tiene parches que giran al rodar. El canvas
+  entra entero en el lugar que tiene (`marcoCancha`): en el celular, lo que
+  sobra entre la cabecera compacta y los botones.
+- **Efectos**, solo cuando se juega: anillo de fuerza y guía al apuntar, aro
+  de impulso al soltar, estela de la pelota, destellos donde choca (dorado en
+  el poste, naranja en Kapi), la red que se estira con el gol, Kapi arquero
+  feliz o triste, cinta "¡GOOOL!" con el degradado del logo y la cara de Kapi,
+  confeti desde el arco y un sacudón corto de la mesita.
+- **Escenarios** (`piezas/FondoPichanga.jsx`, SVG quietos como los de
+  Bolitas): el barrio (mundo 1), el potrero en invierno (mundo 2), el estadio
+  del reto y, en el partido, la cancha del vestuario (barrio, invierno, noche o
+  Walá). Atardecer en los penales del jefe.
+- **Barra del juego** (kit, `piezas/Juegos.module.css`): en pantallas de hasta
+  480 px el título queda solo para lectores de pantalla; antes se montaban los
+  botones encima (pasaba en todos los juegos).

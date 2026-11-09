@@ -20,9 +20,9 @@
 export const ANCHO = 600;
 export const ALTO = 900;
 /** Fondo del arco (lo que entra la pelota detrás de la línea). */
-export const FONDO_ARCO = 48;
-export const ARCO_NORMAL = 180;
-export const RADIO = { chapa: 26, pelota: 15, cono: 13, kapi: 34, poste: 6 };
+export const FONDO_ARCO = 56;
+export const ARCO_NORMAL = 210;
+export const RADIO = { chapa: 38, pelota: 21, cono: 17, kapi: 40, poste: 8 };
 const MASA = { chapa: 1, pelota: 0.55 };
 /** El largo máximo de un tiro (lo que se arrastra, en unidades de la cancha). */
 export const MAX_TIRO = 150;
@@ -172,7 +172,7 @@ function chocar(a, b, eventos) {
   a.vy -= j * ia * ny;
   b.vx += j * ib * nx;
   b.vy += j * ib * ny;
-  eventos.push({ tipo: a.tipo === 'pelota' || b.tipo === 'pelota' ? 'pelota' : 'choque', fuerza: -vn });
+  eventos.push({ tipo: a.tipo === 'pelota' || b.tipo === 'pelota' ? 'pelota' : 'choque', fuerza: -vn, x: a.x + nx * a.r, y: a.y + ny * a.r });
 }
 
 /** Contra algo que no se empuja (cono, poste, Kapi): solo rebota el cuerpo. */
@@ -191,13 +191,13 @@ function chocarFijo(c, fx, fy, fr, fvx, fvy, rebote, tipo, eventos) {
   if (vn >= 0) return;
   c.vx -= (1 + rebote) * vn * nx;
   c.vy -= (1 + rebote) * vn * ny;
-  eventos.push({ tipo, fuerza: -vn });
+  eventos.push({ tipo, fuerza: -vn, x: c.x - nx * c.r, y: c.y - ny * c.r });
 }
 
 /** Las bandas, el fondo y la red de los arcos. */
 function paredes(c, arcos, eventos) {
   const { r } = c;
-  const golpe = (v) => { if (Math.abs(v) > 1) eventos.push({ tipo: 'pared', fuerza: Math.abs(v) }); };
+  const golpe = (v) => { if (Math.abs(v) > 1) eventos.push({ tipo: 'pared', fuerza: Math.abs(v), x: c.x, y: c.y }); };
   if (c.x < r) { c.x = r; if (c.vx < 0) { golpe(c.vx); c.vx = -c.vx * REBOTE.pared; } }
   if (c.x > ANCHO - r) { c.x = ANCHO - r; if (c.vx > 0) { golpe(c.vx); c.vx = -c.vx * REBOTE.pared; } }
   // Un extremo: arriba (y = 0, el arco crece hacia y < 0) o abajo (y = ALTO).
@@ -275,7 +275,7 @@ export function paso(mesa, def) {
  * Un tiro completo: hasta que todo se detiene o hay gol.
  * → { mesa, gol, pasos, cuadros?, golpes? } (si se piden los cuadros: las
  * posiciones [[x, y]…] de cada paso, para dibujar la trayectoria o la
- * repetición, y los golpes [[paso, tipo, fuerza]…], el más fuerte de cada
+ * repetición, y los golpes [[paso, tipo, fuerza, x, y]…], el más fuerte de cada
  * paso, para el sonido).
  */
 export function simular(mesa, def, tiro, { cuadros = false } = {}) {
@@ -291,7 +291,7 @@ export function simular(mesa, def, tiro, { cuadros = false } = {}) {
     if (lista) {
       lista.push(m.cuerpos.map((c) => [c.x, c.y]));
       const fuerte = r.eventos.reduce((a, e) => (!a || e.fuerza > a.fuerza ? e : a), null);
-      if (fuerte && fuerte.fuerza > 0.8) golpes.push([pasos, fuerte.tipo, fuerte.fuerza]);
+      if (fuerte && fuerte.fuerza > 0.8) golpes.push([pasos, fuerte.tipo, fuerte.fuerza, Math.round(fuerte.x), Math.round(fuerte.y)]);
     }
     if (r.gol) { gol = r.gol; break; }
     if (quieta(m)) break;
@@ -580,4 +580,30 @@ export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.rand
   const angulo = Math.atan2(dy, dx) + (rnd() * 2 - 1) * ajustes.ruido;
   const fuerza = Math.sqrt(dx * dx + dy * dy) / MAX_TIRO;
   return tiroDesdeAngulo(i, angulo, fuerza) || elegida.tiro;
+}
+
+/**
+ * Los problemas de una cancha armada (para el que diseña niveles): algo fuera
+ * de la cancha o encimado a otra cosa al empezar. [] si está bien.
+ */
+export function problemasDeCancha(def) {
+  const mesa = crearMesa(def);
+  const cosas = [
+    ...mesa.cuerpos.map((c, i) => ({ nombre: `${c.tipo === 'pelota' ? 'pelota' : c.equipo}#${i}`, x: c.x, y: c.y, r: c.r })),
+    ...def.conos.map(([x, y], i) => ({ nombre: `cono#${i}`, x, y, r: RADIO.cono })),
+  ];
+  const lista = [];
+  for (const c of cosas) {
+    if (c.x < c.r || c.x > ANCHO - c.r || c.y < c.r || c.y > ALTO - c.r) lista.push(`${c.nombre} fuera de la cancha`);
+  }
+  for (let i = 0; i < cosas.length; i += 1) {
+    for (let j = i + 1; j < cosas.length; j += 1) {
+      const a = cosas[i];
+      const b = cosas[j];
+      if ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 < (a.r + b.r + 2) ** 2) lista.push(`${a.nombre} encima de ${b.nombre}`);
+    }
+  }
+  const k = posicionKapi(def.kapi, 0);
+  if (k) for (const c of cosas) if ((c.x - k.x) ** 2 + (c.y - k.y) ** 2 < (c.r + RADIO.kapi + 2) ** 2) lista.push(`${c.nombre} encima de Kapi`);
+  return lista;
 }

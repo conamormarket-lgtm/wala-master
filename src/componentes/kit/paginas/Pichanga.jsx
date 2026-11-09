@@ -14,6 +14,7 @@ import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
 import { EstrellasNivel } from '../piezas/Bolitas';
 import { CanchaPichanga, MuestraPichanga, MuestraEstadio, TablaPichanga, EQUIPO_KAPI } from '../piezas/Pichanga';
+import { FondoPichanga, escenaDelMundoPichanga, escenaDelEstadio } from '../piezas/FondoPichanga';
 import { efectoPichanga } from '../piezas/efectosPichanga';
 import {
   progresoPichanga, nuevosDesbloqueos, desbloqueado, textoDesbloqueo, estrellasTotales,
@@ -36,6 +37,8 @@ export { PROGRESO_PICHANGA, progresoPichanga, unirProgresos } from '../piezas/pi
 const TOTAL = TOTAL_NIVELES_PICHANGA;
 const ULTIMO_MUNDO = mundoDe(TOTAL);
 const CANCHA_PARTIDO = canchaPartido();
+/** El pasto del reto del día (el estadio de día). */
+const PASTO_RETO = ['#4ade80', '#3fc574'];
 
 /* Cómo se explica cada obstáculo la primera vez que aparece. */
 const OBSTACULOS = {
@@ -236,7 +239,9 @@ export function PaginaPichanga({
   const [ayuda, setAyuda] = useState(!ayudaVista);
   const [explicar, setExplicar] = useState(null);
   const [aviso, setAviso] = useState(null);
+  // El gol de ahora ({ id, tuyo }) para la cinta, el confeti y el sacudón.
   const [gol, setGol] = useState(null);
+  const [caraArquero, setCaraArquero] = useState('feliz');
   const [vestuario, setVestuario] = useState(false);
   // El último progreso: lo que se guarda al terminar de rodar un tiro no
   // puede partir de una copia vieja (la ayuda gastada antes de tirar).
@@ -249,7 +254,6 @@ export function PaginaPichanga({
   const t = {
     sonido: useTexto(prog.sonido ? 'Silenciar' : 'Activar el sonido'),
     vibracion: useTexto(prog.vibracion ? 'Quitar la vibración' : 'Activar la vibración'),
-    vestuario: useTexto('Vestuario'),
   };
 
   const esJuegoNivel = modo === 'niveles' || modo === 'reto';
@@ -312,10 +316,10 @@ export function PaginaPichanga({
   };
 
   /** Hace rodar lo simulado; al terminar, `despues`. */
-  const animar = (sim, cuerpos, t0, despues, velocidad = 1) => {
+  const animar = (sim, cuerpos, t0, despues, velocidad = 1, tirador = null) => {
     const id = `${Date.now()}-${Math.random()}`;
     finRef.current = { id, despues };
-    setAnim({ id, cuadros: sim.cuadros, golpes: sim.golpes, t0, velocidad, cuerpos });
+    setAnim({ id, cuadros: sim.cuadros, golpes: sim.golpes, t0, velocidad, cuerpos, tirador, gol: sim.gol });
   };
   const alFinAnimacion = (id) => {
     if (finRef.current?.id !== id) return;
@@ -356,6 +360,8 @@ export function PaginaPichanga({
   const estadio = buscar(ESTADIOS_PICHANGA, prog.estadio);
   const mundo = mundoDe(numero);
   const infoM = infoMundo(mundo);
+  // El escenario: el del mundo, el estadio del reto o la cancha elegida para el partido.
+  const escena = esPartido ? escenaDelEstadio(prog.estadio) : esReto ? 'reto' : escenaDelMundoPichanga(mundo);
   const lv = juego?.lv;
   const partida = juego?.partida;
   const ocupado = Boolean(anim);
@@ -460,22 +466,26 @@ export function PaginaPichanga({
     const usos = antes.vistaActiva ? gastar('vista') : antes.usos;
     setRuta(null);
     fx('tiro');
+    setCaraArquero('feliz');
     setJuego({ ...antes, usos, vistaActiva: false });
     animar(sim, partida.mesa.cuerpos, partida.mesa.t, () => {
       setJuego((j) => ({ ...j, partida: nueva, pasados: [...j.pasados, partida] }));
       const atajo = sim.golpes.some(([, tipo]) => tipo === 'kapi');
       if (sim.gol === 'arriba') {
         fx('gol');
-        setGol(Date.now());
-        repeticion.current = { sim, cuerpos: partida.mesa.cuerpos, t0: partida.mesa.t };
+        setGol({ id: Date.now(), tuyo: true });
+        if (lv.def.kapi) setCaraArquero('triste');
+        repeticion.current = { sim, cuerpos: partida.mesa.cuerpos, t0: partida.mesa.t, tirador: tiro[0] };
         if (lv.penales && !nueva.ganada) setAviso(`¡Gol! Llevas ${nueva.goles} de ${lv.penales.goles}.`);
       } else if (lv.penales) {
         fx('fallo');
         setAviso(atajo ? '¡Atajó Kapi!' : '¡Afuera!');
+      } else if (atajo) {
+        setAviso('¡Atajó Kapi!');
       }
       if (nueva.ganada) (lv.reto ? ganarReto : ganarNivel)(lv, nueva, antes.extras);
       else if (nueva.perdida) { fx('fallo'); setSinToques(true); }
-    });
+    }, 1, tiro[0]);
   };
 
   const alApuntar = (tiro) => {
@@ -551,7 +561,7 @@ export function PaginaPichanga({
     const r = repeticion.current;
     if (!r || ocupado) return;
     setResultado(false);
-    animar(r.sim, r.cuerpos, r.t0, () => setResultado(true), 0.4);
+    animar(r.sim, r.cuerpos, r.t0, () => setResultado(true), 0.4, r.tirador);
   };
 
   /* ── El partido ── */
@@ -579,15 +589,15 @@ export function PaginaPichanga({
       if (sim.gol) {
         const mio = sim.gol === 'arriba';
         fx(mio ? 'gol' : 'golKapi');
-        if (mio) setGol(Date.now());
-        repeticion.current = { sim, cuerpos: antes.mesa.cuerpos, t0: antes.mesa.t };
+        setGol({ id: Date.now(), tuyo: mio });
+        repeticion.current = { sim, cuerpos: antes.mesa.cuerpos, t0: antes.mesa.t, tirador: tiro[0] };
         let texto;
         if (mio) texto = quien === 'yo' ? '¡GOOOL!' : '¡Autogol de Kapi!';
         else texto = quien === 'kapi' ? 'Gol de Kapi.' : 'Uy, autogol.';
         setAviso(texto);
       }
       if (nuevo.fin) terminarPartido(nuevo);
-    });
+    }, 1, tiro[0]);
   }
 
   const partidoOtraVez = () => {
@@ -639,7 +649,6 @@ export function PaginaPichanga({
   const interruptores = (
     <>
       <BotonIrAlPanel destino={panelRef} etiqueta={esPartido ? 'Ver el partido' : 'Ver la racha'} icono={<Trophy aria-hidden="true" />} />
-      <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.vestuario} onClick={() => setVestuario(true)} icono={<Shirt aria-hidden="true" />} />
       <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.sonido} aria-pressed={prog.sonido} onClick={() => guardar({ sonido: !prog.sonido })}
         icono={prog.sonido ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
       />
@@ -668,9 +677,9 @@ export function PaginaPichanga({
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
         <MarcoJuego titulo="La Pichanga de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
           <div className={s.bolitas} data-componente="PaginaPichanga">
-            <div className={[s.mesa, s.mesaMundo, c.mesa].join(' ')} style={{ '--mundo-a': '#dcfce7', '--mundo-b': '#ede9fe' }}>
-              <span className={s.fiesta} aria-hidden="true">
-                <Estallido disparo={gol} forma="confeti" cantidad={26} distancia={150} colores={['#8b5cf6', '#f472b6', '#fbbf24', '#60a5fa', '#34d399']} />
+            <div className={[s.mesa, c.mesa].join(' ')}>
+              <span className={s.adornos} aria-hidden="true">
+                <FondoPichanga escena={escena} semilla={esReto ? hoy : esPartido ? prog.estadio : numero} jefe={!esPartido && Boolean(lv?.jefe) && !verMapa} />
               </span>
               <div className={s.modos}>
                 <Pestanas
@@ -710,66 +719,62 @@ export function PaginaPichanga({
                       <span className={c.turno}><Texto>{turnoTexto}</Texto></span>
                     </div>
                   ) : (
-                    <div className={s.cabezaNivel}>
-                      <div>
-                        {esReto ? (
-                          <>
-                            <p className={s.mundoLinea}><Texto>El mismo para todos, hoy</Texto></p>
-                            <p className={s.nivelTitulo}><Texto>Reto del día</Texto></p>
-                          </>
-                        ) : (
-                          <>
-                            <p className={s.mundoLinea}>
+                    <div className={c.cabeza}>
+                      <div className={c.cabezaTexto}>
+                        <p className={c.cabezaMundo}>
+                          {esReto ? <Texto>El mismo para todos, hoy</Texto> : (
+                            <>
                               <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
                               {' · '}<Texto>{infoM.nombre}</Texto>
-                            </p>
-                            <p className={s.nivelTitulo}>
-                              {lv.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
-                              <TextoResaltado resaltar={[numero]}>{lv.jefe ? `Nivel ${numero} · Penales` : `Nivel ${numero}`}</TextoResaltado>
-                            </p>
-                          </>
-                        )}
-                        <p className={s.metaEstrellas}>
+                            </>
+                          )}
+                        </p>
+                        <p className={c.cabezaNivel}>
+                          {lv.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
+                          {esReto ? <Texto>Reto del día</Texto> : (
+                            <TextoResaltado resaltar={[numero]}>{lv.jefe ? `Nivel ${numero} · Penales` : `Nivel ${numero}`}</TextoResaltado>
+                          )}
+                        </p>
+                        <p className={c.cabezaMeta}>
                           {lv.penales ? (
-                            <TextoResaltado resaltar={[partida.goles, lv.penales.goles, toquesQuedan]}>
-                              {`Goles: ${partida.goles} de ${lv.penales.goles} · quedan ${toquesQuedan} tiros`}
-                            </TextoResaltado>
+                            <TextoResaltado resaltar={[partida.goles, lv.penales.goles]}>{`Goles: ${partida.goles} de ${lv.penales.goles}`}</TextoResaltado>
                           ) : (
                             <>
                               {/* Las que llevaría con gol en el próximo toque (o las ganadas). */}
-                              <EstrellasNivel valor={estrellasPara(partida.ganada ? tirosHechos : tirosHechos + 1, lv.par)} tamano="md" />
-                              <TextoResaltado resaltar={[lv.par]}>{lv.par === 1 ? '3 estrellas con gol de 1 toque' : `3 estrellas con ${lv.par} toques o menos`}</TextoResaltado>
+                              <EstrellasNivel valor={estrellasPara(partida.ganada ? tirosHechos : tirosHechos + 1, lv.par)} />
+                              <TextoResaltado resaltar={[lv.par]}>{lv.par === 1 ? 'con gol de 1 toque' : `con ${lv.par} toques`}</TextoResaltado>
                             </>
                           )}
                         </p>
                       </div>
                       <div className={c.cabezaDerecha}>
-                        {!lv.penales && (
-                          <span className={[c.quedan, toquesQuedan <= 1 && c.quedanPocos].filter(Boolean).join(' ')}>
-                            <TextoResaltado resaltar={[toquesQuedan]}>{toquesQuedan === 1 ? 'Queda 1 toque' : `Quedan ${toquesQuedan} toques`}</TextoResaltado>
-                          </span>
+                        <span className={[c.quedan, toquesQuedan <= 1 && c.quedanPocos].filter(Boolean).join(' ')}>
+                          <TextoResaltado resaltar={[toquesQuedan]}>
+                            {lv.penales ? (toquesQuedan === 1 ? 'Queda 1 tiro' : `Quedan ${toquesQuedan} tiros`) : (toquesQuedan === 1 ? 'Queda 1 toque' : `Quedan ${toquesQuedan} toques`)}
+                          </TextoResaltado>
+                        </span>
+                        {!esReto && (
+                          <Boton variante="secundario" tamano="sm" icono={<IconoMapa aria-hidden="true" />} onClick={() => { setMundoMapa(mundo); setVista('mapa'); }}>
+                            <Texto>Mapa</Texto>
+                          </Boton>
                         )}
-                        {!esReto && <Boton variante="secundario" tamano="sm" icono={<IconoMapa aria-hidden="true" />} onClick={() => { setMundoMapa(mundo); setVista('mapa'); }}><Texto>Mapa</Texto></Boton>}
                       </div>
                     </div>
                   )}
                   {esReto && prog.reto === hoy && !partida.ganada && (
                     <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez para mejorar tu marca; mañana sale otro.</Texto></Aviso>
                   )}
-
-                  <div className={s.mensajeZona} aria-live="polite">
-                    {aviso && <span key={aviso} className={s.mensaje}><Texto>{aviso}</Texto></span>}
-                  </div>
-
-                  <div className={c.zonaCancha}>
+                  <div key={gol ? `gol-${gol.id}` : 'cancha'} className={[c.zonaCancha, gol && c.temblor].filter(Boolean).join(' ')}>
                     <CanchaPichanga
                       def={def}
                       cuerpos={anim ? anim.cuerpos : mesa.cuerpos}
                       t={mesa.t}
                       equipo={equipo}
                       pelota={pelota}
-                      pasto={esPartido || esReto ? estadio.pasto : infoM.pasto}
-                      linea={esPartido || esReto ? estadio.linea : infoM.linea}
+                      pasto={esPartido ? estadio.pasto : esReto ? PASTO_RETO : infoM.pasto}
+                      linea={esPartido ? estadio.linea : esReto ? 'rgba(255,255,255,0.85)' : infoM.linea}
+                      escena={escena}
+                      caraArquero={caraArquero}
                       puedeTirar={puedeTirar}
                       onTiro={(tiro) => (esPartido ? tirarPartido(tiro, 'yo') : tirarNivel(tiro))}
                       onApuntar={esPartido ? undefined : alApuntar}
@@ -780,7 +785,19 @@ export function PaginaPichanga({
                       resaltar={resaltar}
                       etiqueta={esPartido ? 'La cancha del partido contra Kapi' : esReto ? 'La cancha del reto del día' : `La cancha del nivel ${numero}`}
                     />
-                    {gol && <span key={gol} className={c.gol} aria-hidden="true">¡GOL!</span>}
+                    {/* El confeti sale del arco; la cinta con el degradado de la marca. */}
+                    <span className={c.fiestaArco} aria-hidden="true">
+                      <Estallido disparo={gol?.tuyo ? gol.id : null} forma="confeti" cantidad={30} distancia={170} colores={['#8b5cf6', '#f472b6', '#fbbf24', '#60a5fa', '#34d399']} />
+                    </span>
+                    <div className={c.avisoCancha} aria-live="polite">
+                      {aviso && <span key={aviso} className={s.mensaje}><Texto>{aviso}</Texto></span>}
+                    </div>
+                    {gol && (
+                      <span key={gol.id} className={[c.gol, !gol.tuyo && c.golKapi].filter(Boolean).join(' ')} aria-hidden="true">
+                        <img src={gol.tuyo ? CARAS_KAPI.triste : CARAS_KAPI.feliz} alt="" width="56" height="56" className={c.golKapiCara} />
+                        <span className={c.golCinta}>{gol.tuyo ? '¡GOOOL!' : 'Gol de Kapi'}</span>
+                      </span>
+                    )}
                   </div>
 
                   <div className={s.botonesMesa}>
@@ -797,18 +814,18 @@ export function PaginaPichanga({
                       </>
                     ) : (
                       <>
-                        <Boton variante={juego.vistaActiva ? 'primario' : 'secundario'} icono={<Eye aria-hidden="true" />} onClick={alternarVista} aria-pressed={juego.vistaActiva}
+                        <Boton tamano="sm" variante={juego.vistaActiva ? 'primario' : 'secundario'} icono={<Eye aria-hidden="true" />} onClick={alternarVista} aria-pressed={juego.vistaActiva}
                           disabled={ocupado || (!juego.vistaActiva && quedan.vista <= 0)}
                         >
                           <Texto>Ver el tiro</Texto>{contador(quedan.vista)}
                         </Boton>
-                        <Boton variante="secundario" icono={<Undo2 aria-hidden="true" />} onClick={repetirTiro} disabled={ocupado || !juego.pasados.length || quedan.repetir <= 0}>
+                        <Boton tamano="sm" variante="secundario" icono={<Undo2 aria-hidden="true" />} onClick={repetirTiro} disabled={ocupado || !juego.pasados.length || quedan.repetir <= 0}>
                           <Texto>Repetir tiro</Texto>{contador(quedan.repetir)}
                         </Boton>
-                        <Boton variante="secundario" icono={<Plus aria-hidden="true" />} onClick={toqueDeMas} disabled={ocupado || quedan.toque <= 0}>
+                        <Boton tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} onClick={toqueDeMas} disabled={ocupado || quedan.toque <= 0}>
                           <Texto>{lv.penales ? 'Un tiro más' : 'Un toque más'}</Texto>{contador(quedan.toque)}
                         </Boton>
-                        <Boton variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={reiniciar} disabled={ocupado}><Texto>Reiniciar</Texto></Boton>
+                        <Boton tamano="sm" variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={reiniciar} disabled={ocupado}><Texto>Reiniciar</Texto></Boton>
                       </>
                     )}
                   </div>

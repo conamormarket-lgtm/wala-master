@@ -150,3 +150,9 @@ test('un cofre trae una ayuda conocida', () => {
   const rnd = azar(3);
   for (let k = 0; k < 50; k += 1) assert.ok(['vista', 'repetir', 'toque'].includes(premioCofre(rnd).tipo));
 });
+
+test('ningún nivel ni reto empieza con algo encimado o fuera de la cancha', async () => {
+  const { problemasDeCancha } = await import('./pichangaMotor.mjs');
+  NIVELES_PICHANGA.forEach((d, k) => assert.deepEqual(problemasDeCancha(definirCancha(d)), [], `nivel ${k + 1}`));
+  RETOS_PICHANGA.forEach((d, k) => assert.deepEqual(problemasDeCancha(definirCancha(d)), [], `reto ${k + 1}`));
+});

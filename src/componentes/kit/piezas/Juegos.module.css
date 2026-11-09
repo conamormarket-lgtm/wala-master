@@ -54,6 +54,29 @@
   }
 }
 
+/* En un celular angosto no entran el título y todos los botones: se montaban
+   unos sobre otros. El título queda solo para los lectores de pantalla (el
+   nombre del juego ya se ve en la página) y la barra es volver + botones. */
+@media (max-width: 480px) {
+  .barra {
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem;
+  }
+
+  .titulo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .acciones {
+    gap: 0.25rem;
+  }
+}
+
 /* Lo que solo va en el celular (las monedas de la barra, ir al panel). */
 .soloCelular {
   display: none;
