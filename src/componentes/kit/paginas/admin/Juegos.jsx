@@ -227,6 +227,10 @@ function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana: onPremiar
   const [guardando, setGuardando] = useState(false);
   const [semana, setSemana] = useState('');
   const [preguntar, setPreguntar] = useState(false);
+  // Por mes: arranca en el último mes que ya terminó (el que se puede premiar).
+  useEffect(() => {
+    if (tipoManual === 'mes' && maxManual) setSemana((v) => v || maxManual);
+  }, [tipoManual, maxManual]);
   useEffect(() => { setP(guardados); }, [guardados]);
   const problema = erroresDePremios(p);
   const puesto = (i, x) => setP((v) => ({ ...v, puestos: v.puestos.map((y, j) => (j === i ? { ...y, ...x } : y)) }));
