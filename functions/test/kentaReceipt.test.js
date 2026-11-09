@@ -38,6 +38,14 @@ test('partial payment and legacy balances never lose existing entries',()=>{
  assert.equal(r.debtAfter,45);assert.equal(r.updates.cobranza.historialPagos.length,3);assert.equal(r.updates.cobranza.arbitrary,'keep');
  assert.equal(r.updates.cobranza.estado,'Abonado');
 });
+test('one-cent tolerance matches ERP balance without adding money to the deposit',()=>{
+ const before={...order,montoAdelanto:50};
+ const r=plan(before,parsed({amount:'49.99'}),'tx',proof,now,true);
+ assert.equal(r.debtAfter,0);assert.equal(r.updates.deudaTotal,0);
+ assert.equal(r.updates.cobranza.estado,'Habilitado');assert.equal(r.movimiento.amount,49.99);
+ assert.equal(require('../erpCobranzaLogic').calcularSaldoTotal({...before,...r.updates}),0);
+ assert.throws(()=>plan({...before,cobranza:{delivery:[{monto:10,integrarEnRestante:true}]}},parsed({amount:'49.99'}),'tx',proof,now),/include_remaining_delivery/);
+});
 test('deposit includes exactly the required delivery, without silently adding money',()=>{
  const before={...order,tipoEnvio:'delivery',cobranza:{delivery:[{monto:10,integrarEnRestante:true}]}};
  assert.throws(()=>plan(before,parsed(),'tx',proof,now,false),/include_remaining_delivery/);
@@ -51,7 +59,7 @@ test('wrong owner/phone, annulment, overpayment and duplicate history rejected',
  assert.throws(()=>plan(order,parsed({amount:'81'}),'tx',proof,now),/amount_exceeds_balance/);
 });
 function fakeDb() {
- const docs=new Map([['pedidos/001',structuredClone(order)],['fp_config/general',{accounts:[{id:'acc_1',name:'Cuenta',currency:'PEN'}]}]]);
+ const docs=new Map([['pedidos/001',structuredClone(order)],['fp_config/general',{accounts:[{id:'acc_1',name:'Cuenta',currency:'PEN'}]}],['configuracion/featureFlags',{kentaCanonicalReceiptClaimsReady:true}]]);
  let serial=Promise.resolve(),reads=0,writes=0;
  const snapshot=path=>({exists:docs.has(path),id:path.split('/').at(-1),data:()=>structuredClone(docs.get(path)),updateTime:{seconds:1794254400,nanoseconds:0}});
  const reference=path=>({path,collection:name=>collection(path+'/'+name),get:async()=>{reads++;return snapshot(path);}});
@@ -81,6 +89,8 @@ test('concurrent confirms and timeout replay create one movement and preserve id
  assert.deepEqual(new Set([a.status,b.status]),new Set(['registered','already_registered']));
  assert.equal([...s.db.docs.keys()].filter(k=>k.startsWith('fp_transactions/')).length,1);
  assert.equal(s.db.docs.get('pedidos/001').cobranza.historialPagos.length,1);
+ const crmClaim=s.db.docs.get(claimRefs(s.db,p)[1].path);
+ assert.equal(crmClaim.case_id,'kenta:'+p.receiptKey);assert.equal(crmClaim.result.paymentId,a.paymentId);
  assert.equal([...s.bucket.files.values()][0].bytes.compare(raw),0);
  assert.equal((await s.run({action:'status',receiptKey:p.receiptKey})).status,'already_registered');
  const writes=s.db.stats().writes;assert.equal((await s.run(p)).status,'already_registered');assert.equal(s.db.stats().writes,writes);
@@ -104,6 +114,16 @@ test('forwarded proof on another order races safely through global claims',async
  const results=await Promise.allSettled([s.run(parsed()),s.run(parsed({orderId:'002',receiptKey:'kenta:wala:124'}))]);
  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);
  assert.equal([...s.db.docs.keys()].filter(k=>k.startsWith('fp_transactions/')).length,1);
+});
+test('legacy formatted operation and a different picture cannot credit again',async()=>{
+ const s=service();s.db.docs.set('comprobantes_pago/old-crm',{fecha:'2026-11-09',nroOperacion:' OP-123 ',sha256:'different-picture'});
+ await assert.rejects(s.run(parsed()),/duplicate_legacy_receipt/);assert.equal(s.db.stats().writes,0);
+ const other=service();other.db.docs.set('pedidos/001',{...order,cobranza:{historialPagos:[{monto:1,fecha:'2026-11-09',nro_operacion:'OP.123'}]}});
+ await assert.rejects(other.run(parsed({amount:'10'})),/duplicate_receipt/);assert.equal(other.db.stats().writes,0);
+});
+test('financial writes stay disabled until the legacy writer uses canonical claims',async()=>{
+ const s=service();s.db.docs.set('configuracion/featureFlags',{});
+ await assert.rejects(s.run(parsed()),/legacy_claims_not_ready/);assert.equal(s.db.stats().writes,0);
 });
 test('unauthorized HTTP calls never construct/use a database service',async()=>{
  let calls=0; const handler=createHandler({getSecret:()=>'',getConfig:()=>config,service:async()=>{calls++;},logger:{error(){},info(){}}});

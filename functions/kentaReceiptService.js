@@ -44,22 +44,28 @@ function claimRefs(db,p) {
   ];
 }
 function sameOperation(row,p) {
-  return erp.normalizarOperacion(row.operationNumber || row.nroOperacion)===p.operationNumber &&
+  return erp.normalizarOperacion(row.operationNumber || row.nroOperacion || row.nro_operacion)===p.operationNumber &&
     (row.date || row.fecha || row.createdAtLocal)===p.paymentDate && (!row.accountId || row.accountId===p.accountId);
 }
 function owned(row) { return !row.tenant_id || row.tenant_id==='con-amor'; }
 async function checkExistingPayments(db,p,order) {
   const refs = ['abono_ia_wala_'+p.sha256];
   const ids=[...new Set([p.orderId,String(order.numeroPedido || p.orderId)])];
-  const [hashMatches,operationMatches,orderPayments,oldPayment] = await Promise.all([
+  const [hashMatches,operationMatches,orderPayments,oldPayment,legacyProofs] = await Promise.all([
     db.collection('fp_transactions').where('comprobanteHashes','array-contains',p.sha256).select('tenant_id').limit(3).get(),
     db.collection('fp_transactions').where('operationNumber','==',p.operationNumber).select('tenant_id','operationNumber','date','fecha','createdAtLocal','accountId').limit(31).get(),
-    db.collection('fp_transactions').where('sourcePedidoId','in',ids).select('tenant_id','operationNumber','nroOperacion','date','fecha','createdAtLocal','accountId','comprobanteHashes','comprobanteUrl').limit(51).get(),
+    db.collection('fp_transactions').where('sourcePedidoId','in',ids).select('tenant_id','operationNumber','nroOperacion','nro_operacion','date','fecha','createdAtLocal','accountId','comprobanteHashes','comprobanteUrl').limit(51).get(),
     db.collection('fp_transactions').doc(refs[0]).get(),
+    // Older CRM movements omit operationNumber; their proof stores the original
+    // formatted operation. One bounded metadata query covers those historic keys.
+    db.collection('comprobantes_pago').where('fecha','==',p.paymentDate)
+      .select('tenant_id','nroOperacion','nro_operacion','operationNumber','fecha','accountId','sha256').limit(201).get(),
   ]);
   requireThat(!oldPayment.exists,'duplicate_legacy_receipt',409);
   requireThat(!hashMatches.docs.some(d=>owned(d.data())) && !operationMatches.docs.some(d=>owned(d.data()) && sameOperation(d.data(),p)), 'duplicate_receipt',409);
   requireThat(hashMatches.size<3 && operationMatches.size<31 && orderPayments.size<51,'history_requires_review',409);
+  requireThat(!legacyProofs.docs.some(d=>owned(d.data()) && (sameOperation(d.data(),p) || d.data().sha256===p.sha256)), 'duplicate_legacy_receipt',409);
+  requireThat(legacyProofs.size<201,'history_requires_review',409);
   const history=order.cobranza?.historialPagos || [];
   const proofUrls=new Set();
   for(const row of [...history,...orderPayments.docs.filter(d=>owned(d.data())).map(d=>d.data())]) {
@@ -130,6 +136,7 @@ function createService({db,bucket,FieldValue,now=()=>new Date()}) {
       const movement=await tx.get(movementRef), storedProof=await tx.get(proofRef);
       const claims=[]; for(const ref of keys) claims.push(await tx.get(ref));
       requireThat(fresh.exists && orderVersion(fresh)===p.expectedOrderVersion,'order_changed_preview_again',409);
+      requireThat(flags.exists && flags.data().kentaCanonicalReceiptClaimsReady === true,'legacy_claims_not_ready',503);
       selectedAccount(freshAccounts,p.accountId);
       requireThat(!movement.exists && !storedProof.exists,'payment_requires_reconciliation',409);
       requireThat(!claims.some(c=>c.exists),'duplicate_receipt',409);
@@ -142,7 +149,9 @@ function createService({db,bucket,FieldValue,now=()=>new Date()}) {
       tx.create(proofRef,{paymentId,pedidoId:p.orderId,numeroPedido:String(orderNow.numeroPedido||p.orderId),url:proof.url,storagePath:proof.path,
         contentType:p.mime,sha256:p.sha256,monto:p.amount,nroOperacion:p.operationNumber,fecha:p.paymentDate,registradoPor:p.actor.email||p.actor.name,createdAt:now().toISOString(),tenant_id:'con-amor'});
       tx.create(reqRef,{fingerprint:p.fingerprint,result:response,actor:p.actor,lineKey:p.lineKey,createdAt:FieldValue.serverTimestamp()});
-      for(const ref of keys) tx.create(ref,{paymentId,receiptKey:p.receiptKey,source:'kenta',createdAt:FieldValue.serverTimestamp()});
+      // Legacy CRM reads case_id before rejecting an already-used voucher.
+      for(const ref of keys) tx.create(ref,{paymentId,receiptKey:p.receiptKey,source:'kenta',
+        case_id:'kenta:'+p.receiptKey,result:response,created_at:now().toISOString(),createdAt:FieldValue.serverTimestamp()});
       return response;
     });
   };

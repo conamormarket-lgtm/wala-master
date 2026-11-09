@@ -7,7 +7,8 @@ function validateOrder(order, p) {
   requireThat(order?.tenant_id === 'con-amor', 'order_not_in_scope', 403);
   requireThat(!order.deletedAt && !order.deleted_at && !order.eliminado && !order.anulado && !/^anulad[oa]$/i.test(String(order.estadoGeneral || '').trim()), 'order_unavailable', 409);
   requireThat(phone(order.clienteContacto || order.clienteTelefono) === p.customerPhone, 'order_phone_mismatch', 409);
-  requireThat(Number.isFinite(Number(order.montoTotal)) || typeof order.montoTotal === 'string', 'unknown_order_amount', 409);
+  requireThat((typeof order.montoTotal === 'number' && Number.isFinite(order.montoTotal)) ||
+    (typeof order.montoTotal === 'string' && /[0-9]/.test(order.montoTotal) && Number.isFinite(erp.parseMontoRobust(order.montoTotal))), 'unknown_order_amount', 409);
   const debt = erp.calcularSaldoTotal(order);
   requireThat(Number.isFinite(debt) && debt > 0, 'order_already_paid', 409);
   const delivery = erp.deliveryPendiente(order.cobranza);
@@ -16,7 +17,13 @@ function validateOrder(order, p) {
   requireThat(cents(p.amount) <= total, 'amount_exceeds_balance', 409);
   requireThat(cents(p.amount) < cents(debt) || cents(p.amount) === total, 'include_remaining_delivery', 409);
   const orderAmount = cents(p.amount) === total ? debt : p.amount;
-  return { debtBefore: debt, debtAfter: (cents(debt) - cents(orderAmount))/100,
+  const cob = order.cobranza || {};
+  const history = Array.isArray(cob.historialPagos) && cob.historialPagos.length ? cob.historialPagos :
+    [{monto:erp.parseMontoRobust(cob.pago1)},{monto:erp.parseMontoRobust(cob.pago2)}];
+  // Preserve the ERP's one-cent settlement tolerance in preview and confirmation.
+  const debtAfter = erp.calcularSaldoTotal({...order,cobranza:{...cob,historialPagos:[...history,{monto:orderAmount}]}});
+  requireThat(debtAfter > 0 || delivery === 0 || cents(p.amount) === total, 'include_remaining_delivery', 409);
+  return { debtBefore: debt, debtAfter,
     amount: p.amount, orderAmount, deliveryAmount: cents(p.amount) === total ? delivery : 0 };
 }
 function plan(order, p, paymentId, proof, now = new Date(), autoHabilitar = false) {

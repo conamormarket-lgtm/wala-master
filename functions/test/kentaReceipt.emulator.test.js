@@ -14,6 +14,7 @@ test('Firestore emulator: atomic concurrent confirmations and cross-order proof 
  const service=createService({db,bucket,FieldValue:admin.firestore.FieldValue});
  const order={tenant_id:'con-amor',numeroPedido:id,clienteContacto:'999888777',clienteNombre:'Emulator',estadoGeneral:'En Produccion',montoTotal:100,montoAdelanto:20,tipoEnvio:'agencia',cobranza:{}};
  await db.collection('fp_config').doc('general').set({accounts:[{id:'test-account',name:'Emulator only',currency:'PEN'}]});
+ await db.collection('configuracion').doc('featureFlags').set({kentaCanonicalReceiptClaimsReady:true});
  await db.collection('pedidos').doc(id).set(order);
  const snap=await db.collection('pedidos').doc(id).get();
  const input={action:'confirm',tenant:'wala',sourceTenant:'con-amor',lineKey:'test',receiptKey:'kenta:wala:'+suffix,
