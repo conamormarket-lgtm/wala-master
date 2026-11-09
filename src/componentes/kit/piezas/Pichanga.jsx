@@ -39,8 +39,8 @@ const VIDA_DESTELLO = 16;
 export const ASPECTO_CANCHA = `${VISTA.w} / ${VISTA.h}`;
 const ANIMOS_FELICES = { mia: 'feliz', rival: 'feliz' };
 /** Dónde queda la pelota del gol: al fondo de la red. */
-const FONDO_RED_ARRIBA = -FONDO_ARCO + RADIO.pelota + 4;
-const FONDO_RED_ABAJO = ALTO + FONDO_ARCO - RADIO.pelota - 4;
+const FONDO_RED_ARRIBA = -FONDO_ARCO + RADIO.pelota + 9;
+const FONDO_RED_ABAJO = ALTO + FONDO_ARCO - RADIO.pelota - 9;
 
 /**
  * Los dos equipos: Kapi (el tuyo) y Michi, el gato (el rival). Cada uno feliz
@@ -724,10 +724,18 @@ export function CanchaPichanga({
     dibujarPasto(ctx, p.pasto, p.escena);
     for (const z of p.def.zonas) dibujarZona(ctx, z);
     dibujarLineas(ctx, p.def, p.linea);
+    const lista = ahora ? ahora.cuerpos : p.cuerpos;
+    // La pelota: con gol se ve al fondo de la red (como termina la animación).
+    // Si está dentro del arco se dibuja antes que la red, que queda por delante.
+    const bola = lista.find((c) => c.tipo === 'pelota');
+    let yBola = bola?.y;
+    if (bola && !ahora && yBola < 0) yBola = FONDO_RED_ARRIBA;
+    if (bola && !ahora && yBola > ALTO) yBola = FONDO_RED_ABAJO;
+    const bolaEnRed = bola && (yBola < 0 || yBola > ALTO);
+    if (bolaEnRed) dibujarPelota(ctx, bola.x, yBola, bola.r, p.pelota, orientacion.current);
     dibujarArco(ctx, p.def.arcos.arriba, true, ahora?.bulto?.arriba ? ahora.bulto : null);
     dibujarArco(ctx, p.def.arcos.abajo, false, ahora?.bulto && !ahora.bulto.arriba ? ahora.bulto : null);
     dibujarConos(ctx, p.def);
-    const lista = ahora ? ahora.cuerpos : p.cuerpos;
     // La trayectoria prevista (debajo de todo lo que se mueve).
     if (p.ruta?.length > 1 && !ahora) {
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
@@ -792,14 +800,7 @@ export function CanchaPichanga({
       const mia = c.equipo === 'mia';
       dibujarChapa(ctx, c.x, c.y, c.r, mia ? p.equipo : EQUIPO_RIVAL, mia ? caraMia : caraRival, c.portero);
     });
-    const bola = lista.find((c) => c.tipo === 'pelota');
-    if (bola) {
-      // Con gol, la pelota se ve al fondo de la red (como termina la animación).
-      let { y } = bola;
-      if (!ahora && y < 0) y = FONDO_RED_ARRIBA;
-      if (!ahora && y > ALTO) y = FONDO_RED_ABAJO;
-      dibujarPelota(ctx, bola.x, y, bola.r, p.pelota, orientacion.current);
-    }
+    if (bola && !bolaEnRed) dibujarPelota(ctx, bola.x, yBola, bola.r, p.pelota, orientacion.current);
     if (ahora?.destellos) for (const d of ahora.destellos) dibujarDestello(ctx, d, d.edad);
     const a = apunte.current;
     if (a?.tiro && !ahora) dibujarApunte(ctx, lista[a.i], a.dedo, a.tiro);

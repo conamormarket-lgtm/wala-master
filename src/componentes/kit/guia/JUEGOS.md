@@ -801,3 +801,11 @@ el borde la devolvía al mismo ángulo. Ahora la órbita lleva su propia direcci
 chapa, elige la posición más parecida que sí cabe; gira hacia el lado que
 menos choca con los bordes, y nunca da más de 60 pasos de vuelta
 (`ORBITA_MAX`). Prueba: "el pase contra un borde o una esquina…".
+
+**El gol se cuenta con el centro de la pelota (2026-11-09)**: antes valía solo
+cuando la pelota cruzaba la línea entera, y podía quedarse quieta medio
+adentro: no era gol, pero la cancha la dibujaba al fondo de la red. Ahora es
+gol cuando el centro cruza la línea (en `paso`), así lo que se ve y lo que
+cuenta coinciden. La pelota que está dentro del arco se dibuja antes que la
+red (los hilos y el travesaño quedan por delante) y un poco más adelante del
+fondo. Niveles y retos resueltos otra vez con esta regla.

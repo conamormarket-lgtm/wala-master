@@ -275,9 +275,11 @@ export function paso(mesa, def) {
       if (kapi) chocarFijo(c, kapi.x, kapi.y, RADIO.kapi, kapi.vx, 0, REBOTE.kapi, 'kapi', eventos);
       paredes(c, def.arcos, eventos);
     }
+    // Es gol cuando el centro de la pelota cruza la línea (más de media
+    // pelota adentro): así nunca se queda quieta "medio adentro" sin contar.
     const p = cuerpos.find((c) => c.tipo === 'pelota');
-    if (def.arcos.arriba && p.y < -p.r) gol = 'arriba';
-    else if (def.arcos.abajo && p.y > ALTO + p.r) gol = 'abajo';
+    if (def.arcos.arriba && p.y < 0) gol = 'arriba';
+    else if (def.arcos.abajo && p.y > ALTO) gol = 'abajo';
   }
   for (const c of cuerpos) {
     const f = roceEn(c, def.zonas);
