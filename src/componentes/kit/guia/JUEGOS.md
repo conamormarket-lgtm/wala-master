@@ -674,7 +674,7 @@ tarjeta, "Nuevo"; `?pichanga=completado` en el modo diseño).
     (copias en `functions/`, `npm run gen:motor-pichanga`; la prueba avisa si
     quedaron viejas). Si mete gol: +2 una vez al día de Lima
     (`lastPichangaReward`, fuente `pichanga_daily` en el libro mayor), la misión
-    (`pichanga_nivel` / `pichanga_reto`, apagadas hasta activarlas en
+    (`pichanga_nivel` / `pichanga_reto`, activas desde el 2026-11-09: +2 y +3; se ajustan en
     `/admin/misiones`), el reto (`pichangaRetos`, `pichangaSemanas`), el top de
     niveles (`pichangaJugadores`) y los goles del mes (`pichangaMeses`: cada
     nivel y el reto cuentan una vez por día).
