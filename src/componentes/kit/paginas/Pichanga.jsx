@@ -125,7 +125,12 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
 }
 
 /** El vestuario: equipo, pelota y cancha del partido. Todo se elige; lo cerrado dice cómo se abre. */
-function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
+/*
+ *  - enPartido: la camiseta del partido contra Michi que está en juego (o
+ *    null). Mientras dura, la camiseta no se cambia: sus habilidades son las
+ *    de todo el partido.
+ */
+function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir, enPartido = null }) {
   const [clase, setClase] = useState('equipo');
   const listas = { equipo: EQUIPOS_PICHANGA, pelota: PELOTAS_PICHANGA, estadio: ESTADIOS_PICHANGA };
   return (
@@ -143,17 +148,24 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
           onChange={setClase}
         />
         {clase === 'estadio' && <p className={s.notaSuave}><Texto>La cancha es la del partido contra Michi. Los niveles usan la de su mundo.</Texto></p>}
-        {clase === 'equipo' && <p className={s.notaSuave}><Texto>Cada camiseta trae su habilidad para el partido contra Michi. En los niveles y el reto todas juegan igual.</Texto></p>}
+        {clase === 'equipo' && (enPartido ? (
+          <Aviso compacto tipo="info">
+            <Texto>{`Estás jugando contra Michi con ${enPartido.nombre}. La camiseta se cambia cuando termine el partido o al empezar otro.`}</Texto>
+          </Aviso>
+        ) : (
+          <p className={s.notaSuave}><Texto>Cada camiseta trae su habilidad para el partido contra Michi. En los niveles y el reto todas juegan igual.</Texto></p>
+        ))}
         <ul className={c.prendas}>
           {listas[clase].map((item) => {
             const libre = desbloqueado(item, progreso);
-            const puesto = progreso[clase] === item.id;
+            const fija = clase === 'equipo' && enPartido;
+            const puesto = fija ? enPartido.id === item.id : progreso[clase] === item.id;
             return (
               <li key={item.id}>
                 <button
                   type="button"
-                  className={[c.prenda, puesto && c.prendaPuesta, !libre && c.prendaCerrada].filter(Boolean).join(' ')}
-                  disabled={!libre}
+                  className={[c.prenda, puesto && c.prendaPuesta, (!libre || (fija && !puesto)) && c.prendaCerrada].filter(Boolean).join(' ')}
+                  disabled={!libre || Boolean(fija)}
                   aria-pressed={puesto}
                   onClick={() => onElegir(clase, item.id)}
                 >
@@ -163,7 +175,7 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
                   <span className={c.prendaNombre}><Texto>{item.nombre}</Texto></span>
                   {clase === 'equipo' && <span className={c.prendaHabilidad}><Zap aria-hidden="true" /><Texto>{nombresHabilidades(item)}</Texto></span>}
                   <span className={c.prendaNota}>
-                    {puesto && <><Check aria-hidden="true" /> <Texto>Puesto</Texto></>}
+                    {puesto && <><Check aria-hidden="true" /> <Texto>{fija ? 'En el partido' : 'Puesto'}</Texto></>}
                     {!puesto && !libre && <><Lock aria-hidden="true" /> <Texto>{textoDesbloqueo(item)}</Texto></>}
                   </span>
                 </button>
@@ -847,7 +859,15 @@ export function PaginaPichanga({
     if (m === 'partido' && !armado) setArmar(true);
   };
 
-  const elegirPrenda = (clase, id) => guardar({ [clase]: id });
+  // Con un partido contra Michi en juego, la camiseta no se cambia (sus habilidades son de todo el partido).
+  const partidoEnJuego = armado && !partido.fin;
+  const elegirPrenda = (clase, id) => {
+    if (clase === 'equipo' && partidoEnJuego) {
+      setAviso('Termina el partido contra Michi para cambiar de camiseta.');
+      return;
+    }
+    guardar({ [clase]: id });
+  };
 
   const cerrarExplicacion = () => {
     const tipo = explicar;
@@ -1168,10 +1188,10 @@ export function PaginaPichanga({
                   </>
                 )}
                 <button type="button" className={c.vestuarioBoton} onClick={() => setVestuario(true)}>
-                  <MuestraPichanga item={equipo} tamano={40} />
+                  <MuestraPichanga item={camiseta} tamano={40} />
                   <span>
-                    <strong><Texto>{equipo.nombre}</Texto></strong>
-                    <small><Texto>Cambia tu equipo, tu pelota y tu cancha</Texto></small>
+                    <strong><Texto>{camiseta.nombre}</Texto></strong>
+                    <small><Texto>{partidoEnJuego ? 'En el partido: cambia tu pelota y tu cancha' : 'Cambia tu equipo, tu pelota y tu cancha'}</Texto></small>
                   </span>
                   <Shirt aria-hidden="true" />
                 </button>
@@ -1228,7 +1248,13 @@ export function PaginaPichanga({
         </p>
       </HojaInferior>
 
-      <VestuarioPichanga abierto={vestuario} onCerrar={() => setVestuario(false)} progreso={prog} onElegir={elegirPrenda} />
+      <VestuarioPichanga
+        abierto={vestuario}
+        onCerrar={() => setVestuario(false)}
+        progreso={prog}
+        onElegir={elegirPrenda}
+        enPartido={partidoEnJuego && equipoPartido ? buscar(EQUIPOS_PICHANGA, equipoPartido) : null}
+      />
       <ArmarEquipo
         abierto={armar && esPartido}
         onCerrar={() => setArmar(false)}
