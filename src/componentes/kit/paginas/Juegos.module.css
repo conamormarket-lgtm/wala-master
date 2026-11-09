@@ -715,8 +715,10 @@
   }
 
   /* Los avisos («¡Nivel jefe!…») flotan sobre el tablero en vez de
-     reservarle una franja: el alto es para los tubos. */
-  .mesa .mensajeZona {
+     reservarle una franja: el alto es para los tubos. La clase va doble
+     para ganarle a `.mesa > :not(.adornos):not(.fiesta)` (z-index 1): con
+     el mismo z-index, los tubos (que vienen después) tapaban el aviso. */
+  .mesa .mensajeZona.mensajeZona {
     height: 0;
     min-height: 0;
     overflow: visible;
