@@ -71,7 +71,7 @@ export function ventajasDe(equipo) {
  */
 export const EQUIPOS_PICHANGA = [
   { id: 'huellitas', nombre: 'Las Huellitas', colores: ['#1d4ed8', '#ffffff'], dibujo: 'huella', habilidades: ['toque'], desbloqueo: { tipo: 'inicio' } },
-  { id: 'wala', nombre: 'Walá', colores: ['#7c3aed', '#ffffff'], dibujo: 'liso', habilidades: ['ojo'], desbloqueo: { tipo: 'inicio' } },
+  { id: 'wala', nombre: 'Walá', colores: ['#7c3aed', '#ffffff'], dibujo: 'liso', habilidades: ['despiste'], desbloqueo: { tipo: 'inicio' } },
   { id: 'celeste', nombre: 'Los Celestes', colores: ['#38bdf8', '#ffffff'], dibujo: 'franjas', habilidades: ['canon'], desbloqueo: { tipo: 'inicio' } },
   { id: 'barrio', nombre: 'Los Naranjas', colores: ['#f97316', '#ffffff'], dibujo: 'banda', habilidades: ['muralla'], desbloqueo: { tipo: 'inicio' } },
   { id: 'verde', nombre: 'Verdolagas', colores: ['#16a34a', '#facc15'], dibujo: 'mitad', habilidades: ['candado'], desbloqueo: { tipo: 'inicio' } },
