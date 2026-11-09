@@ -38,6 +38,9 @@ const VIDA_DESTELLO = 16;
 
 export const ASPECTO_CANCHA = `${VISTA.w} / ${VISTA.h}`;
 const ANIMOS_FELICES = { mia: 'feliz', rival: 'feliz' };
+/** Dónde queda la pelota del gol: al fondo de la red. */
+const FONDO_RED_ARRIBA = -FONDO_ARCO + RADIO.pelota + 4;
+const FONDO_RED_ABAJO = ALTO + FONDO_ARCO - RADIO.pelota - 4;
 
 /**
  * Los dos equipos: Kapi (el tuyo) y Michi, el gato (el rival). Cada uno feliz
@@ -790,7 +793,13 @@ export function CanchaPichanga({
       dibujarChapa(ctx, c.x, c.y, c.r, mia ? p.equipo : EQUIPO_RIVAL, mia ? caraMia : caraRival, c.portero);
     });
     const bola = lista.find((c) => c.tipo === 'pelota');
-    if (bola) dibujarPelota(ctx, bola.x, bola.y, bola.r, p.pelota, orientacion.current);
+    if (bola) {
+      // Con gol, la pelota se ve al fondo de la red (como termina la animación).
+      let { y } = bola;
+      if (!ahora && y < 0) y = FONDO_RED_ARRIBA;
+      if (!ahora && y > ALTO) y = FONDO_RED_ABAJO;
+      dibujarPelota(ctx, bola.x, y, bola.r, p.pelota, orientacion.current);
+    }
     if (ahora?.destellos) for (const d of ahora.destellos) dibujarDestello(ctx, d, d.edad);
     const a = apunte.current;
     if (a?.tiro && !ahora) dibujarApunte(ctx, lista[a.i], a.dedo, a.tiro);
@@ -837,7 +846,7 @@ export function CanchaPichanga({
     const ultimo = cuadros.length - 1;
     const extra = gol ? 16 : 0; // pasos de la pelota metiéndose en la red
     const fin = cuadros[ultimo][kb];
-    const red = gol === 'abajo' ? ALTO + FONDO_ARCO - RADIO.pelota - 2 : -FONDO_ARCO + RADIO.pelota + 2;
+    const red = gol === 'abajo' ? FONDO_RED_ABAJO : FONDO_RED_ARRIBA;
     let pos = 0;
     let previo = null;
     let golpe = 0;

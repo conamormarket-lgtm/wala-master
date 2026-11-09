@@ -771,3 +771,9 @@ sin trigonometría para que el servidor lo repita igual). Opción `iman` de
 solo deja arrastrar esa, marcada en dorado). Michi hace lo mismo
 (`jugadaDeKapi` con `receptor`). Las áreas de la cancha se corrigieron: punto
 penal adentro del área grande y la medialuna pegada a su borde.
+
+**Los arcos (2026-11-09)**: la red es más honda (`FONDO_ARCO` 72) y solo la
+pelota puede entrar: para las chapas, la línea del arco es pared. Con gol, la
+pelota se dibuja al fondo de la red (también después de la animación). Los
+porteros van más adentro (830 en el partido, 832 en los niveles) y las chapas
+del centro de abajo bajaron a 752 para no encimarse.

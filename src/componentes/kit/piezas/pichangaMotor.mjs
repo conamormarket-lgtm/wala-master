@@ -20,7 +20,7 @@
 export const ANCHO = 600;
 export const ALTO = 900;
 /** Fondo del arco (lo que entra la pelota detrás de la línea). */
-export const FONDO_ARCO = 56;
+export const FONDO_ARCO = 72;
 export const ARCO_NORMAL = 210;
 export const RADIO = { chapa: 38, pelota: 21, cono: 17, kapi: 40, poste: 8 };
 const MASA = { chapa: 1, pelota: 0.55 };
@@ -223,7 +223,8 @@ function paredes(c, arcos, eventos) {
       if (!arriba && c.y > ALTO + FONDO_ARCO - r) { c.y = ALTO + FONDO_ARCO - r; if (c.vy > 0) c.vy = -c.vy * REBOTE.red; }
       return;
     }
-    const enBoca = ancho > 0 && c.x > izq && c.x < der;
+    // Solo la pelota entra al arco: para las chapas, la línea es pared.
+    const enBoca = c.tipo === 'pelota' && ancho > 0 && c.x > izq && c.x < der;
     if (enBoca) return;
     if (arriba && c.y < r) { c.y = r; if (c.vy < 0) { golpe(c.vy); c.vy = -c.vy * REBOTE.pared; } }
     if (!arriba && c.y > ALTO - r) { c.y = ALTO - r; if (c.vy > 0) { golpe(c.vy); c.vy = -c.vy * REBOTE.pared; } }
@@ -651,7 +652,7 @@ export const DIFICULTADES = ['facil', 'normal', 'dificil'];
 
 /** Tu formación (abajo); la del rival es la misma, al revés. */
 const FORMACION = [[195, 740], [405, 740], [300, 640], [160, 560], [440, 560]];
-const PORTERO = [300, 856];
+const PORTERO = [300, 830];
 
 /** La cancha del partido: dos arcos, seis chapas por lado (con su arquero). */
 export const canchaPartido = () => definirCancha({
