@@ -86,7 +86,7 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
 }
 
 const ORIGENES = {
-  ruleta: { texto: 'La Ruleta de Kapi', icono: 'estrella', clase: 'talonRuleta' },
+  ruleta: { texto: 'La Ruleta de Walito', icono: 'estrella', clase: 'talonRuleta' },
   recompensa: { texto: 'Catálogo de recompensas', icono: 'regalo', clase: 'talonCatalogo' },
   nivel: { texto: 'Regalo de nivel', icono: 'estrella', clase: 'talonCatalogo' },
   bolitas_reto: { texto: 'Reto de Las Bolitas', icono: 'destello', clase: 'talonBolitas' },

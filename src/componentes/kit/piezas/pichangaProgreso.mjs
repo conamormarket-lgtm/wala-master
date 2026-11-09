@@ -1,5 +1,5 @@
 /*
- * El progreso del jugador en La Pichanga de Kapi y su vestuario: qué se
+ * El progreso del jugador en La Pichanga de Walito y su vestuario: qué se
  * guarda, cómo se une lo del aparato con lo de la cuenta (para la fase 2) y
  * qué se desbloquea jugando. Nada se compra: todo se elige. Puro, con pruebas
  * (pichangaProgreso.test.mjs).
@@ -14,7 +14,7 @@ export const PROGRESO_PICHANGA = {
   reto: null, // el día del último reto hecho ('AAAA-MM-DD')
   goles: 0, // goles hechos en los niveles (y en los partidos ganados)
   partidos: { jugados: 0, ganados: 0 },
-  dificultad: 'normal', // la del partido contra Kapi
+  dificultad: 'normal', // la del partido contra Walito
   equipo: 'huellitas',
   pelota: 'clasica',
   estadio: 'barrio',
@@ -29,19 +29,19 @@ const DIFICULTADES = ['facil', 'normal', 'dificil'];
 /* ── Las habilidades de las camisetas ────────────────── */
 /*
  * Cada camiseta trae una habilidad (las que se abren jugando, dos o tres).
- * Solo valen en el partido contra Michi, y quedan fijas al empezarlo: los
+ * Solo valen en el partido contra Happy, y quedan fijas al empezarlo: los
  * niveles y el reto son iguales para todos (los rankings y lo que comprueba
  * el servidor no cambian). `efecto` son las ventajas que lee el motor
  * (canchaPartido, simularPartido, jugadaDeKapi).
  */
 export const HABILIDADES_PICHANGA = {
   toque: { nombre: 'Toque de más', texto: 'Encadenas hasta 4 pases seguidos (los demás, 3).', efecto: { pases: 4 } },
-  ojo: { nombre: 'Ojo de Kapi', texto: 'Al apuntar ves por dónde irá la pelota.', efecto: { ruta: true } },
+  ojo: { nombre: 'Ojo de Walito', texto: 'Al apuntar ves por dónde irá la pelota.', efecto: { ruta: true } },
   canon: { nombre: 'Cañonazo', texto: 'Tus tiros salen un 12 % más fuertes.', efecto: { potencia: 1.12 } },
   muralla: { nombre: 'Muralla', texto: 'Tu arquero es más grande y tapa más arco.', efecto: { portero: 48 } },
-  candado: { nombre: 'Candado', texto: 'Tu arco es más chico: le cuesta más a Michi.', efecto: { arco: 176 } },
-  despiste: { nombre: 'Despiste', texto: 'Michi se distrae y apunta peor.', efecto: { ruidoRival: 0.06 } },
-  frio: { nombre: 'Viento frío', texto: 'Los tiros de Michi salen un 10 % más suaves.', efecto: { potenciaRival: 0.9 } },
+  candado: { nombre: 'Candado', texto: 'Tu arco es más chico: le cuesta más a Happy.', efecto: { arco: 176 } },
+  despiste: { nombre: 'Despiste', texto: 'Happy se distrae y apunta peor.', efecto: { ruidoRival: 0.06 } },
+  frio: { nombre: 'Viento frío', texto: 'Los tiros de Happy salen un 10 % más suaves.', efecto: { potenciaRival: 0.9 } },
 };
 
 /** Las ventajas que da una camiseta (para partidoNuevo). */
@@ -57,7 +57,7 @@ export function ventajasDe(equipo) {
  *  - { tipo: 'inicio' } desde el principio
  *  - { tipo: 'estrellas', n } al juntar n estrellas
  *  - { tipo: 'jefe', mundo } al vencer al jefe de ese mundo
- *  - { tipo: 'partidos', n } al ganarle n partidos a Kapi
+ *  - { tipo: 'partidos', n } al ganarle n partidos a Walito
  *  - { tipo: 'goles', n } al hacer n goles
  * Las chapas (tapitas con su borde plateado): colores (fondo, detalle) y
  * dibujo ('huella' | 'liso' | 'franjas' | 'mitad' | 'banda' | 'estrella' | 'aro').
@@ -87,7 +87,7 @@ export const PELOTAS_PICHANGA = [
   { id: 'hielo', nombre: 'De hielo', colores: ['#e0f2fe', '#0284c7'], desbloqueo: { tipo: 'jefe', mundo: 2 } },
 ];
 
-/** Las canchas del partido contra Kapi: pasto (dos franjas) y líneas. */
+/** Las canchas del partido contra Walito: pasto (dos franjas) y líneas. */
 export const ESTADIOS_PICHANGA = [
   { id: 'barrio', nombre: 'La canchita del barrio', pasto: ['#4caf50', '#43a047'], linea: 'rgba(255,255,255,0.75)', desbloqueo: { tipo: 'inicio' } },
   { id: 'invierno', nombre: 'El potrero en invierno', pasto: ['#7cb38a', '#6fa77e'], linea: 'rgba(255,255,255,0.85)', desbloqueo: { tipo: 'jefe', mundo: 1 } },
@@ -119,7 +119,7 @@ export function textoDesbloqueo(item) {
   switch (d.tipo) {
     case 'estrellas': return `Junta ${d.n} estrellas`;
     case 'jefe': return `Vence al jefe del mundo ${d.mundo}`;
-    case 'partidos': return d.n === 1 ? 'Gánale un partido a Michi' : `Gánale ${d.n} partidos a Michi`;
+    case 'partidos': return d.n === 1 ? 'Gánale un partido a Happy' : `Gánale ${d.n} partidos a Happy`;
     case 'goles': return `Haz ${d.n} goles`;
     default: return 'Desde el inicio';
   }

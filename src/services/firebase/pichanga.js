@@ -1,7 +1,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 /*
- * La Pichanga de Kapi: todo pasa por funciones del servidor (el celular no
+ * La Pichanga de Walito: todo pasa por funciones del servidor (el celular no
  * lee ni escribe las colecciones del juego). Ver functions/index.js.
  */
 

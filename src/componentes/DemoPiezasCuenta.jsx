@@ -133,7 +133,7 @@ export default function DemoPiezasCuenta({ imagenes }) {
         <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))' }}>
           <TarjetaRecompensa titulo="Cupón de descuento" descripcion="Para tu próxima compra." beneficio="10% de descuento" costo={30} saldo={43} onCanjear={() => new Promise((r) => setTimeout(r, 800))} />
           <TarjetaRecompensa titulo="Taza de regalo" imagen={imagenes.taza} beneficio="De regalo" costo={120} saldo={43} />
-          <TarjetaRecompensa titulo="Stickers de Adicto para WhatsApp" imagen="/recompensas/stickers-adicto.webp" beneficio="Stickers para WhatsApp · se añaden en la app de Walá" descripcion="Una sola vez por persona: ya lo canjeó." costo={8} saldo={4} obtenida />
+          <TarjetaRecompensa titulo="Stickers de Happy para WhatsApp" imagen="/recompensas/stickers-adicto.webp" beneficio="Stickers para WhatsApp · se añaden en la app de Walá" descripcion="Una sola vez por persona: ya lo canjeó." costo={8} saldo={4} obtenida />
         </div>
       </Ficha>
 
@@ -205,7 +205,7 @@ export default function DemoPiezasCuenta({ imagenes }) {
 
       <Ficha nombre="TarjetaCreacion" usadaEn="Mis creaciones (y sus borradores)">
         <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))' }}>
-          <TarjetaCreacion nombre="Mi polera con Kapi" imagen={imagenes.frente} imagenEspalda={imagenes.espalda} producto="Polera clásica" color={{ nombre: 'Blanco', hex: '#fff' }}
+          <TarjetaCreacion nombre="Mi polera con Walito" imagen={imagenes.frente} imagenEspalda={imagenes.espalda} producto="Polera clásica" color={{ nombre: 'Blanco', hex: '#fff' }}
             fecha="Guardada ayer" precio={59.9} comprado urlEditar="/crear" urlComprar="/creacion" onEliminar={() => new Promise((r) => setTimeout(r, 600))} onRenombrar={() => Promise.resolve()} />
           <TarjetaCreacion borrador nombre="Sin terminar" imagen={imagenes.frente} producto="Polera clásica" fecha="Guardada hoy" urlEditar="/crear" />
         </div>

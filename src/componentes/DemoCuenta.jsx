@@ -490,7 +490,7 @@ export function CuentaDemo({
       <PaginaCupones
         cupones={vacio ? [] : cupones}
         stickers={vacio ? [] : [{
-          id: 'st-kapi', nombre: 'Kapi de Walá', cantidad: 13, modo: 'web',
+          id: 'st-kapi', nombre: 'Walito de Walá', cantidad: 13, modo: 'web',
           muestras: ['kapi_02.webp', 'kapi_03.webp', 'kapi_04.webp', 'kapi_12.webp'].map((f) => `/stickers/kapi/${f}`),
         }]}
         urlPlayStore="https://play.google.com/store/apps/details?id=com.wala.tienda"
@@ -1094,7 +1094,7 @@ const useFuentesEstudio = () => useEffect(() => {
   });
 }, []);
 
-/* "Subir imagen": las caras de Kapi hacen de fotos del cliente (con los
+/* "Subir imagen": las caras de Walito hacen de fotos del cliente (con los
    píxeles de una foto buena, una regular y una chica, para ver la calidad). */
 const SUBIDAS = [
   { src: '/assets/kapi/3d/kapi-feliz.webp', px: 1800 },
@@ -1102,7 +1102,7 @@ const SUBIDAS = [
   { src: '/assets/kapi/3d/kapi-triste.webp', px: 500 },
 ];
 
-/** Un diseño de ejemplo (Kapi en el pecho, una frase en la espalda) para editar o partir de él. */
+/** Un diseño de ejemplo (Walito en el pecho, una frase en la espalda) para editar o partir de él. */
 const disenoDeEjemplo = (prenda, texto) => {
   const pecho = prenda.vistas[0]?.zonas[0];
   const espalda = prenda.vistas[1]?.zonas[0];
@@ -1135,7 +1135,7 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
   const inicial = conDiseno ? {
     color: negro?.id,
     capas: disenoDeEjemplo(prenda, 'WALÁ CREW'),
-    nombre: modo === 'editar' ? (origen?.nombre || 'Mi polera de Kapi') : '',
+    nombre: modo === 'editar' ? (origen?.nombre || 'Mi polera de Walito') : '',
   } : {};
 
   let estado;

@@ -21,7 +21,7 @@ import s from './Ruleta.module.css';
 import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
- * D7b · La Ruleta de Kapi (/admin/ruleta): qué se puede ganar, con qué
+ * D7b · La Ruleta de Walito (/admin/ruleta): qué se puede ganar, con qué
  * probabilidad y qué días; los colores y las reglas con la rueda real de
  * vista previa; y quién ganó qué, para entregar lo que es a mano. Los premios
  * y la config usan utils/ruletaModel, el mismo modelo del servidor.
@@ -65,9 +65,9 @@ function Apariencia({ config, premiosHoy, premios, subirImagen, onGuardar }) {
       <div className={s.campos}>
         <GrupoCampos titulo="La ruleta">
           <Interruptor etiqueta="Abierta" descripcion={c.activa ? 'Los clientes pueden girar.' : 'Cerrada: nadie puede girar.'} activo={c.activa} onChange={(v) => setC((x) => ({ ...x, activa: v }))} />
-          <ElegirUno etiqueta="Cómo se gana el giro" opciones={[{ valor: 'dias7', texto: '7 días con Kapi, cuando sea' }, { valor: 'racha7', texto: '7 días de lunes a domingo' }, { valor: 'siempre', texto: 'Uno por semana, sin condición' }]} valor={c.reglas.modoDesbloqueo} onElegir={(v) => v && reglas({ modoDesbloqueo: v })} />
-          <p className={s.nota}>{c.reglas.modoDesbloqueo === 'dias7' ? 'Cada día que alimenta a Kapi suma 1, aunque se salte alguno; al séptimo gana un giro, que no vence.'
-            : c.reglas.modoDesbloqueo === 'racha7' ? 'Tiene que alimentar a Kapi de lunes a domingo; si falla un día, pierde la semana.'
+          <ElegirUno etiqueta="Cómo se gana el giro" opciones={[{ valor: 'dias7', texto: '7 días con Walito, cuando sea' }, { valor: 'racha7', texto: '7 días de lunes a domingo' }, { valor: 'siempre', texto: 'Uno por semana, sin condición' }]} valor={c.reglas.modoDesbloqueo} onElegir={(v) => v && reglas({ modoDesbloqueo: v })} />
+          <p className={s.nota}>{c.reglas.modoDesbloqueo === 'dias7' ? 'Cada día que alimenta a Walito suma 1, aunque se salte alguno; al séptimo gana un giro, que no vence.'
+            : c.reglas.modoDesbloqueo === 'racha7' ? 'Tiene que alimentar a Walito de lunes a domingo; si falla un día, pierde la semana.'
               : 'Todos pueden girar una vez por semana.'}</p>
           {/* Solo con la regla de lunes a domingo el giro es «de una semana». */}
           {c.reglas.modoDesbloqueo === 'racha7' && <Interruptor etiqueta="El giro ganado sigue la semana siguiente" descripcion="Si no lo usa esa semana, lo tiene también la siguiente." activo={c.reglas.semanaDeGracia} onChange={(v) => reglas({ semanaDeGracia: v })} />}
@@ -152,7 +152,7 @@ function Entregas({ ganados = [], cargando, error, onReintentar, onMarcarEntrega
 }
 
 /**
- * La Ruleta de Kapi (/admin/ruleta).
+ * La Ruleta de Walito (/admin/ruleta).
  *  - pestana + onPestana · hoy ('YYYY-MM-DD', Lima) · diaSemana (0-6, Lima) · cargando · error · onReintentar
  *  - premios: [normalizarPremio] · onGuardarPremio(datos, id?) (premioRuletaAFirestore) · onEliminarPremio(id) · onReiniciarContador(id)
  *  - productos: [productoAdminDesde] · subirImagen(blob, { alAvanzar }) → url
@@ -171,7 +171,7 @@ export function PaginaRuletaAdmin({
   const suma = sumaProbabilidades(premios);
   const sumaOk = Math.abs(suma - 100) < 0.01;
   const hoyLista = useMemo(() => premiosDeHoy(premios, { hoy, diaSemana, ganados: {} }), [premios, hoy, diaSemana]);
-  const cabeza = { icono: 'ruleta', tono: 'rosa', titulo: 'La Ruleta de Kapi', subtitulo: 'Qué se puede ganar, qué días sale cada premio y cómo se ve la rueda.' };
+  const cabeza = { icono: 'ruleta', tono: 'rosa', titulo: 'La Ruleta de Walito', subtitulo: 'Qué se puede ganar, qué días sale cada premio y cómo se ve la rueda.' };
   const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes de la ruleta" opciones={PESTANAS} valor={pestana} onChange={ir} /></div>;
 
   if (pestana === 'premios') {

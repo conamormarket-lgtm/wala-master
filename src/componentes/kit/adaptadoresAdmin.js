@@ -100,9 +100,9 @@ export const MENU_ADMIN = [
       { to: '/admin/retos', texto: 'Retos semanales', icono: 'retos', permiso: PREMIOS },
       { to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: PREMIOS },
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: PREMIOS },
-      { to: '/admin/ruleta', texto: 'La Ruleta de Kapi', icono: 'ruleta', permiso: PREMIOS },
-      { to: '/admin/bolitas', texto: 'Las Bolitas de Kapi', icono: 'bolitas', permiso: PREMIOS },
-      { to: '/admin/pichanga', texto: 'La Pichanga de Kapi', icono: 'pichanga', permiso: PREMIOS },
+      { to: '/admin/ruleta', texto: 'La Ruleta de Walito', icono: 'ruleta', permiso: PREMIOS },
+      { to: '/admin/bolitas', texto: 'Las Bolitas de Walito', icono: 'bolitas', permiso: PREMIOS },
+      { to: '/admin/pichanga', texto: 'La Pichanga de Walito', icono: 'pichanga', permiso: PREMIOS },
     ],
   },
   {
@@ -1945,14 +1945,14 @@ export function misionAFirestore(m = {}) {
  */
 export const RECOMPENSAS_RETO = [
   { valor: 'main', texto: 'Monedas' },
-  { valor: 'kapi_double_3d', texto: 'Doble monedas al alimentar a Kapi (3 días)' },
+  { valor: 'kapi_double_3d', texto: 'Doble monedas al alimentar a Walito (3 días)' },
 ];
 
 /*
  * Qué cuenta en un reto. La tienda solo reporta sola "agregar a la Lista de
  * Deseos" (WishlistContext → recordChallengeEventSecure); lo demás se cumple
  * con evidencia: un actionType que empieza con 'manual_' hace que la ventana
- * de Kapi pida el enlace (retoDesdePerfil) y el admin lo aprueba.
+ * de Walito pida el enlace (retoDesdePerfil) y el admin lo aprueba.
  */
 export const ACCIONES_RETO = [
   { valor: 'add_wishlist', texto: 'Agregar a la Lista de Deseos (cuenta solo)' },
@@ -1964,7 +1964,7 @@ export const textoAccionReto = (accion) => ACCIONES_RETO.find((a) => a.valor ===
   || (esRetoConEvidencia(accion) ? 'Con evidencia' : accion ? `${accion} (no cuenta solo)` : '—');
 
 export const recompensaDeReto = (r = {}) => (r.tipo === 'kapi_double_3d' || r.rewardType === 'kapi_double_3d'
-  ? 'Doble monedas al alimentar a Kapi (3 días)'
+  ? 'Doble monedas al alimentar a Walito (3 días)'
   : `${enteroPE(r.monedas ?? r.rewardCoins)} monedas`);
 
 export function retoDesdeFirestore(doc = {}) {
@@ -2367,7 +2367,7 @@ export function idDeFestiva(nombre, usados = []) {
  */
 export const CATEGORIAS_NOTIF = [
   { clave: 'cart_abandoned', nombre: 'Carrito abandonado', detalle: 'Avisa a la 1 h, 24 h y 48 h a quien dejó productos en el carrito. Solo a quien tiene la app.', desde: '09:00', hasta: '21:00' },
-  { clave: 'retention', nombre: 'Kapi te extraña', detalle: 'Avisa a quien no abre la app hace 7 o 14 días. Solo a quien tiene la app.', desde: '09:00', hasta: '21:00' },
+  { clave: 'retention', nombre: 'Walito te extraña', detalle: 'Avisa a quien no abre la app hace 7 o 14 días. Solo a quien tiene la app.', desde: '09:00', hasta: '21:00' },
   { clave: 'survey', nombre: 'Encuesta pendiente', detalle: 'Una vez al día: a quien creó su cuenta y no respondió la encuesta le recuerda a los 3 y a los 10 días. Después no insiste.', desde: '10:00', hasta: '20:00' },
   { clave: 'orders', nombre: 'Pedidos', detalle: 'Cuando se confirma el pago, entra a producción, sale a reparto y se entrega. Fuera de horario queda en la campanita y la push no sale.', desde: '08:00', hasta: '21:00' },
   { clave: 'product_views', nombre: 'Producto que estuvo mirando', detalle: 'Una vez al día: a quien miró un producto 3 veces o más (o más de 2 minutos) y no lo compró.', desde: '11:00', hasta: '20:00' },
@@ -2378,8 +2378,8 @@ const TEXTOS_NOTIF = {
   cart_1h: ['Tu regalo te está esperando.', '📦', '¿Terminamos?'],
   cart_24h: ['El box que elegiste sigue en tu carrito.', '🎁', '¿Terminamos de armarlo?'],
   cart_48h: ['Última oportunidad. Tu carrito se vacía mañana.', '⏳', '¿Lo completamos?'],
-  retention_7d: ['Kapi te extraña mucho. Lleva varios días sin verte', '😢', 'Abre la app'],
-  retention_14d: ['Tienes {monedas} monedas que se van a perder. Y Kapi está triste...', '💔', 'Sálvalas'],
+  retention_7d: ['Walito te extraña mucho. Lleva varios días sin verte', '😢', 'Abre la app'],
+  retention_14d: ['Tienes {monedas} monedas que se van a perder. Y Walito está triste...', '💔', 'Sálvalas'],
   product_view: ['¿Te quedaste pensando en {producto}?', '👀', 'Sigue disponible'],
   survey_3d: ['Responde tu encuesta y te regalamos 15 monedas', '🪙', ''],
   survey_10d: ['Tu encuesta sigue pendiente. Respóndela y llévate 15 monedas', '🎁', ''],
@@ -2395,9 +2395,9 @@ export const GRUPOS_AVISOS = [
   { id: 'mirando', nombre: 'Producto que estuvo mirando', detalle: 'Para quien miró un producto varias veces y no lo compró.', avisos: [
     { clave: 'product_view', nombre: 'Al día siguiente', cuando: 'Una vez al día a quien lo miró 3+ veces o más de 2 minutos. El mismo producto no se repite en 14 días.', titulo: '👀 Lo que estuviste viendo', conProducto: true },
   ] },
-  { id: 'kapi', nombre: 'Kapi te extraña', detalle: 'Para quien dejó de abrir la app (Kapi es la mascota virtual).', avisos: [
+  { id: 'kapi', nombre: 'Walito te extraña', detalle: 'Para quien dejó de abrir la app (Walito es la mascota virtual).', avisos: [
     { clave: 'retention_7d', nombre: 'Después de 7 días', cuando: 'Sale cuando lleva 7 días sin abrir la app.', titulo: 'Mascota Hambrienta' },
-    { clave: 'retention_14d', nombre: 'Después de 14 días', cuando: 'Sale cuando lleva 14 días sin abrir la app.', titulo: 'Kapi te extraña' },
+    { clave: 'retention_14d', nombre: 'Después de 14 días', cuando: 'Sale cuando lleva 14 días sin abrir la app.', titulo: 'Walito te extraña' },
   ] },
   { id: 'encuesta', nombre: 'Encuesta pendiente', detalle: 'Para quien creó su cuenta y no respondió la encuesta. Lleva a /encuesta-suscripcion.', avisos: [
     { clave: 'survey_3d', nombre: 'A los 3 días', cuando: 'Sale 3 días después de crear la cuenta, si no respondió.', titulo: '📝 Tu encuesta te espera', probable: true },
@@ -2546,7 +2546,7 @@ export function erroresDeOferta(d = {}, ahoraMs = Date.now(), paraGuardar = fals
 /** Los nombres de los avisos en la tabla de "¿qué texto funciona mejor?". */
 export const NOMBRES_AVISO = {
   cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
-  retention_7d: 'Kapi 7 días', retention_14d: 'Kapi 14 días',
+  retention_7d: 'Walito 7 días', retention_14d: 'Walito 14 días',
   survey_3d: 'Encuesta 3 días', survey_10d: 'Encuesta 10 días',
   orders: 'Pedidos', product_view: 'Producto que estuvo mirando', fecha_recordatorio: 'Fechas importantes',
   fecha_festiva: 'Fechas festivas', manual_promo: 'Ofertas (campañas)',
@@ -3309,7 +3309,7 @@ export function metricasBolitas(data = {}) {
   };
 }
 
-/* ── D7b · La Ruleta de Kapi ──────────────────────────── */
+/* ── D7b · La Ruleta de Walito ──────────────────────────── */
 
 /*
  * Los premios se editan con los nombres de utils/ruletaModel (normalizarPremio):

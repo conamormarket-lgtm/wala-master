@@ -17,7 +17,7 @@ const NIVELES = [
   { key: "diamante", nombre: "Diamante", min: 1000 },
 ];
 
-// El regalo de cada nivel. `stickers`: además, el pack de WhatsApp de Kapi.
+// El regalo de cada nivel. `stickers`: además, el pack de WhatsApp de Walito.
 const PREMIOS_NIVEL = {
   plata: { tipo: "envio_gratis", titulo: "Regalo Nivel Plata: envío gratis", descuentoPct: 0, topeDescuento: 0 },
   oro: { tipo: "descuento", titulo: "Regalo Nivel Oro: 10% de descuento", descuentoPct: 10, topeDescuento: 20 },

@@ -11,7 +11,7 @@ import s from './RetoSemanal.module.css';
 /**
  * El reto de la semana (globals/activeChallenge): qué hay que hacer, el premio,
  * cuánto llevas y, en los retos manuales, el enlace con la evidencia. Va en la
- * ventana de Kapi; también sirve en la cuenta.
+ * ventana de Walito; también sirve en la cuenta.
  *
  *  - titulo, descripcion
  *  - recompensa: texto ("10 monedas", "Doble monedas al alimentar")

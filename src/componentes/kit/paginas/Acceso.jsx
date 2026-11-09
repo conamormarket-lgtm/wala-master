@@ -45,7 +45,7 @@ export const conTexto = (t) => (t ? <Texto>{t}</Texto> : undefined);
 /**
  * El marco de las páginas de acceso: a la izquierda el panel de la marca
  * (degradado del logo, garabatos quietos, título con trazo, lo que trae la
- * cuenta y Kapi asomado) y a la derecha el formulario. Angosto (menos de
+ * cuenta y Walito asomado) y a la derecha el formulario. Angosto (menos de
  * 860px), el panel se vuelve una franja arriba del formulario.
  *  - panel: { titulo, texto, beneficios: [{ Icono, texto }] }
  *  - titulo, texto: los del formulario · arriba: nodo sobre el título (avance)

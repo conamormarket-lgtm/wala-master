@@ -546,7 +546,7 @@ test('fidelidad: referidos, misiones y retos', () => {
   const nuevos = [
     ...r,
     m2.referidoDesdeFirestore({ id: 'd', status: 'registered', referrerCode: 'BETO', tipo: 'invitacion', invitadoUid: 'u9', clickedAt: { seconds: 200 } }, estimar),
-    m2.referidoDesdeFirestore({ id: 'e', status: 'clicked', referrerCode: 'BETO', tipo: 'producto', productId: 'p1', clickedAt: { seconds: 300 } }, estimar, (id) => (id === 'p1' ? 'Polo Kapi' : '')),
+    m2.referidoDesdeFirestore({ id: 'e', status: 'clicked', referrerCode: 'BETO', tipo: 'producto', productId: 'p1', clickedAt: { seconds: 300 } }, estimar, (id) => (id === 'p1' ? 'Polo Walito' : '')),
     m2.referidoDesdeFirestore({ id: 'f', status: 'sent', referrerCode: 'CARLA' }, estimar),
   ];
   const g = m2.referentesDesde(nuevos, { ANA1: { nombre: 'Ana Pérez', uid: 'u1' } });
@@ -555,7 +555,7 @@ test('fidelidad: referidos, misiones y retos', () => {
     ['BETO', '', 2, 0, 1, 0, 0, 'visitas'],
     ['CARLA', '', 0, 1, 0, 0, 0, 'sinVisitas'],
   ]);
-  assert.deepEqual(g[1].visitas.map((v) => v.enlace), ['Polo Kapi', 'Invitación']);
+  assert.deepEqual(g[1].visitas.map((v) => v.enlace), ['Polo Walito', 'Invitación']);
   const mi = m2.misionDesdeFirestore({ id: 'm', title: 'Visita', rewardPoints: '5', active: false });
   assert.equal(mi.activa, false);
   assert.deepEqual(m2.misionAFirestore({ ...mi, nombre: ' Visita ', monedas: '8' }), { title: 'Visita', description: '', rewardPoints: 8, order: 0, active: false, actionKey: '' });
@@ -581,7 +581,7 @@ test('fidelidad: referidos, misiones y retos', () => {
 test('recompensas: lo que da, lo que se guarda y sus errores', () => {
   assert.equal(m2.beneficioDeRecompensa({ tipo: 'descuento', descuentoPct: 10, topeDescuento: 20 }), '10% de descuento (hasta S/ 20.00)');
   assert.equal(m2.beneficioDeRecompensa({ tipo: 'descuento', descuentoMonto: 15 }), 'S/ 15.00 de descuento');
-  assert.equal(m2.beneficioDeRecompensa({ tipo: 'producto_gratis', productoNombre: 'Taza Kapi' }), 'Taza Kapi gratis');
+  assert.equal(m2.beneficioDeRecompensa({ tipo: 'producto_gratis', productoNombre: 'Taza Walito' }), 'Taza Walito gratis');
   assert.equal(m2.beneficioDeRecompensa({ tipo: 'manual' }), '');
   const r = m2.recompensaAdminDesdeFirestore({ id: 'x', title: 'Stickers', cost: '120', tipo: 'raro' });
   assert.equal(r.tipo, 'manual');
@@ -742,7 +742,7 @@ test('sorteos de suscripción: campañas, planes y suscriptores', () => {
   assert.equal(m2.erroresDeCampanaSuscripcion({ nombre: 'x', numGanadores: 1, estado: 'activo', planes: [{ precioUsd: 5 }] }).planes, undefined);
   const s = m2.suscriptorDesde({ id: 's', nombres: 'Ana', planId: 'p1', estado: 'activo', vigenciaHasta: { seconds: 10 }, chancesTotal: 3 }, c.planes);
   assert.deepEqual([s.nombre, s.plan, s.precio, s.vigenciaMs, s.chances], ['Ana', 'Mensual', 19.9, 10000, 3]);
-  assert.deepEqual(m2.beneficioAFirestore(m2.beneficioDesde({ id: 'b', marca: 'Kapi', titulo: 'Tazas', descuento: '20%' })), { marca: 'Kapi', titulo: 'Tazas', descuento: '20%', imagenUrl: '', categoria: '', ubicacion: '', url: '', orden: 0 });
+  assert.deepEqual(m2.beneficioAFirestore(m2.beneficioDesde({ id: 'b', marca: 'Walito', titulo: 'Tazas', descuento: '20%' })), { marca: 'Walito', titulo: 'Tazas', descuento: '20%', imagenUrl: '', categoria: '', ubicacion: '', url: '', orden: 0 });
   assert.equal(m2.ganadorGaleriaAFirestore({ nombre: ' Rosa ', foto: 'f' }).fotoUrl, 'f');
 });
 
@@ -840,7 +840,7 @@ test('juegos: la palabra del día y las bolitas', () => {
   assert.deepEqual(m2.nuevoPuesto(pr.puestos).desde, 4);
   assert.equal(m2.erroresDePremios({ puestos: [...pr.puestos, { desde: 3, hasta: 5, cupon: m2.CUPON_JUEGO_VACIO }] }), 'Los premios 1 y 2 se pisan en los puestos.');
   assert.equal(m2.erroresDePremios({ puestos: [{ desde: 4, hasta: 2, cupon: m2.CUPON_JUEGO_VACIO }] }), 'El premio 1: «hasta» no puede ser menor que «desde».');
-  assert.equal(m2.premiosBolitasAFirestore(pr, [{ id: 'm', name: 'Kapi' }]).puestos[0].marcaId, null);
+  assert.equal(m2.premiosBolitasAFirestore(pr, [{ id: 'm', name: 'Walito' }]).puestos[0].marcaId, null);
 
   const m = m2.metricasBolitas({ porDia: [{ fecha: '2026-11-02', partidas: 5, retos: 2, clics: 1, clicsPorMarca: { a: 1 } }, { fecha: '2026-11-01', partidas: 3, niveles: { 4: 2 } }], jugadores: { jugadores: 40, vuelven: { cantidad: 10, base: 40 }, trabados: { 12: 3, 7: 5 } } });
   assert.deepEqual([m.partidas, m.retos, m.vuelven, m.siguen7, m.trabados[0].nivel, m.porDia[0].fecha, m.clicsMarca.a], [8, 2, 25, null, '7', '2026-11-01', 1]);
@@ -959,9 +959,9 @@ test('historial: la versión actual de cada página, el stock y el CSV', () => {
   const grupos = m2.paginasDelHistorial(m2.conVersionActual(cambios));
   assert.deepEqual(grupos.map((g) => [g.pagina, g.puesta.id, g.anteriores.map((x) => x.id)]), [['tienda', 'a', ['c']], ['home', 'b', []]]);
   assert.deepEqual([cambios[0].quien, m2.cambioDisenoDesde({ description: 'Restaurada desde el historial', userEmail: 'a@x.pe' }).restaurada], ['', true]);
-  const mov = m2.movimientoInventarioDesde({ id: 'i', timestamp: Date.parse('2026-11-02T20:05:00Z'), productName: 'Polo "Kapi", talla M', oldStock: 5, newStock: 2 });
+  const mov = m2.movimientoInventarioDesde({ id: 'i', timestamp: Date.parse('2026-11-02T20:05:00Z'), productName: 'Polo "Walito", talla M', oldStock: 5, newStock: 2 });
   assert.deepEqual([mov.cambio, mov.quien, m2.textoCambioStock(mov.cambio), m2.textoCambioStock(3)], [-3, 'Desconocido', '−3', '+3']);
-  assert.equal(m2.csvInventario([mov]).split('\n')[1], '02/11/2026,15:05,Desconocido,"Polo ""Kapi"", talla M",5,2,-3');
+  assert.equal(m2.csvInventario([mov]).split('\n')[1], '02/11/2026,15:05,Desconocido,"Polo ""Walito"", talla M",5,2,-3');
   const limite = m2.movimientoInventarioDesde({ oldStock: null, newStock: 3 });
   assert.equal(limite.antes, null);
   assert.equal(limite.cambio, 0);

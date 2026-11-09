@@ -1,5 +1,5 @@
 /*
- * Sonidos y vibración de Las Bolitas de Kapi. Los sonidos se arman en el
+ * Sonidos y vibración de Las Bolitas de Walito. Los sonidos se arman en el
  * momento con Web Audio (sin archivos que bajar); la vibración usa
  * navigator.vibrate (en la app de Android pide el permiso VIBRATE del
  * manifiesto; en iPhone no hay). Si algo falla, el juego sigue en silencio.

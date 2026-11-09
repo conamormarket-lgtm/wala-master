@@ -1,4 +1,4 @@
-// ── Las Bolitas de Kapi: lógica pura del servidor ─────────────────────────────
+// ── Las Bolitas de Walito: lógica pura del servidor ─────────────────────────────
 // Comprobar una partida (con el mismo motor que el celular, en
 // bolitasMotor.mjs, copia generada), el nombre que se muestra en el ranking y
 // el orden del ranking. Sin firebase-admin: se prueba con

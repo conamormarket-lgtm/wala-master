@@ -1,5 +1,5 @@
 /*
- * Sonidos y vibración de La Pichanga de Kapi, como los de Las Bolitas: se
+ * Sonidos y vibración de La Pichanga de Walito, como los de Las Bolitas: se
  * arman en el momento con Web Audio (sin archivos que bajar) y la vibración
  * usa navigator.vibrate (en iPhone no hay). Si algo falla, el juego sigue en
  * silencio.

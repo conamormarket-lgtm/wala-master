@@ -551,7 +551,7 @@ function App() {
 
                                       <Route path="destacados" element={<AdminDestacados />} />
                                       <Route path="zonas" element={<Navigate to="/admin" replace />} />
-                                      {/* La imagen de Kapi se quitó: ninguna página la mostraba. */}
+                                      {/* La imagen de Walito se quitó: ninguna página la mostraba. */}
                                       <Route path="mascota" element={<Navigate to="/admin" replace />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />

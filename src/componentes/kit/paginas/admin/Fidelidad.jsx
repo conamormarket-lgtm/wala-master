@@ -367,7 +367,7 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
                   titulo="Cómo se cumple"
                   columnas={esRetoConEvidencia(datos.accion) ? 1 : 2}
                   ayuda={esRetoConEvidencia(datos.accion)
-                    ? 'En la ventana de Kapi el cliente pega el enlace de su foto o historia. Lo revisas en «Evidencias» y, al aprobarlo, se le paga.'
+                    ? 'En la ventana de Walito el cliente pega el enlace de su foto o historia. Lo revisas en «Evidencias» y, al aprobarlo, se le paga.'
                     : 'Cuenta sola cada vez que agrega un producto a su Lista de Deseos, hasta llegar a la meta.'}
                 >
                   <Campo

@@ -80,7 +80,7 @@ span.tubo {
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
-/* La base: violeta, con una huella (la de Kapi). */
+/* La base: violeta, con una huella (la de Walito). */
 .base {
   display: grid;
   place-items: center;

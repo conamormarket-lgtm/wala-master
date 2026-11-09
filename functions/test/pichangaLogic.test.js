@@ -1,4 +1,4 @@
-// Lógica del servidor de La Pichanga de Kapi: node --test functions/test/pichangaLogic.test.js
+// Lógica del servidor de La Pichanga de Walito: node --test functions/test/pichangaLogic.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");

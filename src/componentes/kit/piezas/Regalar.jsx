@@ -90,7 +90,7 @@ const STICKERS = { 'kapi-love': Heart, 'kapi-party': PartyPopper, 'kapi-happy': 
 
 /**
  * El sobre del regalo: cerrado dice para quién y "Toca para abrir"; abierto,
- * Kapi con el sticker que eligió quien regala y su mensaje.
+ * Walito con el sticker que eligió quien regala y su mensaje.
  *  - para · mensaje · sticker ('kapi-love' | 'kapi-party' | 'kapi-happy')
  *  - abierto · onAbrir · children: lo que va al final (descargar la app…)
  */

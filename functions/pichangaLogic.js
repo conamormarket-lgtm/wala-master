@@ -1,4 +1,4 @@
-// ── La Pichanga de Kapi: lógica pura del servidor ─────────────────────────────
+// ── La Pichanga de Walito: lógica pura del servidor ─────────────────────────────
 // Comprobar una partida con el mismo motor y los mismos niveles que el
 // celular (copias generadas por scripts/generar-motor-pichanga.js), unir el
 // progreso guardado y ordenar los rankings. Sin firebase-admin: se prueba con

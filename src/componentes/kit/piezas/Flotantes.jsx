@@ -6,7 +6,7 @@ import { useTexto } from '../Traduccion';
 import s from './Flotantes.module.css';
 
 /*
- * Lo que flota sobre la página: WhatsApp, Kapi y la píldora de
+ * Lo que flota sobre la página: WhatsApp, Walito y la píldora de
  * recompensa. Todo por props: quién lo ve (sesión, rutas) y qué
  * pasa al tocar lo decide la tienda. Los textos pasan por la traducción.
  */
@@ -68,9 +68,9 @@ export function BotonWhatsApp({ numero, mensaje, etiqueta = '¿Te ayudamos?' }) 
 }
 
 /**
- * Caras de Kapi por estado, en 3D (public/assets/kapi/3d: 512px, con el borde
+ * Caras de Walito por estado, en 3D (public/assets/kapi/3d: 512px, con el borde
  * limpio). Es la fuente única del kit: estados vacíos, el acceso, la encuesta,
- * la ventana de Kapi… CARAS_KAPI_MINI (256px) para donde va chico (el botón
+ * la ventana de Walito… CARAS_KAPI_MINI (256px) para donde va chico (el botón
  * flotante). Las de antes (/assets/kapi/kapi-*.webp) siguen en la tienda real.
  */
 export const CARAS_KAPI = {
@@ -85,12 +85,12 @@ export const CARAS_KAPI_MINI = {
 };
 
 /**
- * Kapi, la mascota, flotando. Su cara cambia con el estado; el "!" avisa que
- * hay algo pendiente (comida del día, tutorial). La ventana de Kapi la abre
+ * Walito, la mascota, flotando. Su cara cambia con el estado; el "!" avisa que
+ * hay algo pendiente (comida del día, tutorial). La ventana de Walito la abre
  * quien recibe onAbrir.
  *  - estado: 'feliz' | 'hambre' | 'triste'
  */
-export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiqueta = 'Tu mascota Kapi' }) {
+export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiqueta = 'Tu mascota Walito' }) {
   const nombre = useTexto(etiqueta);
   const algo = useTexto('tiene algo para ti');
   return (

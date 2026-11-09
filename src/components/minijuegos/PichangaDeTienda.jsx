@@ -14,7 +14,7 @@ import { tieneCuenta } from '../../utils/rutaPrivada';
 import { PaginaPichanga, unirProgresos } from '../../componentes/kit/paginas/Pichanga';
 
 /*
- * La Pichanga de Kapi (/pichanga), con el mismo esquema que Las Bolitas:
+ * La Pichanga de Walito (/pichanga), con el mismo esquema que Las Bolitas:
  *  - el premio (+2) lo da el servidor una vez al día de Lima, al comprobar
  *    una partida ganada (registrarPartidaPichangaSecure: repite los tiros);
  *    "ya cobró hoy" sale del perfil (lastPichangaReward) o del modo diseño
@@ -34,7 +34,7 @@ import { PaginaPichanga, unirProgresos } from '../../componentes/kit/paginas/Pic
 
 const CLAVE_AYUDA = 'wala_pichanga_ayuda_vista';
 const CLAVE_PROGRESO = 'wala_pichanga_progreso';
-const JUEGO = { gameId: 'pichanga', gameName: 'La Pichanga de Kapi' };
+const JUEGO = { gameId: 'pichanga', gameName: 'La Pichanga de Walito' };
 const ESPERA_NUBE_MS = 3000; // si la cuenta tarda más, se juega con lo del aparato
 const GUARDAR_NUBE_MS = 2500; // lo que cambia seguido se sube en una sola llamada
 const URL_LOGIN = '/login?redirect=%2Fpichanga';

@@ -224,7 +224,7 @@ export function PaginaFichaProducto({
 
         <Bloque>
           <GrupoCampos titulo="Lo básico">
-            <Campo id={idCampo('nombre')} etiqueta="Nombre" value={datos.nombre} error={errores.nombre} maxLength={120} placeholder="Ej. Polo Kapi oversize" onChange={(e) => cambiar('nombre', e.target.value)} />
+            <Campo id={idCampo('nombre')} etiqueta="Nombre" value={datos.nombre} error={errores.nombre} maxLength={120} placeholder="Ej. Polo Walito oversize" onChange={(e) => cambiar('nombre', e.target.value)} />
             <div className={s.dos}>
               <CampoDinero id={idCampo('precio')} etiqueta="Precio" value={datos.precio} error={errores.precio} onChange={(e) => cambiar('precio', e.target.value)} />
               <CampoDinero

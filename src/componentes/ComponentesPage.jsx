@@ -111,7 +111,7 @@ const PRODUCTOS_DEMO = [
   },
   {
     // Variantes de estilo sin color: se eligen por nombre ("Modelo").
-    id: 'kapi', name: 'Peluche Kapi', price: 59.9, inStock: 18, mainImage: '/assets/kapi/kapi-happy.webp', hasVariants: true,
+    id: 'kapi', name: 'Peluche Walito', price: 59.9, inStock: 18, mainImage: '/assets/kapi/kapi-happy.webp', hasVariants: true,
     variants: [
       { id: 'feliz', name: 'Feliz', imageUrl: '/assets/kapi/kapi-happy.webp', sizes: [] },
       { id: 'hambriento', name: 'Hambriento', imageUrl: '/assets/kapi/kapi-hungry.webp', sizes: [] },
@@ -207,7 +207,7 @@ const NOTIFICACIONES_INICIALES = [
   { id: 'n1', tipo: 'info', titulo: 'Tu pedido #WL-20377 va en camino', texto: 'Llega mañana, 14 oct', fecha: ahora - 12 * 60000, leida: false },
   { id: 'n2', tipo: 'exito', titulo: '¡Pago recibido!', texto: 'Pedido #WL-20481 · S/ 129.80', fecha: ahora - 95 * 60000, leida: false },
   { id: 'n3', tipo: 'aviso', titulo: 'Tu cupón WALA10 vence hoy', texto: 'Úsalo en tu próxima compra', fecha: ahora - 5 * 3600000, leida: true },
-  { id: 'n4', tipo: 'exito', titulo: 'Kapi te regaló 45 monedas', texto: 'Por completar la misión semanal', fecha: ahora - 26 * 3600000, leida: true },
+  { id: 'n4', tipo: 'exito', titulo: 'Walito te regaló 45 monedas', texto: 'Por completar la misión semanal', fecha: ahora - 26 * 3600000, leida: true },
 ];
 
 /* Datos de ejemplo de los menús (en la app salen de Firestore / AuthContext / CartContext). */
@@ -232,7 +232,7 @@ const FAVORITOS_DEMO = [
   { id: 'f4', nombre: 'Combo Él y Ella', imagen: ESPALDA },
   { id: 'f5', nombre: 'Polera Essentials blanca', imagen: FRENTE_BLANCO },
   { id: 'f6', nombre: 'Polera edición limitada', imagen: ESPALDA_BLANCO },
-  { id: 'f7', nombre: 'Taza Kapi', imagen: FRENTE },
+  { id: 'f7', nombre: 'Taza Walito', imagen: FRENTE },
 ];
 
 const USUARIO_DEMO = { nombre: 'Isaac Castro', email: 'isaac@correo.com' };
@@ -702,7 +702,7 @@ function Contenido({ tema, cambiarTema }) {
                 </figure>
               ))}
             </div>
-            <p className={s.nota}>Contorno violeta grueso y colores de la marca, como Kapi. Un emoji guardado (🚚, 💬, 🎁…) se cambia solo por su ícono.</p>
+            <p className={s.nota}>Contorno violeta grueso y colores de la marca, como Walito. Un emoji guardado (🚚, 💬, 🎁…) se cambia solo por su ícono.</p>
           </Panel>
           <Panel titulo="Chips de filtro">
             <div className={s.fila}>
@@ -941,7 +941,7 @@ function Contenido({ tema, cambiarTema }) {
         {/* ── PANEL DE PRUEBA ── */}
         <Seccion
           id="panel" numero="01" titulo="Panel de prueba"
-          descripcion="El marco del admin con el menú real, filtrado por permiso: cambia «Ver como» y el menú, la barra del celular y lo que se puede abrir cambian solos. Ya están el inicio (D0), referidos, misiones, retos, recompensas y fechas importantes, notificaciones y la encuesta (D5 entero: el calendario, las fechas festivas, los paquetes; los avisos automáticos con sus textos A/B, las ofertas y su historial; el editor de la encuesta y sus respuestas dentro de Opiniones), los sorteos y rifas con su detalle y los ganadores (D6a), los sorteos por suscripción con sus planes, beneficios y galería (D6b), las páginas de enlaces con su constructor y la vista previa (D6c), los popups con su vista previa, las páginas del editor y los temas (D6d: D6 entero), Kapi, La Palabra del día, Las Bolitas y La Ruleta de Kapi con sus premios, cómo se ve y las entregas (D7 entero), la configuración con el equipo y lo que ve cada uno, los bloqueos y optimizar, WhatsApp con el mensaje del pedido y el historial del diseño y del stock (D8 entero: todos los apartados), Resultados entero (D4: el Resumen, Productos, Visitantes, Clientes, Opiniones, Detalle técnico y sus cuatro pantallas, con el periodo, comparar, las cifras con su cambio y los rankings), la recepción de pedidos (D3a: las cifras filtran), la gestión de pagos (D3b: historial con su gráfico, nuevo enlace y ajustes), el libro de reclamaciones con su plazo (D3c), el catálogo base (D1: categorías, colecciones, marcas y sus productos, atributos, zonas de envío y destacados) la lista de productos con su stock (el inventario se unió ahí) y los datos para recomendar (D2a) la ficha de un producto o un combo (D2b: toca un producto de la lista) y Crear (D2c: las pestañas Personalizables y Packs de Productos), con la copia real de la tienda; las demás secciones dicen en qué apartado se harán. Guardar, eliminar y subir se simulan."
+          descripcion="El marco del admin con el menú real, filtrado por permiso: cambia «Ver como» y el menú, la barra del celular y lo que se puede abrir cambian solos. Ya están el inicio (D0), referidos, misiones, retos, recompensas y fechas importantes, notificaciones y la encuesta (D5 entero: el calendario, las fechas festivas, los paquetes; los avisos automáticos con sus textos A/B, las ofertas y su historial; el editor de la encuesta y sus respuestas dentro de Opiniones), los sorteos y rifas con su detalle y los ganadores (D6a), los sorteos por suscripción con sus planes, beneficios y galería (D6b), las páginas de enlaces con su constructor y la vista previa (D6c), los popups con su vista previa, las páginas del editor y los temas (D6d: D6 entero), Walito, La Palabra del día, Las Bolitas y La Ruleta de Walito con sus premios, cómo se ve y las entregas (D7 entero), la configuración con el equipo y lo que ve cada uno, los bloqueos y optimizar, WhatsApp con el mensaje del pedido y el historial del diseño y del stock (D8 entero: todos los apartados), Resultados entero (D4: el Resumen, Productos, Visitantes, Clientes, Opiniones, Detalle técnico y sus cuatro pantallas, con el periodo, comparar, las cifras con su cambio y los rankings), la recepción de pedidos (D3a: las cifras filtran), la gestión de pagos (D3b: historial con su gráfico, nuevo enlace y ajustes), el libro de reclamaciones con su plazo (D3c), el catálogo base (D1: categorías, colecciones, marcas y sus productos, atributos, zonas de envío y destacados) la lista de productos con su stock (el inventario se unió ahí) y los datos para recomendar (D2a) la ficha de un producto o un combo (D2b: toca un producto de la lista) y Crear (D2c: las pestañas Personalizables y Packs de Productos), con la copia real de la tienda; las demás secciones dicen en qué apartado se harán. Guardar, eliminar y subir se simulan."
           mejoras={['Un menú con buscador y grupos por tarea', 'En el celular: barra con los accesos y el menú en una hoja', 'La lista es tabla o tarjetas según el ancho', 'Editar al costado, sin perder la lista', 'Pregunta antes de perder cambios', 'Nada de alert() ni confirm()']}
         >
           <HechaCon piezas={['MarcoAdmin', 'BarraInferiorAdmin', 'CabezaAdmin', 'SinPermiso', 'PaginaInicioAdmin', 'PaginaListaAdmin', 'PaginaCategorias', 'PaginaMarcas', 'PaginaDestacados', 'PasoAdmin', 'PaginaRecepcion', 'Cifra', 'TarjetaEnvio', 'PaginaPagos', 'GraficoTendencia', 'PaginaReclamos', 'MarcoResultados', 'SelectorPeriodo', 'TablaComparativa', 'ListaBarras', 'ListaInteresados', 'FichaCliente', 'TablaAdmin', 'ListaOrdenable', 'SelectorProductos', 'CargarMas', 'BarraFiltros', 'HojaEdicion', 'GrupoCampos', 'CampoImagen', 'InsigniaEstado', 'Confirmar', 'useToast']} />
@@ -1015,7 +1015,7 @@ function Contenido({ tema, cambiarTema }) {
               </EstadoVacio>
             </Panel>
             <Panel retraso={0.08}>
-              <EstadoVacio imagen="/assets/kapi/3d/kapi-feliz.webp" titulo="Aún no tienes pedidos" texto="Diseña algo único: Kapi te ayuda paso a paso.">
+              <EstadoVacio imagen="/assets/kapi/3d/kapi-feliz.webp" titulo="Aún no tienes pedidos" texto="Diseña algo único: Walito te ayuda paso a paso.">
                 <Boton variante="secundario" icono={<Wand2 aria-hidden="true" />}>Crear mi diseño</Boton>
               </EstadoVacio>
             </Panel>

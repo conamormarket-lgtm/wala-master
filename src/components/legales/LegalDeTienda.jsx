@@ -11,7 +11,7 @@ import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
  * LEGALES.md): PaginaLegal con el documento de config/legales/ (el mismo
  * texto de antes, palabra por palabra) y el contacto de config/empresa; el
  * WhatsApp, el general de /admin/whatsapp (config/empresa de respaldo).
- * Con sesión, la tarjeta de contacto va sin Kapi (ya está el flotante).
+ * Con sesión, la tarjeta de contacto va sin Walito (ya está el flotante).
  * Lo de antes: pages/PoliticasPrivacidadViejo.jsx y
  * pages/TerminosCondicionesViejo.jsx (interruptor legalesViejo).
  *  - tipo: 'privacidad' | 'terminos' · documento: el de config/legales/

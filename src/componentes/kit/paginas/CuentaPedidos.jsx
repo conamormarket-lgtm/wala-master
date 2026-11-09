@@ -48,7 +48,7 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
     return (
       <>
         {cabeza}
-        {/* Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista). */}
+        {/* Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista). */}
         <EstadoVacio imagen={null} icono={<IdCard />} titulo={<Texto>Completa tu perfil para rastrear</Texto>} texto={<Texto>Para ubicar tus pedidos necesitamos tu DNI o carnet de extranjería.</Texto>}>
           <Boton to={urlCompletar} icono={<IdCard aria-hidden="true" />}><Texto>Completar perfil</Texto></Boton>
         </EstadoVacio>
@@ -187,7 +187,7 @@ export function PaginaDetallePedido({
     return (
       <>
         {migas}
-        {/* Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista). */}
+        {/* Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista). */}
         <EstadoVacio imagen={null} icono={<SearchX />} titulo={<Texto>No encontramos esta compra</Texto>} texto={<Texto>Es posible que el pedido ya no esté disponible o que no pertenezca a tu cuenta.</Texto>}>
           <Boton to={urlVolver}><Texto>Volver a Mis pedidos</Texto></Boton>
         </EstadoVacio>

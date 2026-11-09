@@ -12,7 +12,7 @@ const MARCAS_MUNDOS_DEMO = MARCAS_DEMO.slice(0, 4).map((m) => ({ id: m.id, nombr
 
 /*
  * Los minijuegos por dentro en la Tienda de prueba: la Palabra del día
- * (/palabra-del-dia), La Ruleta de Kapi (/ruleta) y Las Bolitas de Kapi
+ * (/palabra-del-dia), La Ruleta de Walito (/ruleta) y Las Bolitas de Walito
  * (/ball-sort).
  *
  * Qué es real y qué es de ejemplo:
@@ -39,8 +39,8 @@ function palabraDeHoy(hoy) {
 
 export const VISTAS_JUEGOS = [
   ['Palabra del día', '/palabra-del-dia'],
-  ['La Ruleta de Kapi', '/ruleta'],
-  ['Las Bolitas de Kapi', '/ball-sort'],
+  ['La Ruleta de Walito', '/ruleta'],
+  ['Las Bolitas de Walito', '/ball-sort'],
 ];
 
 export const ESTADOS_JUEGOS = {

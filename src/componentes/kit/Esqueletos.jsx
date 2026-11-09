@@ -340,7 +340,7 @@ const barraJuego = () => (
   </span>
 );
 
-/** Sin sesión: la invitación a entrar (Mi cuenta, la encuesta): Kapi, título, texto y dos botones. */
+/** Sin sesión: la invitación a entrar (Mi cuenta, la encuesta): Walito, título, texto y dos botones. */
 const invitado = () => (
   <span className={s.invitado}>
     <span className={cx(s.tarjeta, s.invitadoTarjeta)}>
@@ -676,7 +676,7 @@ const PAGINAS = {
     </span>
   ),
   crear: ({ sesion }) => (
-    // La portada (el arte de Kapi, 2172 × 724), lo del cliente y las prendas.
+    // La portada (el arte de Walito, 2172 × 724), lo del cliente y las prendas.
     <>
       <span className={s.portadaCrear}>
         <span className={s.portadaCrearTexto}>
@@ -732,7 +732,7 @@ const PAGINAS = {
     </>
   ),
   encuesta: ({ sesion }) => (sesion === false ? invitado() : (
-    // Se abre en la portada: Kapi, el título con su trazo, el premio y los dos botones.
+    // Se abre en la portada: Walito, el título con su trazo, el premio y los dos botones.
     <span className={s.encuesta}>
       <Caja alto={518} className={s.encuestaTarjeta}>
         <Hueso forma="circulo" ancho={120} alto={120} />
@@ -902,7 +902,7 @@ const PAGINAS = {
     </span>
   ),
   ruleta: () => (
-    // La Ruleta de Kapi: la racha, la rueda, el botón y lo ya ganado.
+    // La Ruleta de Walito: la racha, la rueda, el botón y lo ya ganado.
     <span className={s.juegoEsq}>
       {barraJuego()}
       <span className={s.juegoCuerpo}>
@@ -919,7 +919,7 @@ const PAGINAS = {
     </span>
   ),
   bolitas: () => (
-    // Las Bolitas de Kapi: la mesa con los seis tubos y el panel del premio.
+    // Las Bolitas de Walito: la mesa con los seis tubos y el panel del premio.
     <span className={s.juegoEsq}>
       {barraJuego()}
       <span className={s.juegoCuerpo}>
@@ -936,7 +936,7 @@ const PAGINAS = {
     </span>
   ),
   pichanga: () => (
-    // La Pichanga de Kapi: la cancha alta, los botones de las ayudas y el panel de la racha.
+    // La Pichanga de Walito: la cancha alta, los botones de las ayudas y el panel de la racha.
     <span className={s.juegoEsq}>
       {barraJuego()}
       <span className={s.juegoCuerpo}>
@@ -954,7 +954,7 @@ const PAGINAS = {
     </span>
   ),
   aviso: () => (
-    // Una tarjeta centrada (no encontrada, descargar la app): el sello o Kapi, el título, el texto y dos botones.
+    // Una tarjeta centrada (no encontrada, descargar la app): el sello o Walito, el título, el texto y dos botones.
     <span className={s.avisoEsq}>
       <Hueso forma="circulo" ancho={96} alto={96} />
       <Hueso alto={34} ancho="min(80%, 400px)" />

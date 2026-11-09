@@ -12,7 +12,7 @@ import s from './Pichanga.module.css';
 import b from './Bolitas.module.css';
 
 /*
- * La cancha de La Pichanga de Kapi: una mesita de juguete (la bandeja violeta
+ * La cancha de La Pichanga de Walito: una mesita de juguete (la bandeja violeta
  * de la portada) con el pasto adentro, dibujada en un canvas. Liviano: solo se
  * redibuja cuando algo cambia o rueda (nada se anima en bucle). Los efectos
  * salen de lo que hace la persona: el aro al tirar, la estela y el giro de la
@@ -43,7 +43,7 @@ const FONDO_RED_ARRIBA = -FONDO_ARCO + RADIO.pelota + 9;
 const FONDO_RED_ABAJO = ALTO + FONDO_ARCO - RADIO.pelota - 9;
 
 /**
- * Los dos equipos: Kapi (el tuyo) y Michi, el gato (el rival). Cada uno feliz
+ * Los dos equipos: Walito (el tuyo) y Happy, el gato (el rival). Cada uno feliz
  * o triste; el polo es transparente, así que toma el color de la chapa.
  */
 export const PERSONAJES = {
@@ -296,7 +296,7 @@ export function dibujarPelota(ctx, x, y, r, pelota, orientacion = ORIENTACION_IN
   ctx.stroke();
 }
 
-/** El equipo rival (el de Michi): polo rojo, como en la portada. */
+/** El equipo rival (el de Happy): polo rojo, como en la portada. */
 export const EQUIPO_RIVAL = { colores: ['#ef4444', '#ffffff'], dibujo: 'liso' };
 
 /* ── La mesita ───────────────────────────────────────── */
@@ -568,7 +568,7 @@ function dibujarConos(ctx, def) {
   }
 }
 
-/** El arquero que va de lado a lado (Michi): una chapa grande, con guantes. */
+/** El arquero que va de lado a lado (Happy): una chapa grande, con guantes. */
 function dibujarArquero(ctx, pos, carita) {
   if (!pos) return;
   dibujarChapa(ctx, pos.x, pos.y, RADIO.kapi, { colores: ['#facc15', '#ffffff'], dibujo: 'liso', borde: '#ca8a04' }, carita, true);
@@ -736,20 +736,20 @@ const BANDEJAS = {
 /**
  * La cancha.
  *  - def: la cancha armada (motor) · cuerpos: lo que se mueve, quieto · t: el
- *    reloj de Kapi (dónde está el arquero)
+ *    reloj de Walito (dónde está el arquero)
  *  - equipo, pelota: cómo se ven tus chapas y la pelota (vestuario) · pasto,
  *    linea: los colores del mundo o del estadio · escena: la del fondo
  *    ('invierno' pone escarcha en el pasto; 'noche', la bandeja oscura)
  *  - caraArquero: 'feliz' | 'triste' (el arquero rival ataja o le meten gol)
  *  - animos: { mia, rival }: 'feliz' | 'triste' la cara de cada equipo
- *    (Kapi en las tuyas, Michi en las del rival)
+ *    (Walito en las tuyas, Happy en las del rival)
  *  - puedeTirar: se puede apuntar con tus chapas · onTiro([chapa, dx, dy]) ·
  *    onApuntar(tiro | null): mientras se arrastra (para la vista del tiro)
  *  - ruta: [[x, y]] la trayectoria prevista de la pelota (la ayuda "Ver el tiro")
  *  - animacion: { id, cuadros, golpes, t0, velocidad, tirador, gol } lo que
  *    rueda (lo arma simular); al terminar, onFinAnimacion(id). onGolpe(tipo,
  *    fuerza): cada choque (para el sonido)
- *  - resaltar: el índice de una chapa a marcar (la que va a tirar Michi)
+ *  - resaltar: el índice de una chapa a marcar (la que va a tirar Happy)
  *  - receptor: después de un pase, la única chapa tuya que puede tirar (se
  *    marca en dorado) o null
  */

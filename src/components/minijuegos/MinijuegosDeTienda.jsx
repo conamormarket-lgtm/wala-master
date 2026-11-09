@@ -16,12 +16,12 @@ import { juegosDelArcade } from '../../componentes/kit/adaptadoresArcade';
  * La Zona Arcade (/minijuegos) con el kit (paso 6, MINIJUEGOS.md):
  * PaginaMinijuegos con las cinco tarjetas de juegosDelArcade. La misma
  * lógica que MinijuegosPage:
- *  - el día lo decide la hora de Lima (limaTodayStr); la moneda de Kapi
+ *  - el día lo decide la hora de Lima (limaTodayStr); la moneda de Walito
  *    (lastKapiClaimDate), las bolitas (lastBallSortReward), el doble del reto
  *    semanal (kapi_double_3d vigente) y la ruleta (getRuletaEligibility)
  *    salen del perfil; la palabra, de getMiPartidaDeHoy
  *  - al entrar con sesión, la misión diaria visit_minijuegos
- *  - "Reclamar moneda" abre a Kapi (open-kapi-pet); ya reclamada, un toast
+ *  - "Reclamar moneda" abre a Walito (open-kapi-pet); ya reclamada, un toast
  *  - mientras se resuelve la sesión no se anuncia nada (botones cargando)
  *  - el modo diseño (?sesion=, ?moneda=, ?bolitas=, ?pichanga=, ?palabra=, ?ruleta=,
  *    ?dias=, solo en local) cambia lo que se pinta, con su aviso
@@ -84,7 +84,7 @@ export default function MinijuegosDeTienda() {
 
   const alimentar = () => {
     if (kapiReclamado) {
-      addToast('¡Ya alimentaste a Kapi hoy! Vuelve mañana por tu moneda.', 'info');
+      addToast('¡Ya alimentaste a Walito hoy! Vuelve mañana por tu moneda.', 'info');
       return;
     }
     window.dispatchEvent(new CustomEvent('open-kapi-pet'));

@@ -109,7 +109,7 @@ const HECHAS = [
 /* El apartado de ADMIN.md donde se hará cada sección que todavía no está. */
 const APARTADOS = {
   pedidos: 'D3 · Pedidos y pagos', catalogo: 'D2 · Productos', resultados: 'D4 · Resultados', clientes: 'D5 · Clientes y fidelidad',
-  campanas: 'D6 · Campañas', diseno: 'D7 · Juegos y Kapi', ajustes: 'D8 · Ajustes',
+  campanas: 'D6 · Campañas', diseno: 'D7 · Juegos y Walito', ajustes: 'D8 · Ajustes',
 };
 
 // La copia real: categories, collections, tags, characters, productTypes y
@@ -156,8 +156,8 @@ const COLECCIONES_CORTAS = TIENDA.colecciones.map((x) => ({ id: x.id, nombre: x.
 const CRUDOS = Object.fromEntries(TIENDA.productos.map((p) => [p.id, p]));
 const coloresDemo = (id) => (CRUDOS[id]?.variants || []).map((v) => ({ nombre: v.name, foto: v.imageUrl }));
 const DESTINOS_CREAR = [
-  { valor: '/crear/polo-kapi', texto: 'Polo Kapi · Crear' },
-  { valor: '/combo/pareja-kapi', texto: 'Pareja Kapi · pack de Crear' },
+  { valor: '/crear/polo-kapi', texto: 'Polo Walito · Crear' },
+  { valor: '/combo/pareja-kapi', texto: 'Pareja Walito · pack de Crear' },
 ];
 const conMarcas = (lista) => lista.map((x) => ({ id: x.id, nombre: x.nombre, marcas: x.marcas || [] }));
 // Crear: las 4 prendas y los 2 packs de la copia (demo/crear.json).
@@ -176,7 +176,7 @@ const ESTADO_DEMO = {
   anulado: { label: 'Anulado', paid: false },
 };
 const PEDIDOS_RECEPCION = [
-  ['Valeria Quispe', '987654321', 'Av. Benavides 1520, dpto. 302', 'Miraflores', 'Lima', 'en_preparacion', [[1, 'Polo clásico personalizado', 'Negro', 'M', true], [1, 'Taza Kapi', '', '', false]], 89.9, 10],
+  ['Valeria Quispe', '987654321', 'Av. Benavides 1520, dpto. 302', 'Miraflores', 'Lima', 'en_preparacion', [[1, 'Polo clásico personalizado', 'Negro', 'M', true], [1, 'Taza Walito', '', '', false]], 89.9, 10],
   ['Diego Fernández', '956112233', 'Jr. Las Begonias 455', 'San Isidro', 'Lima', 'por_confirmar_pago', [[2, 'Casaca clásica', 'Azul', 'L', false]], 259.8, 12],
   ['Camila Rojas', '', 'Calle Los Pinos 230', 'Cayma', 'Arequipa', 'pago_confirmado', [[1, 'Cuadro personalizado', '', '', true]], 75, 18, { destinatario: 'Andrés Rojas', mensaje: 'Feliz aniversario, mi amor.', fecha: '2026-11-14' }],
   ['Luis Mendoza', '944556677', 'Mz. B Lt. 12, Urb. Santa Rosa', 'Trujillo', 'La Libertad', 'entregado', [[3, 'Polera clásica', 'Gris', 'S', false]], 297, 15],
@@ -384,20 +384,20 @@ const REFERIDOS_DEMO = [
   ['ANA2026', 'ineligible', { linkId: 'x', visitanteNombre: 'Ana Pérez', orderId: 'WALA-01760', orderTotal: 60 }],
 ].map(([referrerCode, status, extra], i) => referidoDesdeFirestore({ id: `ref-${i}`, referrerCode, status, createdAt: Date.now() - 86400000 * (i * 3 + 1), tipo: 'tienda', ...(extra || {}) }, estimarDemo));
 const CANJES_DEMO = [
-  { id: 'cj1', titulo: 'Pack de stickers Kapi', code: 'WALA-K7P2QX', status: 'active', creadoMs: Date.now() - 3600000 * 5, cliente: { nombre: 'Rosa Huamán', telefono: '987654321' } },
+  { id: 'cj1', titulo: 'Pack de stickers Walito', code: 'WALA-K7P2QX', status: 'active', creadoMs: Date.now() - 3600000 * 5, cliente: { nombre: 'Rosa Huamán', telefono: '987654321' } },
   { id: 'cj2', titulo: '15% de descuento', tipo: 'descuento', code: 'WALA-M3RT8Z', status: 'active', expiraEn: '2099-01-01', creadoMs: Date.now() - 86400000 * 2, cliente: { nombre: 'Kevin Ramos', telefono: '912345678' } },
   { id: 'cj3', titulo: 'Envío gratis en tu próximo pedido', tipo: 'envio_gratis', code: 'WALA-A9BC4D', status: 'used', orderId: 'WALA-01806', creadoMs: Date.now() - 86400000 * 6, cliente: { nombre: 'Diego Fernández' } },
-  { id: 'cj4', titulo: 'Pack de stickers Kapi', code: 'WALA-Z2XY7W', status: 'used', creadoMs: Date.now() - 86400000 * 9, entregadoMs: Date.now() - 86400000 * 8, entregadoPor: 'admin@wala.pe', cliente: { email: 'luis@correo.pe' } },
+  { id: 'cj4', titulo: 'Pack de stickers Walito', code: 'WALA-Z2XY7W', status: 'used', creadoMs: Date.now() - 86400000 * 9, entregadoMs: Date.now() - 86400000 * 8, entregadoPor: 'admin@wala.pe', cliente: { email: 'luis@correo.pe' } },
 ];
 const REFERENTES_DEMO = { ANA2026: { nombre: 'Ana Pérez', uid: 'a' }, LUIS77: { nombre: 'Luis Torres', uid: 'l' } };
 const VERIFICACIONES_DEMO = [
   { valor: 'visit_catalogo_recompensas', texto: 'Visitó el Catálogo de Recompensas' }, { valor: 'visit_mis_cupones', texto: 'Visitó Mis Cupones' },
-  { valor: 'visit_minijuegos', texto: 'Visitó Minijuegos' }, { valor: 'add_wishlist', texto: 'Agregó un favorito' }, { valor: 'bolitas_nivel', texto: 'Pasó un nivel de las Bolitas de Kapi' },
+  { valor: 'visit_minijuegos', texto: 'Visitó Minijuegos' }, { valor: 'add_wishlist', texto: 'Agregó un favorito' }, { valor: 'bolitas_nivel', texto: 'Pasó un nivel de las Bolitas de Walito' },
 ];
 const MISIONES_DEMO = [
   ['Visita el Catálogo de Recompensas', 'Mira qué puedes canjear con tus monedas.', 5, 'visit_catalogo_recompensas', true],
   ['Agrega un favorito', 'Guarda un producto en tu lista de deseos.', 10, 'add_wishlist', true],
-  ['Juega una partida', 'Pasa un nivel en las Bolitas de Kapi.', 15, 'bolitas_nivel', true],
+  ['Juega una partida', 'Pasa un nivel en las Bolitas de Walito.', 15, 'bolitas_nivel', true],
   ['Comparte Walá en tus redes', 'Sube una historia mencionándonos.', 20, '', false],
 ].map(([title, description, rewardPoints, actionKey, active], i) => misionDesdeFirestore({ id: `mis-${i}`, title, description, rewardPoints, actionKey, active, order: i }));
 const RETOS_DEMO = [
@@ -415,7 +415,7 @@ const enDias = (n, anio) => {
 const FECHAS_CRUDAS = [
   ['u1', 'valeria.quispe@gmail.com', 'r1', 'Lucía', 'Mamá', 'padres', 'Femenino', 'Cumpleaños', enDias(1, 1968), ['Plantas', 'Café'], 'S/ 50 a S/ 100'],
   ['u1', 'valeria.quispe@gmail.com', 'r2', 'Diego', 'Pareja', 'pareja', 'Masculino', 'Aniversario', enDias(5, 2019), ['Fútbol', 'Anime'], 'Hasta S/ 150'],
-  ['u2', 'luis.mendoza@hotmail.com', 'r3', 'Andrea', 'Pareja', 'pareja', 'Femenino', 'Cumpleaños', enDias(12, 1995), ['Kapi', 'Tazas'], ''],
+  ['u2', 'luis.mendoza@hotmail.com', 'r3', 'Andrea', 'Pareja', 'pareja', 'Femenino', 'Cumpleaños', enDias(12, 1995), ['Walito', 'Tazas'], ''],
   ['u3', 'carla.rojas@gmail.com', 'r4', 'Martín', 'Hijos', 'hijos', 'Masculino', 'Cumpleaños', enDias(0, 2016), ['Dinosaurios'], 'Hasta S/ 60'],
   ['u3', 'carla.rojas@gmail.com', 'r5', 'Rosa', 'Amigos', 'amigos', 'Femenino', 'Cumpleaños', enDias(22, 0), [], ''],
   ['u4', 'jorge.salas@outlook.com', 'r6', 'Papá Jorge', 'Padres', 'padres', 'Masculino', 'Cumpleaños', enDias(40, 1960), ['Polos'], ''],
@@ -477,7 +477,7 @@ const ENCUESTA_DEMO = {
     categories: [
       { id: 'futbol', name: 'Fútbol', tiendaCategorias: ['polos'], fields: [{ id: 'equipo', label: '¿De qué equipo es?', type: 'text', required: false, options: [] }] },
       { id: 'anime', name: 'Anime', tiendaCategorias: [], fields: [{ id: 'serie', label: '¿Qué anime le gusta?', type: 'text', required: false, options: [] }, { id: 'personaje', label: '¿Personaje favorito?', type: 'text', refina: true, required: false, options: [] }] },
-      { id: 'kapi', name: 'Kapi y tazas', fields: [] },
+      { id: 'kapi', name: 'Walito y tazas', fields: [] },
     ],
   },
   completionPanel: { title: '¡Listo!', message: 'Ya tienes tus 15 monedas.', buttonText: 'Ir a la tienda', askWhatsapp: true },
@@ -545,7 +545,7 @@ const PARTICIPANTES_DEMO = [
 const CAMPANAS_SUS_DEMO = [
   { id: 'sus-1', titulo: 'No hay sin suerte', slug: 'no-hay-sin-suerte', descripcion: 'Suscríbete y entra cada mes al sorteo de una casaca.', estado: 'activo', numGanadores: 1, heroImagenUrl: fotoTienda(8), colores: { primario: '#5b21b6', fondo: '#faf7ff', texto: '#1e1033', acento: '#7c3aed' }, premios: [{ nombre: 'Casaca One Piece', imagenUrl: fotoTienda(8) }], contadorSuscriptores: 86,
     planes: [{ id: 'p-m', nombre: 'Mensual', intervalo: 'mensual', precioCentimos: 1990, precioUsd: 5.5, beneficios: ['Envío gratis'] }, { id: 'p-t', nombre: 'Trimestral', intervalo: 'trimestral', precioCentimos: 4990, chancesPorCiclo: 4, beneficios: ['Envío gratis', '10 % en tu pedido'], destacado: true }] },
-  { id: 'sus-2', titulo: 'Club Kapi', slug: 'club-kapi', estado: 'borrador', numGanadores: 3, planes: [{ id: 'p-a', nombre: 'Anual', intervalo: 'anual', precioCentimos: 0 }] },
+  { id: 'sus-2', titulo: 'Club Walito', slug: 'club-kapi', estado: 'borrador', numGanadores: 3, planes: [{ id: 'p-a', nombre: 'Anual', intervalo: 'anual', precioCentimos: 0 }] },
 ].map(campanaSuscripcionDesde);
 const SUSCRIPTORES_DEMO = [
   ['Valeria Quispe', 'valeria.quispe@gmail.com', 'p-t', 'activo', 40, 8, 'culqi'],
@@ -555,7 +555,7 @@ const SUSCRIPTORES_DEMO = [
   ['Mafer Díaz', 'mafer.diaz@gmail.com', 'p-t', 'cancelado', 20, 4, 'culqi'],
 ].map(([nombre, correo, planId, estado, dias, chancesTotal, metodoPago], i) => suscriptorDesde({ id: `ss-${i}`, nombre, correo, planId, estado, vigenciaHasta: Date.now() + dias * 86400000, chancesTotal, metodoPago }, CAMPANAS_SUS_DEMO[0].planes));
 const BENEFICIOS_DEMO = [
-  { id: 'b1', marca: 'Kapi Café', titulo: 'En todas las bebidas', descuento: '20 %', categoria: 'Cafetería', ubicacion: 'Miraflores', orden: 0 },
+  { id: 'b1', marca: 'Walito Café', titulo: 'En todas las bebidas', descuento: '20 %', categoria: 'Cafetería', ubicacion: 'Miraflores', orden: 0 },
   { id: 'b2', marca: 'Daida Hogar', titulo: 'En cómodas', descuento: 'S/ 50', categoria: 'Muebles', orden: 1 },
 ].map(beneficioDesde);
 const GALERIA_DEMO = [
@@ -609,13 +609,13 @@ const PREMIOS_RULETA_DEMO = [
   { id: 'r2', nombre: '20 monedas', icono: '💰', tipo: 'monedas', monedas: 20, probabilidad: 20, stockUsado: 48 },
   { id: 'r3', nombre: '10 % en tu pedido', etiqueta: '10 %', icono: '🎟️', tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, probabilidad: 15, stockUsado: 9 },
   { id: 'r4', nombre: 'Envío gratis', icono: '🚚', tipo: 'envio_gratis', probabilidad: 10, dias: [5], stockUsado: 3 },
-  { id: 'r5', nombre: 'Peluche de Kapi', etiqueta: 'Peluche', icono: '🧸', tipo: 'manual', probabilidad: 2, stockTotal: 5, stockUsado: 5, color: '#e04f8f' },
+  { id: 'r5', nombre: 'Peluche de Walito', etiqueta: 'Peluche', icono: '🧸', tipo: 'manual', probabilidad: 2, stockTotal: 5, stockUsado: 5, color: '#e04f8f' },
   { id: 'r6', nombre: 'Sigue intentando', etiqueta: 'Otra vez', icono: '🍀', tipo: 'nada', probabilidad: 12 },
 ].map(normalizarPremio);
 const GANADOS_RULETA_DEMO = [
-  { id: 'g1', displayName: 'Valeria Quispe', email: 'valeria.quispe@gmail.com', texto: 'Peluche de Kapi', tipo: 'manual', weekStart: diaKey(7), entregado: false },
+  { id: 'g1', displayName: 'Valeria Quispe', email: 'valeria.quispe@gmail.com', texto: 'Peluche de Walito', tipo: 'manual', weekStart: diaKey(7), entregado: false },
   { id: 'g2', displayName: 'Luis Mendoza', email: 'luis.mendoza@hotmail.com', texto: '10 % en tu pedido', tipo: 'descuento', cuponCode: 'RUL-8KQ2', weekStart: diaKey(7) },
-  { id: 'g3', displayName: 'Carla Rojas', email: 'carla.rojas@gmail.com', texto: 'Peluche de Kapi', tipo: 'manual', weekStart: diaKey(14), entregado: true },
+  { id: 'g3', displayName: 'Carla Rojas', email: 'carla.rojas@gmail.com', texto: 'Peluche de Walito', tipo: 'manual', weekStart: diaKey(14), entregado: true },
   { id: 'g4', displayName: 'Jorge Salas', email: 'jorge.salas@outlook.com', texto: '20 monedas', tipo: 'monedas', weekStart: diaKey(14) },
 ].map(ganadoRuletaDesde);
 // D8a: el equipo (el primero es quien mira), lo que queda por pasar a WebP y las traducciones juntadas.
@@ -647,7 +647,7 @@ const MOVIMIENTOS_DEMO = [
 }));
 const IMAGENES_DEMO = { diseno: { imagenes: 4, documentos: 3, apariciones: 6 }, productos: { imagenes: 37, documentos: 21, apariciones: 37 } };
 const RECOMPENSAS_DEMO = [
-  { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
+  { title: 'Pack de stickers Walito', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
   { title: 'S/ 15 de descuento', cost: 450, tipo: 'descuento', descuentoMonto: 15, vigenciaDias: 15 },
   { title: 'Envío gratis', description: 'Para cualquier pedido en Lima.', cost: 200, tipo: 'envio_gratis', vigenciaDias: 30 },
@@ -704,7 +704,7 @@ const PESTANAS_RESULTADOS = [
 const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
 const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
 const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
-const BORRADORES = [{ id: 'borrador-1', nombre: 'Polo Kapi edición Navidad', fecha: 'Hace 2 días' }];
+const BORRADORES = [{ id: 'borrador-1', nombre: 'Polo Walito edición Navidad', fecha: 'Hace 2 días' }];
 // Lo que deduciría giftRecommender, a grandes rasgos (solo para la demo).
 const sugerenciaDemo = (p) => {
   const n = p.nombre.toLowerCase();
@@ -828,7 +828,7 @@ function PanelDePrueba() {
   // La papelera de ejemplo: uno que se borra pronto y uno que es pieza de un combo.
   const [papeleraDemo, setPapeleraDemo] = useState(() => [
     { id: 'demo-papelera-1', nombre: 'Polo clásico (temporada pasada)', imagen: '', que: 'Tienda', seFue: Date.now() - 28 * 864e5, seBorra: Date.now() + 2 * 864e5, dias: 2, visibleAntes: true, usadoPor: [], usos: [], necesita: [] },
-    { id: 'demo-papelera-2', nombre: 'Taza Kapi navideña', imagen: '', que: 'Tienda', seFue: Date.now() - 3 * 864e5, seBorra: Date.now() + 27 * 864e5, dias: 27, visibleAntes: false, usadoPor: ['Combo Navidad'], usos: [{ id: 'demo-combo-navidad', nombre: 'Combo Navidad', enPapelera: false }], necesita: [] },
+    { id: 'demo-papelera-2', nombre: 'Taza Walito navideña', imagen: '', que: 'Tienda', seFue: Date.now() - 3 * 864e5, seBorra: Date.now() + 27 * 864e5, dias: 27, visibleAntes: false, usadoPor: ['Combo Navidad'], usos: [{ id: 'demo-combo-navidad', nombre: 'Combo Navidad', enPapelera: false }], necesita: [] },
   ]);
   const [whatsapp] = useState(WHATSAPP);
   const [borradores, setBorradores] = useState(BORRADORES);
@@ -1371,7 +1371,7 @@ function PanelDePrueba() {
             datos={vacio || con('cargando') ? null : datosRes}
             cargando={con('cargando')}
             error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
-            nombrePagina={(path) => ({ '/': 'Inicio', '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito', '/cuenta/pedidos': 'Mis pedidos', '/minijuegos': 'Minijuegos', '/buscar': 'Buscar', '/checkout': 'Pagar' }[path] || (path.startsWith('/producto/') ? 'Producto · Polo clásico' : path.startsWith('/combo/') ? 'Combo · Pareja Kapi' : path))}
+            nombrePagina={(path) => ({ '/': 'Inicio', '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito', '/cuenta/pedidos': 'Mis pedidos', '/minijuegos': 'Minijuegos', '/buscar': 'Buscar', '/checkout': 'Pagar' }[path] || (path.startsWith('/producto/') ? 'Producto · Polo clásico' : path.startsWith('/combo/') ? 'Combo · Pareja Walito' : path))}
             rutaCorta={(path) => path}
             enlacesRotos={{ ...rotos, crearLandingDe: (slug) => `/admin/landing-pages?nueva=${encodeURIComponent(slug)}`, onRedirigir: async () => { await espera(600); fallar(); } }}
           />

@@ -6,7 +6,7 @@
 // =========================================================================
 
 /*
- * El motor de Las Bolitas de Kapi (/ball-sort): las reglas, los niveles, los
+ * El motor de Las Bolitas de Walito (/ball-sort): las reglas, los niveles, los
  * obstáculos y el solucionador. Puro (sin React): se prueba con
  * `node --test` (bolitasMotor.test.mjs).
  *
@@ -50,7 +50,7 @@ export const NIVELES_POR_MUNDO = 20;
 
 /** Los mundos, en orden; después del último vuelven a empezar con otro número. */
 export const MUNDOS = [
-  { nombre: 'El jardín de Kapi', fondo: ['#dcfce7', '#bbf7d0'] },
+  { nombre: 'El jardín de Walito', fondo: ['#dcfce7', '#bbf7d0'] },
   { nombre: 'Playa de colores', fondo: ['#e0f2fe', '#fef3c7'] },
   { nombre: 'Bosque de caramelo', fondo: ['#fce7f3', '#dcfce7'] },
   { nombre: 'Ciudad de neón', fondo: ['#ede9fe', '#cffafe'] },

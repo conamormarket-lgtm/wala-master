@@ -183,7 +183,7 @@ const MinijuegosViejo = () => {
     ? forzarRuleta === 'desbloqueada' || forzarRuleta === 'pendiente'
     : elegibilidad.isUnlocked;
   const hasLost = forzarRuleta ? forzarRuleta === 'perdida' : elegibilidad.hasLost;
-  // Quien nunca ha alimentado a Kapi no ha perdido la racha: no la ha empezado.
+  // Quien nunca ha alimentado a Walito no ha perdido la racha: no la ha empezado.
   const haEmpezado = forzarRuleta ? forzarRuleta !== 'bloqueada' : elegibilidad.haEmpezado;
   const hasSpun = forzarRuleta ? forzarRuleta === 'girada' : elegibilidad.hasSpun;
   const esPendienteAnterior = forzarRuleta
@@ -206,7 +206,7 @@ const MinijuegosViejo = () => {
 
   const handleOpenDailyReward = () => {
     if (hasClaimedToday) {
-      addToast('¡Ya alimentaste a Kapi hoy! Vuelve mañana por tu moneda.', 'info');
+      addToast('¡Ya alimentaste a Walito hoy! Vuelve mañana por tu moneda.', 'info');
       return;
     }
     window.dispatchEvent(new CustomEvent('open-kapi-pet'));
@@ -317,13 +317,13 @@ const MinijuegosViejo = () => {
           }
         />
 
-        {/* --- Alimenta a Kapi ------------------------------------------ */}
+        {/* --- Alimenta a Walito ------------------------------------------ */}
         <JuegoCard
           acento={styles.kapi}
           icono={<Bone size={26} />}
           banner="/assets/kapi/banners/alimenta.webp"
           espera={hasClaimedToday ? esperaDiaria : ''}
-          titulo="Alimenta a Kapi"
+          titulo="Alimenta a Walito"
           descripcion="Reclama tu moneda gratis cada día para ahorrar en tus compras."
           estado={
             hasClaimedToday ? (
@@ -371,7 +371,7 @@ const MinijuegosViejo = () => {
                   ? `Te falta${7 - ruletaDays === 1 ? '' : 'n'} ${7 - ruletaDays} ${7 - ruletaDays === 1 ? 'día' : 'días'} de racha`
                   // Recién llegado: prometerle "te faltan 7 días" a mitad de
                   // semana seria mentira, porque ya no caben siete.
-                  : 'Alimenta a Kapi cada día para desbloquearla')
+                  : 'Alimenta a Walito cada día para desbloquearla')
                 : '')
           }
           titulo="Ruleta Semanal"
@@ -458,13 +458,13 @@ const MinijuegosViejo = () => {
           }
         />
 
-        {/* --- Las Bolitas de Kapi -------------------------------------- */}
+        {/* --- Las Bolitas de Walito -------------------------------------- */}
         <JuegoCard
           acento={styles.bolitas}
           icono={<FlaskConical size={26} />}
           banner="/assets/kapi/banners/bolitas.webp"
           espera={hasClaimedBallSort ? esperaDiaria : ''}
-          titulo="Las Bolitas de Kapi"
+          titulo="Las Bolitas de Walito"
           descripcion="Ordena los colores en los tubos para ganar 2 monedas al día."
           estado={
             hasClaimedBallSort ? (

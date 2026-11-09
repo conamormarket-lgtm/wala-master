@@ -19,11 +19,11 @@ import Moneda from '../Moneda';
 
 // Marca del navegador (compatibilidad); la que manda es userProfile.kapiTutorialVisto.
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
-// Dónde el tutorial de Kapi puede abrirse SOLO: momentos tranquilos (inicio,
+// Dónde el tutorial de Walito puede abrirse SOLO: momentos tranquilos (inicio,
 // Mi cuenta, Minijuegos). Antes se abría en la primera página tras registrarse,
 // fuera cual fuera: encima de un producto, del carrito o del checkout, justo
 // cuando la persona iba a comprar. En el resto espera; si la persona toca a
-// Kapi por su cuenta, el recorrido empieza ahí mismo.
+// Walito por su cuenta, el recorrido empieza ahí mismo.
 const esMomentoTranquilo = (ruta) =>
   ruta === '/' || ruta.startsWith('/cuenta') || ruta.startsWith('/minijuegos');
 
@@ -31,7 +31,7 @@ const KapiPet = () => {
   const { user, userProfile, feedKapi, calentarKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
   const { addToast } = useGlobalToast();
   // En landing pages el header se oculta (LayoutContext). Ahí NO mostramos ni
-  // auto-abrimos a Kapi: el login anónimo del checkout dispararía el modal encima
+  // auto-abrimos a Walito: el login anónimo del checkout dispararía el modal encima
   // del pago y espantaría la venta.
   const layout = useLayoutContext();
   const onLandingPage = layout && layout.isHeaderVisible === false;
@@ -47,13 +47,13 @@ const KapiPet = () => {
   // Los juegos diarios se reabren a medianoche de Lima.
   const faltaComida = textoEspera(msHastaMananaLima());
 
-  // Lo que se le dice al usuario según cómo esté Kapi. Antes el subtítulo era
-  // siempre el mismo ("Alimenta a Kapi todos los días..."), así que la carita
+  // Lo que se le dice al usuario según cómo esté Walito. Antes el subtítulo era
+  // siempre el mismo ("Alimenta a Walito todos los días..."), así que la carita
   // cambiaba y el texto no la acompañaba.
   const TEXTO_ESTADO = {
-    happy: 'Kapi está feliz. Vuelve mañana por su comida.',
-    hungry: 'Kapi tiene hambre. Dale de comer y te llevas una moneda.',
-    sad: 'Kapi te echa de menos. Llevas días sin darle de comer.',
+    happy: 'Walito está feliz. Vuelve mañana por su comida.',
+    hungry: 'Walito tiene hambre. Dale de comer y te llevas una moneda.',
+    sad: 'Walito te echa de menos. Llevas días sin darle de comer.',
   };
 
   // Cada archivo se llama como la cara que tiene. Estuvieron intercambiados: el
@@ -82,7 +82,7 @@ const KapiPet = () => {
     const handleChallengeCompleted = () => {
       // Usar alerta o animación CSS sencilla sin librerías de terceros
       console.log('¡Reto completado!');
-      setIsOpen(true); // Abre Kapi para mostrar la celebración
+      setIsOpen(true); // Abre Walito para mostrar la celebración
     };
 
     window.addEventListener('open-kapi-pet', handleOpenEvent);
@@ -93,7 +93,7 @@ const KapiPet = () => {
     };
   }, []);
 
-  // Hook para reto de visita diaria (se dispara 1 vez al cargar Kapi si el reto está activo)
+  // Hook para reto de visita diaria (se dispara 1 vez al cargar Walito si el reto está activo)
   useEffect(() => {
     if (activeWeeklyChallenge && activeWeeklyChallenge.actionType === 'daily_visit' && userProfile) {
       // Nota: Idealmente validaríamos que no se haya disparado hoy. 
@@ -108,7 +108,7 @@ const KapiPet = () => {
     }
   }, [activeWeeklyChallenge, userProfile]);
 
-  // ── Tutorial de Kapi: se muestra UNA vez por CUENTA ────────────────────
+  // ── Tutorial de Walito: se muestra UNA vez por CUENTA ────────────────────
   // Antes solo se recordaba en el navegador (localStorage): volvía a salir en
   // otro dispositivo, en la app, en incógnito, al borrar datos o al entrar por
   // wala.pe en vez de www.wala.pe. Ahora se guarda también en el perfil
@@ -132,7 +132,7 @@ const KapiPet = () => {
 
   // Hook para disparar Onboarding Tutorial a usuarios nuevos
   useEffect(() => {
-    if (onLandingPage) return; // no auto-abrir Kapi en landings/checkout
+    if (onLandingPage) return; // no auto-abrir Walito en landings/checkout
     if (!enMomentoTranquilo) return;
     if (!userProfile) return;
     let enNavegador = false;
@@ -166,7 +166,7 @@ const KapiPet = () => {
       if (!tutorialVisto()) {
         espera = setTimeout(async () => {
           // driver.js (27 KB + su CSS) solo hace falta la PRIMERA vez que
-          // alguien abre a Kapi, para el tour. KapiPet esta montado en todas
+          // alguien abre a Walito, para el tour. KapiPet esta montado en todas
           // las paginas, asi que importarlo arriba metia la libreria en el
           // bundle de arranque de todo el mundo, tutorial visto o no.
           const [{ driver }] = await Promise.all([
@@ -182,8 +182,8 @@ const KapiPet = () => {
             prevBtnText: 'Atrás',
             doneBtnText: '¡Entendido!',
             steps: [
-              { element: '#kapi-pet-container', popover: { title: 'Conoce a Kapi', description: '¡Esta es tu mascota virtual! Crecerá contigo mientras usas la app.', side: "top" } },
-              { element: '#kapi-stats', popover: { title: 'Felicidad de Kapi', description: 'Kapi necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: "bottom" } },
+              { element: '#kapi-pet-container', popover: { title: 'Conoce a Walito', description: '¡Esta es tu mascota virtual! Crecerá contigo mientras usas la app.', side: "top" } },
+              { element: '#kapi-stats', popover: { title: 'Felicidad de Walito', description: 'Walito necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: "bottom" } },
               { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con monedas que puedes canjear por recompensas reales.', side: "top" } }
             ],
             onDestroyed: () => {
@@ -230,8 +230,8 @@ const KapiPet = () => {
     return () => window.removeEventListener('keydown', alPulsar);
   }, [isOpen, isFeeding]);
 
-  if (onLandingPage || enEstudioCrear) return null; // Kapi no aparece en landings (protege la conversión del checkout)
-  // ?sesion=activa pinta a Kapi sin cuenta, para poder repasar el modal sin una
+  if (onLandingPage || enEstudioCrear) return null; // Walito no aparece en landings (protege la conversión del checkout)
+  // ?sesion=activa pinta a Walito sin cuenta, para poder repasar el modal sin una
   // sesión delante. Inerte en producción, como todo modoDiseno: no concede nada,
   // el servidor sigue decidiendo si se puede alimentar.
   // Con ?kapi=feliz se simula ademas que ya comio hoy, que es el unico estado
@@ -272,7 +272,7 @@ const KapiPet = () => {
   const handleFeed = async () => {
     if (hasClaimedToday || isFeeding) return;
     setIsFeeding(true);
-    // Se mide ya: al acreditarse, el botón se cambia por "¡Kapi está lleno!" y
+    // Se mide ya: al acreditarse, el botón se cambia por "¡Walito está lleno!" y
     // las monedas no tendrían de dónde salir.
     const rectBoton = document.getElementById('kapi-feed-btn')?.getBoundingClientRect();
 
@@ -288,8 +288,8 @@ const KapiPet = () => {
     setIsFeeding(false);
     if (res?.error) {
       // callFn devuelve el error como string ya legible ("Ya alimentaste a
-      // Kapi hoy."), no como objeto Error.
-      addToast(res.error || 'No pudimos alimentar a Kapi. Inténtalo de nuevo.', 'error');
+      // Walito hoy."), no como objeto Error.
+      addToast(res.error || 'No pudimos alimentar a Walito. Inténtalo de nuevo.', 'error');
       return;
     }
     // Monedas volando al contador de la cabecera: las que acreditó el
@@ -321,7 +321,7 @@ const KapiPet = () => {
 
   const handleToggle = () => setIsOpen(!isOpen);
 
-  // Mientras Kapi come no se cierra. La animación de comer, el toast de error y
+  // Mientras Walito come no se cierra. La animación de comer, el toast de error y
   // las monedas que vuelan al header salen de DENTRO del modal: si desaparece a
   // mitad, el usuario pulsa, no ve nada y se queda sin saber si se le acreditó.
   // Son 1,5 s de animación más lo que tarde el servidor.
@@ -345,11 +345,11 @@ const KapiPet = () => {
           bajo la capa). Antes se desmontaba al abrir, y la burbuja rosada de
           paquetes caia 76px para ocupar su hueco y volvia a subir al cerrar:
           justo el salto que se veia como si desapareciera. */}
-      <div className={styles.fab} onClick={handleToggle} title="¡Tu Kapi Pet!">
+      <div className={styles.fab} onClick={handleToggle} title="¡Tu Walito Pet!">
           <div className={styles.fabIcon}>
             <img 
               src={IMAGES[kapiState]} 
-              alt="Kapi Pet" 
+              alt="Walito Pet" 
               style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
             />
           </div>
@@ -384,7 +384,7 @@ const KapiPet = () => {
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label="Tu mascota Kapi"
+            aria-label="Tu mascota Walito"
           >
             {/* Se deshabilita mientras come, en vez de dejar un clic muerto:
                 así se ve por qué no cierra. */}
@@ -397,7 +397,7 @@ const KapiPet = () => {
               ✕
             </button>
             
-            <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
+            <h2 className={styles.title}><T>Tu Mascota Walito</T></h2>
             <p className={styles.subtitle}>
               <T>{TEXTO_ESTADO[kapiState]}</T>
             </p>
@@ -406,13 +406,13 @@ const KapiPet = () => {
               <div className={`${styles.petImageWrapper} ${isFeeding ? styles.eating : ''}`}>
                 <img 
                   src={isFeeding ? IMAGES.happy : IMAGES[kapiState]} 
-                  alt={`Kapi ${kapiState}`} 
+                  alt={`Walito ${kapiState}`} 
                   className={styles.petImage} 
                 />
               </div>
 
               {/* Estado y recompensa, en una fila propia debajo del retrato.
-                  Montada sobre el círculo se comía la carita de Kapi. */}
+                  Montada sobre el círculo se comía la carita de Walito. */}
               <div className={styles.petChips}>
                 {hasClaimedToday
                   ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
@@ -485,7 +485,7 @@ const KapiPet = () => {
               {hasClaimedToday ? (
                 <div>
                   <span className={styles.claimedText}>
-                    <T>¡Kapi está lleno por hoy!</T>
+                    <T>¡Walito está lleno por hoy!</T>
                   </span>
                   {/* Cuánto falta de verdad, igual que en las tarjetas del hub:
                       "vuelve mañana" no dice nada a las once de la noche. */}
@@ -502,7 +502,7 @@ const KapiPet = () => {
                   onClick={handleFeed}
                   disabled={isFeeding}
                 >
-                  {isFeeding ? 'Alimentando...' : '🍖 Alimentar a Kapi'}
+                  {isFeeding ? 'Alimentando...' : '🍖 Alimentar a Walito'}
                 </button>
               )}
             </div>

@@ -33,7 +33,7 @@ import { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde } from 
  * (useTarjetasCreaciones).
  * Diferente: el producto de cada creación se lee con la misma caché que la
  * ficha (antes, otra forma que dejaba tarjetas "Ya no disponible" después de
- * pasar por Mis creaciones); sin el Kapi flotante (está en la portada).
+ * pasar por Mis creaciones); sin el Walito flotante (está en la portada).
  * Lo de antes: pages/PersonalizarViejo.jsx (interruptor crearViejo).
  */
 

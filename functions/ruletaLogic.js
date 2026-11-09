@@ -1,5 +1,5 @@
 // =========================================================================
-// La Ruleta de Kapi — modelo de premios y disponibilidad (lógica pura)
+// La Ruleta de Walito — modelo de premios y disponibilidad (lógica pura)
 // -------------------------------------------------------------------------
 // Este módulo NO toca Firestore: son funciones puras que deciden qué premio
 // puede salir hoy y qué forma tiene un premio. Vive aquí (y espejado en
@@ -200,7 +200,7 @@ const CONFIG_POR_DEFECTO = {
     imagenCentro: "",
   },
   reglas: {
-    // dias7   -> 7 días alimentando a Kapi, cuando sea (cada persona lleva su
+    // dias7   -> 7 días alimentando a Walito, cuando sea (cada persona lleva su
     //            cuenta; los días no se pierden al cambiar de semana).
     // racha7  -> los 7 días de una misma semana, de lunes a domingo (la de antes).
     // siempre -> un giro por semana sin condición (para campañas).
@@ -216,7 +216,7 @@ const CONFIG_POR_DEFECTO = {
 
 const MODOS_DESBLOQUEO = ["dias7", "racha7", "siempre"];
 
-// ── 7 días con Kapi, cuando sea (modo dias7) ──
+// ── 7 días con Walito, cuando sea (modo dias7) ──
 // La cuenta vive en weeklyClaimsData.ruleta ({ dias, listo, listoDesde }): ese
 // campo solo lo escribe el servidor (las reglas lo protegen), así que nadie se
 // puede marcar el giro desde el navegador.

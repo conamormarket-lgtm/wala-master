@@ -720,7 +720,7 @@ const AdminRuletaPage = () => {
                 value={config.reglas.modoDesbloqueo}
                 onChange={(e) => guardarConfig({ ...config, reglas: { ...config.reglas, modoDesbloqueo: e.target.value } })}
               >
-                <option value="racha7">Completando los 7 días de racha con Kapi</option>
+                <option value="racha7">Completando los 7 días de racha con Walito</option>
                 <option value="siempre">Un giro por semana, sin condiciones (campaña)</option>
               </select>
               {!MODOS_DESBLOQUEO.includes(config.reglas.modoDesbloqueo) && (

@@ -353,7 +353,7 @@ export function PaginaEncuesta({
       <>
         <div className={s.portada}>
           <img className={s.kapi} src={CARAS_KAPI.feliz} alt="" width="132" height="132" />
-          {/* Sin sello: Kapi ya pone la cara. */}
+          {/* Sin sello: Walito ya pone la cara. */}
           <CabezaPaso titulo={portada.titulo} subtitulo={portada.subtitulo} trazo />
         </div>
         <div className={s.premio}>

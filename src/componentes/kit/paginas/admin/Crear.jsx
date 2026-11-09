@@ -340,7 +340,7 @@ export function PaginaPacks({
         textoGuardar={editando?.id ? 'Guardar cambios' : 'Crear pack'}
       >
         <GrupoCampos titulo="El pack">
-          <Campo etiqueta="Nombre" placeholder="Ej. Pareja Kapi" value={datos.nombre} error={errores.nombre} maxLength={80} onChange={(e) => cambiar('nombre', e.target.value)} />
+          <Campo etiqueta="Nombre" placeholder="Ej. Pareja Walito" value={datos.nombre} error={errores.nombre} maxLength={80} onChange={(e) => cambiar('nombre', e.target.value)} />
           <Campo etiqueta="Descripción" multilinea={2} value={datos.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
           {/* Como en la ficha de un producto: los logos (tocar la elegida la quita). */}
           <ElegirMarca marcas={marcas} valor={datos.marcaId} onCambiar={(v) => cambiar('marcaId', v)} ayuda="Sin marca, el pack no sale en ninguna página de marca." />

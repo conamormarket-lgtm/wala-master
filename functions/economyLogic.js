@@ -30,7 +30,7 @@ function diasEntreFechasLima(desde, hasta) {
   return Math.round((b - a) / (24 * 60 * 60 * 1000));
 }
 
-// Felicidad de Kapi al dia de hoy: baja 10 por cada dia sin comer (sin contar el
+// Felicidad de Walito al dia de hoy: baja 10 por cada dia sin comer (sin contar el
 // primero) y nunca baja de 0. Antes solo subia, asi que se quedaba clavada en 100
 // y contradecia al propio tutorial ("si olvidas alimentarlo, su barra bajara").
 const KAPI_HAPPINESS_STEP = 10;

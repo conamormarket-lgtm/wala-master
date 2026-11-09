@@ -487,10 +487,10 @@ export function grillaDesdeConfiguracion(layout = {}) {
 // juegosDelArcade vive en adaptadoresArcade.js: solo la usa la Zona Arcade
 // y aquí habría ido al archivo principal de la tienda.
 
-/* ── Kapi, la mascota ───────────────────────────────────── */
+/* ── Walito, la mascota ───────────────────────────────────── */
 
 /**
- * Cómo está Kapi hoy, desde el perfil (misma regla que KapiPet y que
+ * Cómo está Walito hoy, desde el perfil (misma regla que KapiPet y que
  * feedKapiSecure): props de KapiFlotante y VentanaKapi.
  *  - alimentado: lastKapiClaimDate es hoy (hora de Lima)
  *  - felicidad: la guardada con el mismo decaimiento que aplicará el servidor
@@ -527,7 +527,7 @@ export function retoDesdePerfil(reto, perfil = {}) {
   return {
     titulo: reto.title,
     descripcion: reto.description,
-    recompensa: reto.rewardType === 'main' ? `${reto.rewardCoins} monedas` : 'Doble monedas al alimentar a Kapi',
+    recompensa: reto.rewardType === 'main' ? `${reto.rewardCoins} monedas` : 'Doble monedas al alimentar a Walito',
     progreso: esEste ? Number(avance.progress) || 0 : 0,
     meta: Number(reto.goal) || 1,
     completado: (esEste && Boolean(avance.completed)) || Boolean(perfil?.challengeEvidencesApproved?.includes(reto.challengeId)),

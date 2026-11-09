@@ -136,7 +136,7 @@ body.mobile-preview-active .App > footer {
   margin-top: 0 !important;
 }
 
-/* ── Pila de Botones Flotantes (WhatsApp, Kapi, paquetes) ──────────────────
+/* ── Pila de Botones Flotantes (WhatsApp, Walito, paquetes) ──────────────────
    Los cuatro flotantes de la app comparten linea de base y separacion. Las
    medidas viven en estas variables para no repetirlas en cada componente: el
    boton de encuesta (que va suelto a la izquierda) usa las mismas.

@@ -17,7 +17,7 @@ import { PaginaBolitas, unirProgresos } from '../../componentes/kit/paginas/Boli
 import entregarMonedas from './entregarMonedas';
 
 /*
- * Las Bolitas de Kapi (/ball-sort) con el kit (paso 6, JUEGOS.md). La misma
+ * Las Bolitas de Walito (/ball-sort) con el kit (paso 6, JUEGOS.md). La misma
  * lógica que la página de antes:
  *  - el premio (+2) lo da el servidor una vez al día de Lima; "ya cobró hoy"
  *    sale del perfil (lastBallSortReward) o del modo diseño
@@ -51,7 +51,7 @@ import entregarMonedas from './entregarMonedas';
 
 const CLAVE_AYUDA = 'wala_bolitas_ayuda_vista';
 const CLAVE_PROGRESO = 'wala_bolitas_progreso';
-const JUEGO = { gameId: 'ball-sort', gameName: 'Las Bolitas de Kapi' };
+const JUEGO = { gameId: 'ball-sort', gameName: 'Las Bolitas de Walito' };
 const ESPERA_NUBE_MS = 3000; // si la cuenta tarda más, se juega con lo del aparato
 const GUARDAR_NUBE_MS = 1500; // se junta lo que cambia seguido en una sola escritura
 

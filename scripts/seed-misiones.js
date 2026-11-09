@@ -128,12 +128,12 @@ const MISIONES = [
     type: "daily",
     actionKey: "visit_minijuegos",
   },
-  // Las Bolitas de Kapi: el servidor marca la acción solo con una partida
+  // Las Bolitas de Walito: el servidor marca la acción solo con una partida
   // comprobada (registrarPartidaBolitasSecure). Apagadas: pagan monedas de
   // verdad, se activan a mano en /admin/misiones.
   {
     id: "mision-bolitas-nivel",
-    title: "Pasa un nivel de Las Bolitas de Kapi",
+    title: "Pasa un nivel de Las Bolitas de Walito",
     description: "Ordena todos los tubos de cualquier nivel.",
     rewardPoints: 2,
     order: 5,
@@ -151,12 +151,12 @@ const MISIONES = [
     type: "daily",
     actionKey: "bolitas_reto",
   },
-  // La Pichanga de Kapi: igual, las marca registrarPartidaPichangaSecure. En
+  // La Pichanga de Walito: igual, las marca registrarPartidaPichangaSecure. En
   // producción se activaron el 2026-11-09 (+2 y +3, como las bolitas); aquí
   // quedan apagadas para no pisar lo que haya en /admin/misiones.
   {
     id: "mision-pichanga-nivel",
-    title: "Pasa un nivel de La Pichanga de Kapi",
+    title: "Pasa un nivel de La Pichanga de Walito",
     description: "Mete gol en cualquier nivel del fútbol de chapas.",
     rewardPoints: 2,
     order: 7,

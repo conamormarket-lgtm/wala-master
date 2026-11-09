@@ -1,5 +1,5 @@
 // =========================================================================
-// La Ruleta de Kapi — modelo de premios y disponibilidad (ESPEJO DE CLIENTE)
+// La Ruleta de Walito — modelo de premios y disponibilidad (ESPEJO DE CLIENTE)
 // -------------------------------------------------------------------------
 // GENERADO por scripts/generar-espejo-ruleta.js desde functions/ruletaLogic.js.
 // No lo edites a mano: edita el original y vuelve a ejecutar el script. El
@@ -196,7 +196,7 @@ export const CONFIG_POR_DEFECTO = {
     imagenCentro: "",
   },
   reglas: {
-    // dias7   -> 7 días alimentando a Kapi, cuando sea (cada persona lleva su
+    // dias7   -> 7 días alimentando a Walito, cuando sea (cada persona lleva su
     //            cuenta; los días no se pierden al cambiar de semana).
     // racha7  -> los 7 días de una misma semana, de lunes a domingo (la de antes).
     // siempre -> un giro por semana sin condición (para campañas).

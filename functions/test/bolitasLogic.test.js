@@ -1,5 +1,5 @@
 /**
- * Tests UNITARIOS de functions/bolitasLogic.js (Las Bolitas de Kapi).
+ * Tests UNITARIOS de functions/bolitasLogic.js (Las Bolitas de Walito).
  * Usa SOLO 'assert' de Node (sin firebase-admin).
  * Ejecutar:  node functions/test/bolitasLogic.test.js
  *

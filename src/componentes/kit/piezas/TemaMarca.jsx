@@ -4,7 +4,7 @@ import s from './TemaMarca.module.css';
 /*
  * El color de una marca en su página, sin dejar de ser Walá: va SOLO en su
  * portada y en el trazo bajo los títulos. Los botones, las burbujas de
- * categorías, los filtros, los sellos de los productos, la cabecera y Kapi
+ * categorías, los filtros, los sellos de los productos, la cabecera y Walito
  * siguen violeta, como en toda la tienda (mezclar los dos colores en lo que
  * se toca se veía raro). Cada color trae su versión de noche: un negro
  * (Yoryo) se volvería invisible sobre la noche violeta, así que ahí manda el

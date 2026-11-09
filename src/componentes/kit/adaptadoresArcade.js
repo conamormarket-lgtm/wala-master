@@ -33,7 +33,7 @@ const banner = (b) => (typeof b === 'string' ? { imagen: b } : { imagen: b?.src,
  *    dias } (getRuletaEligibility)
  *  - hasta: { manana, lunes } fechas ISO de la próxima medianoche de Lima y del
  *    lunes (para "Disponible de nuevo en…")
- *  - onAlimentar: abre la ventana de Kapi (la tienda dispara 'open-kapi-pet')
+ *  - onAlimentar: abre la ventana de Walito (la tienda dispara 'open-kapi-pet')
  */
 export function juegosDelArcade({
   sesion = false, cargando = false, palabraHecha: palabra = false, kapiReclamado: kapi = false, kapiDoble = false,
@@ -75,7 +75,7 @@ export function juegosDelArcade({
     {
       id: 'kapi',
       ...banner(banners.kapi),
-      titulo: 'Alimenta a Kapi',
+      titulo: 'Alimenta a Walito',
       descripcion: 'Reclama tu moneda gratis cada día para ahorrar en tus compras.',
       estado: kapiReclamado ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Disponible hoy', tono: 'aviso', punto: true },
       recompensa: { texto: kapiDoble ? '+2 monedas hoy' : '+1 moneda al día' },
@@ -88,9 +88,9 @@ export function juegosDelArcade({
     {
       id: 'ruleta',
       ...banner(banners.ruleta),
-      titulo: 'La Ruleta de Kapi',
+      titulo: 'La Ruleta de Walito',
       descripcion: siempre ? 'Un giro gratis cada semana para ganar monedas y cupones.'
-        : porDias ? 'Alimenta a Kapi 7 días, cuando quieras, y gira la ruleta para ganar premios.' : 'Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles.',
+        : porDias ? 'Alimenta a Walito 7 días, cuando quieras, y gira la ruleta para ganar premios.' : 'Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles.',
       estado: desbloqueada ? { texto: 'Giro disponible', tono: 'violeta', punto: true }
         : girada ? { texto: 'Girada', tono: 'exito' }
           : perdida ? { texto: 'Semana perdida', tono: 'peligro' }
@@ -110,8 +110,8 @@ export function juegosDelArcade({
       // Bloqueada por la racha, lo que falta no es tiempo sino días.
       espera: girada ? (hasta.lunes ? { hasta: hasta.lunes, texto: 'Vuelve el lunes, en' } : undefined)
         : !desbloqueada && !perdida && !siempre && dias < 7
-          ? (porDias ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} con Kapi`
-            : empezada ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} de racha` : 'Alimenta a Kapi cada día para desbloquearla')
+          ? (porDias ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} con Walito`
+            : empezada ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} de racha` : 'Alimenta a Walito cada día para desbloquearla')
           : undefined,
       atenuada: !desbloqueada,
       bloqueada: !desbloqueada,
@@ -122,7 +122,7 @@ export function juegosDelArcade({
     {
       id: 'bolitas',
       ...banner(banners.bolitas),
-      titulo: 'Las Bolitas de Kapi',
+      titulo: 'Las Bolitas de Walito',
       descripcion: 'Ordena los colores en los tubos para ganar 2 monedas al día.',
       estado: bolitasHechas ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Disponible hoy', tono: 'violeta', punto: true },
       recompensa: { texto: '+2 monedas al día' },
@@ -137,8 +137,8 @@ export function juegosDelArcade({
     {
       id: 'pichanga',
       ...banner(banners.pichanga),
-      titulo: 'La Pichanga de Kapi',
-      descripcion: 'Fútbol de chapas: juega con el equipo de Kapi, vence a Michi y gana 2 monedas al día.',
+      titulo: 'La Pichanga de Walito',
+      descripcion: 'Fútbol de chapas: juega con el equipo de Walito, vence a Happy y gana 2 monedas al día.',
       estado: pichangaHecha ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Nuevo', tono: 'violeta', punto: true },
       recompensa: { texto: '+2 monedas al día' },
       atenuada: pichangaHecha,

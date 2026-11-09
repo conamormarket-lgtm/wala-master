@@ -430,7 +430,7 @@ export function Testimonios({ ajustes = {} }) {
 /* ── Preguntas frecuentes (faq_accordion) ───────────────── */
 /**
  * Preguntas en acordeón y, al lado (o debajo en el celular), la tarjeta de
- * ayuda con Kapi.
+ * ayuda con Walito.
  *  - contacto: URL para "Escríbenos" (en la tienda, el WhatsApp de la zona;
  *    llega por propsPara). Sin ella la tarjeta no lleva botón.
  */
@@ -448,7 +448,7 @@ export function PreguntasFrecuentes({ ajustes = {}, contacto, sinKapi = false })
       </div>
       <div className={s.faqAyuda}>
         <TarjetaAyuda
-          texto="Kapi y el equipo te responden rapidito."
+          texto="Walito y el equipo te responden rapidito."
           accion={contacto ? { texto: 'Escríbenos', url: contacto } : undefined}
           imagen={sinKapi ? null : undefined}
         />

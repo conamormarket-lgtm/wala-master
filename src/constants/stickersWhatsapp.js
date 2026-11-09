@@ -12,13 +12,13 @@
 export const PACKS_STICKERS = [
   {
     id: 'kapi',
-    nombre: 'Kapi de Walá',
+    nombre: 'Walito de Walá',
     cantidad: 13,
     muestras: ['kapi_02.webp', 'kapi_03.webp', 'kapi_04.webp', 'kapi_12.webp'],
   },
   {
     id: 'adicto',
-    nombre: 'Adicto, el gatito de Kapi',
+    nombre: 'Happy, el gatito de Walito',
     cantidad: 13,
     muestras: ['adicto_02.webp', 'adicto_05.webp', 'adicto_10.webp', 'adicto_12.webp'],
   },

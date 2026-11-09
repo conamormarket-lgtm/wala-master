@@ -11,17 +11,17 @@ import { CARAS_KAPI } from './Flotantes';
 import { useTexto } from '../Traduccion';
 import s from './VentanaKapi.module.css';
 
-/* Lo que se le dice al cliente según cómo esté Kapi (acompaña a la carita). */
+/* Lo que se le dice al cliente según cómo esté Walito (acompaña a la carita). */
 const FRASES = {
-  feliz: 'Kapi está feliz. Vuelve mañana por su comida.',
-  hambre: 'Kapi tiene hambre. Dale de comer y te llevas una moneda.',
-  triste: 'Kapi te echa de menos. Llevas días sin darle de comer.',
+  feliz: 'Walito está feliz. Vuelve mañana por su comida.',
+  hambre: 'Walito tiene hambre. Dale de comer y te llevas una moneda.',
+  triste: 'Walito te echa de menos. Llevas días sin darle de comer.',
 };
 
 /**
- * Ventana de Kapi, la mascota: su ánimo, la felicidad, la moneda del día y el
+ * Ventana de Walito, la mascota: su ánimo, la felicidad, la moneda del día y el
  * reto de la semana. Hoja inferior en el celular y ventana centrada en
- * escritorio (HojaInferior). Mientras Kapi come no se cierra: el resultado
+ * escritorio (HojaInferior). Mientras Walito come no se cierra: el resultado
  * (monedas volando, error) sale de aquí.
  *
  *  - abierta, onCerrar, contenida (dentro de un marco, como la demo)
@@ -41,11 +41,11 @@ export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'fe
   // El título (HojaInferior), el botón (Boton) y la felicidad (BarraProgreso) se traducen allá.
   const t = {
     frase: useTexto(FRASES[estado] || FRASES.feliz),
-    lleno: useTexto('¡Kapi está lleno por hoy!'),
+    lleno: useTexto('¡Walito está lleno por hoy!'),
     hecho: useTexto('Hecho hoy'),
     disponible: useTexto('Disponible hoy'),
     monedas: useTexto(recompensa === 2 ? '+2 monedas' : '+1 moneda'),
-    retrato: useTexto(`Kapi ${comiendo ? 'comiendo' : estado}`),
+    retrato: useTexto(`Walito ${comiendo ? 'comiendo' : estado}`),
   };
 
   const alimentar = async (e) => {
@@ -64,16 +64,16 @@ export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'fe
     </div>
   ) : (
     <Boton id="kapi-feed-btn" bloque tamano="lg" cargando={comiendo} icono={<Bone aria-hidden="true" />} onClick={alimentar}>
-      {comiendo ? 'Alimentando…' : 'Alimentar a Kapi'}
+      {comiendo ? 'Alimentando…' : 'Alimentar a Walito'}
     </Boton>
   );
 
   return (
-    <HojaInferior abierta={abierta} onCerrar={cerrar} titulo="Tu mascota Kapi" pie={pie} contenida={contenida}>
+    <HojaInferior abierta={abierta} onCerrar={cerrar} titulo="Tu mascota Walito" pie={pie} contenida={contenida}>
       <div className={s.ventana}>
         <p className={s.frase}>{t.frase}</p>
 
-        {/* Kapi suelto, sin círculo, con su sombra en el piso. */}
+        {/* Walito suelto, sin círculo, con su sombra en el piso. */}
         <div className={s.retrato} id="kapi-pet-container">
           <Destello className={s.destello1} />
           <Destello className={s.destello2} />

@@ -26,7 +26,7 @@ function coinsOf(input) {
   return input.coins;
 }
 // "Es un regalo" (regalo del checkout web → giftDetails del pedido, que lee obtenerRegaloSecure en /regalo/:orderId):
-// para quién, un mensaje de hasta 200 letras y uno de los stickers de Kapi. null si no se mandó.
+// para quién, un mensaje de hasta 200 letras y uno de los stickers de Walito. null si no se mandó.
 const GIFT_STICKERS = ['kapi-love', 'kapi-party', 'kapi-smile'];
 function giftOf(input) {
   if (input?.gift == null) return null;
@@ -36,7 +36,7 @@ function giftOf(input) {
   const recipientName = text(gift.recipientName); const message = typeof gift.message === 'string' ? gift.message.trim() : '';
   if (!recipientName || recipientName.length > 60) fail('Escribe para quién es el regalo.');
   if (!message || message.length > 200) fail('Escribe un mensaje de hasta 200 letras para el regalo.');
-  if (!GIFT_STICKERS.includes(gift.sticker)) fail('Elige cómo te acompaña Kapi en el regalo.');
+  if (!GIFT_STICKERS.includes(gift.sticker)) fail('Elige cómo te acompaña Walito en el regalo.');
   // Regalo de una lista de deseos con fecha (/regalar/:código de la web): cuándo entregarlo, la ocasión y de qué lista es
   // (giftDetails.deliveryDate, deliveryEventLabel y wishlistUserCode, que lee el ERP para saber qué día entregar).
   const deliveryDate = gift.deliveryDate == null || gift.deliveryDate === '' ? '' : String(gift.deliveryDate);

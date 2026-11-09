@@ -14,12 +14,12 @@ import { Texto, useTexto } from '../Traduccion';
 import { anguloDeParada } from '../../../utils/ruletaModel';
 import s from './Juegos.module.css';
 
-/* ── La Ruleta de Kapi (/ruleta) ───────────────────────────── */
+/* ── La Ruleta de Walito (/ruleta) ───────────────────────────── */
 
 const SIN_HISTORIAL = [];
 
 /**
- * La Ruleta de Kapi: se gana un giro con 7 días alimentando a Kapi (cuando
+ * La Ruleta de Walito: se gana un giro con 7 días alimentando a Walito (cuando
  * sea, `dias7`; o de lunes a domingo, `racha7`) o uno por semana (`siempre`).
  * La racha se ve arriba de la rueda; el premio lo sortea el servidor y la
  * rueda para en su gajo (anguloDeParada).
@@ -75,7 +75,7 @@ export function PaginaRuleta({
   else if (!desbloqueada && perdida) textoBoton = 'Semana perdida';
   else if (!desbloqueada) textoBoton = `Bloqueada: te ${faltan === 1 ? 'falta 1 día' : `faltan ${faltan} días`}`;
   const t = {
-    compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en La Ruleta de Kapi de Walá!` : undefined),
+    compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en La Ruleta de Walito de Walá!` : undefined),
     premio: useTexto(premio?.texto),
   };
 
@@ -87,13 +87,13 @@ export function PaginaRuleta({
       onCerrar={() => { setAyuda(false); onAyudaVista?.(); }}
       boton="Entendido"
       intro={siempre ? 'Un giro por semana, cortesía de la casa. Los premios cambian según el día.'
-        : porDias ? 'La ruleta no se juega: se gana. Es el premio por alimentar a Kapi 7 días.'
-          : 'La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.'}
+        : porDias ? 'La ruleta no se juega: se gana. Es el premio por alimentar a Walito 7 días.'
+          : 'La ruleta no se juega: se gana. Es el premio de mantener tu racha con Walito toda la semana.'}
       pasos={siempre
         ? ['Tienes un giro cada semana, sin condiciones.', 'Al girar, se acaba hasta la semana siguiente.']
         : porDias
-          ? ['Cada día que alimentas a Kapi suma 1.', 'No tienen que ser seguidos: los días que llevas no se pierden.', 'Al llegar a 7 ganas un giro.', 'Gíralo para empezar a sumar los próximos 7.']
-        : ['Alimenta a Kapi todos los días, de lunes a domingo.', 'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.', 'Al completar los 7 días ganas un giro.', 'Un giro por semana: al girar, se acaba hasta la siguiente.']}
+          ? ['Cada día que alimentas a Walito suma 1.', 'No tienen que ser seguidos: los días que llevas no se pierden.', 'Al llegar a 7 ganas un giro.', 'Gíralo para empezar a sumar los próximos 7.']
+        : ['Alimenta a Walito todos los días, de lunes a domingo.', 'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.', 'Al completar los 7 días ganas un giro.', 'Un giro por semana: al girar, se acaba hasta la siguiente.']}
       pie={porDias ? 'Tu giro no vence: te espera hasta que lo uses. El premio lo decide el servidor y se acredita solo en tu cuenta.' : 'Si ganas el giro y no lo usas, no lo pierdes: sigue disponible durante la semana siguiente. El premio lo decide el servidor y se acredita solo en tu cuenta.'}
     />
   );
@@ -102,7 +102,7 @@ export function PaginaRuleta({
     let vacio;
     if (!sesion) {
       vacio = (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Inicia sesión para girar la ruleta</Texto>} texto={<Texto>La ruleta es el premio de tus días con Kapi: entra para ver cuántos llevas.</Texto>}>
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Inicia sesión para girar la ruleta</Texto>} texto={<Texto>La ruleta es el premio de tus días con Walito: entra para ver cuántos llevas.</Texto>}>
           <Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
         </EstadoVacio>
       );
@@ -126,7 +126,7 @@ export function PaginaRuleta({
     }
     return (
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
-        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)} ancho="md" monedas={monedas}>
+        <MarcoJuego titulo="La Ruleta de Walito" onAyuda={() => setAyuda(true)} ancho="md" monedas={monedas}>
           {vacio}
         </MarcoJuego>
         {ayudaNodo}
@@ -163,23 +163,23 @@ export function PaginaRuleta({
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
-        <MarcoJuego titulo="La Ruleta de Kapi" onAyuda={() => setAyuda(true)} monedas={monedas}
+        <MarcoJuego titulo="La Ruleta de Walito" onAyuda={() => setAyuda(true)} monedas={monedas}
           acciones={<BotonIrAlPanel destino={panelRef} etiqueta="Ver tu historial" icono={<History aria-hidden="true" />} />}
         >
           <div className={s.ruleta} data-componente="PaginaRuleta">
             <div className={s.zonaRueda}>
               {!siempre && (
                 <div className={s.racha}>
-                  <BarraProgreso pasos valor={girada && porDias ? 0 : dias} max={7} etiqueta={<Texto>{porDias ? 'Tus días con Kapi' : 'Tu racha con Kapi'}</Texto>} />
+                  <BarraProgreso pasos valor={girada && porDias ? 0 : dias} max={7} etiqueta={<Texto>{porDias ? 'Tus días con Walito' : 'Tu racha con Walito'}</Texto>} />
                   <p className={s.rachaNota}>
                     <Texto>
-                      {porDias ? (girada ? 'Ya usaste tu giro. Desde mañana, cada día con Kapi suma para el próximo.'
+                      {porDias ? (girada ? 'Ya usaste tu giro. Desde mañana, cada día con Walito suma para el próximo.'
                         : desbloqueada ? '¡Juntaste los 7 días! Tu giro te espera.'
                           : `Llevas ${dias} de 7 días. No tienen que ser seguidos.`)
                         : girada ? 'Ya usaste el giro de esta semana.'
                         : desbloqueada ? (pendienteAnterior ? 'Este giro es el que ganaste la semana pasada. ¡Aprovéchalo!' : '¡Completaste la semana! Tu giro te espera.')
                           : perdida ? 'Perdiste un día esta semana. El lunes empieza otra.'
-                            : 'Alimenta a Kapi cada día: al séptimo, la ruleta se abre.'}
+                            : 'Alimenta a Walito cada día: al séptimo, la ruleta se abre.'}
                     </Texto>
                   </p>
                 </div>

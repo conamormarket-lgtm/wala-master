@@ -3214,7 +3214,7 @@ function requireAuth(context) {
   return context.auth.uid;
 }
 
-// ── Alimentar a Kapi (monedas + racha) ────────────────────────────────────────
+// ── Alimentar a Walito (monedas + racha) ────────────────────────────────────────
 // Antes esto acreditaba `kapiCoins`, una segunda moneda que NO servía para
 // nada: el descuento del checkout siempre ha leído `monedas`. Encima el cron
 // mensual vaciaba `kapiCoins`, así que lo único que caducaba era el contador que
@@ -3222,7 +3222,7 @@ function requireAuth(context) {
 // alimentar da monedas directamente y son ellas las que caducan a fin de mes.
 exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
   // Calentamiento: el cliente llama con { ping: true } al abrir el panel de
-  // Kapi. Sin instancias mínimas, la primera llamada del día arrancaba en frío
+  // Walito. Sin instancias mínimas, la primera llamada del día arrancaba en frío
   // (varios segundos) justo cuando el usuario pulsaba "Alimentar". No toca nada.
   if (data && data.ping) return { warm: true };
   const uid = requireAuth(context);
@@ -3235,7 +3235,7 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
       if (u.lastKapiClaimDate === today) {
-        throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Kapi hoy.");
+        throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Walito hoy.");
       }
       const previo = u.weeklyClaimsData || null;
       // Los días de esta semana ANTES de hoy (para arrancar la cuenta de la ruleta).
@@ -3290,7 +3290,7 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("feedKapiSecure error:", e);
-    throw new functions.https.HttpsError("internal", "Error al alimentar a Kapi.");
+    throw new functions.https.HttpsError("internal", "Error al alimentar a Walito.");
   }
 });
 
@@ -3307,7 +3307,7 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
   try {
     const config = await db.collection("loyaltyConfig").doc("global").get();
     if (config.exists && config.data().bolitasExigirPrueba === true) {
-      throw new functions.https.HttpsError("failed-precondition", "Actualiza la app para ganar monedas con Las Bolitas de Kapi.");
+      throw new functions.https.HttpsError("failed-precondition", "Actualiza la app para ganar monedas con Las Bolitas de Walito.");
     }
     return await db.runTransaction(async (t) => {
       const snap = await t.get(userRef);
@@ -3336,7 +3336,7 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
   }
 });
 
-// ── Las Bolitas de Kapi: un cupón de marca ────────────────────────────────────
+// ── Las Bolitas de Walito: un cupón de marca ────────────────────────────────────
 // El del reto patrocinado y los premios del ranking semanal. Lleva brandId:
 // calcularDescuentoCupon lo aplica solo sobre los productos de esa marca.
 // Va dentro de una transacción (t) o de un lote; devuelve lo que se muestra.
@@ -3371,7 +3371,7 @@ function crearCuponBolitas(t, ref, uid, plantilla, { origen, titulo, marcaId, ma
   return cupon;
 }
 
-// ── Las Bolitas de Kapi: una partida ganada, comprobada ───────────────────────
+// ── Las Bolitas de Walito: una partida ganada, comprobada ───────────────────────
 // La app manda cada nivel o reto que gana: { modo: 'nivel' | 'reto', nivel |
 // fecha, movimientos: [[de, a]…], tubos }. El servidor rearma el nivel con el
 // mismo motor del celular (bolitasMotor.mjs, copia generada) y repite los
@@ -3461,7 +3461,7 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
       if (patrocinio && patrocinio.activo && entregados < patrocinio.cupo && !cuponSnap.exists) {
         cupon = crearCuponBolitas(t, cuponRef, uid, patrocinio.cupon, {
           origen: "bolitas_reto",
-          titulo: "Reto del día: " + (patrocinio.marcaNombre || "Las Bolitas de Kapi"),
+          titulo: "Reto del día: " + (patrocinio.marcaNombre || "Las Bolitas de Walito"),
           marcaId: patrocinio.marcaId,
           marcaNombre: patrocinio.marcaNombre,
         });
@@ -3487,7 +3487,7 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
   }
 });
 
-// ── Las Bolitas de Kapi: el ranking del reto ──────────────────────────────────
+// ── Las Bolitas de Walito: el ranking del reto ──────────────────────────────────
 // Hoy (menos movimientos; empate, quien llegó antes) y la semana (más retos;
 // empate, menos movimientos en total). Los 20 primeros, con el nombre corto,
 // y dónde quedó quien pregunta (si tiene sesión). Se ordena aquí y no con un
@@ -3551,7 +3551,7 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
   }
 });
 
-// ── Las Bolitas de Kapi: el top de niveles ────────────────────────────────────
+// ── Las Bolitas de Walito: el top de niveles ────────────────────────────────────
 // Quién llegó más lejos en los niveles (el nivel más alto que el servidor
 // comprobó, en bolitasJugadores/{uid}); empate, quien llegó antes. Los 20
 // primeros con el nombre corto, cuántos días jugaron, y dónde va quien
@@ -3602,7 +3602,7 @@ exports.getTopBolitasSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
-// ── Las Bolitas de Kapi: premios del ranking semanal ──────────────────────────
+// ── Las Bolitas de Walito: premios del ranking semanal ──────────────────────────
 // Cada lunes a las 00:15 (Lima) se premia la semana que terminó, con lo que el
 // admin puso en bolitasConfig/premios { activo, puestos: [{ desde, hasta,
 // cupon }] }: un cupón (de la marca, si el premio la tiene) a cada puesto. El
@@ -3632,7 +3632,7 @@ async function premiarSemanaBolitas(semana) {
         if ((await t.get(ref)).exists) return;
         crearCuponBolitas(t, ref, orden[k].uid, plantilla, {
           origen: "bolitas_semana",
-          titulo: "Puesto " + (k + 1) + " en Las Bolitas de Kapi",
+          titulo: "Puesto " + (k + 1) + " en Las Bolitas de Walito",
           marcaId: premio.marcaId || null,
           marcaNombre: premio.marcaNombre || null,
         });
@@ -3655,7 +3655,7 @@ exports.premiarRankingBolitas = onSchedule({
   console.log("premiarRankingBolitas:", JSON.stringify(r));
 });
 
-// ── Las Bolitas de Kapi: del juego a la tienda ────────────────────────────────
+// ── Las Bolitas de Walito: del juego a la tienda ────────────────────────────────
 // Cuenta los toques en una marca o un producto desde el juego (las métricas
 // del admin). Sin sesión también: solo suma, no guarda quién fue.
 exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
@@ -3668,7 +3668,7 @@ exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
   return { success: true };
 });
 
-// ── Las Bolitas de Kapi: el admin ─────────────────────────────────────────────
+// ── Las Bolitas de Walito: el admin ─────────────────────────────────────────────
 // Una sola función para /admin/bolitas (solo admin), con `accion`:
 //  - guardarPatrocinio { fecha, patrocinio } · borrarPatrocinio { fecha }
 //  - guardarMundos { marcas: [{ id, nombre }] } (el orden de las marcas de los mundos)
@@ -3764,7 +3764,7 @@ function semanaDeGiroPendiente(u, reglas) {
 
   if (reglas.modoDesbloqueo === "dias7") {
     const cuenta = u.weeklyClaimsData && u.weeklyClaimsData.ruleta;
-    // Con cuenta: el giro está listo o no. Sin cuenta (aún no alimentó a Kapi
+    // Con cuenta: el giro está listo o no. Sin cuenta (aún no alimentó a Walito
     // desde el cambio): lo que le dejaba la regla de antes.
     if (cuenta) return cuenta.listo ? `dias7-${cuenta.listoDesde || "listo"}` : null;
     return semanaDeGiroPendiente(u, Object.assign({}, reglas, { modoDesbloqueo: "racha7" }));
@@ -4963,7 +4963,7 @@ function sumarXp(t, uid, u, ganada) {
     if (premio.stickers && PACKS_STICKERS_WHATSAPP.includes(premio.stickers)) {
       // Si ya tenía el pack, la página de cupones muestra uno solo.
       t.set(db.collection("userCoupons").doc(), {
-        ...base, code: generateCouponCode(), title: "Stickers de Kapi para WhatsApp", titulo: "Stickers de Kapi para WhatsApp",
+        ...base, code: generateCouponCode(), title: "Stickers de Walito para WhatsApp", titulo: "Stickers de Walito para WhatsApp",
         entrega: "stickers_whatsapp", packId: premio.stickers,
       });
     }
@@ -5746,7 +5746,7 @@ async function calcularDescuentoCupon(cupon, datos) {
   const exacta = todosValorados;
   let base = exacta ? subtotalCatalogo : subtotalCliente;
 
-  // 2b) Cupón de una marca (Las Bolitas de Kapi: el reto patrocinado y los
+  // 2b) Cupón de una marca (Las Bolitas de Walito: el reto patrocinado y los
   // premios del ranking): solo cuentan los productos de catálogo de esa marca
   // (los personalizados no, su precio no se puede rehacer aquí). Sin ninguno
   // en el carrito, no descuenta. Los cupones sin brandId no cambian.
@@ -10828,12 +10828,12 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
   } catch (error) { throw mobileCheckoutError(error); }
 });
 
-// ══ La Pichanga de Kapi ═══════════════════════════════════════════════════════
+// ══ La Pichanga de Walito ═══════════════════════════════════════════════════════
 // Fútbol de chapas para jugar solo (/pichanga). Todo pasa por estas funciones:
 // el celular no lee ni escribe las colecciones del juego (pichangaProgreso,
 // pichangaRetos, pichangaSemanas, pichangaJugadores, pichangaMeses), así que
 // no hacen falta reglas nuevas para jugar. Detalle en
-// src/componentes/kit/guia/JUEGOS.md ("La Pichanga de Kapi: fase 2").
+// src/componentes/kit/guia/JUEGOS.md ("La Pichanga de Walito: fase 2").
 const PICHANGA_REWARD = 2;
 const RANKING_PICHANGA_TOP = 20;
 const RANKING_PICHANGA_LEER = 1000;
@@ -10922,7 +10922,7 @@ exports.registrarPartidaPichangaSecure = functions.https.onCall(async (data, con
       if (patrocinio && patrocinio.activo && entregados < patrocinio.cupo && !cuponSnap.exists) {
         cupon = crearCuponBolitas(t, cuponRef, uid, patrocinio.cupon, {
           origen: "pichanga_reto",
-          titulo: "Reto del día: " + (patrocinio.marcaNombre || "La Pichanga de Kapi"),
+          titulo: "Reto del día: " + (patrocinio.marcaNombre || "La Pichanga de Walito"),
           marcaId: patrocinio.marcaId,
           marcaNombre: patrocinio.marcaNombre,
         });
@@ -11062,7 +11062,7 @@ exports.getRankingPichangaSecure = functions.https.onCall(async (data, context) 
 // devuelve; con él, lo une con lo guardado (lo ganado no se pierde) y guarda
 // el resultado. No vale dinero: el premio y los rankings salen de partidas
 // comprobadas. → { progreso } (null si no hay nada guardado).
-// ── La Pichanga de Kapi: premios del mes ─────────────────────────────────────
+// ── La Pichanga de Walito: premios del mes ─────────────────────────────────────
 // El día 1 a las 00:20 (Lima) se premia a los goleadores del mes que terminó,
 // con lo que el admin puso en pichangaConfig/premios { activo, puestos:
 // [{ desde, hasta, cupon, marcaId?, marcaNombre? }] }: un cupón a cada puesto
@@ -11097,7 +11097,7 @@ async function premiarMesPichanga(mes) {
         if ((await t.get(ref)).exists) return;
         crearCuponBolitas(t, ref, orden[k].uid, plantilla, {
           origen: "pichanga_mes",
-          titulo: "Puesto " + (k + 1) + " en los goleadores de La Pichanga de Kapi",
+          titulo: "Puesto " + (k + 1) + " en los goleadores de La Pichanga de Walito",
           marcaId: premio.marcaId || null,
           marcaNombre: premio.marcaNombre || null,
         });
@@ -11120,11 +11120,11 @@ exports.premiarGoleadoresPichanga = onSchedule({
   console.log("premiarGoleadoresPichanga:", JSON.stringify(r));
 });
 
-// ── La Pichanga de Kapi: el admin ────────────────────────────────────────────
+// ── La Pichanga de Walito: el admin ────────────────────────────────────────────
 // Una sola función para /admin/pichanga (solo admin), con `accion`:
 //  - metricas { dias } → por día (pichangaStats), los jugadores (como en las
 //    Bolitas: vuelven, siguen, dónde se traban, hasta dónde llegan), el
-//    vestuario y los partidos contra Michi (del progreso guardado en cuentas)
+//    vestuario y los partidos contra Happy (del progreso guardado en cuentas)
 //    y los rankings del momento
 //  - leerPremios · guardarPremios { activo, puestos }
 //  - premiarMes { mes: 'AAAA-MM' } (repetir a mano el premio de un mes)

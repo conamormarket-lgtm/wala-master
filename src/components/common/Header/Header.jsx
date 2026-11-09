@@ -212,7 +212,7 @@ const Header = () => {
   const pendingCoinsRef = useRef(0);
   const [isCoinBouncing, setIsCoinBouncing] = useState(false);
 
-  // Ya no hay segunda billetera: alimentar a Kapi acredita `monedas` como todo
+  // Ya no hay segunda billetera: alimentar a Walito acredita `monedas` como todo
   // lo demás. `kapiCoins` era un contador que no descontaba nada en el checkout.
 
   const { data: categoriesData } = useQuery({
@@ -472,7 +472,7 @@ const Header = () => {
   }, [activeMainCoins]);
 
 
-  // Alimentar a Kapi ya no necesita su propio evento: acredita monedas normales
+  // Alimentar a Walito ya no necesita su propio evento: acredita monedas normales
   // y volarMonedasGanadas() se encarga, como en el resto de la app. Mantener el
   // atajo sumaba la moneda dos veces (una al aterrizar y otra por este efecto).
 

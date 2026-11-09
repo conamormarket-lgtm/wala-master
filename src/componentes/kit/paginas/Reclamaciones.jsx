@@ -157,7 +157,7 @@ export function PaginaReclamaciones({
     return (
       <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
         <div ref={cabeza} className={s.listo} data-componente="ReclamacionRegistrada">
-          {/* Un sello y no Kapi: Kapi ya asoma por el pie de la página. */}
+          {/* Un sello y no Walito: Walito ya asoma por el pie de la página. */}
           <Sello tamano={72} girar={-8}><CheckCircle2 aria-hidden="true" className={s.listoIcono} /></Sello>
           <h1 className={s.listoTitulo}><Texto>¡Reclamación registrada!</Texto><Trazo className={s.listoTrazo} /></h1>
           <p><Texto>Tu hoja de reclamación quedó guardada. Guarda este código para cualquier consulta.</Texto></p>

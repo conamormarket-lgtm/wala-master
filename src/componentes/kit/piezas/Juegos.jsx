@@ -163,11 +163,11 @@ export function PremioJuego({ estado = 'promesa', monto, texto, urlLogin = '/log
 }
 
 /**
- * La hoja del resultado: un sello o una cara de Kapi, el título con su trazo,
+ * La hoja del resultado: un sello o una cara de Walito, el título con su trazo,
  * el texto, lo que se ganó y las acciones. Mientras se acreditan las monedas
  * no se cierra (`ocupado`).
  *  - abierta, onCerrar, ocupado · titulo · tituloHoja ("Tu resultado") · imagen
- *    (una cara de Kapi) o icono (en un sello) · texto (nodo) · children · acciones
+ *    (una cara de Walito) o icono (en un sello) · texto (nodo) · children · acciones
  */
 export function ResultadoJuego({ abierta, onCerrar, ocupado = false, titulo, tituloHoja = 'Tu resultado', imagen, icono, texto, children, acciones }) {
   const cerrar = () => { if (!ocupado) onCerrar?.(); };

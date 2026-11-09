@@ -8,7 +8,7 @@ import { limaTodayStr } from '../../utils/fechaLima';
 import styles from './AdminBolitasPage.module.css';
 
 /*
- * /admin/bolitas — Las Bolitas de Kapi con las marcas (fase 3, JUEGOS.md):
+ * /admin/bolitas — Las Bolitas de Walito con las marcas (fase 3, JUEGOS.md):
  *  - Patrocinios: qué marca auspicia el reto de cada día, el cupón (de esa
  *    marca: solo descuenta sus productos) y cuántos se entregan como máximo.
  *  - Mundos: las marcas de los mundos de 20 niveles, en orden (se repiten).
@@ -410,7 +410,7 @@ export default function AdminBolitasPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>Las Bolitas de Kapi</h1>
+        <h1>Las Bolitas de Walito</h1>
         <p>Las marcas en el juego: el reto patrocinado, los mundos, los premios del ranking y cómo va el juego.</p>
       </header>
       {marcasQ.isLoading ? <p>Cargando marcas…</p> : (

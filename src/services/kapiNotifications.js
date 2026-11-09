@@ -15,7 +15,7 @@ export const scheduleKapiNotifications = async (userProfile) => {
     const permStatus = await LocalNotifications.checkPermissions();
     if (permStatus.display !== 'granted') return;
 
-    // Cancel previous Kapi notifications (IDs 10 to 19)
+    // Cancel previous Walito notifications (IDs 10 to 19)
     const pending = await LocalNotifications.getPending();
     const kapiPending = pending.notifications.filter(n => n.id >= 10 && n.id <= 19);
     if (kapiPending.length > 0) {
@@ -120,44 +120,44 @@ export const scheduleKapiNotifications = async (userProfile) => {
     const currentWeeklyClaims = userProfile?.weeklyClaimsData?.daysClaimed || [];
     const daysCount = currentWeeklyClaims.length;
 
-    let extraTitle = "¡Kapi tiene hambre! 🍖";
-    let extraBody = "Alimenta a Kapi hoy para mantenerlo feliz y sumar monedas.";
+    let extraTitle = "¡Walito tiene hambre! 🍖";
+    let extraBody = "Alimenta a Walito hoy para mantenerlo feliz y sumar monedas.";
 
     // Cada regla de la ruleta, su aviso (la que puso el admin).
     const modoRuleta = (await getRuletaConfig().catch(() => null))?.reglas?.modoDesbloqueo || 'dias7';
-    // 7 días con Kapi, cuando sea: los avisos siguen la cuenta de la persona.
+    // 7 días con Walito, cuando sea: los avisos siguen la cuenta de la persona.
     const cuentaRuleta = userProfile?.weeklyClaimsData?.ruleta;
     if (modoRuleta === 'siempre') {
       if (currentDayOfWeek === 1) {
         extraTitle = "Nueva semana 🎰";
-        extraBody = "Ya puedes girar La Ruleta de Kapi esta semana.";
+        extraBody = "Ya puedes girar La Ruleta de Walito esta semana.";
       }
     } else if (modoRuleta === 'dias7' && cuentaRuleta) {
       const faltan = 7 - (Number(cuentaRuleta.dias) || 0);
       if (cuentaRuleta.listo) {
         extraTitle = "Tu giro te espera 🎰";
-        extraBody = "Juntaste los 7 días con Kapi: entra y gira la ruleta.";
+        extraBody = "Juntaste los 7 días con Walito: entra y gira la ruleta.";
       } else if (faltan <= 2) {
         extraTitle = `¡Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'}! 🎰`;
-        extraBody = "Alimenta a Kapi hoy y acércate a tu giro de la ruleta.";
+        extraBody = "Alimenta a Walito hoy y acércate a tu giro de la ruleta.";
       }
     } else if (currentDayOfWeek === 1) {
       extraTitle = "Nueva semana 🎰";
-      extraBody = "Alimenta a Kapi 7/7 días y desbloquea La Ruleta de Kapi.";
+      extraBody = "Alimenta a Walito 7/7 días y desbloquea La Ruleta de Walito.";
     } else if (currentDayOfWeek === 5 && daysCount >= 4) {
       extraTitle = "¡Llevas 5/5 días! 🎰"; 
       extraBody = "Dos más y giras la ruleta. No falles ahora.";
     } else if (currentDayOfWeek === 0) {
       if (daysCount >= 6) {
         extraTitle = "¡Ruleta a punto de desbloquearse! 🎰";
-        extraBody = "Alimenta a Kapi por última vez y gira antes de medianoche.";
+        extraBody = "Alimenta a Walito por última vez y gira antes de medianoche.";
       } else {
         extraTitle = `Perdiste días esta semana ❌`;
-        extraBody = "Alimenta a Kapi hoy, y la próxima semana no se te escape la ruleta.";
+        extraBody = "Alimenta a Walito hoy, y la próxima semana no se te escape la ruleta.";
       }
     }
 
-    // Programar recordatorio diario (ID 16) si aún no ha alimentado a Kapi hoy
+    // Programar recordatorio diario (ID 16) si aún no ha alimentado a Walito hoy
     const todayStr = now.toISOString().split('T')[0];
     if (userProfile.lastKapiClaimDate !== todayStr) {
       // Programar para dentro de 2 horas desde que abrió la app, o a las 18:00

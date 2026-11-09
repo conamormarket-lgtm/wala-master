@@ -41,11 +41,11 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
     };
   }
 
-  // ¿Alguna vez le dio de comer a Kapi? Es lo único que separa a quien perdió la
+  // ¿Alguna vez le dio de comer a Walito? Es lo único que separa a quien perdió la
   // racha de quien todavía no la ha empezado.
   const haEmpezado = !!userProfile.lastKapiClaimDate;
 
-  // 7 días con Kapi, cuando sea: la cuenta la lleva el servidor en
+  // 7 días con Walito, cuando sea: la cuenta la lleva el servidor en
   // weeklyClaimsData.ruleta (como mucho un giro guardado). No hay semana que
   // perder ni "ya giraste esta semana": al girar, la cuenta vuelve a 0.
   const cuenta = userProfile.weeklyClaimsData?.ruleta;
@@ -57,7 +57,7 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
         hasLost: false, hasSpun: false, esPendienteAnterior: false, haEmpezado, porDias: true,
       };
     }
-    // Sin cuenta todavía (no alimentó a Kapi desde el cambio): el servidor
+    // Sin cuenta todavía (no alimentó a Walito desde el cambio): el servidor
     // arranca con los días de esta semana y el giro que le dejaba la regla de
     // antes. Se muestra eso mismo, ya con los textos de los 7 días.
     const antes = getRuletaEligibility(userProfile, { ...reglas, modoDesbloqueo: 'racha7' });
@@ -113,7 +113,7 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
   // Si la diferencia entre el día actual de la semana y los reclamados es >= 2, seguro perdió.
   // En modo campaña no hay racha que perder.
   //
-  // `haEmpezado` es la clave: quien nunca ha alimentado a Kapi no ha perdido
+  // `haEmpezado` es la clave: quien nunca ha alimentado a Walito no ha perdido
   // nada, simplemente acaba de llegar. Sin esto, una cuenta recién creada un
   // miércoles era recibida con un "Semana perdida ❌", que es cierto en la
   // aritmética y pésimo como primera impresión.

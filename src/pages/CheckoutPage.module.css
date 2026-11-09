@@ -1025,7 +1025,7 @@
   border-color: rgba(251, 113, 133, 0.45);
 }
 
-/* Chips de sticker de Kapi: superficie elevada con acento rosa. */
+/* Chips de sticker de Walito: superficie elevada con acento rosa. */
 :global([data-theme='dark']) .stickerSelection label {
   background: var(--color-surface-2);
   color: #fb7185;

@@ -323,7 +323,7 @@ function useCargarAlLlegar(activo, alLlegar) {
  *  - finDeLista: "Has visto todos los productos" cuando ya no queda nada
  *    por mostrar (con o sin paginación, como ProductGrid).
  *  - tarjeta: la de la tienda; recibe también `indice` (las primeras cargan ya).
- *  - sinKapi: los avisos sin Kapi (la página ya muestra el flotante).
+ *  - sinKapi: los avisos sin Walito (la página ya muestra el flotante).
  * Si la lista quedó vacía pero el servidor tiene más (un filtro descartó lo
  * cargado), sigue pidiendo páginas en vez de decir que no hay nada.
  */

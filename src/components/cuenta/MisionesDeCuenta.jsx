@@ -100,7 +100,7 @@ export default function MisionesDeCuenta() {
 
   const tarjetas = useMemo(() => misiones.map((m) => misionDesdeServidor(m, MISSION_ACTIONS)), [misiones]);
 
-  // El reto de la semana, el mismo de la ventana de Kapi; verlo aquí apaga su aviso.
+  // El reto de la semana, el mismo de la ventana de Walito; verlo aquí apaga su aviso.
   const retoBase = retoDesdePerfil(activeWeeklyChallenge, userProfile);
   useEffect(() => {
     if (retoBase && user?.uid) marcarRetoVisto(user.uid, activeWeeklyChallenge.challengeId);

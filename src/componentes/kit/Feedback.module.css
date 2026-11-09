@@ -501,7 +501,7 @@
   transform: rotate(-10deg) scale(1.08);
 }
 
-/* "Kapi te extraña": su cara en vez de un ícono. */
+/* "Walito te extraña": su cara en vez de un ícono. */
 .notifKapi img {
   width: 34px;
   height: 34px;
@@ -606,7 +606,7 @@
   animation: flotarKapi 4s ease-in-out infinite;
 }
 
-/* Chispas fuera de la cabeza de Kapi (antes una quedaba tapada por la oreja). */
+/* Chispas fuera de la cabeza de Walito (antes una quedaba tapada por la oreja). */
 .chispa {
   position: absolute;
   z-index: 1;

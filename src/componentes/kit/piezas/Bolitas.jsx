@@ -13,7 +13,7 @@ import { COLORES, CAPACIDAD, tramo, tuboListo } from './bolitasMotor.mjs';
 import s from './Bolitas.module.css';
 
 /*
- * Piezas de Las Bolitas de Kapi (/ball-sort): un tubo con sus bolitas. Las
+ * Piezas de Las Bolitas de Walito (/ball-sort): un tubo con sus bolitas. Las
  * reglas, los niveles y el solucionador están en bolitasMotor.mjs (puro, con
  * sus pruebas). Las bolitas viajan de un tubo a otro con `layoutId`
  * (framer-motion): la página envuelve los tubos en un <LayoutGroup>.

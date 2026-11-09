@@ -283,7 +283,7 @@ function run() {
     assert.strictEqual(t({ id: "a", tipo: "descuento", descuentoMonto: 20 }), "S/ 20.00 de descuento");
     assert.strictEqual(t({ id: "a", tipo: "envio_gratis" }), "Envío gratis");
     assert.strictEqual(
-      t({ id: "a", tipo: "producto_gratis", productName: "Caja Kapi" }), "Caja Kapi gratis");
+      t({ id: "a", tipo: "producto_gratis", productName: "Caja Walito" }), "Caja Walito gratis");
     assert.strictEqual(t({ id: "a", tipo: "nada", nombre: "Casi" }), "Casi");
     assert.strictEqual(r.textoPremio(null), "");
   });
@@ -296,7 +296,7 @@ function run() {
   });
 
   // ────────────────────────────────────────────────────────────────────────
-  // 7 días con Kapi, cuando sea (dias7)
+  // 7 días con Walito, cuando sea (dias7)
   // ────────────────────────────────────────────────────────────────────────
   check("sumarDiaRuleta suma un día y abre el giro al séptimo", () => {
     let c = null;

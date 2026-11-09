@@ -115,7 +115,7 @@ export function PaginaCuentaInvitado({ pedidos = false, urlLogin = '/login', url
 /**
  * La pantalla que abre "Mi cuenta": saludo, monedas y los accesos a todo.
  * Con el menú lateral (escritorio) los accesos repetían el menú: en su lugar,
- * Kapi invita a elegir una opción de ese menú. En el celular, los accesos.
+ * Walito invita a elegir una opción de ese menú. En el celular, los accesos.
  *  - usuario: { nombre } · monedas · enEspera (monedas que llegan al
  *    entregarse un pedido) · grupos (los mismos de MarcoCuenta) · urlCanjear
  */
@@ -488,7 +488,7 @@ export function PaginaDirecciones({
           {[0, 1].map((k) => <li key={k}><EsqueletoTarjeta lineas={3} alto={190} /></li>)}
         </ul>
       ) : ordenadas.length === 0 ? (
-        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        // Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista).
         <EstadoVacio
           imagen={null}
           icono={<MapPin />}

@@ -184,7 +184,7 @@ export default function BusquedaDeTienda() {
       tarjeta={TarjetaDeTienda}
       columnas={grilla.columnas}
       segundaFoto={grilla.segundaFoto}
-      // Un solo Kapi a la vista: con sesión ya está el flotante.
+      // Un solo Walito a la vista: con sesión ya está el flotante.
       sinKapi={Boolean(userProfile)}
       envolverMostrador={(nodo) => (
         <EditableSection sectionId="searchPage" currentConfig={config} label="Buscador">{nodo}</EditableSection>

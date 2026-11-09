@@ -411,21 +411,21 @@ exports.notificationEngine = onSchedule({
         if (sent) continue; // Una automática por usuario por corrida.
       }
 
-      // -- REGLA 2: Retención Kapi --
+      // -- REGLA 2: Retención Walito --
       if (retencionActiva && data.lastAppOpen) {
         const diffDays = (now - new Date(data.lastAppOpen)) / (1000 * 60 * 60 * 24);
-        const nombreKapi = vars.nombre || "Kapi";
+        const nombreKapi = vars.nombre || "Walito";
 
         if (diffDays >= 14 && canSendPush(data, "retention_14d")) {
           const { text, variante } = copyDe(settings, "retention_14d", uid, vars, vars.monedas > 0
-            ? `Tienes ${vars.monedas} monedas que se van a perder. Y Kapi está muy triste...`
-            : "Kapi te extraña mucho. Lleva varios días sin verte 😢");
+            ? `Tienes ${vars.monedas} monedas que se van a perder. Y Walito está muy triste...`
+            : "Walito te extraña mucho. Lleva varios días sin verte 😢");
           await sendPush(uid, fcmTokens, {
-            title: "Kapi te extraña", body: text, type: "retention_14d", link: "/cuenta", variante,
+            title: "Walito te extraña", body: text, type: "retention_14d", link: "/cuenta", variante,
           }, userRef, data.antiSpamLog);
         } else if (diffDays >= 7 && diffDays < 14 && canSendPush(data, "retention_7d")) {
           const { text, variante } = copyDe(settings, "retention_7d", uid, vars,
-            `Kapi extraña a ${nombreKapi}. Lleva ${Math.floor(diffDays)} días sin comer 😢`);
+            `Walito extraña a ${nombreKapi}. Lleva ${Math.floor(diffDays)} días sin comer 😢`);
           await sendPush(uid, fcmTokens, {
             title: "Mascota Hambrienta", body: text, type: "retention_7d", link: "/cuenta", variante,
           }, userRef, data.antiSpamLog);

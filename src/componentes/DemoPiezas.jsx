@@ -136,7 +136,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
         <div className={s.juegos}>
           <TarjetaJuego
             imagen="/assets/kapi/banners/bolitas.webp"
-            titulo="Las Bolitas de Kapi"
+            titulo="Las Bolitas de Walito"
             descripcion="Ordena los colores en los tubos para ganar 2 monedas al día."
             estado={{ texto: 'Disponible hoy', tono: 'violeta', punto: true }}
             recompensa={{ texto: '+2 monedas al día' }}
@@ -144,7 +144,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
           />
           <TarjetaJuego
             imagen="/assets/kapi/banners/ruleta.webp"
-            titulo="La Ruleta de Kapi"
+            titulo="La Ruleta de Walito"
             descripcion="Reclama tu moneda los 7 días para girar la ruleta."
             estado={{ texto: 'Bloqueada', tono: 'neutro' }}
             recompensa={{ texto: 'Premio semanal', icono: 'regalo' }}
@@ -194,7 +194,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
         </div>
       </Ficha>
 
-      <Ficha nombre="RetoSemanal" usadaEn="Ventana de Kapi (reto de la semana)">
+      <Ficha nombre="RetoSemanal" usadaEn="Ventana de Walito (reto de la semana)">
         <RetoSemanal
           titulo="Comparte tu diseño"
           descripcion="Sube una historia con tu polera de Walá y pega aquí el enlace."
@@ -206,9 +206,9 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
         />
       </Ficha>
 
-      <Ficha nombre="VentanaKapi" usadaEn="Kapi flotante (M8), «Reclamar moneda» de la Zona Arcade">
+      <Ficha nombre="VentanaKapi" usadaEn="Walito flotante (M8), «Reclamar moneda» de la Zona Arcade">
         <div className={s.filaCentrada}>
-          <Boton onClick={() => setKapiAbierta(true)}>Abrir la ventana de Kapi</Boton>
+          <Boton onClick={() => setKapiAbierta(true)}>Abrir la ventana de Walito</Boton>
           {kapiComio && <Boton variante="fantasma" onClick={() => setKapiComio(false)}>Volver a darle hambre</Boton>}
         </div>
         <VentanaKapi
@@ -247,7 +247,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
         />
       </Ficha>
 
-      <Ficha nombre="HojaInferior" usadaEn="Ventanas y hojas de todo el kit: Kapi, filtros, talla, confirmar… (bloqueada y tamano: 'sm' · 'md' · 'lg')">
+      <Ficha nombre="HojaInferior" usadaEn="Ventanas y hojas de todo el kit: Walito, filtros, talla, confirmar… (bloqueada y tamano: 'sm' · 'md' · 'lg')">
         <div className={s.filaCentrada}>
           {['sm', 'md', 'lg'].map((t) => <Boton key={t} variante="secundario" onClick={() => setHoja(t)}>Hoja {t}</Boton>)}
         </div>

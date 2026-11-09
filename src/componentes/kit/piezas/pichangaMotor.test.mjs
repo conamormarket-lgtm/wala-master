@@ -63,7 +63,7 @@ test('todo se detiene y nada sale de la cancha', () => {
   }
 });
 
-test('Kapi de arquero no sale de su rango', () => {
+test('Walito de arquero no sale de su rango', () => {
   const k = { x: 300, y: 42, rango: 60, vel: 2.5, fase: 30 };
   for (let t = 0; t < 500; t += 0.37) {
     const p = posicionKapi(k, t);
@@ -120,7 +120,7 @@ test('los penales vuelven todo a su lugar después de cada tiro', () => {
   ({ partida: p } = jugarTiro(lv, p, [0, 0, 30]));
   const inicio = partidaNivel(lv).mesa.cuerpos.map((c) => [c.x, c.y]);
   assert.deepEqual(p.mesa.cuerpos.map((c) => [c.x, c.y]), inicio);
-  assert.ok(p.mesa.t > 0); // el reloj de Kapi sigue
+  assert.ok(p.mesa.t > 0); // el reloj de Walito sigue
   assert.equal(p.goles, 0);
 });
 
@@ -130,13 +130,13 @@ test('el partido: goles, autogoles, turno y fin', () => {
   pt = despuesDelTiroPartido(pt, gol('arriba'));
   assert.deepEqual(pt.goles, { yo: 1, kapi: 0 });
   assert.equal(pt.turno, 'kapi');
-  pt = despuesDelTiroPartido(pt, gol('arriba')); // autogol de Kapi
+  pt = despuesDelTiroPartido(pt, gol('arriba')); // autogol de Walito
   assert.deepEqual(pt.goles, { yo: 2, kapi: 0 });
   for (let k = 0; k < GOLES_PARTIDO; k += 1) pt = despuesDelTiroPartido(pt, gol('abajo'));
   assert.equal(pt.fin, 'kapi');
 });
 
-test('Kapi elige un tiro de sus chapas', () => {
+test('Walito elige un tiro de sus chapas', () => {
   const def = canchaPartido();
   const mesa = crearMesa(def);
   for (const dificultad of ['facil', 'normal', 'dificil']) {
@@ -242,11 +242,11 @@ test('el pase: la pelota se pega sin saltar y el receptor la rodea hasta mirar a
   assert.deepEqual(simularPartido(pt, tiroPase).mesa, encontrado.mesa);
 });
 
-test('en los niveles, Michi responde después de tu toque (siempre igual)', () => {
+test('en los niveles, Happy responde después de tu toque (siempre igual)', () => {
   const lv = armarNivel(5, { mias: [[300, 760]], pelota: [300, 620], rivales: [[300, 300]] }, { par: 1 });
-  // Un toque suave que deja la pelota en la cancha: Michi responde.
+  // Un toque suave que deja la pelota en la cancha: Happy responde.
   const a = jugarTiro(lv, partidaNivel(lv), [0, 0, -40], { cuadros: true });
-  assert.ok(a.respuesta, 'Michi respondió');
+  assert.ok(a.respuesta, 'Happy respondió');
   assert.equal(a.partida.mesa, a.respuesta.sim.mesa);
   assert.equal(a.partida.mesa.cuerpos[2].equipo, 'rival');
   // La misma jugada da siempre la misma respuesta.
@@ -272,7 +272,7 @@ test('un tiro dirigido manda la pelota hacia su objetivo', () => {
   assert.ok(Math.abs(p.x - 300) < 120, `y fue derecha (${p.x})`);
 });
 
-test('en el partido, Michi siempre toca la pelota', () => {
+test('en el partido, Happy siempre toca la pelota', () => {
   const def = canchaPartido();
   const mesa = crearMesa(def);
   for (const dificultad of ['facil', 'normal', 'dificil']) {
@@ -342,7 +342,7 @@ test('las habilidades de la camiseta cambian el partido (y solo el partido)', as
   const trasGol = despuesDelTiroPartido(p2, { gol: 'abajo', mesa: p2.mesa, tocaron: [], receptor: null, pasos: 1 }, [2, 0, -100]);
   assert.equal(trasGol.mesa.cuerpos.find((c) => c.portero && c.equipo === 'mia').r, 38);
   assert.deepEqual(trasGol.ventajas, conToque.ventajas);
-  // Michi juega igual con las ventajas puestas (y siempre toca la pelota).
+  // Happy juega igual con las ventajas puestas (y siempre toca la pelota).
   const conTodo = partidoNuevo(ventajasDe({ habilidades: ['despiste', 'frio', 'candado'] }));
   const jugada = jugadaDeKapi(conTodo.mesa, canchaPartido(conTodo.ventajas), { rnd: azar(3), potencia: 0.9, ruidoExtra: 0.06 });
   assert.ok(jugada && conTodo.mesa.cuerpos[jugada[0]].equipo === 'rival');

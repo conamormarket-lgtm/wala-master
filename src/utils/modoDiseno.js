@@ -2,7 +2,7 @@
 // MODO DISEÑO — ver cualquier estado de la Zona Arcade sin esperar a mañana
 //
 // Los minijuegos están cerrados por día o por semana, así que retocar el diseño
-// de "Kapi triste" o de "ruleta con giro pendiente" obligaba a esperar días o a
+// de "Walito triste" o de "ruleta con giro pendiente" obligaba a esperar días o a
 // tocar la base de datos. Esto fuerza lo que se PINTA mediante parámetros en la
 // URL.
 //
@@ -26,7 +26,7 @@
 //   ruleta    = bloqueada | desbloqueada | girada | pendiente | perdida
 //   dias      = 0..7   (días reclamados que muestra la barra de progreso)
 //   bolitas   = disponible | completado
-//   moneda    = disponible | reclamada   (la moneda diaria de Kapi en el hub)
+//   moneda    = disponible | reclamada   (la moneda diaria de Walito en el hub)
 //   sesion    = invitado | activa        (pinta la pantalla como si hubiera sesion)
 //   premios   = demo                     (rueda de muestra, para repasar colores)
 //   resultado = premio | cupon | nada    (abre el modal del premio sin girar)

@@ -6,13 +6,13 @@ import { Texto } from '../Traduccion';
 import s from './TarjetaAyuda.module.css';
 
 /**
- * "¿Te quedó otra duda?": tarjeta de contacto con Kapi asomándose por el
+ * "¿Te quedó otra duda?": tarjeta de contacto con Walito asomándose por el
  * borde (suelto, sin círculo). La usa Preguntas frecuentes y sirve para
  * cualquier lugar donde se ofrezca ayuda.
  *  - titulo, texto
  *  - accion: { texto, url } botón (p. ej. el WhatsApp de la tienda); sin él
  *    la tarjeta solo informa
- *  - imagen: Kapi por defecto
+ *  - imagen: Walito por defecto
  */
 export function TarjetaAyuda({
   titulo = '¿Te quedó otra duda?',

@@ -57,7 +57,7 @@
   }
 }
 
-/* Resumen con el menú lateral: Kapi invita a elegir una opción (en vez de
+/* Resumen con el menú lateral: Walito invita a elegir una opción (en vez de
    repetir el menú en cuadros). Solo con el menú lateral (arriba). */
 .elegirOpcion {
   display: none;

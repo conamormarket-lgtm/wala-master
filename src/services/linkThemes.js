@@ -174,7 +174,7 @@ export function estiloBotonStyle(diseno) {
 // al hacer clic se copian al formulario (y luego se pueden ajustar los colores).
 export const TEMAS = [
   // Los de Walá primero: los colores de la marca (violeta, rosa, el naranja de
-  // Kapi) y la letra de la tienda (sin fontFamily, el título va con la de marca).
+  // Walito) y la letra de la tienda (sin fontFamily, el título va con la de marca).
   {
     id: 'wala-noche',
     nombre: 'Walá noche',
@@ -221,7 +221,7 @@ export const TEMAS = [
   },
   {
     id: 'wala-kapi',
-    nombre: 'Kapi caramelo',
+    nombre: 'Walito caramelo',
     diseno: {
       buttonStyle: 'solid', cornerRoundness: 20, buttonShadow: 'soft',
       buttonColor: '#c2410c', buttonTextColor: '#fff7ed',

@@ -1,7 +1,7 @@
 /* ── Capa y pila ───────────────────────────────────────── */
 .capa {
   --flotante-abajo: calc(18px + var(--safe-bottom, 0px));
-  /* Un solo tamaño para todos los flotantes (Kapi un poco más ancho: su cara
+  /* Un solo tamaño para todos los flotantes (Walito un poco más ancho: su cara
      no es un círculo y así pesa lo mismo a la vista). */
   --flotante-tam: 56px;
 
@@ -150,8 +150,8 @@
   }
 }
 
-/* ── Kapi ──────────────────────────────────────────────── */
-/* Kapi suelto, como sticker (su imagen ya es transparente): sin círculo. */
+/* ── Walito ──────────────────────────────────────────────── */
+/* Walito suelto, como sticker (su imagen ya es transparente): sin círculo. */
 .kapi {
   width: calc(var(--flotante-tam, 56px) + 4px);
   height: auto;

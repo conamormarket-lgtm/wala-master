@@ -292,7 +292,7 @@ export function PaginaSuscripcionAdmin({
           campos: ({ datos: d, cambiar, errores, idDe }) => (
             <>
               <GrupoCampos titulo="El beneficio" columnas={2}>
-                <Campo id={idDe('marca')} etiqueta="Marca" placeholder="Ej. Kapi Café" value={d.marca} error={errores.marca} onChange={(e) => cambiar('marca', e.target.value)} />
+                <Campo id={idDe('marca')} etiqueta="Marca" placeholder="Ej. Walito Café" value={d.marca} error={errores.marca} onChange={(e) => cambiar('marca', e.target.value)} />
                 <Campo etiqueta="Descuento" placeholder="Ej. 20 %" value={d.descuento} onChange={(e) => cambiar('descuento', e.target.value)} />
               </GrupoCampos>
               <GrupoCampos>

@@ -6,7 +6,7 @@
 // =========================================================================
 
 /*
- * Los niveles de La Pichanga de Kapi: dónde está cada cosa. La cancha mide
+ * Los niveles de La Pichanga de Walito: dónde está cada cosa. La cancha mide
  * 600 × 900 y el arco que se ataca está arriba (ver pichangaMotor.mjs).
  * Cada nivel tiene una solución comprobada en pichangaSoluciones.mjs (la
  * arma `npm run gen:pichanga`): de ahí salen el par (las 3 estrellas) y los
@@ -14,7 +14,7 @@
  * una solución ya no mete gol.
  *
  * Mundo 1, la canchita del barrio: rivales desde el 5, conos desde el 8,
- * Kapi de arquero desde el 12 y penales contra Kapi en el 20 (el jefe).
+ * Walito de arquero desde el 12 y penales contra Walito en el 20 (el jefe).
  * Mundo 2, invierno en el potrero: barro desde el 21, hielo desde el 26, arco
  * chico desde el 31 y penales más difíciles en el 40.
  */
@@ -36,7 +36,7 @@ const DATOS = [
   { mias: [[200, 660]], pelota: [260, 500] },
   { mias: [[430, 700]], pelota: [380, 430] },
   { mias: [[150, 700], [450, 720]], pelota: [480, 330] },
-  // 5-7: rivales (las chapas de Kapi) en el camino.
+  // 5-7: rivales (las chapas de Walito) en el camino.
   { mias: [[300, 700]], pelota: [300, 560], rivales: [[300, 300]] },
   { mias: [[200, 720], [400, 720]], pelota: [300, 520], rivales: [[245, 270], [355, 270]] },
   { mias: [[130, 760]], pelota: [95, 420], rivales: [[300, 230]] },
@@ -45,7 +45,7 @@ const DATOS = [
   { mias: [[150, 740], [450, 740]], pelota: [300, 600], conos: [[220, 260], [380, 260], [300, 400]], rivales: [[300, 190]] },
   { mias: [[300, 752]], pelota: [300, 690], rivales: [[225, 410], [375, 410], [300, 250]] },
   { mias: [[100, 620], [500, 620]], pelota: [300, 470], conos: [[300, 310]], rivales: [[200, 200], [400, 200]] },
-  // 12-19: Kapi de arquero.
+  // 12-19: Walito de arquero.
   { mias: [[300, 650]], pelota: [300, 500], kapi: K(300, 1.5) },
   { mias: [[200, 690], [400, 690]], pelota: [300, 530], conos: [[300, 340]], kapi: K(300, 2) },
   { mias: [[300, 752]], pelota: [450, 460], rivales: [[320, 300]], kapi: K(300, 2, 60, 30) },
@@ -54,7 +54,7 @@ const DATOS = [
   { mias: [[460, 770]], pelota: [520, 320], rivales: [[410, 200]], kapi: K(300, 2, 70, 70) },
   { mias: [[200, 770], [400, 770], [300, 640]], pelota: [300, 490], rivales: [[250, 310], [350, 310], [300, 205]], kapi: K(300, 2) },
   { mias: [[100, 790], [500, 790]], pelota: [300, 330], conos: [[200, 430], [400, 430]], kapi: K(300, 2.5, 60, 120) },
-  // 20: el jefe, penales contra Kapi (3 goles en 5 tiros).
+  // 20: el jefe, penales contra Walito (3 goles en 5 tiros).
   { mias: [[300, 300]], pelota: [300, 235], kapi: K(300, 2.5, 65), penales: { tiros: 5, goles: 3 } },
 
   /* ── Mundo 2: Invierno en el potrero ── */
@@ -80,7 +80,7 @@ const DATOS = [
   { mias: [[470, 780]], pelota: [530, 420], arcos: { arriba: 160 }, rivales: [[430, 220]], zonas: [barro(0, 120, 250, 300)], kapi: K(300, 2, 40) },
   { mias: [[200, 780], [400, 780]], pelota: [300, 460], arcos: { arriba: 160 }, zonas: [hielo(100, 520, 400, 200)], rivales: [[240, 280], [360, 280], [300, 360]], kapi: K(300, 2, 40) },
   { mias: [[120, 790], [480, 790], [300, 700]], pelota: [300, 420], arcos: { arriba: 160 }, zonas: [barro(0, 200, 160, 300), barro(440, 200, 160, 300)], conos: [[230, 300], [370, 300]], kapi: K(300, 2.5, 40, 20) },
-  // 40: el jefe, penales más difíciles (arco chico, Kapi rápido, 3 de 5).
+  // 40: el jefe, penales más difíciles (arco chico, Walito rápido, 3 de 5).
   { mias: [[300, 300]], pelota: [300, 235], arcos: { arriba: 180 }, kapi: K(300, 3, 50), penales: { tiros: 5, goles: 3 } },
 ];
 

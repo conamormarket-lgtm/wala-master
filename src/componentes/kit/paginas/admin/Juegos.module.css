@@ -1,4 +1,4 @@
-/* ── D7a · Kapi, La Palabra del día y Las Bolitas ─────── */
+/* ── D7a · Walito, La Palabra del día y Las Bolitas ─────── */
 .pagina {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -43,7 +43,7 @@
   gap: 0.6rem;
 }
 
-/* Kapi */
+/* Walito */
 
 
 

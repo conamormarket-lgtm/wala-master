@@ -838,3 +838,9 @@ fondo. Niveles y retos resueltos otra vez con esta regla.
 - Cada camiseta trae una habilidad (`HABILIDADES_PICHANGA` en `pichangaProgreso.mjs`; las que se abren jugando traen dos o tres): Toque de más (4 pases), Ojo de Kapi (ves la ruta al apuntar), Cañonazo (tiros ×1.12), Muralla (arquero de radio 48), Candado (tu arco de 176), Despiste (Michi apunta peor) y Viento frío (tiros de Michi ×0.9).
 - **Solo valen contra Michi.** Antes del partido sale la hoja «Arma tu equipo» (camiseta, pelota, cancha y dificultad). Las ventajas (`ventajasDe`) quedan guardadas en el partido (`partidoNuevo(ventajas)`) y no cambian hasta el próximo, aunque cambies de camiseta en el vestuario.
 - En los niveles y el reto todas las camisetas juegan igual: lo que comprueba el servidor y los rankings no cambian. El motor recibe `potencia` (1 por defecto: los niveles dan exactamente lo mismo), `radioPortero` en la cancha y `potencia`/`ruidoExtra` en `jugadaDeKapi`.
+
+### Los nombres: Walito y Happy (2026-11-09)
+
+- La mascota **Kapi ahora se llama Walito**, y el gato (Michi en la Pichanga, «Adicto» en los stickers) **ahora se llama Happy**. Los juegos son «Las Bolitas de Walito», «La Ruleta de Walito» y «La Pichanga de Walito».
+- Solo cambió lo que se ve. Los nombres internos siguen igual para no romper nada: `kapi` en minúscula, `CARAS_KAPI`, `feedKapiSecure`, `Kapi.jsx`/`VentanaKapi`, `/assets/kapi/`, el pack `kapi`/`adicto` de stickers y `PERSONAJES.michi`. Las guías de más arriba usan los nombres viejos.
+- Los polos «Adicto a las…» son productos: no cambian.

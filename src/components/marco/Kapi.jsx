@@ -18,7 +18,7 @@ import { retoVisto, marcarRetoVisto, EVENTO_RETO_VISTO } from '../../utils/retoV
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
 // El recorrido se abre solo en momentos tranquilos (inicio, Mi cuenta,
 // Minijuegos): nunca encima de un producto, del carrito o del pago. En el
-// resto espera; si la persona toca a Kapi, empieza ahí mismo.
+// resto espera; si la persona toca a Walito, empieza ahí mismo.
 const esMomentoTranquilo = (ruta) => ruta === '/' || ruta.startsWith('/cuenta') || ruta.startsWith('/minijuegos');
 // ?kapi= del modo diseño → estado del kit.
 const ESTADOS_DISENO = { feliz: 'feliz', hambriento: 'hambre', triste: 'triste' };
@@ -33,7 +33,7 @@ const tutorialEnNavegador = () => {
 };
 
 /*
- * Kapi (M8) con el kit: KapiFlotante en la pila y VentanaKapi. Todo lo de
+ * Walito (M8) con el kit: KapiFlotante en la pila y VentanaKapi. Todo lo de
  * KapiPet sigue igual:
  *  - No sale sin perfil, en landings (cabecera oculta: protege el pago) ni
  *    en el estudio de Crear (tapaba el botón de compra) ni al abrir un regalo
@@ -53,7 +53,7 @@ export default function Kapi() {
   const enLanding = layout && layout.isHeaderVisible === false;
   const { pathname } = useLocation();
   // El estudio, abrir un regalo, el acceso, la encuesta y Crear ya tienen su
-  // propio Kapi (o ninguno): ver kapiFlotante.js (también lo usa el pie).
+  // propio Walito (o ninguno): ver kapiFlotante.js (también lo usa el pie).
   const sinFlotante = sinKapiFlotante(pathname);
   const enMomentoTranquilo = esMomentoTranquilo(pathname);
   const [abierta, setAbierta] = useState(false);
@@ -145,8 +145,8 @@ export default function Kapi() {
           prevBtnText: 'Atrás',
           doneBtnText: '¡Entendido!',
           steps: [
-            { element: '#kapi-pet-container', popover: { title: 'Conoce a Kapi', description: '¡Esta es tu mascota virtual! Crecerá contigo mientras usas la app.', side: 'top' } },
-            { element: '#kapi-stats', popover: { title: 'Felicidad de Kapi', description: 'Kapi necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: 'bottom' } },
+            { element: '#kapi-pet-container', popover: { title: 'Conoce a Walito', description: '¡Esta es tu mascota virtual! Crecerá contigo mientras usas la app.', side: 'top' } },
+            { element: '#kapi-stats', popover: { title: 'Felicidad de Walito', description: 'Walito necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: 'bottom' } },
             { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con monedas que puedes canjear por recompensas reales.', side: 'top' } },
           ],
           onDestroyed: () => {
@@ -176,7 +176,7 @@ export default function Kapi() {
   }, [abierta, comidaPendiente, calentarKapi]);
 
   if (enLanding || sinFlotante || layout?.kapiFlotanteOculto) return null;
-  // ?sesion=activa pinta a Kapi sin cuenta (solo fuera de producción; no
+  // ?sesion=activa pinta a Walito sin cuenta (solo fuera de producción; no
   // concede nada: el servidor decide si se puede alimentar).
   const perfil = userProfile || (diseno('sesion') === 'activa'
     ? { lastKapiClaimDate: diseno('kapi') === 'feliz' ? limaTodayStr() : undefined }
@@ -190,11 +190,11 @@ export default function Kapi() {
   const aviso = !kapi.alimentado || !tutorialVisto() || retoSinVer;
 
   const alimentar = async (boton) => {
-    // Se mide ya: al acreditarse, el botón se cambia por "¡Kapi está lleno!".
+    // Se mide ya: al acreditarse, el botón se cambia por "¡Walito está lleno!".
     const rect = boton?.getBoundingClientRect();
     const [res] = await Promise.all([feedKapi(), esperar(700)]);
     if (res?.error) {
-      addToast(res.error || 'No pudimos alimentar a Kapi. Inténtalo de nuevo.', 'error');
+      addToast(res.error || 'No pudimos alimentar a Walito. Inténtalo de nuevo.', 'error');
       return;
     }
     // Las monedas que acreditó el servidor, volando al contador de la cabecera.

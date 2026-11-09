@@ -19,8 +19,8 @@ import s from './CuentaRecompensas.module.css';
  * Páginas del grupo Recompensas de la cuenta: catálogo, cupones, misiones y
  * referidos. Van dentro de MarcoCuenta. Lo que va al servidor (canjear,
  * completar, reclamar) entra como promesas; si falla, su mensaje se muestra
- * en la página. Los estados vacíos llevan un sello, no la cara de Kapi (en la
- * tienda ya está el flotante: un solo Kapi a la vista).
+ * en la página. Los estados vacíos llevan un sello, no la cara de Walito (en la
+ * tienda ya está el flotante: un solo Walito a la vista).
  */
 
 const miles = (n) => Number(n || 0).toLocaleString('es-PE');
@@ -143,7 +143,7 @@ export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, 
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
       ) : cupones.length === 0 && stickers.length === 0 ? (
-        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en La Ruleta de Kapi o canjeando tus monedas en el catálogo.</Texto>}>
+        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en La Ruleta de Walito o canjeando tus monedas en el catálogo.</Texto>}>
           <Boton to={urlRuleta}><Texto>Ir a la ruleta</Texto></Boton>
           <Boton to={urlCatalogo} variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
         </EstadoVacio>
@@ -167,7 +167,7 @@ export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, 
             />
             {activos.length > 0 ? lista(activos) : (
               <div className={s.sinCupones}>
-                <p><Texto>Gana más en La Ruleta de Kapi o canjeando tus monedas en el catálogo.</Texto></p>
+                <p><Texto>Gana más en La Ruleta de Walito o canjeando tus monedas en el catálogo.</Texto></p>
                 <span className={s.sinCuponesBotones}>
                   <Boton to={urlRuleta} tamano="sm"><Texto>Ir a la ruleta</Texto></Boton>
                   <Boton to={urlCatalogo} tamano="sm" variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
@@ -253,7 +253,7 @@ export function PaginaMisiones({
       {aviso && <Aviso tipo={aviso.tipo} onCerrar={() => setAviso(null)}>{aviso.texto}</Aviso>}
       {reto && (
         <>
-          <CabezaCuenta nivel={2} titulo={<Texto>Reto de la semana</Texto>} subtitulo={<Texto>Uno para todos, de lunes a lunes. También lo tienes en la ventana de Kapi.</Texto>} />
+          <CabezaCuenta nivel={2} titulo={<Texto>Reto de la semana</Texto>} subtitulo={<Texto>Uno para todos, de lunes a lunes. También lo tienes en la ventana de Walito.</Texto>} />
           <RetoSemanal {...reto} />
         </>
       )}

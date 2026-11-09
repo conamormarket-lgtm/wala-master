@@ -1,7 +1,7 @@
 /*
- * ¿El cliente ya vio el reto de esta semana? Para el puntito de aviso de Kapi:
+ * ¿El cliente ya vio el reto de esta semana? Para el puntito de aviso de Walito:
  * sale mientras haya un reto activo sin completar que no abrió ni en la
- * ventana de Kapi ni en Mi cuenta › Misiones. Solo en este navegador (es una
+ * ventana de Walito ni en Mi cuenta › Misiones. Solo en este navegador (es una
  * comodidad: si se borra, el puntito vuelve a salir una vez).
  */
 const clave = (uid) => `wala_reto_visto:${uid || 'anonimo'}`;

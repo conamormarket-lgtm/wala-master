@@ -5,7 +5,7 @@ import { PilaFlotante, BotonWhatsApp, PildoraRecompensa } from '../../componente
 import useWhatsAppDeLaRuta from './useWhatsAppDeLaRuta';
 import { esRutaDeJuego } from './modoJuego';
 
-// Kapi (con su ventana, el reto y el recorrido) llega en su propio archivo,
+// Walito (con su ventana, el reto y el recorrido) llega en su propio archivo,
 // como antes: no hace falta para ver la página.
 const Kapi = lazy(() => import('./Kapi'));
 
@@ -34,7 +34,7 @@ const pildoraOculta = () => {
 /*
  * Lo que flota sobre la página (M7-M10) con el kit: PilaFlotante, abajo a la
  * derecha y sobre la barra inferior en el celular. El primero queda abajo:
- * WhatsApp y encima Kapi. A la izquierda, la píldora "Gana 15 monedas".
+ * WhatsApp y encima Walito. A la izquierda, la píldora "Gana 15 monedas".
  * Cada uno decide si sale. Reemplaza al .floating-action-stack de App.jsx, a
  * KapiPet y a la píldora que dibujaba Header.jsx.
  */
@@ -60,7 +60,7 @@ export default function FlotantesDeLaTienda() {
 
   return (
     <PilaFlotante
-      // Y en los minijuegos (modo juego): Kapi y WhatsApp tapaban los tubos.
+      // Y en los minijuegos (modo juego): Walito y WhatsApp tapaban los tubos.
       ocultarEnCelular={CON_BOTON_FIJO.some((r) => pathname.startsWith(r)) || esRutaDeJuego(pathname)}
       izquierda={conPildora && (
         <PildoraRecompensa

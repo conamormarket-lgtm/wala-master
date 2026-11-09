@@ -55,7 +55,7 @@
 }
 
 /* --- Indicador de lo que queda por jugar hoy -----------------------------
-   Antes aquí había tres chips: Wala Coins, Kapi Coins y este. Los dos saldos
+   Antes aquí había tres chips: Wala Coins, Walito Coins y este. Los dos saldos
    ya viven en el Header en TODAS las páginas, así que repetirlos aquí solo
    restaba peso al único dato que el hub aporta.
    ------------------------------------------------------------------------- */
@@ -217,7 +217,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Kapi queda en la mitad superior: el recorte se sesga hacia arriba para no
+  /* Walito queda en la mitad superior: el recorte se sesga hacia arriba para no
      cortarle la cabeza. */
   object-position: center 42%;
 }
@@ -529,7 +529,7 @@
   --acento-tint: rgba(16, 185, 129, 0.1);
 }
 
-/* Alimenta a Kapi — dorado de fidelización (el mismo de las monedas) */
+/* Alimenta a Walito — dorado de fidelización (el mismo de las monedas) */
 .kapi {
   --acento-ink: #b45309;
   --acento-tint: rgba(245, 158, 11, 0.12);
@@ -541,7 +541,7 @@
   --acento-tint: rgba(139, 92, 246, 0.12);
 }
 
-/* Las Bolitas de Kapi — cian (contrapunto frío al violeta) */
+/* Las Bolitas de Walito — cian (contrapunto frío al violeta) */
 .bolitas {
   --acento-ink: #0e7490;
   --acento-tint: rgba(6, 182, 212, 0.12);

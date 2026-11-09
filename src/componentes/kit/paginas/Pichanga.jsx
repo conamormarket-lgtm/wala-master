@@ -31,7 +31,7 @@ import { Texto, useTexto } from '../Traduccion';
 import s from './Juegos.module.css';
 import c from '../piezas/Pichanga.module.css';
 
-/* ── La Pichanga de Kapi (/pichanga) ───────────────────── */
+/* ── La Pichanga de Walito (/pichanga) ───────────────────── */
 
 // Lo que se guarda del jugador y el vestuario: piezas/pichangaProgreso.mjs.
 export { PROGRESO_PICHANGA, progresoPichanga, unirProgresos } from '../piezas/pichangaProgreso.mjs';
@@ -43,9 +43,9 @@ const PASTO_RETO = ['#4ade80', '#3fc574'];
 
 /* Cómo se explica cada obstáculo la primera vez que aparece. */
 const OBSTACULOS = {
-  rivales: { titulo: 'Nuevo: el equipo de Michi', texto: 'Las chapas rojas son del equipo de Michi, el gato. Después de cada toque tuyo, Michi responde con la que esté más cerca de la pelota: la despeja o tira a tu arco. Si te mete gol, la jugada vuelve atrás; si se mete un autogol, ¡ganas!' },
+  rivales: { titulo: 'Nuevo: el equipo de Happy', texto: 'Las chapas rojas son del equipo de Happy, el gato. Después de cada toque tuyo, Happy responde con la que esté más cerca de la pelota: la despeja o tira a tu arco. Si te mete gol, la jugada vuelve atrás; si se mete un autogol, ¡ganas!' },
   conos: { titulo: 'Nuevo: conos', texto: 'Los conos naranjas no se mueven. La pelota rebota en ellos: búscale el ángulo.' },
-  kapi: { titulo: 'Nuevo: Michi de arquero', texto: 'Michi cuida el arco y va de lado a lado mientras la pelota rueda. Míralo bien antes de tirar: se mueve después de que sueltas.' },
+  kapi: { titulo: 'Nuevo: Happy de arquero', texto: 'Happy cuida el arco y va de lado a lado mientras la pelota rueda. Míralo bien antes de tirar: se mueve después de que sueltas.' },
   barro: { titulo: 'Nuevo: barro', texto: 'En el barro todo frena. Tira con más fuerza o pasa por un costado.' },
   hielo: { titulo: 'Nuevo: hielo', texto: 'En el hielo todo resbala y llega más lejos. Tira suave.' },
   arcoChico: { titulo: 'Nuevo: arco chico', texto: 'Desde aquí el arco es más angosto. Apunta fino: los postes también rebotan.' },
@@ -56,7 +56,7 @@ const textoAyuda = (tipo, n) => `${n} ${NOMBRE_AYUDA[tipo][n === 1 ? 0 : 1]}`;
 const CLASE = { equipo: 'equipo', pelota: 'pelota', estadio: 'cancha' };
 
 const buscar = (lista, id) => lista.find((i) => i.id === id) || lista[0];
-/** Los nombres de las habilidades de una camiseta ("Cañonazo · Ojo de Kapi"). */
+/** Los nombres de las habilidades de una camiseta ("Cañonazo · Ojo de Walito"). */
 const nombresHabilidades = (equipo) => (equipo?.habilidades || []).map((h) => HABILIDADES_PICHANGA[h]?.nombre).filter(Boolean).join(' · ');
 
 /** ¿Se perdió ya con estos toques de más? (los penales: si ya no alcanzan los goles). */
@@ -126,7 +126,7 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
 
 /** El vestuario: equipo, pelota y cancha del partido. Todo se elige; lo cerrado dice cómo se abre. */
 /*
- *  - enPartido: la camiseta del partido contra Michi que está en juego (o
+ *  - enPartido: la camiseta del partido contra Happy que está en juego (o
  *    null). Mientras dura, la camiseta no se cambia: sus habilidades son las
  *    de todo el partido.
  */
@@ -147,13 +147,13 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir, enPartido = 
           valor={clase}
           onChange={setClase}
         />
-        {clase === 'estadio' && <p className={s.notaSuave}><Texto>La cancha es la del partido contra Michi. Los niveles usan la de su mundo.</Texto></p>}
+        {clase === 'estadio' && <p className={s.notaSuave}><Texto>La cancha es la del partido contra Happy. Los niveles usan la de su mundo.</Texto></p>}
         {clase === 'equipo' && (enPartido ? (
           <Aviso compacto tipo="info">
-            <Texto>{`Estás jugando contra Michi con ${enPartido.nombre}. La camiseta se cambia cuando termine el partido o al empezar otro.`}</Texto>
+            <Texto>{`Estás jugando contra Happy con ${enPartido.nombre}. La camiseta se cambia cuando termine el partido o al empezar otro.`}</Texto>
           </Aviso>
         ) : (
-          <p className={s.notaSuave}><Texto>Cada camiseta trae su habilidad para el partido contra Michi. En los niveles y el reto todas juegan igual.</Texto></p>
+          <p className={s.notaSuave}><Texto>Cada camiseta trae su habilidad para el partido contra Happy. En los niveles y el reto todas juegan igual.</Texto></p>
         ))}
         <ul className={c.prendas}>
           {listas[clase].map((item) => {
@@ -189,7 +189,7 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir, enPartido = 
 }
 
 /**
- * Antes del partido contra Michi: eliges la camiseta (cada una con su
+ * Antes del partido contra Happy: eliges la camiseta (cada una con su
  * habilidad, que vale todo el partido), la pelota, la cancha y la dificultad.
  *  - progreso · onElegir(clase, id): pelota y cancha se guardan al tocarlas
  *  - onDificultad(d) · onEmpezar(equipoId)
@@ -205,7 +205,7 @@ function ArmarEquipo({ abierto, onCerrar, progreso, onElegir, onDificultad, onEm
       pie={<Boton bloque icono={<Gamepad2 aria-hidden="true" />} onClick={() => onEmpezar(elegido)}><Texto>¡A jugar!</Texto></Boton>}
     >
       <div className={c.armar} data-componente="ArmarEquipoPichanga">
-        <p className={s.notaSuave}><Texto>Elige tu camiseta: su habilidad vale todo el partido contra Michi.</Texto></p>
+        <p className={s.notaSuave}><Texto>Elige tu camiseta: su habilidad vale todo el partido contra Happy.</Texto></p>
         <ul className={c.camisetas}>
           {EQUIPOS_PICHANGA.map((e) => {
             const libre = desbloqueado(e, progreso);
@@ -339,11 +339,11 @@ function Desbloqueos({ lista, puestos = {}, onPoner }) {
 }
 
 /**
- * La Pichanga de Kapi: fútbol de chapas para jugar solo. Se arrastra desde una
+ * La Pichanga de Walito: fútbol de chapas para jugar solo. Se arrastra desde una
  * de tus chapas hacia atrás, como una resortera, y se suelta: la chapa sale
  * hacia el otro lado y empuja la pelota. Niveles en mundos de 20 (el último,
- * penales contra Kapi), de 1 a 3 estrellas según los toques, ayudas por nivel,
- * una racha que abre cofres y un partido contra Kapi por turnos. El vestuario
+ * penales contra Walito), de 1 a 3 estrellas según los toques, ayudas por nivel,
+ * una racha que abre cofres y un partido contra Walito por turnos. El vestuario
  * se abre jugando (nada se compra).
  * Ganar un nivel o el reto del día da monedas una vez al día (lo comprueba el
  * servidor); sin cuenta se juega igual y el premio invita a entrar.
@@ -381,14 +381,14 @@ export function PaginaPichanga({
   const [cobrado, setCobrado] = useState(yaHoy);
   const [premio, setPremio] = useState(null);
   const [partido, setPartido] = useState(partidoNuevo);
-  // El partido contra Michi empieza después de armar el equipo (la camiseta queda fija).
+  // El partido contra Happy empieza después de armar el equipo (la camiseta queda fija).
   const [armado, setArmado] = useState(false);
   const [armar, setArmar] = useState(modoInicial === 'partido');
   const [equipoPartido, setEquipoPartido] = useState(null);
   const [anim, setAnim] = useState(null);
   const [ruta, setRuta] = useState(null);
   const [resaltar, setResaltar] = useState(null);
-  // Mientras Michi responde en un nivel (entre tu tiro y el suyo) no se tira.
+  // Mientras Happy responde en un nivel (entre tu tiro y el suyo) no se tira.
   const [respondiendo, setRespondiendo] = useState(false);
   const [pensando, setPensando] = useState(false);
   const [resultado, setResultado] = useState(false);
@@ -444,7 +444,7 @@ export function PaginaPichanga({
     setRuta(null);
     const obstaculo = nuevo.lv.obstaculos.find((o) => !prog.vistos.includes(o));
     if (obstaculo) setExplicar(obstaculo);
-    else if (nuevo.lv.penales) setAviso(`¡Jefe! Penales contra Michi: mete ${nuevo.lv.penales.goles} de ${nuevo.lv.penales.tiros}.`);
+    else if (nuevo.lv.penales) setAviso(`¡Jefe! Penales contra Happy: mete ${nuevo.lv.penales.goles} de ${nuevo.lv.penales.tiros}.`);
   }, [claveJuego, modo, estado, Boolean(juego)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -490,16 +490,16 @@ export function PaginaPichanga({
     despues?.();
   };
 
-  /* ── El turno de Kapi en el partido ── */
+  /* ── El turno de Walito en el partido ── */
   useEffect(() => {
-    // Después de un gol, Michi saca cuando termina el festejo: la cancha se
+    // Después de un gol, Happy saca cuando termina el festejo: la cancha se
     // vuelve a montar al empezar y al acabar el temblor, y una animación a
     // medias volvería a empezar (se veía el tiro dos veces).
     if (modo !== 'partido' || !armado || partido.turno !== 'kapi' || partido.fin || anim || gol || estado === 'cargando') return undefined;
     setPensando(true);
     let vivo = true;
     const ids = [];
-    // Primero se ve "Kapi está pensando…"; después piensa (tarda un poco) y marca su chapa.
+    // Primero se ve "Walito está pensando…"; después piensa (tarda un poco) y marca su chapa.
     ids.push(setTimeout(() => {
       if (!vivo) return;
       const v = partido.ventajas || {};
@@ -640,7 +640,7 @@ export function PaginaPichanga({
     setCaraArquero('feliz');
     setAnimos({ mia: 'feliz', rival: 'feliz' });
     setJuego({ ...antes, usos, vistaActiva: false });
-    // Al final de todo (tu tiro y, si hubo, la respuesta de Michi).
+    // Al final de todo (tu tiro y, si hubo, la respuesta de Happy).
     const terminar = () => {
       setRespondiendo(false);
       setJuego((j) => ({ ...j, partida: nueva, pasados: [...j.pasados, partida] }));
@@ -648,13 +648,13 @@ export function PaginaPichanga({
         fx('golKapi');
         setGol({ id: Date.now(), tuyo: false });
         setAnimos({ mia: 'triste', rival: 'feliz' });
-        setAviso('¡Gol de Michi! La jugada vuelve atrás y el toque se gasta.');
+        setAviso('¡Gol de Happy! La jugada vuelve atrás y el toque se gasta.');
       } else if (nueva.ultimo?.autogolDeMichi) {
         fx('gol');
         setGol({ id: Date.now(), tuyo: true });
         setAnimos({ mia: 'feliz', rival: 'triste' });
         repeticion.current = { sim: respuesta.sim, cuerpos: sim.mesa.cuerpos, t0: sim.mesa.t, tirador: respuesta.tiro[0] };
-        setAviso('¡Autogol de Michi!');
+        setAviso('¡Autogol de Happy!');
       }
       if (nueva.ganada) (lv.reto ? ganarReto : ganarNivel)(lv, nueva, antes.extras);
       else if (nueva.perdida) { fx('fallo'); setSinToques(true); }
@@ -670,7 +670,7 @@ export function PaginaPichanga({
         if (lv.penales && !nueva.ganada) setAviso(`¡Gol! Llevas ${nueva.goles} de ${lv.penales.goles}.`);
       } else if (lv.penales) {
         fx('fallo');
-        setAviso(atajo ? '¡Atajó Michi!' : '¡Afuera!');
+        setAviso(atajo ? '¡Atajó Happy!' : '¡Afuera!');
       } else if (nueva.ultimo?.autogol) {
         fx('golKapi');
         setAnimos({ mia: 'triste', rival: 'feliz' });
@@ -678,14 +678,14 @@ export function PaginaPichanga({
       } else if (nueva.ultimo?.pase) {
         setAviso(`¡Pase! Toque gratis: ahora tira la chapa que la recibió (${nueva.pases}/${PASES_MAX}).`);
       } else if (atajo) {
-        setAviso('¡Atajó Michi!');
+        setAviso('¡Atajó Happy!');
       }
       if (!respuesta) { terminar(); return; }
-      // Responde Michi: se ve dónde quedó todo, marca su chapa y tira.
+      // Responde Happy: se ve dónde quedó todo, marca su chapa y tira.
       setRespondiendo(true);
       setJuego((j) => ({ ...j, partida: { ...j.partida, mesa: sim.mesa } }));
       setResaltar(respuesta.tiro[0]);
-      if (!atajo) setAviso('Responde Michi…');
+      if (!atajo) setAviso('Responde Happy…');
       setTimeout(() => {
         setResaltar(null);
         fx('tiro');
@@ -750,7 +750,7 @@ export function PaginaPichanga({
     setPremio(null);
     if (esReto) { cambiarModo('niveles'); return; }
     if (numero >= TOTAL) {
-      setAviso('¡Terminaste todos los niveles! Pronto llegan más mundos. Mientras, juega contra Michi.');
+      setAviso('¡Terminaste todos los niveles! Pronto llegan más mundos. Mientras, juega contra Happy.');
       return;
     }
     irANivel(numero + 1);
@@ -797,7 +797,7 @@ export function PaginaPichanga({
       setPartido(nuevo);
       if (nuevo.pase && !nuevo.fin) {
         const max = pasesMaxDe(nuevo, quien);
-        setAviso(quien === 'yo' ? `¡Pase! Tira la chapa que la recibió (${nuevo.pases}/${max}).` : `Pase de Michi: vuelve a tirar (${nuevo.pases}/${max}).`);
+        setAviso(quien === 'yo' ? `¡Pase! Tira la chapa que la recibió (${nuevo.pases}/${max}).` : `Pase de Happy: vuelve a tirar (${nuevo.pases}/${max}).`);
       }
       if (sim.gol) {
         const mio = sim.gol === 'arriba';
@@ -806,8 +806,8 @@ export function PaginaPichanga({
         setAnimos(mio ? { mia: 'feliz', rival: 'triste' } : { mia: 'triste', rival: 'feliz' });
         repeticion.current = { sim, cuerpos: antes.mesa.cuerpos, t0: antes.mesa.t, tirador: tiro[0] };
         let texto;
-        if (mio) texto = quien === 'yo' ? '¡GOOOL!' : '¡Autogol de Michi!';
-        else texto = quien === 'kapi' ? 'Gol de Michi.' : 'Uy, autogol.';
+        if (mio) texto = quien === 'yo' ? '¡GOOOL!' : '¡Autogol de Happy!';
+        else texto = quien === 'kapi' ? 'Gol de Happy.' : 'Uy, autogol.';
         setAviso(texto);
       }
       if (nuevo.fin) terminarPartido(nuevo);
@@ -843,7 +843,7 @@ export function PaginaPichanga({
     setPartido(partidoNuevo(partido.ventajas));
   };
 
-  /** Ojo de Kapi: al apuntar en el partido, por dónde irá la pelota. */
+  /** Ojo de Walito: al apuntar en el partido, por dónde irá la pelota. */
   const alApuntarPartido = (tiro) => {
     if (!tiro || !partido.ventajas?.ruta) { if (ruta) setRuta(null); return; }
     const sim = simularPartido({ ...partido, turno: 'yo' }, tiro, { cuadros: true });
@@ -862,11 +862,11 @@ export function PaginaPichanga({
     if (m === 'partido' && !armado) setArmar(true);
   };
 
-  // Con un partido contra Michi en juego, la camiseta no se cambia (sus habilidades son de todo el partido).
+  // Con un partido contra Happy en juego, la camiseta no se cambia (sus habilidades son de todo el partido).
   const partidoEnJuego = armado && !partido.fin;
   const elegirPrenda = (clase, id) => {
     if (clase === 'equipo' && partidoEnJuego) {
-      setAviso('Termina el partido contra Michi para cambiar de camiseta.');
+      setAviso('Termina el partido contra Happy para cambiar de camiseta.');
       return;
     }
     guardar({ [clase]: id });
@@ -876,7 +876,7 @@ export function PaginaPichanga({
     const tipo = explicar;
     setExplicar(null);
     if (!prog.vistos.includes(tipo)) guardar({ vistos: [...prog.vistos, tipo] });
-    if (lv?.penales) setAviso(`¡Jefe! Penales contra Michi: mete ${lv.penales.goles} de ${lv.penales.tiros}.`);
+    if (lv?.penales) setAviso(`¡Jefe! Penales contra Happy: mete ${lv.penales.goles} de ${lv.penales.tiros}.`);
   };
 
   /* ── Lo que se dibuja ── */
@@ -914,16 +914,16 @@ export function PaginaPichanga({
   let turnoTexto = null;
   if (esPartido) {
     if (!armado) turnoTexto = 'Arma tu equipo para empezar';
-    else if (partido.fin) turnoTexto = partido.fin === 'yo' ? '¡Ganaste!' : partido.fin === 'kapi' ? 'Ganó Michi' : 'Empate';
+    else if (partido.fin) turnoTexto = partido.fin === 'yo' ? '¡Ganaste!' : partido.fin === 'kapi' ? 'Ganó Happy' : 'Empate';
     else if (ocupado) turnoTexto = 'Rueda la pelota…';
-    else if (partido.turno === 'kapi') turnoTexto = 'Michi está pensando…';
+    else if (partido.turno === 'kapi') turnoTexto = 'Happy está pensando…';
     else turnoTexto = partido.pases ? `Tu turno (pases ${partido.pases}/${pasesMaxDe(partido, 'yo')})` : 'Tu turno: arrastra una de tus chapas';
   }
 
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
-        <MarcoJuego titulo="La Pichanga de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
+        <MarcoJuego titulo="La Pichanga de Walito" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
           <div className={s.bolitas} data-componente="PaginaPichanga">
             <div className={[s.mesa, c.mesa].join(' ')}>
               <span className={s.adornos} aria-hidden="true">
@@ -935,7 +935,7 @@ export function PaginaPichanga({
                   opciones={[
                     { id: 'niveles', texto: 'Niveles' },
                     ...(hoy ? [{ id: 'reto', texto: 'Reto del día' }] : []),
-                    { id: 'partido', texto: 'Contra Michi' },
+                    { id: 'partido', texto: 'Contra Happy' },
                   ]}
                   valor={modo}
                   onChange={cambiarModo}
@@ -961,7 +961,7 @@ export function PaginaPichanga({
                       </span>
                       <span className={c.goles}>{partido.goles.yo} – {partido.goles.kapi}</span>
                       <span className={c.lado}>
-                        <Texto>Michi</Texto>
+                        <Texto>Happy</Texto>
                         <MuestraPichanga item={EQUIPO_RIVAL} personaje="michi" tamano={30} />
                       </span>
                       <span className={c.turno}><Texto>{turnoTexto}</Texto></span>
@@ -1044,7 +1044,7 @@ export function PaginaPichanga({
                       onGolpe={alGolpe}
                       resaltar={resaltar}
                       receptor={esPartido ? (partido.turno === 'yo' ? partido.receptor : null) : partida.receptor}
-                      etiqueta={esPartido ? 'La cancha del partido contra Michi' : esReto ? 'La cancha del reto del día' : `La cancha del nivel ${numero}`}
+                      etiqueta={esPartido ? 'La cancha del partido contra Happy' : esReto ? 'La cancha del reto del día' : `La cancha del nivel ${numero}`}
                     />
                     {/* El confeti sale del arco; la cinta con el degradado de la marca. */}
                     <span className={c.fiestaArco} aria-hidden="true">
@@ -1056,7 +1056,7 @@ export function PaginaPichanga({
                     {gol && (
                       <span key={gol.id} className={[c.gol, !gol.tuyo && c.golKapi].filter(Boolean).join(' ')} aria-hidden="true">
                         <img src={gol.tuyo ? PERSONAJES.kapi.feliz : PERSONAJES.michi.feliz} alt="" width="64" height="64" className={c.golKapiCara} />
-                        <span className={c.golCinta}>{gol.tuyo ? '¡GOOOL!' : 'Gol de Michi'}</span>
+                        <span className={c.golCinta}>{gol.tuyo ? '¡GOOOL!' : 'Gol de Happy'}</span>
                       </span>
                     )}
                   </div>
@@ -1212,11 +1212,11 @@ export function PaginaPichanga({
         pasos={[
           'Toca una de tus chapas y arrastra hacia atrás, como una resortera. La flecha te dice hacia dónde sale y con cuánta fuerza.',
           'Suelta: tu chapa sale disparada, empuja la pelota y todo rebota en las bandas, los postes y las demás chapas.',
-          'Cada nivel tiene pocos toques. Con menos toques ganas más estrellas (hasta 3). El último de cada mundo es una tanda de penales contra Michi, el arquero gato.',
+          'Cada nivel tiene pocos toques. Con menos toques ganas más estrellas (hasta 3). El último de cada mundo es una tanda de penales contra Happy, el arquero gato.',
           <TextoResaltado key="racha" resaltar={[RACHA_COFRE]}>
             {`Gana ${RACHA_COFRE} niveles seguidos sin reiniciar y abre un cofre: ayudas que se guardan para cuando se acaben las del nivel.`}
           </TextoResaltado>,
-          'En «Contra Michi» juegas un partido de seis contra seis, por turnos: gana quien meta 3 goles. Antes eliges tu camiseta: cada una trae una habilidad para ese partido.',
+          'En «Contra Happy» juegas un partido de seis contra seis, por turnos: gana quien meta 3 goles. Antes eliges tu camiseta: cada una trae una habilidad para ese partido.',
           `Si la pelota toca a otra de tus chapas, es pase: no gasta toque y en el partido vuelves a tirar (hasta ${PASES_MAX}). Cuidado con tu arco: un autogol devuelve la jugada y gasta el toque.`,
         ]}
         pie={(
@@ -1238,7 +1238,7 @@ export function PaginaPichanga({
       <HojaInferior
         abierta={sinToques && Boolean(partida?.perdida)}
         onCerrar={() => setSinToques(false)}
-        titulo={lv?.penales ? 'Michi ganó los penales' : 'Se acabaron los toques'}
+        titulo={lv?.penales ? 'Happy ganó los penales' : 'Se acabaron los toques'}
         pie={(
           <div className={s.accionesHoja}>
             {quedan.toque > 0 && <Boton bloque icono={<Plus aria-hidden="true" />} onClick={toqueDeMas}><Texto>{lv?.penales ? 'Un tiro más' : 'Un toque más'}</Texto></Boton>}
@@ -1273,7 +1273,7 @@ export function PaginaPichanga({
           abierta={resultado}
           onCerrar={() => setResultado(false)}
           ocupado={ocupado}
-          titulo={finPartido.fin === 'yo' ? '¡Le ganaste a Michi!' : finPartido.fin === 'kapi' ? 'Esta vez ganó Michi' : '¡Empate!'}
+          titulo={finPartido.fin === 'yo' ? '¡Le ganaste a Happy!' : finPartido.fin === 'kapi' ? 'Esta vez ganó Happy' : '¡Empate!'}
           imagen={finPartido.fin === 'yo' ? CARAS_KAPI.feliz : finPartido.fin === 'kapi' ? CARAS_KAPI.triste : CARAS_KAPI.hambre}
           texto={(
             <div className={s.logro}>
@@ -1298,7 +1298,7 @@ export function PaginaPichanga({
           abierta={resultado && Boolean(logro)}
           onCerrar={() => setResultado(false)}
           ocupado={ocupado || acreditando}
-          titulo={logro?.reto ? '¡Reto del día completado!' : logro?.penales ? '¡Le ganaste los penales a Michi!' : `¡Nivel ${logro?.numero} completado!`}
+          titulo={logro?.reto ? '¡Reto del día completado!' : logro?.penales ? '¡Le ganaste los penales a Happy!' : `¡Nivel ${logro?.numero} completado!`}
           imagen={CARAS_KAPI.feliz}
           texto={logro && (
             <div className={s.logro}>

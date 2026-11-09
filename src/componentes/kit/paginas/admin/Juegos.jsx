@@ -22,7 +22,7 @@ import { EsqueletoFormulario } from '../../Esqueletos';
 
 /*
  * D7a · Los juegos: La Palabra del día (/admin/wordle) y Las Bolitas de
- * Kapi con las marcas
+ * Walito con las marcas
  * (/admin/bolitas). Lo que se guarda de las Bolitas lo comprueba el servidor
  * (adminBolitasSecure), que pone los topes de los cupones.
  */
@@ -124,7 +124,7 @@ export function PaginaPalabraAdmin({ palabras = [], cargando, error, onReintenta
   );
 }
 
-/* ── Las Bolitas de Kapi ───────────────────────────────── */
+/* ── Las Bolitas de Walito ───────────────────────────────── */
 
 /** Un cupón: % o S/ de descuento o envío gratis, su tope y en cuántos días vence. */
 function CamposCupon({ valor, onCambiar, errores = {} }) {
@@ -356,7 +356,7 @@ function RetosPatrocinados({ cabeza, antes, patrocinios = [], marcas = [], hoy =
 }
 
 /**
- * Las Bolitas de Kapi con las marcas (/admin/bolitas).
+ * Las Bolitas de Walito con las marcas (/admin/bolitas).
  *  - pestana + onPestana · marcas: [{ valor, texto }] · hoy · cargando · error · onReintentar
  *    (los de la pestaña abierta; en Cifras, `cargando` no tapa: usa cargandoMetricas)
  *  - patrocinios: [patrocinioDesde] (desde hoy) · onGuardarPatrocinio(datos, id?) · onQuitarPatrocinio(id)
@@ -373,7 +373,7 @@ export function PaginaBolitasAdmin({
   const [pestanaDentro, setPestanaDentro] = useState('patrocinios');
   const pestana = pestanaFuera || pestanaDentro;
   const ir = (p) => (onPestana ? onPestana(p) : setPestanaDentro(p));
-  const cabeza = { icono: 'bolitas', tono: 'rosa', titulo: 'Las Bolitas de Kapi', subtitulo: 'Las marcas en el juego: el reto patrocinado, los mundos, los premios del ranking y cómo va.' };
+  const cabeza = { icono: 'bolitas', tono: 'rosa', titulo: 'Las Bolitas de Walito', subtitulo: 'Las marcas en el juego: el reto patrocinado, los mundos, los premios del ranking y cómo va.' };
   const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes de las Bolitas" opciones={PESTANAS_BOLITAS} valor={pestana} onChange={ir} /></div>;
   const nombreMarca = (id) => marcas.find((m) => m.valor === id)?.texto || id;
 
@@ -446,7 +446,7 @@ export function PaginaBolitasAdmin({
   );
 }
 
-/* ── La Pichanga de Kapi ───────────────────────────────── */
+/* ── La Pichanga de Walito ───────────────────────────────── */
 
 const PESTANAS_PICHANGA = [
   { id: 'patrocinios', texto: 'Retos' },
@@ -476,9 +476,9 @@ const TEXTOS_PREMIOS_PICHANGA = {
 };
 
 /**
- * La Pichanga de Kapi (/admin/pichanga): el reto del día patrocinado por una
+ * La Pichanga de Walito (/admin/pichanga): el reto del día patrocinado por una
  * marca, los premios de los goleadores de cada mes y cómo va (partidas, retos,
- * goles, jugadores, dónde se traban, el vestuario y los partidos contra Michi).
+ * goles, jugadores, dónde se traban, el vestuario y los partidos contra Happy).
  *  - pestana + onPestana · marcas: [{ valor, texto }] · hoy · cargando · error · onReintentar
  *  - patrocinios: [patrocinioDesde] (desde hoy) · onGuardarPatrocinio(datos, id?) · onQuitarPatrocinio(id)
  *  - metricas: lo de adminPichanga('metricas') · dias + onDias · cargandoMetricas
@@ -498,7 +498,7 @@ export function PaginaPichangaAdmin({
   const m = metricas ? metricasPichanga(metricas, nombres) : null;
   const espera = cargandoMetricas || !m;
   const mesActual = m?.mes || metricas?.mes || '';
-  const cabeza = { icono: 'pichanga', tono: 'menta', titulo: 'La Pichanga de Kapi', subtitulo: 'El fútbol de chapas: el reto patrocinado, los premios de los goleadores del mes y cómo va.' };
+  const cabeza = { icono: 'pichanga', tono: 'menta', titulo: 'La Pichanga de Walito', subtitulo: 'El fútbol de chapas: el reto patrocinado, los premios de los goleadores del mes y cómo va.' };
   const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes de la Pichanga" opciones={PESTANAS_PICHANGA} valor={pestana} onChange={ir} /></div>;
 
   if (pestana === 'patrocinios') {
@@ -584,8 +584,8 @@ export function PaginaPichangaAdmin({
                 <BloqueMetrica titulo="El equipo que más usan" ayuda="El que tiene puesto cada cuenta.">
                   <ListaBarras filas={m.equipos.map((x) => ({ id: x.id, nombre: x.nombre, valor: x.n, texto: entero(x.n) }))} vacio="Todavía no hay datos." />
                 </BloqueMetrica>
-                <BloqueMetrica titulo="Contra Michi" ayuda={m.partidosJugados ? `${entero(m.partidosJugados)} partidos jugados; Michi ganó el ${m.ganaMichi} %. Por la dificultad que tiene puesta cada uno:` : 'Por la dificultad que tiene puesta cada uno.'}>
-                  <ListaBarras tono="menta" filas={m.dificultad.map((x) => ({ id: x.id, nombre: x.nombre, valor: x.n, texto: `${entero(x.n)} ${x.n === 1 ? 'persona' : 'personas'}` }))} vacio="Nadie jugó contra Michi todavía." />
+                <BloqueMetrica titulo="Contra Happy" ayuda={m.partidosJugados ? `${entero(m.partidosJugados)} partidos jugados; Happy ganó el ${m.ganaMichi} %. Por la dificultad que tiene puesta cada uno:` : 'Por la dificultad que tiene puesta cada uno.'}>
+                  <ListaBarras tono="menta" filas={m.dificultad.map((x) => ({ id: x.id, nombre: x.nombre, valor: x.n, texto: `${entero(x.n)} ${x.n === 1 ? 'persona' : 'personas'}` }))} vacio="Nadie jugó contra Happy todavía." />
                 </BloqueMetrica>
               </ColumnasMetricas>
             </>

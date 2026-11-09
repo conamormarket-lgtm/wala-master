@@ -26,7 +26,7 @@ import {
 import { Texto, useTexto } from '../Traduccion';
 import s from './Juegos.module.css';
 
-/* ── Las Bolitas de Kapi (/ball-sort) ───────────────────── */
+/* ── Las Bolitas de Walito (/ball-sort) ───────────────────── */
 
 /** Las ayudas de cada nivel (vuelven a estar completas al reiniciarlo). */
 export const AYUDAS_BOLITAS = { deshacer: 5, tubo: 1, pista: 3 };
@@ -151,7 +151,7 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
 }
 
 /**
- * Las Bolitas de Kapi: ordenar los colores en los tubos. Niveles en mundos de
+ * Las Bolitas de Walito: ordenar los colores en los tubos. Niveles en mundos de
  * 20 (el último, un jefe), de 1 a 3 estrellas según los movimientos, una
  * racha de victorias que abre cofres con ayudas, el reto del día, sonido y
  * vibración. Se toca un tubo para levantar las bolitas de arriba del mismo
@@ -502,7 +502,7 @@ export function PaginaBolitas({
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
-        <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
+        <MarcoJuego titulo="Las Bolitas de Walito" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
           <div className={s.bolitas} data-componente="PaginaBolitas">
             <div
               className={[s.mesa, (!esReto || marcaMesa) && s.mesaMundo].filter(Boolean).join(' ')}

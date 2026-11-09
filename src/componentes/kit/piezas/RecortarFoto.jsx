@@ -119,7 +119,7 @@ function RecortarFija({
     lienzo.height = tamano;
     const ctx = lienzo.getContext('2d');
     ctx.drawImage(imagen.current, -izq / escala, -arr / escala, lado / escala, lado / escala, 0, 0, tamano, tamano);
-    // Con partes transparentes (un PNG de Kapi, un logo) sale PNG: en JPG lo
+    // Con partes transparentes (un PNG de Walito, un logo) sale PNG: en JPG lo
     // transparente se volvía negro. Una foto sin transparencia sigue en JPG (pesa menos).
     const conTransparencia = hayTransparencia(ctx, tamano);
     const blob = await new Promise((r) => { lienzo.toBlob(r, conTransparencia ? 'image/png' : 'image/jpeg', 0.92); });

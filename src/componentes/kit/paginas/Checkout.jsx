@@ -152,7 +152,7 @@ export function PaginaCheckout({
   const modoAntesDeLista = useRef('tarjeta');
   const reducir = useReducedMotion();
   const t = {
-    direcciones: useTexto('Tus direcciones'), sticker: useTexto('Sticker de Kapi'), editar: useTexto('Editar'),
+    direcciones: useTexto('Tus direcciones'), sticker: useTexto('Sticker de Walito'), editar: useTexto('Editar'),
   };
 
   const cuentas = useMemo(
@@ -443,7 +443,7 @@ export function PaginaCheckout({
                     activo={regalo.activo}
                     onChange={(v) => setRegalo((r) => ({ ...r, activo: v }))}
                     etiqueta={<Texto>Es un regalo (gratis)</Texto>}
-                    descripcion={<Texto>Quien lo recibe abre un mensaje tuyo con Kapi en su celular.</Texto>}
+                    descripcion={<Texto>Quien lo recibe abre un mensaje tuyo con Walito en su celular.</Texto>}
                   />
                   {entrega && (
                     <Aviso tipo="info" compacto icono={<CalendarHeart aria-hidden="true" />}>
@@ -464,7 +464,7 @@ export function PaginaCheckout({
                         onChange={cambiarRegalo('mensaje')}
                       />
                       <div className={s.grupo}>
-                        <span className={s.rotulo}><Texto>Cómo te acompaña Kapi</Texto></span>
+                        <span className={s.rotulo}><Texto>Cómo te acompaña Walito</Texto></span>
                         <ListaEleccion etiqueta={t.sticker} opciones={STICKERS.map((x) => ({ ...x, texto: <Texto>{x.texto}</Texto> }))} valor={regalo.sticker} onElegir={cambiarRegalo('sticker')} />
                       </div>
                     </div>

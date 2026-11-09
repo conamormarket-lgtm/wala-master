@@ -1,4 +1,4 @@
-/* Tarjeta lila con Kapi asomado arriba a la derecha (sale del borde). */
+/* Tarjeta lila con Walito asomado arriba a la derecha (sale del borde). */
 .ayuda {
   position: relative;
   display: flex;
@@ -18,7 +18,7 @@
   background: rgba(139, 92, 246, 0.12);
 }
 
-/* Kapi suelto (su imagen ya es transparente): sin aro ni círculo. */
+/* Walito suelto (su imagen ya es transparente): sin aro ni círculo. */
 .kapi {
   position: absolute;
   top: -2.6rem;
@@ -54,7 +54,7 @@
   line-height: 1.45;
 }
 
-/* Angosta (celular): Kapi más chico y más arriba para no tocar el título. */
+/* Angosta (celular): Walito más chico y más arriba para no tocar el título. */
 @container (max-width: 520px) {
   .ayuda {
     padding-right: 5.6rem;

@@ -1723,7 +1723,7 @@ const CheckoutViejo = () => {
                   </div>
 
                   <div className={styles.field}>
-                    <label><T>Sticker de Kapi</T></label>
+                    <label><T>Sticker de Walito</T></label>
                     <div className={styles.stickerSelection}>
                       <label className={formik.values.giftSticker === 'kapi-love' ? styles.stickerSelected : ''}>
                         <input type="radio" name="giftSticker" value="kapi-love" checked={formik.values.giftSticker === 'kapi-love'} onChange={formik.handleChange} />

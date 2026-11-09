@@ -28,9 +28,9 @@ import s from './PieDeTienda.module.css';
  *  - no sale si la página lo apaga, en la app ni en el estudio (/crear/)
  *  - el editor del kit: "Editar el pie de página", "Estás editando…", el "+"
  *    entre bloques y cada bloque con su EditableSection
- * Kapi se asoma por el pie solo cuando no flota el de la esquina (con perfil
+ * Walito se asoma por el pie solo cuando no flota el de la esquina (con perfil
  * y fuera de las páginas que lo ocultan), la página no termina con otro
- * (Preguntas frecuentes) ni trae el suyo (kapiFlotante.js): un solo Kapi a
+ * (Preguntas frecuentes) ni trae el suyo (kapiFlotante.js): un solo Walito a
  * la vista.
  * Lo de antes (FooterViejo.jsx) baja con el interruptor pieViejo o con
  * editorViejo (su editor dibuja ahí).

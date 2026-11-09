@@ -11,7 +11,7 @@ import { palabraDiaDesde, palabrasConAutomaticas, patrocinioDesde, premiosBolita
 import { sinError, useInvalidar } from './comun';
 
 /*
- * Los juegos (D7a): La Palabra del día y Las Bolitas de Kapi. Los mismos
+ * Los juegos (D7a): La Palabra del día y Las Bolitas de Walito. Los mismos
  * servicios, rutas de Storage, claves e invalidaciones que AdminWordlePage
  * y AdminBolitasPage; lo que
  * se escribe en Firestore o se manda al servidor (adminBolitasSecure) es lo
@@ -75,7 +75,7 @@ export function PalabraDelPanel() {
   );
 }
 
-/* ── Las Bolitas de Kapi ───────────────────────────────── */
+/* ── Las Bolitas de Walito ───────────────────────────────── */
 
 const PATROCINIOS = ['admin-bolitas-patrocinios'];
 const MUNDOS = ['admin-bolitas-mundos'];
@@ -159,7 +159,7 @@ export function BolitasDelPanel() {
   );
 }
 
-/* ── La Pichanga de Kapi ───────────────────────────────── */
+/* ── La Pichanga de Walito ───────────────────────────────── */
 
 const PREMIOS_PICHANGA = ['admin-pichanga-premios'];
 const PATROCINIOS_PICHANGA = ['admin-pichanga-patrocinios'];

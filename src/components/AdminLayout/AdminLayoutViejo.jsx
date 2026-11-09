@@ -209,7 +209,7 @@ const AdminLayoutViejo = () => {
                 to="/admin/bolitas"
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}
               >
-                Las Bolitas de Kapi
+                Las Bolitas de Walito
               </NavLink>
             </>
           )}

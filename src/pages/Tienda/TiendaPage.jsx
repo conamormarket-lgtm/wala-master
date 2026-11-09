@@ -353,7 +353,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     (visibleSections.pageId === pageId && visibleSections.ids.has(section.id)),
   [isEditModeActive, isPreview, visibleSections, pageId, configuredSections]);
   const activeSections = useMemo(() => configuredSections.filter(sectionIsActive), [configuredSections, sectionIsActive]);
-  // Si la página termina con Preguntas frecuentes (su tarjeta trae a Kapi), el
+  // Si la página termina con Preguntas frecuentes (su tarjeta trae a Walito), el
   // pie no asoma otro.
   const setPieSinKapi = useLayoutContext()?.setPieSinKapi;
   const terminaConKapi = configuredSections[configuredSections.length - 1]?.type === 'faq_accordion';
@@ -1290,7 +1290,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         columnas: grillaKit.columnas,
         segundaFoto: grillaKit.segundaFoto,
         ...(catalogIsEmpty ? { vacio: vacioKit } : {}),
-        // Un solo Kapi a la vista: con sesión ya está el flotante.
+        // Un solo Walito a la vista: con sesión ya está el flotante.
         sinKapi: Boolean(userProfile),
       });
     }
@@ -1320,7 +1320,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       seccion = { ...section, settings: { ...section.settings, title: DEFAULT_STORE_TITLE } };
     }
     if (section.type === 'faq_accordion') {
-      // "Escríbenos" con el WhatsApp de la página; y un solo Kapi a la vista:
+      // "Escríbenos" con el WhatsApp de la página; y un solo Walito a la vista:
       // con sesión ya está el flotante.
       datos.contacto = whatsappTienda ? enlaceWhatsApp(whatsappTienda.numero) : undefined;
       datos.sinKapi = Boolean(userProfile);

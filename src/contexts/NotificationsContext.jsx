@@ -29,7 +29,7 @@ let onMessageRegistrado = false;
 // requestPermission del header): el listener de "tocó la push" va una sola vez.
 let listenerToqueRegistrado = false;
 
-// Los avisos LOCALES (Kapi, el reto de las bolitas) que traen `extra.ruta`
+// Los avisos LOCALES (Walito, el reto de las bolitas) que traen `extra.ruta`
 // abren esa página al tocarlos; si no traen, la app se abre como siempre. Se
 // registra al cargar el módulo para alcanzar también el toque que abre la app
 // cerrada (abrirLinkDePush lo deja pendiente hasta que el router lo toma).

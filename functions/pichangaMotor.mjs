@@ -6,14 +6,14 @@
 // =========================================================================
 
 /*
- * El motor de La Pichanga de Kapi (/pichanga): fútbol de chapas para jugar
+ * El motor de La Pichanga de Walito (/pichanga): fútbol de chapas para jugar
  * solo. Puro (sin React): se prueba con `node --test`
  * (pichangaMotor.test.mjs) y el servidor podrá repetir cada partida con este
  * mismo archivo.
  *
  * La cancha mide ANCHO × ALTO (unidades propias, vertical: el arco que se
  * ataca está arriba, en y = 0). Hay chapas (las tuyas y las rivales), una
- * pelota, conos fijos, zonas de barro o hielo y, a veces, Kapi de arquero
+ * pelota, conos fijos, zonas de barro o hielo y, a veces, Walito de arquero
  * (se mueve de lado a lado solo mientras algo rueda).
  *
  * Un tiro es [cuerpo, dx, dy]: la chapa (su índice en mesa.cuerpos) y hacia
@@ -78,7 +78,7 @@ export function definirCancha(d = {}) {
 
 /**
  * Lo que se mueve, al empezar: las chapas tuyas (índices 0…), la pelota y las
- * rivales. t es el reloj de Kapi (solo avanza mientras algo rueda).
+ * rivales. t es el reloj de Walito (solo avanza mientras algo rueda).
  */
 export function crearMesa(def, t = 0) {
   const chapa = (equipo, portero = false, r = RADIO.chapa) => ([x, y]) => ({
@@ -104,7 +104,7 @@ export const chapasDe = (mesa, equipo) => mesa.cuerpos.flatMap((c, i) => (c.equi
 export const quieta = (mesa) => mesa.cuerpos.every((c) => c.vx === 0 && c.vy === 0);
 
 /**
- * Kapi de arquero en el momento t: va y vuelve entre x - rango y x + rango a
+ * Walito de arquero en el momento t: va y vuelve entre x - rango y x + rango a
  * `vel` por paso, empezando en x + fase (hacia la derecha).
  */
 export function posicionKapi(kapi, t) {
@@ -199,7 +199,7 @@ function chocar(a, b, eventos) {
   return true;
 }
 
-/** Contra algo que no se empuja (cono, poste, Kapi): solo rebota el cuerpo. */
+/** Contra algo que no se empuja (cono, poste, Walito): solo rebota el cuerpo. */
 function chocarFijo(c, fx, fy, fr, fvx, fvy, rebote, tipo, eventos) {
   const dx = c.x - fx;
   const dy = c.y - fy;
@@ -640,7 +640,7 @@ export const toquesQuedan = (lv, partida, extras = 0) => Math.max(0, lv.toques +
 
 /**
  * Lo que queda después de un tiro ya simulado (sim: lo que devolvió simular).
- * En los penales, con gol o sin gol, todo vuelve a su lugar (el reloj de Kapi
+ * En los penales, con gol o sin gol, todo vuelve a su lugar (el reloj de Walito
  * sigue).
  */
 export function despuesDelTiro(lv, partida, tiro, sim, extras = 0, respuesta = null) {
@@ -661,7 +661,7 @@ export function despuesDelTiro(lv, partida, tiro, sim, extras = 0, respuesta = n
       ultimo: { pase: false, autogol: sim.gol === 'abajo' },
     };
   }
-  // La respuesta de Michi (si hubo): un autogol suyo es gol tuyo; un gol suyo
+  // La respuesta de Happy (si hubo): un autogol suyo es gol tuyo; un gol suyo
   // en tu arco es como un autogol (la jugada vuelve atrás).
   const golRival = respuesta?.sim.gol || null;
   const ganada = sim.gol === 'arriba' || golRival === 'arriba';
@@ -706,7 +706,7 @@ export function tiroDirigido(mesa, i, objetivo, fuerza = null) {
 }
 
 /**
- * La respuesta de Michi en un nivel o en el reto, después de tu toque: con
+ * La respuesta de Happy en un nivel o en el reto, después de tu toque: con
  * sus dos chapas más cerca de la pelota prueba despejarla hacia tu arco o
  * hacia la banda, y elige la que deja la pelota más lejos de su arco (un gol
  * en tu arco, mejor; un autogol, nunca). Sin azar ni trigonometría: el
@@ -741,10 +741,10 @@ export function respuestaRival(mesa, def) {
 }
 
 /**
- * Un tiro de la persona en un nivel: simula, deja que Michi responda (si
+ * Un tiro de la persona en un nivel: simula, deja que Happy responda (si
  * tiene chapas y la jugada sigue) y aplica las reglas.
  * → { partida, sim, respuesta: { tiro, sim } | null }
- * Michi no responde si hubo gol, autogol o pase (sigues tú), ni si ese toque
+ * Happy no responde si hubo gol, autogol o pase (sigues tú), ni si ese toque
  * fue el último (el nivel ya se perdió).
  */
 export function jugarTiro(lv, partida, tiro, { extras = 0, cuadros = false } = {}) {
@@ -786,9 +786,9 @@ export function comprobarPartida(lv, tiros, extras = 0) {
   return { valida: true, ganada: partida.ganada, toques: toquesUsados(partida), goles: partida.goles, pases: partida.pases };
 }
 
-/* ── El partido (tu equipo contra el de Michi) ────────── */
+/* ── El partido (tu equipo contra el de Happy) ────────── */
 /* En el código el rival sigue llamándose 'kapi' (goles.kapi, turno 'kapi'):
-   así empezó el juego; en pantalla es el equipo de Michi. */
+   así empezó el juego; en pantalla es el equipo de Happy. */
 
 export const GOLES_PARTIDO = 3;
 /** Tiros de cada uno como máximo: después, gana quien va arriba (o empate). */
@@ -803,11 +803,11 @@ const PORTERO = [300, 830];
  * Las ventajas de tu camiseta en el partido (ver HABILIDADES_PICHANGA en
  * pichangaProgreso.mjs), todas opcionales:
  *  - pases: cuántos pases seguidos puedes encadenar (PASES_MAX sin ella)
- *  - potencia: multiplica la fuerza de tus tiros · potenciaRival: la de Michi
+ *  - potencia: multiplica la fuerza de tus tiros · potenciaRival: la de Happy
  *  - portero: el radio de tu arquero · arco: el ancho de tu arco (abajo)
- *  - ruidoRival: cuánto peor apunta Michi (radianes de más)
+ *  - ruidoRival: cuánto peor apunta Happy (radianes de más)
  *  - ruta: ves por dónde irá la pelota al apuntar (lo dibuja la página)
- * Solo valen contra Michi: los niveles y el reto son iguales para todos.
+ * Solo valen contra Happy: los niveles y el reto son iguales para todos.
  */
 
 /** La cancha del partido: dos arcos, seis chapas por lado (con su arquero). */
@@ -895,7 +895,7 @@ export function despuesDelTiroPartido(partido, sim, tiro = null) {
   };
 }
 
-/** Qué tan buena es para Kapi una mesa después de su tiro (más, mejor). */
+/** Qué tan buena es para Walito una mesa después de su tiro (más, mejor). */
 function valorParaKapi(sim) {
   if (sim.gol === 'abajo') return 100000 - sim.pasos;
   if (sim.gol === 'arriba') return -100000;
@@ -920,7 +920,7 @@ function valorParaKapi(sim) {
 }
 
 /**
- * El tiro de Michi en el partido. Prueba tiros "con efecto" (tiroDirigido)
+ * El tiro de Happy en el partido. Prueba tiros "con efecto" (tiroDirigido)
  * con sus chapas mejor puestas: a tu arco (al centro y a las esquinas), de
  * pase a sus compañeros y de despeje a las bandas; más unos cuantos directos
  * a la pelota. Simula cada uno y elige el mejor (valorParaKapi). Un tiro que
@@ -1024,6 +1024,6 @@ export function problemasDeCancha(def) {
     }
   }
   const k = posicionKapi(def.kapi, 0);
-  if (k) for (const c of cosas) if ((c.x - k.x) ** 2 + (c.y - k.y) ** 2 < (c.r + RADIO.kapi + 2) ** 2) lista.push(`${c.nombre} encima de Kapi`);
+  if (k) for (const c of cosas) if ((c.x - k.x) ** 2 + (c.y - k.y) ** 2 < (c.r + RADIO.kapi + 2) ** 2) lista.push(`${c.nombre} encima de Walito`);
   return lista;
 }

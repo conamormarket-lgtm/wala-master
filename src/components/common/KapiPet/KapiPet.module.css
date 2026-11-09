@@ -2,7 +2,7 @@
   position: relative;
   width: var(--flotante-tam, 56px);
   height: var(--flotante-tam, 56px);
-  /* SIN disco de color detrás: la imagen de Kapi (transparente y más baja que
+  /* SIN disco de color detrás: la imagen de Walito (transparente y más baja que
      ancha) no llenaba el círculo y dejaba asomar una media luna del fondo —se
      veía como una "raya" bajo/encima de la carita—. Ahora la carita flota sola
      con su propia sombra (drop-shadow, que sigue la silueta, no un círculo). */
@@ -99,7 +99,7 @@
   color: var(--color-text, #0f172a);
 }
 
-/* Mientras Kapi come, cerrar no esta disponible. */
+/* Mientras Walito come, cerrar no esta disponible. */
 .closeBtn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -124,7 +124,7 @@
   margin-bottom: 1.5rem;
 }
 
-/* Marco de Kapi. Antes era un círculo blanco fijo (#fdfbfb) con borde #f1f5f9:
+/* Marco de Walito. Antes era un círculo blanco fijo (#fdfbfb) con borde #f1f5f9:
    en modo noche quedaba un disco brillante flotando sobre la tarjeta oscura.
    Ahora usa los tonos del tema y el violeta de la sección, como el aro de la
    rueda de la Ruleta. */

@@ -2,7 +2,7 @@
   "packs": [
     {
       "identifier": "kapi",
-      "name": "Kapi de Walá",
+      "name": "Walito de Walá",
       "publisher": "Walá",
       "tray_image_file": "bandeja.png",
       "image_data_version": "1",
@@ -18,7 +18,7 @@
             "😀",
             "😊"
           ],
-          "accessibility_text": "Kapi sonriendo"
+          "accessibility_text": "Walito sonriendo"
         },
         {
           "image_file": "kapi_02.webp",
@@ -26,7 +26,7 @@
             "👋",
             "😄"
           ],
-          "accessibility_text": "Kapi saludando con la mano"
+          "accessibility_text": "Walito saludando con la mano"
         },
         {
           "image_file": "kapi_03.webp",
@@ -34,7 +34,7 @@
             "😍",
             "❤️"
           ],
-          "accessibility_text": "Kapi abrazando un corazón"
+          "accessibility_text": "Walito abrazando un corazón"
         },
         {
           "image_file": "kapi_04.webp",
@@ -42,7 +42,7 @@
             "👍",
             "😉"
           ],
-          "accessibility_text": "Kapi guiñando un ojo con el pulgar arriba"
+          "accessibility_text": "Walito guiñando un ojo con el pulgar arriba"
         },
         {
           "image_file": "kapi_05.webp",
@@ -50,14 +50,14 @@
             "😂",
             "😆"
           ],
-          "accessibility_text": "Kapi riéndose"
+          "accessibility_text": "Walito riéndose"
         },
         {
           "image_file": "kapi_06.webp",
           "emojis": [
             "🥺"
           ],
-          "accessibility_text": "Kapi con pena"
+          "accessibility_text": "Walito con pena"
         },
         {
           "image_file": "kapi_07.webp",
@@ -65,7 +65,7 @@
             "😢",
             "😭"
           ],
-          "accessibility_text": "Kapi llorando"
+          "accessibility_text": "Walito llorando"
         },
         {
           "image_file": "kapi_08.webp",
@@ -73,14 +73,14 @@
             "😮",
             "😱"
           ],
-          "accessibility_text": "Kapi sorprendido"
+          "accessibility_text": "Walito sorprendido"
         },
         {
           "image_file": "kapi_09.webp",
           "emojis": [
             "🤔"
           ],
-          "accessibility_text": "Kapi pensando"
+          "accessibility_text": "Walito pensando"
         },
         {
           "image_file": "kapi_10.webp",
@@ -88,7 +88,7 @@
             "😌",
             "🙏"
           ],
-          "accessibility_text": "Kapi tranquilo con las manos juntas"
+          "accessibility_text": "Walito tranquilo con las manos juntas"
         },
         {
           "image_file": "kapi_11.webp",
@@ -96,7 +96,7 @@
             "😠",
             "😤"
           ],
-          "accessibility_text": "Kapi enojado de brazos cruzados"
+          "accessibility_text": "Walito enojado de brazos cruzados"
         },
         {
           "image_file": "kapi_12.webp",
@@ -104,7 +104,7 @@
             "🥳",
             "🎉"
           ],
-          "accessibility_text": "Kapi celebrando"
+          "accessibility_text": "Walito celebrando"
         },
         {
           "image_file": "kapi_13.webp",
@@ -112,13 +112,13 @@
             "🎁",
             "😁"
           ],
-          "accessibility_text": "Kapi con un regalo"
+          "accessibility_text": "Walito con un regalo"
         }
       ]
     },
     {
       "identifier": "adicto",
-      "name": "Adicto, el gatito de Kapi",
+      "name": "Happy, el gatito de Walito",
       "publisher": "Walá",
       "tray_image_file": "bandeja.png",
       "image_data_version": "1",
@@ -134,7 +134,7 @@
             "😜",
             "😼"
           ],
-          "accessibility_text": "Adicto sacando la lengua"
+          "accessibility_text": "Happy sacando la lengua"
         },
         {
           "image_file": "adicto_02.webp",
@@ -142,7 +142,7 @@
             "👋",
             "😸"
           ],
-          "accessibility_text": "Adicto: ¡Hola, Walá!"
+          "accessibility_text": "Happy: ¡Hola, Walá!"
         },
         {
           "image_file": "adicto_03.webp",
@@ -150,7 +150,7 @@
             "🙌",
             "💪"
           ],
-          "accessibility_text": "Adicto: ¡Vamos, Walá!"
+          "accessibility_text": "Happy: ¡Vamos, Walá!"
         },
         {
           "image_file": "adicto_04.webp",
@@ -158,7 +158,7 @@
             "🙏",
             "😊"
           ],
-          "accessibility_text": "Adicto: ¡Gracias, Walá!"
+          "accessibility_text": "Happy: ¡Gracias, Walá!"
         },
         {
           "image_file": "adicto_05.webp",
@@ -166,7 +166,7 @@
             "😍",
             "❤️"
           ],
-          "accessibility_text": "Adicto: ¡Te amo, Walá!"
+          "accessibility_text": "Happy: ¡Te amo, Walá!"
         },
         {
           "image_file": "adicto_06.webp",
@@ -174,7 +174,7 @@
             "😮",
             "😲"
           ],
-          "accessibility_text": "Adicto: ¡Wow, Walá!"
+          "accessibility_text": "Happy: ¡Wow, Walá!"
         },
         {
           "image_file": "adicto_07.webp",
@@ -182,7 +182,7 @@
             "😅",
             "💦"
           ],
-          "accessibility_text": "Adicto: ¡Ups, Walá!"
+          "accessibility_text": "Happy: ¡Ups, Walá!"
         },
         {
           "image_file": "adicto_08.webp",
@@ -190,7 +190,7 @@
             "👍",
             "✅"
           ],
-          "accessibility_text": "Adicto: ¡Sí, Walá!"
+          "accessibility_text": "Happy: ¡Sí, Walá!"
         },
         {
           "image_file": "adicto_09.webp",
@@ -198,7 +198,7 @@
             "🥺",
             "😟"
           ],
-          "accessibility_text": "Adicto: ¡Ay, Walá!"
+          "accessibility_text": "Happy: ¡Ay, Walá!"
         },
         {
           "image_file": "adicto_10.webp",
@@ -206,7 +206,7 @@
             "😎",
             "🕶️"
           ],
-          "accessibility_text": "Adicto: ¡Modo Walá!"
+          "accessibility_text": "Happy: ¡Modo Walá!"
         },
         {
           "image_file": "adicto_11.webp",
@@ -214,7 +214,7 @@
             "🤩",
             "✨"
           ],
-          "accessibility_text": "Adicto: ¡Lo quiero, Walá!"
+          "accessibility_text": "Happy: ¡Lo quiero, Walá!"
         },
         {
           "image_file": "adicto_12.webp",
@@ -222,7 +222,7 @@
             "🛍️",
             "📦"
           ],
-          "accessibility_text": "Adicto: ¡Llegó Walá!"
+          "accessibility_text": "Happy: ¡Llegó Walá!"
         },
         {
           "image_file": "adicto_13.webp",
@@ -230,7 +230,7 @@
             "😴",
             "🌙"
           ],
-          "accessibility_text": "Adicto: ¡Buenas noches, Walá!"
+          "accessibility_text": "Happy: ¡Buenas noches, Walá!"
         }
       ]
     }

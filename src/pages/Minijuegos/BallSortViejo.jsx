@@ -154,7 +154,7 @@ const BallSortViejo = () => {
     setTubes(generateLevel());
     // Analytics aditivo (fire-and-forget): inicio del minijuego de bolitas.
     try {
-      trackMinigame('start', { gameId: 'ball-sort', gameName: 'Las Bolitas de Kapi' },
+      trackMinigame('start', { gameId: 'ball-sort', gameName: 'Las Bolitas de Walito' },
         { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,7 +186,7 @@ const BallSortViejo = () => {
 
     // Analytics aditivo (fire-and-forget): fin del minijuego de bolitas.
     try {
-      trackMinigame('complete', { gameId: 'ball-sort', gameName: 'Las Bolitas de Kapi' },
+      trackMinigame('complete', { gameId: 'ball-sort', gameName: 'Las Bolitas de Walito' },
         { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
     } catch {}
 
@@ -320,7 +320,7 @@ const BallSortViejo = () => {
   return (
     <ArcadeShell
       back="/minijuegos"
-      title="Las Bolitas de Kapi"
+      title="Las Bolitas de Walito"
       className={styles.pageContainer}
       acciones={
         <button

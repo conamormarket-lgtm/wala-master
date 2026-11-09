@@ -492,7 +492,7 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(t);
   }, [uidSesion]);
 
-  // Despierta la función de Kapi (ver feedKapiSecure): sin esto, la primera
+  // Despierta la función de Walito (ver feedKapiSecure): sin esto, la primera
   // comida del día esperaba el arranque en frío del servidor.
   const calentarKapi = React.useCallback(() => {
     httpsCallable(getFunctions(), 'feedKapiSecure')({ ping: true }).catch(() => {});

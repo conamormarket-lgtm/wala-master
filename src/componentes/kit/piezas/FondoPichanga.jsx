@@ -3,7 +3,7 @@ import { azar } from './pichangaMotor.mjs';
 import s from './FondoBolitas.module.css';
 
 /*
- * El fondo ilustrado de La Pichanga de Kapi, como el de Las Bolitas: una
+ * El fondo ilustrado de La Pichanga de Walito, como el de Las Bolitas: una
  * escena por mundo (la canchita del barrio, el potrero en invierno), el
  * estadio del reto del día y las canchas del partido (las del vestuario). Son
  * dibujos SVG quietos (diseño animado pero liviano), sin imágenes que bajar;
@@ -17,7 +17,7 @@ export const ESCENAS_PICHANGA = ['barrio', 'invierno', 'reto', 'noche', 'wala'];
 /** La escena de un mundo (se repiten en orden). */
 export const escenaDelMundoPichanga = (m) => ['barrio', 'invierno'][(m - 1) % 2];
 
-/** La escena de una cancha del vestuario (el partido contra Kapi). */
+/** La escena de una cancha del vestuario (el partido contra Walito). */
 export const escenaDelEstadio = (id) => ({ barrio: 'barrio', invierno: 'invierno', noche: 'noche', violeta: 'wala' }[id] || 'barrio');
 
 const ALEGRES = ['#f472b6', '#fbbf24', '#a78bfa', '#fb7185', '#60a5fa', '#34d399', '#f97316'];
@@ -217,7 +217,7 @@ const semillaDe = (texto) => {
 /**
  * El fondo de la mesa de la Pichanga.
  *  - escena: una de ESCENAS_PICHANGA · semilla: el nivel o el día
- *  - jefe: luz de atardecer (los penales contra Kapi)
+ *  - jefe: luz de atardecer (los penales contra Walito)
  */
 export function FondoPichanga({ escena = 'barrio', semilla = 1, jefe = false }) {
   const id = useId().replace(/:/g, '');

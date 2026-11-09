@@ -32,7 +32,7 @@ function Adornos() {
 /* ── No encontrada ─────────────────────────────────────── */
 
 /**
- * Una dirección que no existe: Kapi triste, qué pasó, la dirección que se
+ * Una dirección que no existe: Walito triste, qué pasó, la dirección que se
  * pidió, un buscador y los dos caminos de siempre (la tienda y Crear). En vez
  * de mandar al inicio sin avisar, como hoy.
  *  - ruta: la dirección que no existe ("/poleras-anime")

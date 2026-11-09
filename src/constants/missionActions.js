@@ -9,10 +9,10 @@
 //   - MisCuponesPage.jsx     -> 'visit_mis_cupones'
 //   - MinijuegosPage.jsx     -> 'visit_minijuegos'
 //   - WishlistContext.jsx    -> 'add_wishlist' (al agregar un favorito)
-//   - Las Bolitas de Kapi    -> 'bolitas_nivel' y 'bolitas_reto': las marca el
+//   - Las Bolitas de Walito    -> 'bolitas_nivel' y 'bolitas_reto': las marca el
 //     SERVIDOR (registrarPartidaBolitasSecure) al comprobar la partida; el
 //     celular no las declara.
-//   - La Pichanga de Kapi    -> 'pichanga_nivel' y 'pichanga_reto': igual, las
+//   - La Pichanga de Walito    -> 'pichanga_nivel' y 'pichanga_reto': igual, las
 //     marca registrarPartidaPichangaSecure.
 export const MISSION_ACTIONS = {
   visit_catalogo_recompensas: {
@@ -36,8 +36,8 @@ export const MISSION_ACTIONS = {
     path: '/cuenta/wishlist',
   },
   bolitas_nivel: {
-    adminLabel: 'Pasó un nivel de Las Bolitas de Kapi',
-    goLabel: 'Jugar Las Bolitas de Kapi',
+    adminLabel: 'Pasó un nivel de Las Bolitas de Walito',
+    goLabel: 'Jugar Las Bolitas de Walito',
     path: '/ball-sort',
   },
   bolitas_reto: {
@@ -46,8 +46,8 @@ export const MISSION_ACTIONS = {
     path: '/ball-sort',
   },
   pichanga_nivel: {
-    adminLabel: 'Pasó un nivel de La Pichanga de Kapi',
-    goLabel: 'Jugar La Pichanga de Kapi',
+    adminLabel: 'Pasó un nivel de La Pichanga de Walito',
+    goLabel: 'Jugar La Pichanga de Walito',
     path: '/pichanga',
   },
   pichanga_reto: {
