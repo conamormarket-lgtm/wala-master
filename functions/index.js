@@ -47,6 +47,17 @@ const tarjetas = require("./tarjetasGuardadas");
 
 admin.initializeApp();
 const auth = admin.auth();
+// A16: human-confirmed vouchers. Auth/scope checks precede all database or storage IO.
+const { createHandler: createKentaReceiptHandler } = require('./kentaReceiptHandler');
+const { createService: createKentaReceiptService } = require('./kentaReceiptService');
+exports.registerKentaReceipt = functions.region('us-central1')
+  .runWith({ minInstances: 0, maxInstances: 2, memory: '256MB', timeoutSeconds: 120 })
+  .https.onRequest(createKentaReceiptHandler({
+    getSecret: () => process.env.KENTA_ORDER_STAGE_CALLBACK_SECRET || process.env.KENTA_PAYMENT_CALLBACK_SECRET,
+    getConfig: () => ({ owner: process.env.KENTA_COLLECTION_SOURCE_TENANT,
+      lineKeys: String(process.env.KENTA_RECEIPT_LINE_KEYS || '').split(',').map(s=>s.trim()).filter(Boolean) }),
+    service: payload => createKentaReceiptService({ db: getErpDb(), bucket: admin.storage().bucket(), FieldValue })(payload),
+  }));
 // Diagnostic batches go to Cloud Logging, not to the shared Firestore database.
 const { createMetricsHandler } = require('./clientReadMetrics');
 exports.collectClientFirestoreReads = functions.region('us-central1')
