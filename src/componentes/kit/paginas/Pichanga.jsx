@@ -492,7 +492,10 @@ export function PaginaPichanga({
 
   /* ── El turno de Kapi en el partido ── */
   useEffect(() => {
-    if (modo !== 'partido' || !armado || partido.turno !== 'kapi' || partido.fin || anim || estado === 'cargando') return undefined;
+    // Después de un gol, Michi saca cuando termina el festejo: la cancha se
+    // vuelve a montar al empezar y al acabar el temblor, y una animación a
+    // medias volvería a empezar (se veía el tiro dos veces).
+    if (modo !== 'partido' || !armado || partido.turno !== 'kapi' || partido.fin || anim || gol || estado === 'cargando') return undefined;
     setPensando(true);
     let vivo = true;
     const ids = [];
@@ -513,7 +516,7 @@ export function PaginaPichanga({
       }, 500));
     }, 650));
     return () => { vivo = false; ids.forEach(clearTimeout); setPensando(false); setResaltar(null); };
-  }, [modo, partido, anim, estado, armado]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modo, partido, anim, estado, armado, gol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (estado === 'cargando' || (esJuegoNivel && !juego)) return <EsqueletoPagina forma="pichanga" />;
 
@@ -881,7 +884,8 @@ export function PaginaPichanga({
   const mesa = esPartido ? partido.mesa : partida.mesa;
   // En el partido, la camiseta con la que se empezó (cambiarla vale para el próximo).
   const camiseta = esPartido && armado && equipoPartido ? buscar(EQUIPOS_PICHANGA, equipoPartido) : equipo;
-  const puedeTirar = !ocupado && !verMapa && (esPartido
+  // Durante el festejo de un gol no se tira (la cancha se vuelve a montar al terminar).
+  const puedeTirar = !ocupado && !verMapa && !gol && (esPartido
     ? armado && partido.turno === 'yo' && !partido.fin && !pensando
     : !partida.ganada && !partida.perdida);
   const guardadasTexto = Object.entries(prog.guardadas).filter(([, n]) => n > 0).map(([tipo, n]) => textoAyuda(tipo, n));
