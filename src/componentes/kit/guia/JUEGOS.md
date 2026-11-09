@@ -761,9 +761,12 @@ teléfono real, la misión activada, la versión en inglés.
   antes de publicar la web.
 
 **El pase con imán (2026-11-09)**: con pases disponibles, la primera vez que la
-pelota toca a un compañero de la chapa que tiró, se queda pegada a él, del
-lado del arco que ataca su equipo, y los dos se frenan (`controlarPelota`,
-opción `iman` de `simular`, `sim.receptor`). El próximo tiro es con esa chapa
+pelota toca a un compañero de la chapa que tiró, se queda pegada a él en el
+punto del toque y viaja con él (`pegarPelota`); cuando él se detiene, la
+pelota queda quieta y él la rodea hasta quedar detrás, mirando al arco que
+ataca, empujando a quien esté en el camino (`pasoDeOrbita`, 0,12 rad por paso,
+sin trigonometría para que el servidor lo repita igual). Opción `iman` de
+`simular`, `sim.receptor`. El próximo tiro es con esa chapa
 (`partida.receptor` / `partido.receptor`; `tiroValido` lo exige y la cancha
 solo deja arrastrar esa, marcada en dorado). Michi hace lo mismo
 (`jugadaDeKapi` con `receptor`). Las áreas de la cancha se corrigieron: punto

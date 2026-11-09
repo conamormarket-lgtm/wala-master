@@ -288,32 +288,80 @@ export function paso(mesa, def) {
   return { mesa: { t: mesa.t + 1, cuerpos }, eventos, gol, tocaron };
 }
 
-/**
- * El imán del pase: la pelota se queda pegada a la chapa que la recibe, del
- * lado del arco que ataca su equipo (lista para patear), y las dos se frenan.
- * → la mesa nueva.
+/*
+ * El pase, en dos tiempos (como en Plato):
+ *  1. Pegada: en el instante en que la pelota toca al compañero (el
+ *     receptor), se queda pegada a él en ese mismo punto y se mueve con él
+ *     mientras siga rodando.
+ *  2. Órbita: cuando el receptor se detiene, la pelota queda quieta y él gira
+ *     alrededor de ella hasta quedar detrás, mirando al arco que ataca (lista
+ *     para patear). Si hay chapas en el camino, las empuja al pasar.
+ * Sin trigonometría (solo sumas, productos y raíces): el giro usa el coseno y
+ * el seno de ORBITA escritos como números, así da lo mismo en cualquier
+ * motor de JavaScript y el servidor puede repetirlo.
  */
-function controlarPelota(mesa, receptor) {
+const ORBITA = { cos: 0.9928086358538663, sin: 0.11971220728891936 }; // 0,12 rad por paso
+
+function unidad(x, y) {
+  const l = Math.sqrt(x * x + y * y);
+  return l > 0 ? [x / l, y / l] : [0, -1];
+}
+
+/** Pega la pelota al receptor: la deja a su lado (donde quedó el toque) y con su velocidad. */
+function pegarPelota(mesa, control) {
   const cuerpos = mesa.cuerpos.map((c) => ({ ...c }));
-  const c = cuerpos[receptor];
-  const p = cuerpos.find((x) => x.tipo === 'pelota');
-  const arcoY = c.equipo === 'mia' ? 0 : ALTO;
-  const dx = ANCHO / 2 - c.x;
-  const dy = arcoY - c.y;
-  const largo = Math.sqrt(dx * dx + dy * dy) || 1;
-  const d = c.r + p.r + 2;
-  p.x = q(Math.min(ANCHO - p.r, Math.max(p.r, c.x + (dx / largo) * d)));
-  p.y = q(Math.min(ALTO - p.r, Math.max(p.r, c.y + (dy / largo) * d)));
-  p.vx = 0; p.vy = 0;
-  c.vx = 0; c.vy = 0;
+  const c = cuerpos[control.receptor];
+  const p = cuerpos[control.pelota];
+  const d = c.r + p.r + 1;
+  p.x = q(c.x + control.ux * d);
+  p.y = q(c.y + control.uy * d);
+  p.vx = c.vx;
+  p.vy = c.vy;
   return { t: mesa.t, cuerpos };
+}
+
+/**
+ * Un paso de la órbita: el receptor da una vuelta corta alrededor de la
+ * pelota (quieta) hacia el lado de atrás. → { mesa, eventos, gol, tocaron, lista }.
+ */
+function pasoDeOrbita(mesa, def, control) {
+  const cuerpos = mesa.cuerpos.map((c) => ({ ...c }));
+  const c = cuerpos[control.receptor];
+  const p = cuerpos[control.pelota];
+  const d = c.r + p.r + 1;
+  // Dónde está ahora (respecto de la pelota) y dónde tiene que quedar.
+  let [ox, oy] = unidad(c.x - control.bx, c.y - control.by);
+  const [tx, ty] = [control.tx, control.ty];
+  let lista = ox * tx + oy * ty >= ORBITA.cos;
+  if (lista) {
+    [ox, oy] = [tx, ty];
+  } else {
+    const giro = ox * ty - oy * tx >= 0 ? 1 : -1;
+    [ox, oy] = unidad(ox * ORBITA.cos - giro * oy * ORBITA.sin, giro * ox * ORBITA.sin + oy * ORBITA.cos);
+    lista = ox * tx + oy * ty >= 0.99999;
+  }
+  const nx = Math.min(ANCHO - c.r, Math.max(c.r, control.bx + ox * d));
+  const ny = Math.min(ALTO - c.r, Math.max(c.r, control.by + oy * d));
+  // Se mueve con velocidad: así empuja a las chapas que estén en el camino.
+  c.vx = nx - c.x;
+  c.vy = ny - c.y;
+  p.vx = 0;
+  p.vy = 0;
+  const r = paso({ t: mesa.t, cuerpos }, def);
+  const despues = r.mesa.cuerpos.map((x) => ({ ...x }));
+  const rc = despues[control.receptor];
+  const rp = despues[control.pelota];
+  rc.x = q(nx); rc.y = q(ny); rc.vx = 0; rc.vy = 0;
+  rp.x = control.bx; rp.y = control.by; rp.vx = 0; rp.vy = 0;
+  return { mesa: { t: r.mesa.t, cuerpos: despues }, eventos: r.eventos, gol: r.gol, tocaron: r.tocaron, lista };
 }
 
 /**
  * Un tiro completo: hasta que todo se detiene o hay gol.
  *  - iman: con pases disponibles, la primera vez que la pelota toca a un
- *    compañero de la chapa que tiró, se queda pegada a él (controlarPelota):
- *    ese compañero es el receptor y tira después
+ *    compañero de la chapa que tiró, hay pase: se pega a él y, cuando él se
+ *    detiene, él la rodea hasta quedar listo para patear al arco. Ese
+ *    compañero es el receptor y tira después
  * → { mesa, gol, pasos, tocaron, receptor, cuadros?, golpes? }. tocaron: las
  * chapas que tocaron la pelota (en orden, sin repetir); receptor: el índice
  * de la chapa que recibió el pase (o null). Si se piden los cuadros: las
@@ -323,7 +371,7 @@ function controlarPelota(mesa, receptor) {
  */
 export function simular(mesa, def, tiro, { cuadros = false, iman = false } = {}) {
   const equipo = tiro ? mesa.cuerpos[tiro[0]]?.equipo : null;
-  let receptor = null;
+  let control = null; // { receptor, pelota, ux, uy, fase: 'pegada' | 'orbita' | 'lista', bx, by, tx, ty }
   let m = tiro ? tirar(mesa, tiro) : mesa;
   const lista = cuadros ? [m.cuerpos.map((c) => [c.x, c.y])] : null;
   const golpes = cuadros ? [] : null;
@@ -331,23 +379,43 @@ export function simular(mesa, def, tiro, { cuadros = false, iman = false } = {})
   let pasos = 0;
   const tocaron = [];
   while (pasos < MAX_PASOS) {
-    const r = paso(m, def);
+    const r = control?.fase === 'orbita' ? pasoDeOrbita(m, def, control) : paso(m, def);
     m = r.mesa;
     pasos += 1;
     for (const k of r.tocaron) if (!tocaron.includes(k)) tocaron.push(k);
     if (r.gol) gol = r.gol;
-    // El pase: la pelota se pega al compañero que la recibe.
-    if (iman && !gol && receptor === null && equipo) {
+    let pase = false;
+    if (!gol && control) {
+      if (control.fase === 'pegada') {
+        m = pegarPelota(m, control);
+        const rc = m.cuerpos[control.receptor];
+        if (rc.vx === 0 && rc.vy === 0) {
+          // Se detuvo: ahora la rodea hasta quedar detrás de la pelota, mirando al arco.
+          const bola = m.cuerpos[control.pelota];
+          const [gx, gy] = unidad(ANCHO / 2 - bola.x, (rc.equipo === 'mia' ? 0 : ALTO) - bola.y);
+          control = { ...control, fase: 'orbita', bx: bola.x, by: bola.y, tx: -gx, ty: -gy };
+        }
+      } else if (control.fase === 'orbita' && r.lista) {
+        control = { ...control, fase: 'lista' };
+      }
+    }
+    // El pase: la pelota toca a un compañero de la que tiró.
+    if (iman && !gol && !control && equipo) {
       const k = r.tocaron.find((n) => n !== tiro[0] && m.cuerpos[n]?.equipo === equipo);
       if (k !== undefined) {
-        receptor = k;
-        m = controlarPelota(m, k);
+        const kb = m.cuerpos.findIndex((c) => c.tipo === 'pelota');
+        const rc = m.cuerpos[k];
+        const bola = m.cuerpos[kb];
+        const [ux, uy] = unidad(bola.x - rc.x, bola.y - rc.y);
+        control = { receptor: k, pelota: kb, ux, uy, fase: 'pegada' };
+        m = pegarPelota(m, control);
+        pase = true;
       }
     }
     if (lista) {
       lista.push(m.cuerpos.map((c) => [c.x, c.y]));
-      if (receptor !== null && golpes.every((g) => g[1] !== 'pase')) {
-        const pel = m.cuerpos.find((c) => c.tipo === 'pelota');
+      const pel = m.cuerpos.find((c) => c.tipo === 'pelota');
+      if (pase) {
         golpes.push([pasos, 'pase', 10, Math.round(pel.x), Math.round(pel.y)]);
       } else {
         const fuerte = r.eventos.reduce((a, e) => (!a || e.fuerza > a.fuerza ? e : a), null);
@@ -355,10 +423,11 @@ export function simular(mesa, def, tiro, { cuadros = false, iman = false } = {})
       }
     }
     if (gol) break;
-    if (quieta(m)) break;
+    if (quieta(m) && (!control || control.fase === 'lista')) break;
   }
   // Si se pasó del tiempo (no debería), todo se detiene donde está.
   if (!gol && !quieta(m)) m = { t: m.t, cuerpos: m.cuerpos.map((c) => ({ ...c, vx: 0, vy: 0 })) };
+  const receptor = control ? control.receptor : null;
   return lista ? { mesa: m, gol, pasos, tocaron, receptor, cuadros: lista, golpes } : { mesa: m, gol, pasos, tocaron, receptor };
 }
 

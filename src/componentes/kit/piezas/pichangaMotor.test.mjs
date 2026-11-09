@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizarTiro, MAX_TIRO, crearMesa, definirCancha, simular, posicionKapi, estrellasPara, partidaNivel, jugarTiro,
   comprobarPartida, tiroValido, partidoNuevo, despuesDelTiroPartido, jugadaDeKapi, azar, canchaPartido, chapasDe,
-  GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO, indicePelota, huboPase, toquesUsados, PASES_MAX,
+  GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO, indicePelota, huboPase, toquesUsados, PASES_MAX, simularPartido, tiroDesdeAngulo, ANCHO,
 } from './pichangaMotor.mjs';
 import {
   NIVELES_PICHANGA, TOTAL_NIVELES_PICHANGA, nivelPichanga, RETOS_PICHANGA, retoPichanga, indiceRetoDe, semanaDe, mesDe,
@@ -172,7 +172,7 @@ test('un pase no gasta toque (hasta PASES_MAX por nivel)', () => {
   const rec = partida.mesa.cuerpos[1];
   const pel = partida.mesa.cuerpos[indicePelota(partida.mesa)];
   assert.ok(pel.y < rec.y, 'la pelota queda hacia el arco rival');
-  assert.ok(Math.abs(Math.hypot(pel.x - rec.x, pel.y - rec.y) - (rec.r + pel.r + 2)) < 1);
+  assert.ok(Math.abs(Math.hypot(pel.x - rec.x, pel.y - rec.y) - (rec.r + pel.r + 1)) < 1);
   assert.equal(pel.vx, 0); assert.equal(pel.vy, 0);
   assert.equal(tiroValido(partida.mesa, [0, 0, -100], partida.receptor), false);
   assert.equal(tiroValido(partida.mesa, [1, 0, -100], partida.receptor), true);
@@ -207,4 +207,37 @@ test('el partido: un pase da otro turno, hasta PASES_MAX seguidos', () => {
   // Seis chapas por lado, con arquero.
   assert.equal(chapasDe(pt.mesa, 'mia').length, 6);
   assert.equal(chapasDe(pt.mesa, 'rival').length, 6);
+});
+
+test('el pase: la pelota se pega sin saltar y el receptor la rodea hasta mirar al arco', () => {
+  const pt = partidoNuevo();
+  let encontrado = null;
+  let tiroPase = null;
+  for (const i of chapasDe(pt.mesa, 'mia')) {
+    for (let g = 200; g < 340 && !encontrado; g += 2) {
+      for (const f of [0.45, 0.6, 0.75, 0.9]) {
+        const tiro = tiroDesdeAngulo(i, (g * Math.PI) / 180, f);
+        const sim = tiro && simularPartido(pt, tiro, { cuadros: true });
+        if (sim && sim.receptor != null && !sim.gol) { encontrado = sim; tiroPase = tiro; break; }
+      }
+    }
+    if (encontrado) break;
+  }
+  assert.ok(encontrado, 'hay al menos un tiro que termina en pase');
+  const kb = indicePelota(pt.mesa);
+  // La pelota nunca salta: entre un paso y el siguiente se mueve poco.
+  for (let k = 1; k < encontrado.cuadros.length; k += 1) {
+    const [x0, y0] = encontrado.cuadros[k - 1][kb];
+    const [x1, y1] = encontrado.cuadros[k][kb];
+    assert.ok(Math.hypot(x1 - x0, y1 - y0) < 40, `salto en el paso ${k}`);
+  }
+  // Al final, el receptor quedó detrás de la pelota, mirando al arco de arriba.
+  const rec = encontrado.mesa.cuerpos[encontrado.receptor];
+  const pel = encontrado.mesa.cuerpos[kb];
+  const [ax, ay] = [pel.x - rec.x, pel.y - rec.y];
+  const [gx, gy] = [ANCHO / 2 - pel.x, 0 - pel.y];
+  const alineado = (ax * gx + ay * gy) / (Math.hypot(ax, ay) * Math.hypot(gx, gy));
+  assert.ok(alineado > 0.98, `alineado ${alineado}`);
+  // Y el mismo pase da siempre lo mismo.
+  assert.deepEqual(simularPartido(pt, tiroPase).mesa, encontrado.mesa);
 });
