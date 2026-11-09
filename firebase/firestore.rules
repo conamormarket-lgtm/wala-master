@@ -556,6 +556,16 @@ service cloud.firestore {
       allow write: if notSupervision() && (false);
     }
 
+    // Borrar mi cuenta (eliminarCuentaSecure): el registro de auditoría (id =
+    // hash del uid con la sal del servidor; solo fecha, origen y conteos) y la
+    // cola de clientes de Culqi por quitar de Culqi. Solo el servidor.
+    match /cuentasEliminadas/{c} {
+      allow read, write: if notSupervision() && (false);
+    }
+    match /culqiPorBorrar/{c} {
+      allow read, write: if notSupervision() && (false);
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // ERP (repo conamormarket-lgtm/sistema)
     // ═════════════════════════════════════════════════════════════════════════
@@ -570,7 +580,8 @@ service cloud.firestore {
         'bolitasPremios', 'bolitasProgreso', 'bolitasRetos', 'bolitasSemanas', 'bolitasStats',
         'challengeEvidences', 'chancesAjustes', 'characters',
         'checkout_payment_intents', 'clics', 'cliparts', 'cobros_en_curso', 'comunidad_meta', 'contador',
-        'cuestionarios_templates', 'culqiCharges', 'culqiWebhookEvents', 'customShapes', 'designs',
+        'cuentasEliminadas', 'cuestionarios_templates', 'culqiCharges', 'culqiPorBorrar', 'culqiWebhookEvents',
+        'customShapes', 'designs',
         'enlaces_pago', 'flashOffers', 'fonts', 'fx', 'galeria', 'ganadores_galeria', 'heatmap_events',
         'inventoryLogs', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyConfig', 'loyaltyLedger',
         'messages', 'missions', 'niches', 'notification_campaigns', 'notification_drafts',
