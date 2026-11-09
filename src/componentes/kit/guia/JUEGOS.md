@@ -792,3 +792,12 @@ arco, a las esquinas, de pase y de despeje) además de los tiros directos, y
 castiga los que no tocan la pelota: nunca tira al aire. Fácil elige entre los
 4 mejores con algo de mala puntería; difícil, siempre el mejor. Todos los
 niveles y retos se resolvieron otra vez con Michi respondiendo.
+
+**La órbita contra los bordes (2026-11-09)**: el receptor se quedaba girando en
+el mismo sitio (hasta 20 s) cuando el pase lo dejaba pegado a una banda o en
+una esquina: la dirección se recalculaba desde donde había quedado la chapa, y
+el borde la devolvía al mismo ángulo. Ahora la órbita lleva su propia dirección
+(`planDeOrbita` en el control del pase): si detrás de la pelota no cabe la
+chapa, elige la posición más parecida que sí cabe; gira hacia el lado que
+menos choca con los bordes, y nunca da más de 60 pasos de vuelta
+(`ORBITA_MAX`). Prueba: "el pase contra un borde o una esquina…".

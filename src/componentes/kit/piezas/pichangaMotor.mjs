@@ -321,24 +321,75 @@ function pegarPelota(mesa, control) {
   return { t: mesa.t, cuerpos };
 }
 
+/** Gira la dirección (x, y) un paso de órbita (0,12 rad) hacia un lado (giro ±1). */
+function girar([x, y], giro) {
+  return unidad(x * ORBITA.cos - giro * y * ORBITA.sin, giro * x * ORBITA.sin + y * ORBITA.cos);
+}
+
+/** Las vueltas de órbita como máximo (media vuelta son 27). */
+const ORBITA_MAX = 60;
+
+/**
+ * Cómo será la órbita del receptor c alrededor de la pelota (bx, by): la
+ * dirección final (detrás de la pelota mirando al arco; si ahí no cabe en la
+ * cancha, la más parecida que sí cabe) y hacia qué lado girar (el que menos
+ * choca con los bordes; si empatan, el más corto). → { ox, oy, tx, ty, giro }
+ */
+function planDeOrbita(c, p, bx, by) {
+  const d = c.r + p.r + 1;
+  const cabe = ([x, y]) => {
+    const nx = bx + x * d;
+    const ny = by + y * d;
+    return nx >= c.r && nx <= ANCHO - c.r && ny >= c.r && ny <= ALTO - c.r;
+  };
+  const [gx, gy] = unidad(ANCHO / 2 - bx, (c.equipo === 'mia' ? 0 : ALTO) - by);
+  let meta = [-gx, -gy];
+  if (!cabe(meta)) {
+    let a = meta;
+    let b = meta;
+    for (let k = 0; k < 27; k += 1) {
+      a = girar(a, 1);
+      b = girar(b, -1);
+      if (cabe(a)) { meta = a; break; }
+      if (cabe(b)) { meta = b; break; }
+    }
+  }
+  const inicio = unidad(c.x - bx, c.y - by);
+  const recorrido = (giro) => {
+    let o = inicio;
+    let fuera = 0;
+    let pasos = 0;
+    while (o[0] * meta[0] + o[1] * meta[1] < ORBITA.cos && pasos < ORBITA_MAX) {
+      o = girar(o, giro);
+      pasos += 1;
+      if (!cabe(o)) fuera += 1;
+    }
+    return { fuera, pasos };
+  };
+  const izq = recorrido(1);
+  const der = recorrido(-1);
+  const giro = izq.fuera < der.fuera || (izq.fuera === der.fuera && izq.pasos <= der.pasos) ? 1 : -1;
+  return { ox: inicio[0], oy: inicio[1], tx: meta[0], ty: meta[1], giro };
+}
+
 /**
  * Un paso de la órbita: el receptor da una vuelta corta alrededor de la
- * pelota (quieta) hacia el lado de atrás. → { mesa, eventos, gol, tocaron, lista }.
+ * pelota (quieta) hacia el lado de atrás. La dirección la lleva el control
+ * (no se calcula de dónde quedó la chapa): así un borde no la deja girando
+ * en el mismo sitio. → { mesa, eventos, gol, tocaron, lista, ox, oy }.
  */
 function pasoDeOrbita(mesa, def, control) {
   const cuerpos = mesa.cuerpos.map((c) => ({ ...c }));
   const c = cuerpos[control.receptor];
   const p = cuerpos[control.pelota];
   const d = c.r + p.r + 1;
-  // Dónde está ahora (respecto de la pelota) y dónde tiene que quedar.
-  let [ox, oy] = unidad(c.x - control.bx, c.y - control.by);
-  const [tx, ty] = [control.tx, control.ty];
-  let lista = ox * tx + oy * ty >= ORBITA.cos;
+  let { ox, oy } = control;
+  const { tx, ty } = control;
+  let lista = ox * tx + oy * ty >= ORBITA.cos || control.vueltas >= ORBITA_MAX;
   if (lista) {
     [ox, oy] = [tx, ty];
   } else {
-    const giro = ox * ty - oy * tx >= 0 ? 1 : -1;
-    [ox, oy] = unidad(ox * ORBITA.cos - giro * oy * ORBITA.sin, giro * ox * ORBITA.sin + oy * ORBITA.cos);
+    [ox, oy] = girar([ox, oy], control.giro);
     lista = ox * tx + oy * ty >= 0.99999;
   }
   const nx = Math.min(ANCHO - c.r, Math.max(c.r, control.bx + ox * d));
@@ -354,7 +405,7 @@ function pasoDeOrbita(mesa, def, control) {
   const rp = despues[control.pelota];
   rc.x = q(nx); rc.y = q(ny); rc.vx = 0; rc.vy = 0;
   rp.x = control.bx; rp.y = control.by; rp.vx = 0; rp.vy = 0;
-  return { mesa: { t: r.mesa.t, cuerpos: despues }, eventos: r.eventos, gol: r.gol, tocaron: r.tocaron, lista };
+  return { mesa: { t: r.mesa.t, cuerpos: despues }, eventos: r.eventos, gol: r.gol, tocaron: r.tocaron, lista, ox, oy };
 }
 
 /**
@@ -393,11 +444,13 @@ export function simular(mesa, def, tiro, { cuadros = false, iman = false } = {})
         if (rc.vx === 0 && rc.vy === 0) {
           // Se detuvo: ahora la rodea hasta quedar detrás de la pelota, mirando al arco.
           const bola = m.cuerpos[control.pelota];
-          const [gx, gy] = unidad(ANCHO / 2 - bola.x, (rc.equipo === 'mia' ? 0 : ALTO) - bola.y);
-          control = { ...control, fase: 'orbita', bx: bola.x, by: bola.y, tx: -gx, ty: -gy };
+          const plan = planDeOrbita(rc, bola, bola.x, bola.y);
+          control = { ...control, fase: 'orbita', bx: bola.x, by: bola.y, ...plan, vueltas: 0 };
         }
-      } else if (control.fase === 'orbita' && r.lista) {
-        control = { ...control, fase: 'lista' };
+      } else if (control.fase === 'orbita') {
+        control = r.lista
+          ? { ...control, fase: 'lista' }
+          : { ...control, ox: r.ox, oy: r.oy, vueltas: control.vueltas + 1 };
       }
     }
     // El pase: la pelota toca a un compañero de la que tiró.

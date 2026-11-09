@@ -281,3 +281,30 @@ test('en el partido, Michi siempre toca la pelota', () => {
     assert.ok(sim.tocaron.includes(tiro[0]) || sim.gol, dificultad);
   }
 });
+
+test('el pase contra un borde o una esquina no deja al receptor girando', () => {
+  // Pases hacia las esquinas de abajo: detrás de la pelota (mirando al arco)
+  // no cabe la chapa, así que se queda en el lugar más parecido que sí cabe.
+  const casos = [
+    { mias: [[160, 720], [45, 850]], pelota: [110, 790] },
+    { mias: [[440, 720], [555, 850]], pelota: [490, 790] },
+    { rivales: [[160, 180], [45, 50]], pelota: [110, 110], mias: [] },
+  ];
+  for (const caso of casos) {
+    const def = definirCancha({ rivales: [], ...caso });
+    const mesa = crearMesa(def);
+    const kb = indicePelota(mesa);
+    const [x0, y0] = (caso.mias.length ? caso.mias : caso.rivales)[0];
+    const i = mesa.cuerpos.findIndex((c) => c.x === x0 && c.y === y0);
+    const a = mesa.cuerpos[i];
+    const p = mesa.cuerpos[kb];
+    const l = Math.hypot(p.x - a.x, p.y - a.y);
+    const sim = simular(mesa, def, [i, ((p.x - a.x) / l) * 90, ((p.y - a.y) / l) * 90], { iman: true });
+    assert.ok(sim.receptor != null, 'hubo pase');
+    assert.ok(sim.pasos < 400, `terminó en ${sim.pasos} pasos`);
+    const r = sim.mesa.cuerpos[sim.receptor];
+    const b = sim.mesa.cuerpos[kb];
+    assert.ok(r.x >= r.r && r.x <= ANCHO - r.r && r.y >= r.r && r.y <= ALTO - r.r, 'dentro de la cancha');
+    assert.ok(Math.hypot(r.x - b.x, r.y - b.y) >= r.r + b.r - 0.5, 'sin encimarse con la pelota');
+  }
+});
