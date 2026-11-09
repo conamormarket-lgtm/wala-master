@@ -570,6 +570,73 @@
   }
 }
 
+/* ── Escritorio: el juego entra en la pantalla ──
+   Cuando la mesa tiene tablero (.tablero: los tubos o la cancha), las
+   pestañas van arriba a todo lo ancho; debajo, el nivel o el marcador, los
+   avisos y los botones en una columna a la izquierda, y el tablero a la
+   derecha con todo el alto que queda. El panel de al lado se desplaza por
+   dentro. Así se juega sin subir ni bajar. En el mapa (sin tablero) la mesa
+   sigue en una columna. */
+@media (min-width: 1024px) and (min-height: 560px) {
+  .mesa:has(> .tablero) {
+    grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
+    grid-template-rows: auto repeat(7, auto) 1fr;
+    column-gap: 1.75rem;
+    row-gap: 0;
+    align-items: start;
+  }
+
+  .mesa:has(> .tablero) > :not(.adornos):not(.fiesta):not(.tablero) {
+    grid-column: 1;
+    margin-bottom: 0.85rem;
+  }
+
+  .mesa:has(> .tablero) > .modos:not(.adornos):not(.fiesta):not(.tablero) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .mesa:has(> .tablero) > .tablero {
+    grid-column: 2;
+    grid-row: 2 / -1;
+    align-self: center;
+  }
+
+  /* Los botones, uno debajo de otro en la columna. */
+  .mesa:has(> .tablero) > .botonesMesa:not(.adornos) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-self: stretch;
+  }
+
+  .mesa:has(> .tablero) > .botonesMesa > * {
+    width: 100%;
+  }
+
+  /* El nivel: el texto arriba y el botón del mapa debajo (la columna es angosta). */
+  .mesa:has(> .tablero) .cabezaNivel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Los avisos, alineados a la izquierda de su columna. */
+  .mesa:has(> .tablero) .mensajeZona {
+    place-items: start;
+  }
+
+  .mesa:has(> .tablero) .tubos {
+    padding-top: 0.5rem;
+  }
+
+  .lado .panel {
+    max-height: calc(100dvh - var(--altura-cabecera, 72px) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 /* ── Modo juego (celular) ──
    Sin la cabecera de la tienda (components/marco/modoJuego.js), el juego
    ocupa el alto de la pantalla (--alto-juego, de MarcoJuego): el tablero en

@@ -1023,7 +1023,7 @@ export function PaginaPichanga({
                   {esReto && prog.reto === hoy && !partida.ganada && (
                     <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez para mejorar tu marca; mañana sale otro.</Texto></Aviso>
                   )}
-                  <div key={gol ? `gol-${gol.id}` : 'cancha'} className={[c.zonaCancha, gol && c.temblor].filter(Boolean).join(' ')}>
+                  <div key={gol ? `gol-${gol.id}` : 'cancha'} className={[c.zonaCancha, s.tablero, gol && c.temblor].filter(Boolean).join(' ')}>
                     <CanchaPichanga
                       def={def}
                       cuerpos={anim ? anim.cuerpos : mesa.cuerpos}

@@ -11,6 +11,35 @@
   height: clamp(440px, calc(100dvh - 16rem), 940px);
 }
 
+/* En escritorio, con los controles al costado (Juegos.module.css), la cancha
+   toma el alto que queda debajo de la cabecera, el título y las pestañas. */
+@media (min-width: 1024px) and (min-height: 560px) {
+  .marcoCancha {
+    height: clamp(420px, calc(100dvh - var(--altura-cabecera, 72px) - 12.5rem), 940px);
+  }
+
+  /* En la columna angosta: el nivel arriba (sin cortarse) y los toques y el
+     mapa en una fila debajo. */
+  .cabeza {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cabezaMundo,
+  .cabezaNivel,
+  .cabezaMeta {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .cabezaDerecha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 .cancha {
   display: block;
   touch-action: none;

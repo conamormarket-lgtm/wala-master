@@ -614,7 +614,7 @@ export function PaginaBolitas({
                     {aviso && <span key={aviso} className={s.mensaje}><Texto>{aviso}</Texto></span>}
                   </div>
                   <LayoutGroup>
-                    <div className={[s.tubos, actual.tubos.length > 6 && s.tubosCompactos].filter(Boolean).join(' ')} style={columnas(actual.tubos.length)}>
+                    <div className={[s.tubos, s.tablero, actual.tubos.length > 6 && s.tubosCompactos].filter(Boolean).join(' ')} style={columnas(actual.tubos.length)}>
                       {actual.tubos.map((tubo, i) => (
                         <TuboBolitas
                           key={i}
