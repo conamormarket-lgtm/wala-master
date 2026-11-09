@@ -55,7 +55,7 @@ export function MarcoJuego({ titulo, urlVolver = '/minijuegos', onAyuda, accione
           )}
           {acciones}
           {onAyuda && (
-            <Boton variante="secundario" tamano="sm" icono={<HelpCircle aria-hidden="true" />} onClick={onAyuda} aria-label={t.ayuda}>
+            <Boton variante="secundario" tamano="sm" icono={<HelpCircle aria-hidden="true" />} onClick={onAyuda} aria-label={t.ayuda} className={s.ayudaBarra}>
               <span className={s.textoAncho}>{t.ayuda}</span>
             </Boton>
           )}

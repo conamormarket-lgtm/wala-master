@@ -3,6 +3,9 @@
 .ruleta,
 .bolitas {
   display: grid;
+  /* Una columna que no pasa del ancho de la pantalla (las pestañas de los
+     modos ensanchaban la mesa en un celular de 320 px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -157,6 +160,21 @@
 .modos {
   display: flex;
   justify-content: center;
+  min-width: 0;
+}
+
+/* En un celular angosto, las pestañas de los modos más compactas para que
+   entren las tres sin desplazarse. */
+@media (max-width: 400px) {
+  .modos [role='tab'] {
+    min-height: 36px;
+    padding-inline: 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .mesa {
+    padding-inline: 0.6rem;
+  }
 }
 
 .nivelTitulo {
@@ -185,8 +203,11 @@
 
   /* Muchos tubos en el celular: más chicos para que entren en dos filas. */
   .tubosCompactos {
-    --mesa-tubo: 36px;
-    --mesa-bola: 27px;
+    /* Hasta 36 px, o menos si no entran a lo ancho (el reto trae 13: 7 por
+       fila en un celular de 320 px). */
+    container-type: inline-size;
+    --mesa-tubo: min(36px, calc(100cqi / var(--col-movil) - 0.55rem));
+    --mesa-bola: calc(var(--mesa-tubo) * 0.75);
     --mesa-base-extra: 4px;
     gap: 1.6rem 0.4rem;
   }
@@ -690,6 +711,29 @@
 
   .mesa .tubos {
     margin-block: auto;
+    padding-top: 0.5rem;
+  }
+
+  /* Los avisos («¡Nivel jefe!…») flotan sobre el tablero en vez de
+     reservarle una franja: el alto es para los tubos. */
+  .mesa .mensajeZona {
+    height: 0;
+    min-height: 0;
+    overflow: visible;
+    z-index: 4;
+  }
+
+  /* «3 estrellas con 25 movimientos o menos» en una o dos líneas de texto
+     (como flex, cada pedazo se partía en su propia línea junto al mapa). */
+  .metaEstrellas {
+    display: block;
+    line-height: 1.5;
+  }
+
+  .metaEstrellas > :first-child {
+    display: inline-flex;
+    margin-right: 0.35rem;
+    vertical-align: middle;
   }
 
   /* Al bajar con el botón de la barra, el panel no queda debajo de ella. */
@@ -705,6 +749,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-self: stretch;
     gap: 0.4rem;
+    /* Sobre una tarjeta: se leen sobre cualquier escena del fondo. */
+    padding: 0.4rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.55);
   }
 
   /* Dos por fila: entran las cuatro ayudas sin comerse el tablero. */
