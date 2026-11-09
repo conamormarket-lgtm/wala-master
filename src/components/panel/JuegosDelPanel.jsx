@@ -162,34 +162,60 @@ export function BolitasDelPanel() {
 /* ── La Pichanga de Kapi ───────────────────────────────── */
 
 const PREMIOS_PICHANGA = ['admin-pichanga-premios'];
+const PATROCINIOS_PICHANGA = ['admin-pichanga-patrocinios'];
 
 /**
- * /admin/pichanga: todo con adminPichanga (adminPichangaSecure): las cifras
- * del periodo y los premios de los goleadores del mes (como los de las
- * Bolitas, con las marcas activas y visibles para el cupón de una marca).
+ * /admin/pichanga: todo con adminPichanga (adminPichangaSecure): los retos
+ * patrocinados desde hoy, los premios de los goleadores del mes y las cifras
+ * del periodo (como en las Bolitas, con las marcas activas y visibles).
  */
 export function PichangaDelPanel() {
   const invalidar = useInvalidar();
-  const [pestana, setPestana] = useState('resultados');
+  const hoy = limaTodayStr();
+  const [pestana, setPestana] = useState('patrocinios');
   const [dias, setDias] = useState(14);
   const marcasQ = useQuery({ queryKey: ['admin-bolitas-marcas'], queryFn: async () => (await sinError(getBrands())) || [] });
   const metricasQ = useQuery({ queryKey: ['admin-pichanga-metricas', dias], queryFn: () => adminPichanga('metricas', { dias }) });
   const premiosQ = useQuery({ queryKey: PREMIOS_PICHANGA, queryFn: () => adminPichanga('leerPremios'), enabled: pestana === 'premios' });
+  const patrociniosQ = useQuery({
+    queryKey: [...PATROCINIOS_PICHANGA, hoy],
+    queryFn: async () => (await adminPichanga('listarPatrocinios', { desde: hoy })).patrocinios || [],
+    enabled: pestana === 'patrocinios',
+  });
 
   const marcas = useMemo(() => (marcasQ.data || []).filter((m) => m.active !== false && m.visible !== false), [marcasQ.data]);
   const opcionesMarca = useMemo(() => marcas.map((m) => ({ valor: m.id, texto: m.name })), [marcas]);
   // Premios copia lo guardado al cambiar: tiene que ser el mismo objeto entre render y render.
   const premios = useMemo(() => premiosBolitasDesde(premiosQ.data?.premios), [premiosQ.data]);
-  const deLaPestana = pestana === 'premios' ? premiosQ : metricasQ;
+  const patrocinios = useMemo(() => (patrociniosQ.data || []).map((p) => patrocinioDesde(p, hoy)), [patrociniosQ.data, hoy]);
+  const deLaPestana = { patrocinios: patrociniosQ, premios: premiosQ }[pestana] || metricasQ;
+  const conMarcas = pestana !== 'resultados';
 
   return (
     <PaginaPichangaAdmin
       pestana={pestana}
       onPestana={setPestana}
       marcas={opcionesMarca}
-      cargando={deLaPestana.isLoading}
-      error={errorDe(deLaPestana, 'No se pudo cargar.')}
-      onReintentar={() => deLaPestana.refetch()}
+      hoy={hoy}
+      cargando={(conMarcas && marcasQ.isLoading) || deLaPestana.isLoading}
+      error={(conMarcas && errorDe(marcasQ, 'No se pudieron cargar las marcas.')) || errorDe(deLaPestana, 'No se pudo cargar.')}
+      onReintentar={() => { if (marcasQ.error) marcasQ.refetch(); deLaPestana.refetch(); }}
+      patrocinios={patrocinios}
+      onGuardarPatrocinio={async (d, id) => {
+        const marca = marcas.find((m) => m.id === d.marcaId);
+        if (!marca) throw new Error('Elige la marca.');
+        await adminPichanga('guardarPatrocinio', {
+          fecha: d.fecha,
+          patrocinio: { marcaId: marca.id, marcaNombre: marca.name, cupo: d.cupo, activo: d.activo, cupon: d.cupon },
+        });
+        // Si al editar cambió el día, el patrocinio del día anterior se quita (el id es la fecha).
+        if (id && id !== d.fecha) await adminPichanga('borrarPatrocinio', { fecha: id });
+        await invalidar(PATROCINIOS_PICHANGA);
+      }}
+      onQuitarPatrocinio={async (id) => {
+        await adminPichanga('borrarPatrocinio', { fecha: id });
+        await invalidar(PATROCINIOS_PICHANGA);
+      }}
       metricas={metricasQ.data}
       dias={dias}
       onDias={setDias}

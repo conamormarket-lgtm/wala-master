@@ -91,6 +91,7 @@ const ORIGENES = {
   nivel: { texto: 'Regalo de nivel', icono: 'estrella', clase: 'talonCatalogo' },
   bolitas_reto: { texto: 'Reto de Las Bolitas', icono: 'destello', clase: 'talonBolitas' },
   bolitas_semana: { texto: 'Ranking de Las Bolitas', icono: 'estrella', clase: 'talonRanking' },
+  pichanga_reto: { texto: 'Reto de La Pichanga', icono: 'destello', clase: 'talonBolitas' },
   pichanga_mes: { texto: 'Goleadores de La Pichanga', icono: 'estrella', clase: 'talonRanking' },
 };
 const ESTADOS_CUPON = { activo: 'Disponible', usado: 'Usado', caducado: 'Vencido' };

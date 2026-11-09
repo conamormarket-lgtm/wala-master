@@ -294,6 +294,64 @@ function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana: onPremiar
 }
 
 /**
+ * Los retos patrocinados (Bolitas y Pichanga): una marca auspicia el reto de
+ * un día y quien lo completa (con sesión) recibe su cupón, hasta llenar el cupo.
+ *  - cabeza (CabezaAdmin) · antes (las pestañas y la nota) · marcas: [{ valor, texto }] · hoy
+ *  - patrocinios: [patrocinioDesde] · cargando · error · onReintentar
+ *  - onGuardar(datos, id?) · onQuitar(id)
+ */
+function RetosPatrocinados({ cabeza, antes, patrocinios = [], marcas = [], hoy = '', cargando, error, onReintentar, onGuardar, onQuitar }) {
+  const nombreMarca = (id) => marcas.find((m) => m.valor === id)?.texto || id;
+  return (
+    <PaginaListaAdmin
+      cabeza={cabeza}
+      antes={antes}
+      registros={patrocinios}
+      cargando={cargando}
+      error={error}
+      onReintentar={onReintentar}
+      nombreDe={(p) => `${p.marcaNombre || nombreMarca(p.marcaId)} · ${p.fecha}`}
+      unidad={['reto', 'retos']}
+      columnas={[
+        { id: 'fecha', titulo: 'Día', tarjeta: 'titulo', celda: (p) => <>{fechaLarga(p.fecha)}<span className={l.sub}>{p.hoy ? 'Hoy' : p.fecha}</span></> },
+        { id: 'marca', titulo: 'Marca', tarjeta: 'detalle', celda: (p) => p.marcaNombre },
+        { id: 'cupon', titulo: 'Cupón', tarjeta: 'detalle', celda: (p) => textoCuponJuego(p.cupon) },
+        { id: 'cupo', titulo: 'Entregados', ancho: 140, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <span className={l.numero}>{entero(p.entregados)} de {entero(p.cupo)}<span className={s.barrita} aria-hidden="true"><span style={{ width: `${Math.min(100, Math.round((p.entregados / (p.cupo || 1)) * 100))}%` }} /></span></span> },
+        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (p) => <InsigniaEstado estado={p.activo ? 'si' : 'no'} estados={ESTADOS_PATROCINIO} /> },
+      ]}
+      vacio={{ titulo: 'No hay retos patrocinados desde hoy', texto: 'Elige un día y una marca para que auspicie el reto.' }}
+      textos={{ creado: 'Reto patrocinado', guardado: 'Patrocinio guardado', eliminado: 'Patrocinio quitado' }}
+      eliminar={{ texto: (p) => `Se quita el patrocinio de ${p.marcaNombre} del ${fechaLarga(p.fecha)}: ese día el reto sale normal.` }}
+      onGuardar={(d, id) => onGuardar?.({ ...d, marcaNombre: nombreMarca(d.marcaId) }, id)}
+      onEliminar={onQuitar}
+      formulario={{
+        nuevo: 'Patrocinar un reto',
+        titulos: { nuevo: 'Reto patrocinado', editar: 'Editar el patrocinio' },
+        textoGuardar: { nuevo: 'Guardar patrocinio' },
+        vacio: () => ({ fecha: hoy, marcaId: '', cupo: 50, activo: true, cupon: { ...CUPON_JUEGO_VACIO } }),
+        desde: (p) => ({ fecha: p.fecha, marcaId: p.marcaId, cupo: p.cupo, activo: p.activo, cupon: p.cupon }),
+        validar: (d, { id }) => erroresDePatrocinio(d, patrocinios, id, hoy),
+        campos: ({ datos: d, cambiar, errores, idDe }) => (
+          <>
+            <GrupoCampos titulo="El reto">
+              <div className={s.dos}>
+                <CampoFecha id={idDe('fecha')} etiqueta="Día" valor={d.fecha} min={hoy} error={errores.fecha} onCambiar={(v) => cambiar('fecha', v)} />
+                <Campo id={idDe('cupo')} etiqueta="Cupo" ayuda="Cuántos cupones como máximo." type="number" inputMode="numeric" min={1} max={1000} sufijo="cupones" value={d.cupo} error={errores.cupo} onChange={(e) => cambiar('cupo', Number(e.target.value))} />
+              </div>
+              <Campo id={idDe('marcaId')} etiqueta="Marca" opciones={[{ valor: '', texto: 'Elige una marca' }, ...marcas]} value={d.marcaId} error={errores.marcaId} onChange={(e) => cambiar('marcaId', e.target.value)} />
+              <Interruptor etiqueta="Activo" descripcion="Apagado, ese día el reto sale normal (no se borra)." activo={d.activo} onChange={(v) => cambiar('activo', v)} />
+            </GrupoCampos>
+            <GrupoCampos titulo="El cupón">
+              <CamposCupon valor={d.cupon} errores={{ valor: errores.cuponValor, vigencia: errores.cuponVigencia }} onCambiar={(v) => cambiar('cupon', v)} />
+            </GrupoCampos>
+          </>
+        ),
+      }}
+    />
+  );
+}
+
+/**
  * Las Bolitas de Kapi con las marcas (/admin/bolitas).
  *  - pestana + onPestana · marcas: [{ valor, texto }] · hoy · cargando · error · onReintentar
  *    (los de la pestaña abierta; en Cifras, `cargando` no tapa: usa cargandoMetricas)
@@ -317,50 +375,17 @@ export function PaginaBolitasAdmin({
 
   if (pestana === 'patrocinios') {
     return (
-      <PaginaListaAdmin
+      <RetosPatrocinados
         cabeza={cabeza}
         antes={<>{secciones}<p className={s.nota}>La marca sale en el reto de ese día y quien lo completa (con sesión) recibe su cupón, hasta llenar el cupo; el cupón solo descuenta productos de esa marca. Los días sin patrocinio, el reto sale normal.</p></>}
-        registros={patrocinios}
+        patrocinios={patrocinios}
+        marcas={marcas}
+        hoy={hoy}
         cargando={cargando}
         error={error}
         onReintentar={onReintentar}
-        nombreDe={(p) => `${p.marcaNombre} · ${p.fecha}`}
-        unidad={['reto', 'retos']}
-        columnas={[
-          { id: 'fecha', titulo: 'Día', tarjeta: 'titulo', celda: (p) => <>{fechaLarga(p.fecha)}<span className={l.sub}>{p.hoy ? 'Hoy' : p.fecha}</span></> },
-          { id: 'marca', titulo: 'Marca', tarjeta: 'detalle', celda: (p) => p.marcaNombre },
-          { id: 'cupon', titulo: 'Cupón', tarjeta: 'detalle', celda: (p) => textoCuponJuego(p.cupon) },
-          { id: 'cupo', titulo: 'Entregados', ancho: 140, alinear: 'fin', tarjeta: 'detalle', celda: (p) => <span className={l.numero}>{entero(p.entregados)} de {entero(p.cupo)}<span className={s.barrita} aria-hidden="true"><span style={{ width: `${Math.min(100, Math.round((p.entregados / (p.cupo || 1)) * 100))}%` }} /></span></span> },
-          { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (p) => <InsigniaEstado estado={p.activo ? 'si' : 'no'} estados={ESTADOS_PATROCINIO} /> },
-        ]}
-        vacio={{ titulo: 'No hay retos patrocinados desde hoy', texto: 'Elige un día y una marca para que auspicie el reto.' }}
-        textos={{ creado: 'Reto patrocinado', guardado: 'Patrocinio guardado', eliminado: 'Patrocinio quitado' }}
-        eliminar={{ texto: (p) => `Se quita el patrocinio de ${p.marcaNombre} del ${fechaLarga(p.fecha)}: ese día el reto sale normal.` }}
-        onGuardar={(d, id) => onGuardarPatrocinio?.({ ...d, marcaNombre: nombreMarca(d.marcaId) }, id)}
-        onEliminar={onQuitarPatrocinio}
-        formulario={{
-          nuevo: 'Patrocinar un reto',
-          titulos: { nuevo: 'Reto patrocinado', editar: 'Editar el patrocinio' },
-          textoGuardar: { nuevo: 'Guardar patrocinio' },
-          vacio: () => ({ fecha: hoy, marcaId: '', cupo: 50, activo: true, cupon: { ...CUPON_JUEGO_VACIO } }),
-          desde: (p) => ({ fecha: p.fecha, marcaId: p.marcaId, cupo: p.cupo, activo: p.activo, cupon: p.cupon }),
-          validar: (d, { id }) => erroresDePatrocinio(d, patrocinios, id, hoy),
-          campos: ({ datos: d, cambiar, errores, idDe }) => (
-            <>
-              <GrupoCampos titulo="El reto">
-                <div className={s.dos}>
-                  <CampoFecha id={idDe('fecha')} etiqueta="Día" valor={d.fecha} min={hoy} error={errores.fecha} onCambiar={(v) => cambiar('fecha', v)} />
-                  <Campo id={idDe('cupo')} etiqueta="Cupo" ayuda="Cuántos cupones como máximo." type="number" inputMode="numeric" min={1} max={1000} sufijo="cupones" value={d.cupo} error={errores.cupo} onChange={(e) => cambiar('cupo', Number(e.target.value))} />
-                </div>
-                <Campo id={idDe('marcaId')} etiqueta="Marca" opciones={[{ valor: '', texto: 'Elige una marca' }, ...marcas]} value={d.marcaId} error={errores.marcaId} onChange={(e) => cambiar('marcaId', e.target.value)} />
-                <Interruptor etiqueta="Activo" descripcion="Apagado, ese día el reto sale normal (no se borra)." activo={d.activo} onChange={(v) => cambiar('activo', v)} />
-              </GrupoCampos>
-              <GrupoCampos titulo="El cupón">
-                <CamposCupon valor={d.cupon} errores={{ valor: errores.cuponValor, vigencia: errores.cuponVigencia }} onCambiar={(v) => cambiar('cupon', v)} />
-              </GrupoCampos>
-            </>
-          ),
-        }}
+        onGuardar={onGuardarPatrocinio}
+        onQuitar={onQuitarPatrocinio}
       />
     );
   }
@@ -420,8 +445,9 @@ export function PaginaBolitasAdmin({
 /* ── La Pichanga de Kapi ───────────────────────────────── */
 
 const PESTANAS_PICHANGA = [
-  { id: 'resultados', texto: 'Cifras' },
+  { id: 'patrocinios', texto: 'Retos' },
   { id: 'premios', texto: 'Premios del mes' },
+  { id: 'resultados', texto: 'Cifras' },
 ];
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -446,30 +472,52 @@ const TEXTOS_PREMIOS_PICHANGA = {
 };
 
 /**
- * La Pichanga de Kapi (/admin/pichanga): cómo va (partidas, retos, goles,
- * jugadores, dónde se traban, el vestuario y los partidos contra Michi, los
- * goleadores del mes) y los premios de los goleadores de cada mes.
- *  - pestana + onPestana · marcas: [{ valor, texto }] · cargando · error · onReintentar
+ * La Pichanga de Kapi (/admin/pichanga): el reto del día patrocinado por una
+ * marca, los premios de los goleadores de cada mes y cómo va (partidas, retos,
+ * goles, jugadores, dónde se traban, el vestuario y los partidos contra Michi).
+ *  - pestana + onPestana · marcas: [{ valor, texto }] · hoy · cargando · error · onReintentar
+ *  - patrocinios: [patrocinioDesde] (desde hoy) · onGuardarPatrocinio(datos, id?) · onQuitarPatrocinio(id)
  *  - metricas: lo de adminPichanga('metricas') · dias + onDias · cargandoMetricas
  *  - premios: premiosBolitasDesde · premiados: [{ mes, entregados, jugadores }]
  *  - onGuardarPremios(premios) · onPremiarMes(mes) → { ya, sinPremios, entregados }
  *  - nombres: { equipo: { id: nombre } } (por defecto, los del juego)
  */
 export function PaginaPichangaAdmin({
-  pestana: pestanaFuera, onPestana, marcas = [], cargando, error, onReintentar,
+  pestana: pestanaFuera, onPestana, marcas = [], hoy = '', cargando, error, onReintentar,
+  patrocinios = [], onGuardarPatrocinio, onQuitarPatrocinio,
   metricas, dias = 14, onDias, cargandoMetricas = false,
   premios = { activo: false, puestos: [] }, premiados = [], onGuardarPremios, onPremiarMes, nombres = NOMBRES_PICHANGA,
 }) {
-  const [pestanaDentro, setPestanaDentro] = useState('resultados');
+  const [pestanaDentro, setPestanaDentro] = useState('patrocinios');
   const pestana = pestanaFuera || pestanaDentro;
   const ir = (p) => (onPestana ? onPestana(p) : setPestanaDentro(p));
   const m = metricas ? metricasPichanga(metricas, nombres) : null;
   const espera = cargandoMetricas || !m;
   const mesActual = m?.mes || metricas?.mes || '';
+  const cabeza = { icono: 'pichanga', tono: 'menta', titulo: 'La Pichanga de Kapi', subtitulo: 'El fútbol de chapas: el reto patrocinado, los premios de los goleadores del mes y cómo va.' };
+  const secciones = <div className={s.pestanas}><Pestanas etiqueta="Partes de la Pichanga" opciones={PESTANAS_PICHANGA} valor={pestana} onChange={ir} /></div>;
+
+  if (pestana === 'patrocinios') {
+    return (
+      <RetosPatrocinados
+        cabeza={cabeza}
+        antes={<>{secciones}<p className={s.nota}>La marca sale en el reto del día y quien lo gana (con sesión) recibe su cupón, hasta llenar el cupo; el cupón solo descuenta productos de esa marca. Los días sin patrocinio, el reto sale normal.</p></>}
+        patrocinios={patrocinios}
+        marcas={marcas}
+        hoy={hoy}
+        cargando={cargando}
+        error={error}
+        onReintentar={onReintentar}
+        onGuardar={onGuardarPatrocinio}
+        onQuitar={onQuitarPatrocinio}
+      />
+    );
+  }
+
   return (
     <div className={s.pagina} data-componente="PaginaPichangaAdmin">
-      <CabezaAdmin icono="pichanga" tono="menta" titulo="La Pichanga de Kapi" subtitulo="El fútbol de chapas: cuánto se juega, dónde se traban, el vestuario y los premios de los goleadores del mes." />
-      <div className={s.pestanas}><Pestanas etiqueta="Partes de la Pichanga" opciones={PESTANAS_PICHANGA} valor={pestana} onChange={ir} /></div>
+      <CabezaAdmin {...cabeza} />
+      {secciones}
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar la Pichanga" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
       ) : pestana === 'premios' ? (

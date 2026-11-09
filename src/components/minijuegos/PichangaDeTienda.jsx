@@ -3,8 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import useMonedasDelJuego from './useMonedasDelJuego';
 import entregarMonedas from './entregarMonedas';
 import {
-  registrarPartidaPichanga, getRankingPichanga, leerProgresoPichanga, guardarProgresoPichanga, PREMIO_PICHANGA,
+  registrarPartidaPichanga, getRankingPichanga, leerProgresoPichanga, guardarProgresoPichanga, leerPatrocinioPichanga, PREMIO_PICHANGA,
 } from '../../services/firebase/pichanga';
+import { getBrands } from '../../services/brands';
+import { tarjetaDesdeMarca, identidadDeMarca } from '../../componentes/kit/adaptadores';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { diseno } from '../../utils/modoDiseno';
@@ -23,6 +25,9 @@ import { PaginaPichanga, unirProgresos } from '../../componentes/kit/paginas/Pic
  *  - el progreso (PROGRESO_PICHANGA) se guarda en el aparato
  *    (wala_pichanga_progreso) y, con sesión, en la cuenta
  *    (progresoPichangaSecure): al entrar se unen, así se sigue en otro celular
+ *  - el reto patrocinado (patrocinioPichangaSecure): la marca y lo que queda
+ *    del cupo; quien gana el reto recibe el cupón (lo da el servidor al
+ *    registrar la partida) y se ve en el resultado
  *  - la analítica de inicio y fin (trackMinigame)
  * Se juega sin cuenta (el premio invita a entrar); la sesión anónima no cuenta.
  */
@@ -44,6 +49,22 @@ const progresoGuardado = () => {
   try { return JSON.parse(leer(CLAVE_PROGRESO, '{}')) || {}; } catch { return {}; }
 };
 
+/** El reto patrocinado de hoy con la marca como la usa el juego (o null). Si algo falla, el reto sale normal. */
+async function cargarPatrocinio() {
+  try {
+    const p = await leerPatrocinioPichanga();
+    if (!p) return null;
+    const marcas = await getBrands().then((r) => r?.data || []).catch(() => []);
+    const m = marcas.find((x) => x.id === p.marcaId);
+    const tarjeta = m && tarjetaDesdeMarca(m);
+    if (!tarjeta) return null;
+    const { color, color2 } = identidadDeMarca(m);
+    return { marca: { ...tarjeta, color: color || tarjeta.color, color2 }, texto: p.texto, quedan: p.quedan, ganado: p.ganado };
+  } catch {
+    return null;
+  }
+}
+
 export default function PichangaDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
   const monedas = useMonedasDelJuego();
@@ -57,6 +78,7 @@ export default function PichangaDeTienda() {
   const [progreso, setProgreso] = useState(null);
   const [rankings, setRankings] = useState({});
   const [cargandoRankings, setCargandoRankings] = useState({});
+  const [patrocinio, setPatrocinio] = useState(null);
   const pendiente = useRef(null);
   const quien = () => ({ uid: user?.uid, email: user?.email, displayName: user?.displayName });
 
@@ -83,6 +105,14 @@ export default function PichangaDeTienda() {
       guardar(CLAVE_PROGRESO, JSON.stringify(unido));
       guardarProgresoPichanga(unido).catch(() => {});
     });
+    return () => { vigente = false; };
+  }, [loading, uid]);
+
+  // El reto patrocinado de hoy (con sesión, también si ya ganó el cupón).
+  useEffect(() => {
+    if (loading) return undefined;
+    let vigente = true;
+    cargarPatrocinio().then((p) => { if (vigente) setPatrocinio(p); });
     return () => { vigente = false; };
   }, [loading, uid]);
 
@@ -122,6 +152,8 @@ export default function PichangaDeTienda() {
   /** Registra una victoria y refresca los rankings que pudo cambiar. */
   const registrar = async (partida) => {
     const r = await registrarPartidaPichanga(partida);
+    // Un cupón menos para el resto, y este ya lo ganó.
+    if (r.cupon) setPatrocinio((p) => (p ? { ...p, quedan: Math.max(0, p.quedan - 1), ganado: true } : p));
     if (partida.modo === 'reto') pedirRanking('reto');
     if (r.record && rankings.niveles) pedirRanking('niveles');
     if (rankings.goleadores) pedirRanking('goleadores');
@@ -129,15 +161,15 @@ export default function PichangaDeTienda() {
   };
 
   const ganar = async ({ partida }) => {
-    const { reward } = await registrar(partida);
+    const { reward, cupon } = await registrar(partida);
     if (!reward) {
       reloadProfile?.();
-      return { ya: true };
+      return { ya: true, cupon };
     }
     const monto = Number(reward) || PREMIO_PICHANGA;
     // Refrescar el perfil: el saldo de la cabecera y "ya cobró hoy" en la Zona Arcade.
     await Promise.all([entregarMonedas(monto), reloadProfile?.()]);
-    return { monto };
+    return { monto, cupon };
   };
 
   return (
@@ -157,6 +189,7 @@ export default function PichangaDeTienda() {
       rankings={rankings}
       cargandoRankings={cargandoRankings}
       onPedirRanking={pedirRanking}
+      patrocinio={patrocinio}
       onCompletar={(info) => {
         // Los tiros van como texto: la analítica guarda datos planos.
         const { tiros, ...resto } = info;

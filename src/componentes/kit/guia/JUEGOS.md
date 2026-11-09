@@ -826,3 +826,9 @@ fondo. Niveles y retos resueltos otra vez con esta regla.
   el mes que terminó (cupón `pichanga_mes_{mes}_{uid}`, marca
   `pichangaPremios/{mes}`); a mano, solo meses ya terminados. El talón del
   cupón dice "Goleadores de La Pichanga".
+
+### La Pichanga de Kapi: el reto patrocinado
+
+- Como en las Bolitas: `/admin/pichanga` → **Retos** pone una marca en el reto de un día (`pichangaPatrocinios/{fecha}`) con un cupón y un cupo. La lista del admin es la misma pieza que la de las Bolitas (`RetosPatrocinados` en `paginas/admin/Juegos.jsx`).
+- Quien gana el reto con sesión recibe el cupón (`userCoupons/pichanga_reto_{fecha}_{uid}`, origen `pichanga_reto`), uno por persona y día y hasta llenar el cupo. Lo da `registrarPartidaPichangaSecure` en la misma transacción de la partida.
+- El celular no lee las colecciones de la Pichanga: el patrocinio de hoy llega por `patrocinioPichangaSecure` (`{ marcaId, marcaNombre, texto, quedan, ganado }`). En el juego sale como una franja sobre la cancha (`PatrocinioPichanga`), porque la cancha necesita el alto, y el cupón sale arriba en el resultado (`CuponGanado`).

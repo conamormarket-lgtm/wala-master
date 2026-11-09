@@ -10879,16 +10879,23 @@ exports.registrarPartidaPichangaSecure = functions.https.onCall(async (data, con
   const jugadorRef = db.collection("pichangaJugadores").doc(uid);
   const mesRef = db.collection("pichangaMeses").doc(mes + "_" + uid);
   const statsRef = db.collection("pichangaStats").doc(hoy);
+  // El reto patrocinado (pichangaPatrocinios/{hoy}, lo pone el admin) da un
+  // cupón de la marca: uno por persona y día (el id del cupón lo asegura)
+  // mientras quede cupo, como en las Bolitas.
+  const patrocinioRef = esReto ? db.collection("pichangaPatrocinios").doc(hoy) : null;
+  const cuponRef = esReto ? db.collection("userCoupons").doc("pichanga_reto_" + hoy + "_" + uid) : null;
 
   try {
     return await db.runTransaction(async (t) => {
-      const [userSnap, accionesSnap, retoSnap, semanaSnap, jugadorSnap, mesSnap] = await Promise.all([
+      const [userSnap, accionesSnap, retoSnap, semanaSnap, jugadorSnap, mesSnap, patrocinioSnap, cuponSnap] = await Promise.all([
         t.get(userRef),
         t.get(accionesRef),
         retoRef ? t.get(retoRef) : null,
         semanaRef ? t.get(semanaRef) : null,
         t.get(jugadorRef),
         t.get(mesRef),
+        patrocinioRef ? t.get(patrocinioRef) : null,
+        cuponRef ? t.get(cuponRef) : null,
       ]);
       if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = userSnap.data();
@@ -10918,6 +10925,19 @@ exports.registrarPartidaPichangaSecure = functions.https.onCall(async (data, con
         }
       }
 
+      let cupon = null;
+      const patrocinio = esReto && patrocinioSnap.exists ? bolitas.normalizarPatrocinio(patrocinioSnap.data()) : null;
+      const entregados = patrocinio ? Number(patrocinioSnap.data().entregados) || 0 : 0;
+      if (patrocinio && patrocinio.activo && entregados < patrocinio.cupo && !cuponSnap.exists) {
+        cupon = crearCuponBolitas(t, cuponRef, uid, patrocinio.cupon, {
+          origen: "pichanga_reto",
+          titulo: "Reto del día: " + (patrocinio.marcaNombre || "La Pichanga de Kapi"),
+          marcaId: patrocinio.marcaId,
+          marcaNombre: patrocinio.marcaNombre,
+        });
+        t.update(patrocinioRef, { entregados: FieldValue.increment(1) });
+      }
+
       const jugadorAntes = jugadorSnap.exists ? jugadorSnap.data() : null;
       const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre, ahora: Date.now() });
       t.set(jugadorRef, jugador);
@@ -10943,12 +10963,41 @@ exports.registrarPartidaPichangaSecure = functions.https.onCall(async (data, con
       if (!jugadorAntes) stats.nuevos = FieldValue.increment(1);
       t.set(statsRef, stats, { merge: true });
 
-      return { success: true, reward, ya, toques: partida.toques, estrellas: partida.estrellas, mejor, record, golesMes };
+      return { success: true, reward, ya, toques: partida.toques, estrellas: partida.estrellas, mejor, record, golesMes, cupon };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("registrarPartidaPichangaSecure error:", e);
     throw new functions.https.HttpsError("internal", "No se pudo registrar la partida.");
+  }
+});
+
+// El patrocinio del reto de hoy, para el juego: { patrocinio: { marcaId,
+// marcaNombre, texto, quedan, ganado } } o { patrocinio: null } si no hay o
+// está apagado. `ganado`: quien pregunta (con sesión) ya tiene el cupón de hoy.
+exports.patrocinioPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  const hoy = limaTodayStr();
+  try {
+    const [snap, cuponSnap] = await Promise.all([
+      db.collection("pichangaPatrocinios").doc(hoy).get(),
+      uid ? db.collection("userCoupons").doc("pichanga_reto_" + hoy + "_" + uid).get() : null,
+    ]);
+    const p = snap.exists ? bolitas.normalizarPatrocinio(snap.data()) : null;
+    if (!p || !p.activo) return { fecha: hoy, patrocinio: null };
+    return {
+      fecha: hoy,
+      patrocinio: {
+        marcaId: p.marcaId,
+        marcaNombre: p.marcaNombre,
+        texto: bolitas.textoCupon(p.cupon, p.marcaNombre),
+        quedan: Math.max(0, p.cupo - (Number(snap.data().entregados) || 0)),
+        ganado: Boolean(cuponSnap && cuponSnap.exists),
+      },
+    };
+  } catch (e) {
+    console.error("patrocinioPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo leer el patrocinio.");
   }
 });
 
@@ -11088,11 +11137,43 @@ exports.premiarGoleadoresPichanga = onSchedule({
 //    y los rankings del momento
 //  - leerPremios · guardarPremios { activo, puestos }
 //  - premiarMes { mes: 'AAAA-MM' } (repetir a mano el premio de un mes)
+//  - listarPatrocinios { desde } · guardarPatrocinio { fecha, patrocinio } ·
+//    borrarPatrocinio { fecha } (el reto del día patrocinado, como en las Bolitas)
 exports.adminPichangaSecure = functions.https.onCall(async (data, context) => {
   if (!(await callerIsAdmin(context, ["premios"]))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
   const d = data || {};
+  const FECHA = /^\d{4}-\d{2}-\d{2}$/;
   try {
     switch (d.accion) {
+      case "listarPatrocinios": {
+        const desde = FECHA.test(String(d.desde)) ? String(d.desde) : limaTodayStr();
+        const snap = await db.collection("pichangaPatrocinios").where("fecha", ">=", desde).limit(200).get();
+        const patrocinios = snap.docs.map((x) => {
+          const p = x.data();
+          return { fecha: p.fecha, marcaId: p.marcaId, marcaNombre: p.marcaNombre, cupon: p.cupon, cupo: p.cupo, activo: p.activo, entregados: p.entregados || 0 };
+        }).sort((a, b) => a.fecha.localeCompare(b.fecha));
+        return { success: true, patrocinios };
+      }
+      case "guardarPatrocinio": {
+        if (!FECHA.test(String(d.fecha))) throw new functions.https.HttpsError("invalid-argument", "Fecha inválida.");
+        if (String(d.fecha) < limaTodayStr()) throw new functions.https.HttpsError("invalid-argument", "Ese día ya pasó.");
+        const p = bolitas.normalizarPatrocinio(d.patrocinio);
+        if (!p) throw new functions.https.HttpsError("invalid-argument", "Falta la marca, el cupón o el cupo.");
+        const ref = db.collection("pichangaPatrocinios").doc(d.fecha);
+        await db.runTransaction(async (t) => {
+          const antes = await t.get(ref);
+          t.set(ref, {
+            ...p, fecha: d.fecha, texto: bolitas.textoCupon(p.cupon, p.marcaNombre),
+            entregados: antes.exists ? Number(antes.data().entregados) || 0 : 0, actualizado: FieldValue.serverTimestamp(),
+          });
+        });
+        return { success: true, patrocinio: p };
+      }
+      case "borrarPatrocinio": {
+        if (!FECHA.test(String(d.fecha))) throw new functions.https.HttpsError("invalid-argument", "Fecha inválida.");
+        await db.collection("pichangaPatrocinios").doc(d.fecha).delete();
+        return { success: true };
+      }
       case "metricas": {
         const dias = Math.min(60, Math.max(1, Math.floor(Number(d.dias)) || 14));
         const hoy = limaTodayStr();

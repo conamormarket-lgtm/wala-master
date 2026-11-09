@@ -343,6 +343,116 @@
 }
 
 /* Lo desbloqueado, en el resultado. */
+/* El reto patrocinado: una franja sobre la cancha (logo, premio y cupo). */
+.patrocinio {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899)) border-box;
+}
+
+.patrocinioLogo {
+  display: grid;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.patrocinioLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.patrocinioLogo span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: #7c3aed;
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.patrocinioTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.patrocinioTexto small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #8b5cf6;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.patrocinioTexto small svg {
+  width: 13px;
+  height: 13px;
+}
+
+.patrocinioTexto > span {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.patrocinioQuedan {
+  display: grid;
+  flex: none;
+  min-width: 3.4rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: #7c3aed;
+  color: #fff;
+  line-height: 1.05;
+  place-items: center;
+  text-align: center;
+}
+
+.patrocinioQuedan strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.patrocinioQuedan small {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.patrocinioQuedan svg {
+  width: 16px;
+  height: 16px;
+}
+
+.patrocinioListo {
+  background: #16a34a;
+}
+
+.patrocinioAgotado {
+  background: #6b7280;
+}
+
 /* Lo nuevo del vestuario, en el resultado: una tarjeta con el borde del
    degradado del logo, un sello "¡Nuevo!" y la muestra grande. Entra una vez
    (sin bucles) y el botón brilla solo al pasar o tocar. */

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Gamepad2, RotateCcw, Undo2, Eye, Plus, ArrowRight, Map as IconoMapa, Crown, Lock, ChevronLeft, ChevronRight,
-  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star, Trophy, Shirt, Film, Swords, Check,
+  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star, Trophy, Shirt, Film, Swords, Check, Ticket,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { BloqueSeccion } from '../Seccion';
@@ -12,7 +12,8 @@ import { Estallido } from '../Efectos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
-import { EstrellasNivel } from '../piezas/Bolitas';
+import { EstrellasNivel, CuponGanado } from '../piezas/Bolitas';
+import { Enlace } from '../Enlace';
 import { CanchaPichanga, MuestraPichanga, MuestraEstadio, TablaPichanga, EQUIPO_RIVAL, PERSONAJES } from '../piezas/Pichanga';
 import { FondoPichanga, escenaDelMundoPichanga, escenaDelEstadio } from '../piezas/FondoPichanga';
 import { efectoPichanga } from '../piezas/efectosPichanga';
@@ -172,6 +173,37 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
 }
 
 /**
+ * El reto patrocinado, en una franja (la cancha necesita el alto): el logo de
+ * la marca, lo que se gana y cuántos cupones quedan.
+ *  - patrocinio: { marca: { nombre, logo, url, color }, texto, quedan, ganado }
+ *  - sesion · urlLogin
+ */
+function PatrocinioPichanga({ patrocinio, sesion, urlLogin }) {
+  const { marca, texto, quedan, ganado } = patrocinio;
+  const logo = marca.logo
+    ? <img src={marca.logo} alt="" loading="lazy" />
+    : <span aria-hidden="true" style={marca.color ? { background: marca.color } : undefined}>{marca.nombre?.charAt(0)}</span>;
+  return (
+    <div className={c.patrocinio} data-componente="PatrocinioPichanga">
+      {marca.url ? <Enlace to={marca.url} className={c.patrocinioLogo} aria-label={marca.nombre}>{logo}</Enlace> : <span className={c.patrocinioLogo}>{logo}</span>}
+      <p className={c.patrocinioTexto}>
+        <small><Ticket aria-hidden="true" /><Texto>{`Reto de ${marca.nombre}`}</Texto></small>
+        <span><Texto>{ganado ? `Ganaste ${texto}` : `Gánalo y llévate ${texto}`}</Texto></span>
+      </p>
+      {!sesion ? (
+        <Boton to={urlLogin} variante="secundario" tamano="sm"><Texto>Entrar</Texto></Boton>
+      ) : (
+        <span className={[c.patrocinioQuedan, ganado && c.patrocinioListo, !ganado && quedan <= 0 && c.patrocinioAgotado].filter(Boolean).join(' ')}>
+          {ganado ? <><Check aria-hidden="true" /><small><Texto>Ganado</Texto></small></>
+            : quedan <= 0 ? <small><Texto>Agotado</Texto></small>
+              : <><strong>{quedan}</strong><small><Texto>{quedan === 1 ? 'queda' : 'quedan'}</Texto></small></>}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
  * Lo que se acaba de desbloquear, en el resultado: va arriba de todo (es la
  * sorpresa), con un sello "¡Nuevo!", la muestra grande y un botón para
  * ponérselo ahí mismo.
@@ -225,7 +257,10 @@ function Desbloqueos({ lista, puestos = {}, onPoner }) {
  *    lanza). Solo con sesión y si no cobró hoy. `partida` es lo que el
  *    servidor comprueba: { modo: 'nivel' | 'reto', nivel | fecha, tiros: [[chapa, dx, dy]…], extras }
  *  - onRegistrar(partida): cada victoria con sesión después de cobrar (la
- *    misión, el reto y los rankings); lo que pase no se muestra
+ *    misión, el reto y los rankings); solo se muestra el cupón si trae uno
+ *  - onGanar y onRegistrar pueden traer `cupon` (el del reto patrocinado):
+ *    sale arriba en el resultado
+ *  - patrocinio (del reto de hoy): { marca, texto, quedan, ganado }
  *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
  *  - rankings: { reto, niveles, goleadores } (ver getRankingPichanga) ·
  *    cargandoRankings: { [tabla]: bool } · onPedirRanking(tabla): para traerlo
@@ -239,6 +274,7 @@ function Desbloqueos({ lista, puestos = {}, onPoner }) {
 export function PaginaPichanga({
   progreso, onProgreso, onCompletar, vistaInicial = 'juego', modoInicial = 'niveles', ayudaVista = true, onAyudaVista, estado, monedas,
   sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, hoy, rankings = {}, cargandoRankings = {}, onPedirRanking, urlLogin = '/login',
+  patrocinio,
 }) {
   const [prog, setProg] = useState(() => progresoPichanga(progreso));
   const [modo, setModo] = useState(modoInicial);
@@ -431,14 +467,17 @@ export function PaginaPichanga({
   const cobrar = async (partidaServidor) => {
     if (!sesion) { setPremio({ estado: 'sinSesion' }); return; }
     if (!onGanar) { setPremio(null); return; }
+    // El cupón del reto patrocinado, si tocó: va al resultado.
+    const conCupon = (r) => { if (r?.cupon) setLogro((l) => (l ? { ...l, cupon: r.cupon } : l)); };
     if (cobrado) {
       setPremio({ estado: 'ya', texto: 'Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.' });
-      Promise.resolve(onRegistrar?.(partidaServidor)).catch(() => {});
+      Promise.resolve(onRegistrar?.(partidaServidor)).then(conCupon).catch(() => {});
       return;
     }
     setPremio({ estado: 'acreditando' });
     try {
       const r = await onGanar({ partida: partidaServidor });
+      conCupon(r);
       setCobrado(true);
       setPremio(r?.ya ? { estado: 'ya' } : { estado: 'acreditado', monto: r?.monto || monto });
     } catch {
@@ -830,6 +869,9 @@ export function PaginaPichanga({
                       </div>
                     </div>
                   )}
+                  {esReto && patrocinio?.marca && !partida.ganada && (
+                    <PatrocinioPichanga patrocinio={patrocinio} sesion={sesion} urlLogin={urlLogin} />
+                  )}
                   {esReto && prog.reto === hoy && !partida.ganada && (
                     <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez para mejorar tu marca; mañana sale otro.</Texto></Aviso>
                   )}
@@ -1134,6 +1176,7 @@ export function PaginaPichanga({
             </>
           )}
         >
+          {logro?.cupon && <CuponGanado cupon={logro.cupon} />}
           <Desbloqueos lista={logro?.desbloqueos} puestos={prog} onPoner={elegirPrenda} />
           {logro?.cofre && (
             <div className={s.cofre} data-componente="CofrePichanga">
