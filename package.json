@@ -67,6 +67,8 @@
     "test:admin": "node --test src/componentes/kit/adaptadoresAdmin.test.mjs",
     "test:bolitas": "node --test src/componentes/kit/piezas/bolitasMotor.test.mjs src/componentes/kit/piezas/bolitasProgreso.test.mjs && node functions/test/bolitasLogic.test.js",
     "gen:motor-bolitas": "node scripts/generar-motor-bolitas.js",
+    "test:pichanga": "node --test src/componentes/kit/piezas/pichangaMotor.test.mjs src/componentes/kit/piezas/pichangaProgreso.test.mjs",
+    "gen:pichanga": "node scripts/generar-pichanga.mjs",
     "test:gift": "node --test src/utils/giftRecommender.test.mjs src/utils/fechasFestivas.test.mjs src/utils/fechaEvento.test.mjs src/services/surveyResponses.test.mjs src/services/encuestaOrigen.test.mjs",
     "test:crear-productos": "node --test src/utils/carritoDisponible.test.mjs src/utils/enTienda.test.mjs src/utils/laser.test.mjs functions/test/cartValidation.test.js functions/test/pedidoDisenos.test.js",
     "gen:gift-logic": "node scripts/gen-gift-logic.js",

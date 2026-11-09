@@ -935,6 +935,24 @@ const PAGINAS = {
       </span>
     </span>
   ),
+  pichanga: () => (
+    // La Pichanga de Kapi: la cancha alta, los botones de las ayudas y el panel de la racha.
+    <span className={s.juegoEsq}>
+      {barraJuego()}
+      <span className={s.juegoCuerpo}>
+        <Caja alto={560} className={s.mesaEsq}>
+          <Hueso forma="pildora" alto={40} ancho={220} />
+          <Hueso forma="bloque" alto={400} ancho="min(100%, 280px)" />
+          <span className={s.chips}><Hueso forma="pildora" alto={44} ancho={120} /><Hueso forma="pildora" alto={44} ancho={120} /></span>
+        </Caja>
+        <Caja alto={260} className={s.juegoLado}>
+          <span className={s.chips}><Hueso forma="bloque" alto={64} ancho="47%" /><Hueso forma="bloque" alto={64} ancho="47%" /></span>
+          <Hueso forma="pildora" alto={14} ancho="100%" />
+          <Hueso forma="bloque" alto={58} ancho="100%" />
+        </Caja>
+      </span>
+    </span>
+  ),
   aviso: () => (
     // Una tarjeta centrada (no encontrada, descargar la app): el sello o Kapi, el título, el texto y dos botones.
     <span className={s.avisoEsq}>
@@ -1047,7 +1065,7 @@ const PAGINAS = {
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' |
  *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
- *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
+ *    'palabra' | 'ruleta' | 'bolitas' | 'pichanga' (los minijuegos por dentro) | 'sorteo' |
  *    'suscripcionSorteo' | 'landing' (Suscripciones) | 'invitacion' | 'enlaces' |
  *    'aviso' (no encontrada, descargar la app)
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la

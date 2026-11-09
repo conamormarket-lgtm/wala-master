@@ -616,3 +616,49 @@ mundo con la marca, el reto patrocinado, el cupón y los productos en el
 resultado, y `/admin/bolitas` con datos. **No probado:** guardar desde los
 formularios del admin (usan `alert`), la tarea del lunes ejecutándose sola,
 el checkout de punta a punta con un cupón de marca (solo validar), inglés.
+
+## La Pichanga de Kapi: fase 1 (2026-11-09)
+
+Fútbol de chapas para jugar solo, en `/pichanga` (a pantalla completa en el
+celular, como los otros juegos). **Todavía no sale en la Zona Arcade** y no da
+monedas: eso llega en la fase 2. La portada ya está en
+`/assets/kapi/banners/pichanga*.webp` (`BANNERS_ARCADE.pichanga`).
+
+**El motor** (`piezas/pichangaMotor.mjs`, puro; `npm run test:pichanga`): una
+cancha de 600 × 900 con el arco arriba, chapas (tapitas), pelota, conos, barro,
+hielo y Kapi de arquero (va y vuelve solo mientras algo rueda). Un tiro es
+`[chapa, dx, dy]` en enteros; la física va a paso fijo, redondea a 1/1024 y solo
+usa operaciones exactas, así que el mismo tiro da lo mismo en cualquier lado: el
+servidor podrá repetir una partida (`comprobarPartida`). También trae las reglas
+de los penales (el jefe), el partido por turnos y la jugada de Kapi
+(`jugadaDeKapi`: prueba tiros, simula y elige; fácil se equivoca a propósito).
+
+**Los niveles** (`piezas/pichangaNiveles.mjs`): 40 en dos mundos. Rivales desde
+el 5, conos desde el 8, Kapi de arquero desde el 12, penales en el 20; barro
+desde el 21, hielo desde el 26, arco chico desde el 31 y penales más difíciles
+en el 40. `npm run gen:pichanga` busca una solución "holgada" de cada uno (los
+tiros parecidos también entran) y la guarda en `pichangaSoluciones.mjs`: de ahí
+salen el par (3 estrellas) y los toques (par + 2). La prueba falla si un cambio
+de física o de nivel deja una solución sin gol.
+
+**La página** (`paginas/Pichanga.jsx`, la cancha en `piezas/Pichanga.jsx`, un
+canvas que solo se redibuja cuando algo rueda): se arrastra desde una chapa
+hacia atrás, como una resortera. Pestañas Niveles / Contra Kapi, mapa del mundo,
+estrellas, racha de 3 que abre un cofre, ayudas por nivel (2 "Ver el tiro" que
+dibujan la trayectoria de la pelota, 2 "Repetir tiro", 1 "Un toque más"),
+"¡GOL!" con confeti, repetición del gol en cámara lenta, sonidos y vibración
+(`piezas/efectosPichanga.js`). El partido es a 3 goles, con dificultad fácil,
+normal o difícil.
+
+**El vestuario** (`piezas/pichangaProgreso.mjs`): equipos, pelotas y canchas del
+partido. Nada se compra; se abren con estrellas, jefes, goles o partidos
+ganados, y el resultado avisa lo que se acaba de abrir.
+
+**En la tienda** (`components/minijuegos/PichangaDeTienda.jsx`): el progreso se
+guarda en el aparato (`wala_pichanga_progreso`) y `trackMinigame` manda el inicio
+y cada nivel o partido terminado (con los tiros).
+
+**Fase 2 (pendiente):** comprobar las partidas en el servidor (copia del motor
+como en Bolitas), +2 monedas al día, reto del día, rankings (reto, top de
+niveles y goleadores del mes), progreso en la cuenta (`unirProgresos` ya está),
+misiones y la tarjeta en la Zona Arcade.

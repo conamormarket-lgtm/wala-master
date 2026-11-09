@@ -15,6 +15,8 @@ export const BANNERS_ARCADE = {
   kapi: foto('alimenta'),
   ruleta: foto('ruleta'),
   bolitas: foto('bolitas'),
+  // La Pichanga de Kapi: lista para su tarjeta (todavía no sale en la Zona Arcade).
+  pichanga: foto('pichanga'),
 };
 /* Un banner: { src, srcSet } o solo su URL. */
 const banner = (b) => (typeof b === 'string' ? { imagen: b } : { imagen: b?.src, srcSet: b?.srcSet });

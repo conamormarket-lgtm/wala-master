@@ -146,6 +146,7 @@ const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const WordlePage = lazy(() => import('./pages/Tienda/WordlePage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
+const PichangaPage = lazy(() => import('./components/minijuegos/PichangaDeTienda'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 
 // MussaPage retirado: /MUSSA ahora es la página de la marca vía DynamicLandingPage (/:slug).
@@ -580,6 +581,7 @@ function App() {
                                   <Route path="/minijuegos" element={<MinijuegosPage />} />
                                   <Route path="/ruleta" element={<RuletaPage />} />
                                   <Route path="/ball-sort" element={<BallSortPage />} />
+                                  <Route path="/pichanga" element={<PichangaPage />} />
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />

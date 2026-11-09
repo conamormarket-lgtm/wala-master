@@ -1,0 +1,345 @@
+/* La cancha de La Pichanga: ocupa el ancho que tiene, sin pasarse del alto
+   de la pantalla (en el celular deja lugar a la cabecera del nivel y a los
+   botones). touch-action: none para que arrastrar no mueva la página. */
+.cancha {
+  display: block;
+  width: 100%;
+  max-width: min(100%, calc((100dvh - 15rem) * 0.6));
+  margin-inline: auto;
+  border-radius: 18px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.canchaLista {
+  cursor: grab;
+}
+
+.canchaLista:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 768px) {
+  .cancha {
+    max-width: min(100%, calc((var(--alto-juego, 100dvh) - 19rem) * 0.6));
+    border-radius: 14px;
+  }
+}
+
+.muestra {
+  display: block;
+}
+
+.muestraEstadio {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* La línea del medio y el círculo central de la cancha chica. */
+.muestraEstadio::before,
+.muestraEstadio::after {
+  position: absolute;
+  content: '';
+}
+
+.muestraEstadio::before {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--linea);
+}
+
+.muestraEstadio::after {
+  top: 50%;
+  left: 50%;
+  width: 40%;
+  height: 40%;
+  border: 2px solid var(--linea);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── La página (paginas/Pichanga.jsx) ── */
+
+.mesa {
+  gap: 0.75rem;
+}
+
+.zonaCancha {
+  position: relative;
+}
+
+/* "¡GOL!" grande sobre la cancha: una vez, al meterlo (nada en bucle). */
+.gol {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  z-index: 3;
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: clamp(2.6rem, 11vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow: 0 4px 0 #6d28d9, 0 7px 0 rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: golAparece 1.35s var(--ease-signature, ease-out) both;
+}
+
+@keyframes golAparece {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-8deg); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(-4deg); }
+  30% { transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(1) rotate(-4deg); }
+}
+
+.cabezaDerecha {
+  display: grid;
+  justify-items: end;
+  gap: 0.4rem;
+}
+
+.quedan {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.quedanPocos {
+  background: #fef3c7;
+  color: #92400e;
+  box-shadow: inset 0 0 0 1px #fcd34d;
+}
+
+/* El marcador del partido: Tú 1 – 0 Kapi y de quién es el turno. */
+.marcador {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.lado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.lado:first-child {
+  justify-content: flex-end;
+}
+
+.goles {
+  font-family: var(--fuente-marca);
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.turno {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.resultadoMarcador {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 2.2rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.dificultad {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* El botón del vestuario en el panel: tu chapa, tu equipo y qué se cambia. */
+.vestuarioBoton {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s;
+}
+
+.vestuarioBoton:hover {
+  border-color: #8b5cf6;
+}
+
+.vestuarioBoton:active {
+  transform: scale(0.98);
+}
+
+.vestuarioBoton span {
+  display: grid;
+}
+
+.vestuarioBoton small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.vestuarioBoton > svg {
+  width: 20px;
+  height: 20px;
+  color: #7c3aed;
+}
+
+/* ── El vestuario ── */
+.vestuario {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.prendas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prenda {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.7rem 0.4rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s;
+}
+
+.prenda:hover:not(:disabled) {
+  border-color: #a78bfa;
+}
+
+.prenda:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.prendaPuesta {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #7c3aed 25%, transparent);
+}
+
+.prendaCerrada {
+  cursor: not-allowed;
+}
+
+.prendaCerrada > :first-child {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.prendaNombre {
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.prendaNota {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.prendaPuesta .prendaNota {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.prendaNota svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* Lo desbloqueado, en el resultado. */
+.desbloqueos {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, #8b5cf6 10%, var(--color-surface));
+}
+
+.desbloqueosTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.desbloqueosTitulo svg {
+  width: 18px;
+  height: 18px;
+  color: #7c3aed;
+}
+
+.desbloqueos ul {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.desbloqueos li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gol {
+    animation-name: golQuieto;
+  }
+
+  @keyframes golQuieto {
+    0%, 80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}
+
+/* En el celular, la cancha al centro de lo que sobra y los botones abajo. */
+@media (max-width: 768px) {
+  .zonaCancha {
+    margin-block: auto;
+  }
+}

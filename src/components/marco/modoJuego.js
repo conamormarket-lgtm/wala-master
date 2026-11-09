@@ -5,7 +5,7 @@
  * En escritorio no cambia nada. App.jsx pone la clase .modo-juego y App.css
  * oculta el marco; la barra de abajo y los flotantes se apagan solos.
  */
-export const RUTAS_DE_JUEGO = ['/palabra-del-dia', '/ruleta', '/ball-sort'];
+export const RUTAS_DE_JUEGO = ['/palabra-del-dia', '/ruleta', '/ball-sort', '/pichanga'];
 
 export const esRutaDeJuego = (ruta = '') => {
   const limpia = ruta.length > 1 ? ruta.replace(/\/+$/, '') : ruta;
