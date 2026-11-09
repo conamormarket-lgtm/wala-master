@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Gamepad2, RotateCcw, Undo2, Eye, Plus, ArrowRight, Map as IconoMapa, Crown, Lock, ChevronLeft, ChevronRight,
-  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star, Trophy, Shirt, Film, Swords, Check, Ticket,
+  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star, Trophy, Shirt, Film, Swords, Check, Ticket, Zap,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { BloqueSeccion } from '../Seccion';
@@ -19,11 +19,12 @@ import { FondoPichanga, escenaDelMundoPichanga, escenaDelEstadio } from '../piez
 import { efectoPichanga } from '../piezas/efectosPichanga';
 import {
   progresoPichanga, nuevosDesbloqueos, desbloqueado, textoDesbloqueo, estrellasTotales,
-  EQUIPOS_PICHANGA, PELOTAS_PICHANGA, ESTADIOS_PICHANGA,
+  EQUIPOS_PICHANGA, PELOTAS_PICHANGA, ESTADIOS_PICHANGA, HABILIDADES_PICHANGA, ventajasDe,
 } from '../piezas/pichangaProgreso.mjs';
 import {
   simular, simularPartido, jugarTiro, partidaNivel, indicePelota, mundoDe, infoMundo, esJefe, estrellasPara, premioCofre,
   RACHA_COFRE, AYUDAS_PICHANGA, partidoNuevo, canchaPartido, despuesDelTiroPartido, jugadaDeKapi, GOLES_PARTIDO, PASES_MAX, toquesUsados,
+  pasesMaxDe,
 } from '../piezas/pichangaMotor.mjs';
 import { nivelPichanga, retoPichanga, TOTAL_NIVELES_PICHANGA } from '../piezas/pichangaNiveles.mjs';
 import { Texto, useTexto } from '../Traduccion';
@@ -37,7 +38,6 @@ export { PROGRESO_PICHANGA, progresoPichanga, unirProgresos } from '../piezas/pi
 
 const TOTAL = TOTAL_NIVELES_PICHANGA;
 const ULTIMO_MUNDO = mundoDe(TOTAL);
-const CANCHA_PARTIDO = canchaPartido();
 /** El pasto del reto del día (el estadio de día). */
 const PASTO_RETO = ['#4ade80', '#3fc574'];
 
@@ -56,6 +56,8 @@ const textoAyuda = (tipo, n) => `${n} ${NOMBRE_AYUDA[tipo][n === 1 ? 0 : 1]}`;
 const CLASE = { equipo: 'equipo', pelota: 'pelota', estadio: 'cancha' };
 
 const buscar = (lista, id) => lista.find((i) => i.id === id) || lista[0];
+/** Los nombres de las habilidades de una camiseta ("Cañonazo · Ojo de Kapi"). */
+const nombresHabilidades = (equipo) => (equipo?.habilidades || []).map((h) => HABILIDADES_PICHANGA[h]?.nombre).filter(Boolean).join(' · ');
 
 /** ¿Se perdió ya con estos toques de más? (los penales: si ya no alcanzan los goles). */
 const perdidaCon = (lv, partida, extras) => {
@@ -141,6 +143,7 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
           onChange={setClase}
         />
         {clase === 'estadio' && <p className={s.notaSuave}><Texto>La cancha es la del partido contra Michi. Los niveles usan la de su mundo.</Texto></p>}
+        {clase === 'equipo' && <p className={s.notaSuave}><Texto>Cada camiseta trae su habilidad para el partido contra Michi. En los niveles y el reto todas juegan igual.</Texto></p>}
         <ul className={c.prendas}>
           {listas[clase].map((item) => {
             const libre = desbloqueado(item, progreso);
@@ -158,6 +161,7 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
                     ? <MuestraEstadio estadio={item} />
                     : <MuestraPichanga tipo={clase === 'pelota' ? 'pelota' : 'chapa'} item={item} />}
                   <span className={c.prendaNombre}><Texto>{item.nombre}</Texto></span>
+                  {clase === 'equipo' && <span className={c.prendaHabilidad}><Zap aria-hidden="true" /><Texto>{nombresHabilidades(item)}</Texto></span>}
                   <span className={c.prendaNota}>
                     {puesto && <><Check aria-hidden="true" /> <Texto>Puesto</Texto></>}
                     {!puesto && !libre && <><Lock aria-hidden="true" /> <Texto>{textoDesbloqueo(item)}</Texto></>}
@@ -167,6 +171,85 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
             );
           })}
         </ul>
+      </div>
+    </HojaInferior>
+  );
+}
+
+/**
+ * Antes del partido contra Michi: eliges la camiseta (cada una con su
+ * habilidad, que vale todo el partido), la pelota, la cancha y la dificultad.
+ *  - progreso · onElegir(clase, id): pelota y cancha se guardan al tocarlas
+ *  - onDificultad(d) · onEmpezar(equipoId)
+ */
+function ArmarEquipo({ abierto, onCerrar, progreso, onElegir, onDificultad, onEmpezar }) {
+  const [elegido, setElegido] = useState(progreso.equipo);
+  useEffect(() => { if (abierto) setElegido(progreso.equipo); }, [abierto]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <HojaInferior
+      abierta={abierto}
+      onCerrar={onCerrar}
+      titulo="Arma tu equipo"
+      pie={<Boton bloque icono={<Gamepad2 aria-hidden="true" />} onClick={() => onEmpezar(elegido)}><Texto>¡A jugar!</Texto></Boton>}
+    >
+      <div className={c.armar} data-componente="ArmarEquipoPichanga">
+        <p className={s.notaSuave}><Texto>Elige tu camiseta: su habilidad vale todo el partido contra Michi.</Texto></p>
+        <ul className={c.camisetas}>
+          {EQUIPOS_PICHANGA.map((e) => {
+            const libre = desbloqueado(e, progreso);
+            const esta = elegido === e.id;
+            return (
+              <li key={e.id}>
+                <button
+                  type="button"
+                  className={[c.camiseta, esta && c.camisetaElegida, !libre && c.camisetaCerrada].filter(Boolean).join(' ')}
+                  disabled={!libre}
+                  aria-pressed={esta}
+                  onClick={() => setElegido(e.id)}
+                >
+                  <MuestraPichanga item={e} tamano={48} />
+                  <span className={c.camisetaTexto}>
+                    <strong><Texto>{e.nombre}</Texto></strong>
+                    {libre ? (
+                      e.habilidades.map((h) => (
+                        <span key={h} className={c.habilidad}>
+                          <Zap aria-hidden="true" />
+                          <span><b><Texto>{HABILIDADES_PICHANGA[h].nombre}</Texto></b> <Texto>{HABILIDADES_PICHANGA[h].texto}</Texto></span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className={c.camisetaCandado}><Lock aria-hidden="true" /><Texto>{`${nombresHabilidades(e)}. ${textoDesbloqueo(e)}.`}</Texto></span>
+                    )}
+                  </span>
+                  {esta && <Check aria-hidden="true" className={c.camisetaCheck} />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <p className={c.armarTitulo}><Texto>Pelota</Texto></p>
+        <div className={c.armarFila}>
+          {PELOTAS_PICHANGA.filter((x) => desbloqueado(x, progreso)).map((x) => (
+            <button key={x.id} type="button" className={[c.armarChip, progreso.pelota === x.id && c.armarChipPuesto].filter(Boolean).join(' ')} aria-pressed={progreso.pelota === x.id} onClick={() => onElegir('pelota', x.id)}>
+              <MuestraPichanga tipo="pelota" item={x} tamano={26} /><Texto>{x.nombre}</Texto>
+            </button>
+          ))}
+        </div>
+        <p className={c.armarTitulo}><Texto>Cancha</Texto></p>
+        <div className={c.armarFila}>
+          {ESTADIOS_PICHANGA.filter((x) => desbloqueado(x, progreso)).map((x) => (
+            <button key={x.id} type="button" className={[c.armarChip, progreso.estadio === x.id && c.armarChipPuesto].filter(Boolean).join(' ')} aria-pressed={progreso.estadio === x.id} onClick={() => onElegir('estadio', x.id)}>
+              <MuestraEstadio estadio={x} tamano={26} /><Texto>{x.nombre}</Texto>
+            </button>
+          ))}
+        </div>
+        <p className={c.armarTitulo}><Texto>Dificultad</Texto></p>
+        <Pestanas
+          etiqueta="Dificultad"
+          opciones={[{ id: 'facil', texto: 'Fácil' }, { id: 'normal', texto: 'Normal' }, { id: 'dificil', texto: 'Difícil' }]}
+          valor={progreso.dificultad}
+          onChange={onDificultad}
+        />
       </div>
     </HojaInferior>
   );
@@ -227,7 +310,7 @@ function Desbloqueos({ lista, puestos = {}, onPoner }) {
                 {clase === 'estadio' ? <MuestraEstadio estadio={item} tamano={64} /> : <MuestraPichanga tipo={clase === 'pelota' ? 'pelota' : 'chapa'} item={item} tamano={64} />}
               </span>
               <span className={c.desbloqueoTexto}>
-                <small><Texto>{CLASE[clase]}</Texto></small>
+                <small><Texto>{clase === 'equipo' ? `Camiseta · ${nombresHabilidades(item)}` : CLASE[clase]}</Texto></small>
                 <strong><Texto>{item.nombre}</Texto></strong>
               </span>
               {onPoner && (
@@ -286,6 +369,10 @@ export function PaginaPichanga({
   const [cobrado, setCobrado] = useState(yaHoy);
   const [premio, setPremio] = useState(null);
   const [partido, setPartido] = useState(partidoNuevo);
+  // El partido contra Michi empieza después de armar el equipo (la camiseta queda fija).
+  const [armado, setArmado] = useState(false);
+  const [armar, setArmar] = useState(modoInicial === 'partido');
+  const [equipoPartido, setEquipoPartido] = useState(null);
   const [anim, setAnim] = useState(null);
   const [ruta, setRuta] = useState(null);
   const [resaltar, setResaltar] = useState(null);
@@ -393,14 +480,17 @@ export function PaginaPichanga({
 
   /* ── El turno de Kapi en el partido ── */
   useEffect(() => {
-    if (modo !== 'partido' || partido.turno !== 'kapi' || partido.fin || anim || estado === 'cargando') return undefined;
+    if (modo !== 'partido' || !armado || partido.turno !== 'kapi' || partido.fin || anim || estado === 'cargando') return undefined;
     setPensando(true);
     let vivo = true;
     const ids = [];
     // Primero se ve "Kapi está pensando…"; después piensa (tarda un poco) y marca su chapa.
     ids.push(setTimeout(() => {
       if (!vivo) return;
-      const tiro = jugadaDeKapi(partido.mesa, CANCHA_PARTIDO, { dificultad: prog.dificultad, pases: partido.pases || 0, receptor: partido.receptor });
+      const v = partido.ventajas || {};
+      const tiro = jugadaDeKapi(partido.mesa, canchaPartido(v), {
+        dificultad: prog.dificultad, pases: partido.pases || 0, receptor: partido.receptor, potencia: v.potenciaRival || 1, ruidoExtra: v.ruidoRival || 0,
+      });
       if (!tiro) { setPensando(false); return; }
       setResaltar(tiro[0]);
       ids.push(setTimeout(() => {
@@ -411,7 +501,7 @@ export function PaginaPichanga({
       }, 500));
     }, 650));
     return () => { vivo = false; ids.forEach(clearTimeout); setPensando(false); setResaltar(null); };
-  }, [modo, partido, anim, estado]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modo, partido, anim, estado, armado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (estado === 'cargando' || (esJuegoNivel && !juego)) return <EsqueletoPagina forma="pichanga" />;
 
@@ -681,16 +771,18 @@ export function PaginaPichanga({
 
   function tirarPartido(tiro, quien) {
     const antes = partido;
-    if (quien === 'yo' && (ocupado || antes.turno !== 'yo' || antes.fin)) return;
+    if (quien === 'yo' && (ocupado || !armado || antes.turno !== 'yo' || antes.fin)) return;
     if (quien === 'yo' && antes.receptor != null && tiro[0] !== antes.receptor) return;
-    const sim = simularPartido(antes, tiro, { cuadros: true });
+    setRuta(null);
+    const sim = simularPartido({ ...antes, turno: quien }, tiro, { cuadros: true });
     fx('tiro');
     setAnimos({ mia: 'feliz', rival: 'feliz' });
     animar(sim, antes.mesa.cuerpos, antes.mesa.t, () => {
       const nuevo = despuesDelTiroPartido({ ...antes, turno: quien }, sim, tiro);
       setPartido(nuevo);
       if (nuevo.pase && !nuevo.fin) {
-        setAviso(quien === 'yo' ? `¡Pase! Tira la chapa que la recibió (${nuevo.pases}/${PASES_MAX}).` : `Pase de Michi: vuelve a tirar (${nuevo.pases}/${PASES_MAX}).`);
+        const max = pasesMaxDe(nuevo, quien);
+        setAviso(quien === 'yo' ? `¡Pase! Tira la chapa que la recibió (${nuevo.pases}/${max}).` : `Pase de Michi: vuelve a tirar (${nuevo.pases}/${max}).`);
       }
       if (sim.gol) {
         const mio = sim.gol === 'arriba';
@@ -711,15 +803,37 @@ export function PaginaPichanga({
     if (ocupado) return;
     setResultado(false);
     setFinPartido(null);
-    setPartido(partidoNuevo());
+    setRuta(null);
+    setArmado(false);
+    setArmar(true);
+  };
+
+  /** Empieza el partido con la camiseta elegida: sus habilidades quedan fijas hasta el final. */
+  const empezarPartido = (equipoId) => {
+    const e = buscar(EQUIPOS_PICHANGA, equipoId);
+    if (e.id !== prog.equipo) guardar({ equipo: e.id });
+    setEquipoPartido(e.id);
+    setPartido(partidoNuevo(ventajasDe(e)));
+    setArmado(true);
+    setArmar(false);
+    setRuta(null);
     fx('silbato');
   };
 
   const cambiarDificultad = (d) => {
     if (d === prog.dificultad || ocupado) return;
     guardar({ dificultad: d });
+    if (!armado) return;
     if ((partido.tiros.yo || partido.tiros.kapi) && !partido.fin) setAviso('Empieza un partido nuevo con la dificultad elegida.');
-    setPartido(partidoNuevo());
+    setPartido(partidoNuevo(partido.ventajas));
+  };
+
+  /** Ojo de Kapi: al apuntar en el partido, por dónde irá la pelota. */
+  const alApuntarPartido = (tiro) => {
+    if (!tiro || !partido.ventajas?.ruta) { if (ruta) setRuta(null); return; }
+    const sim = simularPartido({ ...partido, turno: 'yo' }, tiro, { cuadros: true });
+    const k = indicePelota(partido.mesa);
+    setRuta(sim.cuadros.map((f) => f[k]));
   };
 
   const cambiarModo = (m) => {
@@ -730,7 +844,7 @@ export function PaginaPichanga({
     setPremio(null);
     setSinToques(false);
     setRuta(null);
-    if (m === 'partido' && !partido.tiros.yo && !partido.tiros.kapi) fx('silbato');
+    if (m === 'partido' && !armado) setArmar(true);
   };
 
   const elegirPrenda = (clase, id) => guardar({ [clase]: id });
@@ -743,10 +857,12 @@ export function PaginaPichanga({
   };
 
   /* ── Lo que se dibuja ── */
-  const def = esPartido ? CANCHA_PARTIDO : lv.def;
+  const def = esPartido ? canchaPartido(partido.ventajas) : lv.def;
   const mesa = esPartido ? partido.mesa : partida.mesa;
+  // En el partido, la camiseta con la que se empezó (cambiarla vale para el próximo).
+  const camiseta = esPartido && armado && equipoPartido ? buscar(EQUIPOS_PICHANGA, equipoPartido) : equipo;
   const puedeTirar = !ocupado && !verMapa && (esPartido
-    ? partido.turno === 'yo' && !partido.fin && !pensando
+    ? armado && partido.turno === 'yo' && !partido.fin && !pensando
     : !partida.ganada && !partida.perdida);
   const guardadasTexto = Object.entries(prog.guardadas).filter(([, n]) => n > 0).map(([tipo, n]) => textoAyuda(tipo, n));
   const contador = (n) => <span className={s.cuentaAyuda} aria-hidden="true">{n}</span>;
@@ -773,10 +889,11 @@ export function PaginaPichanga({
 
   let turnoTexto = null;
   if (esPartido) {
-    if (partido.fin) turnoTexto = partido.fin === 'yo' ? '¡Ganaste!' : partido.fin === 'kapi' ? 'Ganó Michi' : 'Empate';
+    if (!armado) turnoTexto = 'Arma tu equipo para empezar';
+    else if (partido.fin) turnoTexto = partido.fin === 'yo' ? '¡Ganaste!' : partido.fin === 'kapi' ? 'Ganó Michi' : 'Empate';
     else if (ocupado) turnoTexto = 'Rueda la pelota…';
     else if (partido.turno === 'kapi') turnoTexto = 'Michi está pensando…';
-    else turnoTexto = partido.pases ? `Tu turno (pases ${partido.pases}/${PASES_MAX})` : 'Tu turno: arrastra una de tus chapas';
+    else turnoTexto = partido.pases ? `Tu turno (pases ${partido.pases}/${pasesMaxDe(partido, 'yo')})` : 'Tu turno: arrastra una de tus chapas';
   }
 
   return (
@@ -815,7 +932,7 @@ export function PaginaPichanga({
                   {esPartido ? (
                     <div className={c.marcador} aria-live="polite">
                       <span className={c.lado}>
-                        <MuestraPichanga item={equipo} tamano={30} />
+                        <MuestraPichanga item={camiseta} tamano={30} />
                         <Texto>Tú</Texto>
                       </span>
                       <span className={c.goles}>{partido.goles.yo} – {partido.goles.kapi}</span>
@@ -824,6 +941,13 @@ export function PaginaPichanga({
                         <MuestraPichanga item={EQUIPO_RIVAL} personaje="michi" tamano={30} />
                       </span>
                       <span className={c.turno}><Texto>{turnoTexto}</Texto></span>
+                      {armado && camiseta.habilidades?.length > 0 && (
+                        <span className={c.habilidadesActivas}>
+                          {camiseta.habilidades.map((h) => (
+                            <span key={h} title={HABILIDADES_PICHANGA[h].texto}><Zap aria-hidden="true" /><Texto>{HABILIDADES_PICHANGA[h].nombre}</Texto></span>
+                          ))}
+                        </span>
+                      )}
                     </div>
                   ) : (
                     <div className={c.cabeza}>
@@ -880,7 +1004,7 @@ export function PaginaPichanga({
                       def={def}
                       cuerpos={anim ? anim.cuerpos : mesa.cuerpos}
                       t={mesa.t}
-                      equipo={equipo}
+                      equipo={camiseta}
                       pelota={pelota}
                       pasto={esPartido ? estadio.pasto : esReto ? PASTO_RETO : infoM.pasto}
                       linea={esPartido ? estadio.linea : esReto ? 'rgba(255,255,255,0.85)' : infoM.linea}
@@ -889,7 +1013,7 @@ export function PaginaPichanga({
                       animos={animos}
                       puedeTirar={puedeTirar}
                       onTiro={(tiro) => (esPartido ? tirarPartido(tiro, 'yo') : tirarNivel(tiro))}
-                      onApuntar={esPartido ? undefined : alApuntar}
+                      onApuntar={esPartido ? alApuntarPartido : alApuntar}
                       ruta={ruta}
                       animacion={anim}
                       onFinAnimacion={alFinAnimacion}
@@ -914,7 +1038,9 @@ export function PaginaPichanga({
                   </div>
 
                   <div className={s.botonesMesa}>
-                    {esPartido ? (
+                    {esPartido && !armado ? (
+                      <Boton icono={<Shirt aria-hidden="true" />} onClick={() => setArmar(true)}><Texto>Arma tu equipo</Texto></Boton>
+                    ) : esPartido ? (
                       <Boton variante={partido.fin ? 'primario' : 'fantasma'} icono={<RotateCcw aria-hidden="true" />} onClick={partidoOtraVez} disabled={ocupado}>
                         <Texto>{partido.fin ? 'Otro partido' : 'Empezar de nuevo'}</Texto>
                       </Boton>
@@ -1066,7 +1192,7 @@ export function PaginaPichanga({
           <TextoResaltado key="racha" resaltar={[RACHA_COFRE]}>
             {`Gana ${RACHA_COFRE} niveles seguidos sin reiniciar y abre un cofre: ayudas que se guardan para cuando se acaben las del nivel.`}
           </TextoResaltado>,
-          'En «Contra Michi» juegas un partido de seis contra seis, por turnos: gana quien meta 3 goles.',
+          'En «Contra Michi» juegas un partido de seis contra seis, por turnos: gana quien meta 3 goles. Antes eliges tu camiseta: cada una trae una habilidad para ese partido.',
           `Si la pelota toca a otra de tus chapas, es pase: no gasta toque y en el partido vuelves a tirar (hasta ${PASES_MAX}). Cuidado con tu arco: un autogol devuelve la jugada y gasta el toque.`,
         ]}
         pie={(
@@ -1103,6 +1229,14 @@ export function PaginaPichanga({
       </HojaInferior>
 
       <VestuarioPichanga abierto={vestuario} onCerrar={() => setVestuario(false)} progreso={prog} onElegir={elegirPrenda} />
+      <ArmarEquipo
+        abierto={armar && esPartido}
+        onCerrar={() => setArmar(false)}
+        progreso={prog}
+        onElegir={elegirPrenda}
+        onDificultad={cambiarDificultad}
+        onEmpezar={empezarPartido}
+      />
 
       {finPartido ? (
         <ResultadoJuego

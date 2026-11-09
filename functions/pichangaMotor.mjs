@@ -58,11 +58,14 @@ const q = (v) => Math.round(v * 1024) / 1024;
  *  - kapi: { x, y, rango, vel, fase } el arquero rival que va de lado a lado (o null)
  *  - arcos: { arriba, abajo } el ancho de cada arco (0: no hay). Abajo está
  *    tu arco: la pelota que entra ahí es un autogol
+ *  - radioPortero: el radio de tu arquero (null: el de una chapa; la
+ *    habilidad Muralla del partido lo agranda)
  */
 export function definirCancha(d = {}) {
   return {
     mias: d.mias || [],
     portero: d.portero || null,
+    radioPortero: d.radioPortero || null,
     rivales: d.rivales || [],
     porteroRival: d.porteroRival || null,
     pelota: d.pelota || [ANCHO / 2, ALTO / 2],
@@ -78,14 +81,14 @@ export function definirCancha(d = {}) {
  * rivales. t es el reloj de Kapi (solo avanza mientras algo rueda).
  */
 export function crearMesa(def, t = 0) {
-  const chapa = (equipo, portero = false) => ([x, y]) => ({
-    equipo, tipo: 'chapa', x, y, vx: 0, vy: 0, r: RADIO.chapa, m: MASA.chapa, ...(portero ? { portero: true } : {}),
+  const chapa = (equipo, portero = false, r = RADIO.chapa) => ([x, y]) => ({
+    equipo, tipo: 'chapa', x, y, vx: 0, vy: 0, r, m: MASA.chapa, ...(portero ? { portero: true } : {}),
   });
   return {
     t,
     cuerpos: [
       ...def.mias.map(chapa('mia')),
-      ...(def.portero ? [chapa('mia', true)(def.portero)] : []),
+      ...(def.portero ? [chapa('mia', true, def.radioPortero || RADIO.chapa)(def.portero)] : []),
       { equipo: null, tipo: 'pelota', x: def.pelota[0], y: def.pelota[1], vx: 0, vy: 0, r: RADIO.pelota, m: MASA.pelota },
       ...def.rivales.map(chapa('rival')),
       ...(def.porteroRival ? [chapa('rival', true)(def.porteroRival)] : []),
@@ -155,10 +158,14 @@ export function tiroDesdeAngulo(cuerpo, angulo, fuerza) {
   return v ? [cuerpo, v[0], v[1]] : null;
 }
 
-/** La mesa con el tiro dado (la chapa sale disparada). */
-export function tirar(mesa, [i, dx, dy]) {
+/**
+ * La mesa con el tiro dado (la chapa sale disparada). potencia: un multiplicador
+ * de la fuerza (las habilidades del partido; en los niveles y el reto siempre 1).
+ */
+export function tirar(mesa, [i, dx, dy], potencia = 1) {
   const v = normalizarTiro(dx, dy);
-  const cuerpos = mesa.cuerpos.map((c, k) => (k === i && v ? { ...c, vx: v[0] * POTENCIA, vy: v[1] * POTENCIA } : { ...c }));
+  const k0 = potencia === 1 ? POTENCIA : POTENCIA * potencia;
+  const cuerpos = mesa.cuerpos.map((c, k) => (k === i && v ? { ...c, vx: v[0] * k0, vy: v[1] * k0 } : { ...c }));
   return { t: mesa.t, cuerpos };
 }
 
@@ -430,10 +437,10 @@ function pasoDeOrbita(mesa, def, control) {
  * repetición, y los golpes [[paso, tipo, fuerza, x, y]…], el más fuerte de cada
  * paso, para el sonido ('pase' cuando la pelota se pega).
  */
-export function simular(mesa, def, tiro, { cuadros = false, iman = false } = {}) {
+export function simular(mesa, def, tiro, { cuadros = false, iman = false, potencia = 1 } = {}) {
   const equipo = tiro ? mesa.cuerpos[tiro[0]]?.equipo : null;
   let control = null; // { receptor, pelota, ux, uy, fase: 'pegada' | 'orbita' | 'lista', bx, by, tx, ty }
-  let m = tiro ? tirar(mesa, tiro) : mesa;
+  let m = tiro ? tirar(mesa, tiro, potencia) : mesa;
   const lista = cuadros ? [m.cuerpos.map((c) => [c.x, c.y])] : null;
   const golpes = cuadros ? [] : null;
   let gol = null;
@@ -792,35 +799,61 @@ export const DIFICULTADES = ['facil', 'normal', 'dificil'];
 const FORMACION = [[195, 740], [405, 740], [300, 640], [160, 560], [440, 560]];
 const PORTERO = [300, 830];
 
+/*
+ * Las ventajas de tu camiseta en el partido (ver HABILIDADES_PICHANGA en
+ * pichangaProgreso.mjs), todas opcionales:
+ *  - pases: cuántos pases seguidos puedes encadenar (PASES_MAX sin ella)
+ *  - potencia: multiplica la fuerza de tus tiros · potenciaRival: la de Michi
+ *  - portero: el radio de tu arquero · arco: el ancho de tu arco (abajo)
+ *  - ruidoRival: cuánto peor apunta Michi (radianes de más)
+ *  - ruta: ves por dónde irá la pelota al apuntar (lo dibuja la página)
+ * Solo valen contra Michi: los niveles y el reto son iguales para todos.
+ */
+
 /** La cancha del partido: dos arcos, seis chapas por lado (con su arquero). */
-export const canchaPartido = () => definirCancha({
+export const canchaPartido = (ventajas = {}) => definirCancha({
   mias: FORMACION,
   portero: PORTERO,
+  radioPortero: ventajas.portero || null,
   rivales: FORMACION.map(([x, y]) => [ANCHO - x, ALTO - y]),
   porteroRival: [ANCHO - PORTERO[0], ALTO - PORTERO[1]],
   pelota: [ANCHO / 2, ALTO / 2],
-  arcos: { arriba: ARCO_NORMAL, abajo: ARCO_NORMAL },
+  arcos: { arriba: ARCO_NORMAL, abajo: ventajas.arco || ARCO_NORMAL },
 });
+
+/** Cuántos pases seguidos puede encadenar cada uno ('yo' | 'kapi'). */
+export const pasesMaxDe = (partido, quien) => (quien === 'yo' && partido?.ventajas?.pases) || PASES_MAX;
 
 /**
  * Un partido nuevo: { mesa, goles: { yo, kapi }, tiros: { yo, kapi }, turno,
- * pases, receptor, fin }. receptor: la chapa que recibió el último pase (el
- * próximo tiro es con ella) o null.
+ * pases, receptor, fin, ventajas }. receptor: la chapa que recibió el último
+ * pase (el próximo tiro es con ella) o null. ventajas: las de tu camiseta, que
+ * quedan fijas todo el partido.
  */
-export const partidoNuevo = () => ({
-  mesa: crearMesa(canchaPartido()),
+export const partidoNuevo = (ventajas = {}) => ({
+  mesa: crearMesa(canchaPartido(ventajas)),
   goles: { yo: 0, kapi: 0 },
   tiros: { yo: 0, kapi: 0 },
   turno: 'yo',
   pases: 0,
   receptor: null,
   fin: null,
+  ventajas: { ...ventajas },
 });
 
-/** Un tiro del partido (con el imán del pase si quedan pases en el turno). */
-export const simularPartido = (partido, tiro, opciones = {}) => simular(partido.mesa, canchaPartido(), tiro, {
-  ...opciones, iman: (partido.pases || 0) < PASES_MAX,
-});
+/**
+ * Un tiro del partido de quien tiene el turno (con el imán del pase si le
+ * quedan pases y la fuerza de su lado).
+ */
+export const simularPartido = (partido, tiro, opciones = {}) => {
+  const v = partido.ventajas || {};
+  const yo = partido.turno !== 'kapi';
+  return simular(partido.mesa, canchaPartido(v), tiro, {
+    ...opciones,
+    iman: (partido.pases || 0) < pasesMaxDe(partido, partido.turno),
+    potencia: (yo ? v.potencia : v.potenciaRival) || 1,
+  });
+};
 
 /**
  * Lo que queda después de un tiro del partido (sim: lo que devolvió simular;
@@ -844,12 +877,13 @@ export function despuesDelTiroPartido(partido, sim, tiro = null) {
     fin = goles.yo > goles.kapi ? 'yo' : goles.kapi > goles.yo ? 'kapi' : 'empate';
   }
   const otro = quien === 'yo' ? 'kapi' : 'yo';
-  const pase = !sim.gol && tiro && (partido.pases || 0) < PASES_MAX && huboPase(partido.mesa, tiro, sim);
+  const pase = !sim.gol && tiro && (partido.pases || 0) < pasesMaxDe(partido, quien) && huboPase(partido.mesa, tiro, sim);
   let turno = pase ? quien : otro;
   if (sim.gol === 'arriba') turno = 'kapi';
   if (sim.gol === 'abajo') turno = 'yo';
+  const ventajas = partido.ventajas || {};
   return {
-    mesa: sim.gol ? crearMesa(canchaPartido(), sim.mesa.t) : sim.mesa,
+    mesa: sim.gol ? crearMesa(canchaPartido(ventajas), sim.mesa.t) : sim.mesa,
     goles,
     tiros,
     turno,
@@ -857,6 +891,7 @@ export function despuesDelTiroPartido(partido, sim, tiro = null) {
     receptor: pase && sim.receptor != null ? sim.receptor : null,
     pase,
     fin,
+    ventajas,
   };
 }
 
@@ -891,9 +926,13 @@ function valorParaKapi(sim) {
  * a la pelota. Simula cada uno y elige el mejor (valorParaKapi). Un tiro que
  * ni toca la pelota casi no vale: así nunca se queda "sin hacer nada". Fácil
  * elige entre los mejores y apunta un poco peor (pero siempre tocando la
- * pelota); difícil, siempre el mejor. → [cuerpo, dx, dy]
+ * pelota); difícil, siempre el mejor. Las ventajas de tu camiseta: potencia
+ * (la de sus tiros, para que prevea bien) y ruidoExtra (apunta peor).
+ * → [cuerpo, dx, dy]
  */
-export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.random, pases = 0, receptor = null } = {}) {
+export function jugadaDeKapi(mesa, def, {
+  dificultad = 'normal', rnd = Math.random, pases = 0, receptor = null, potencia = 1, ruidoExtra = 0,
+} = {}) {
   const ajustes = {
     facil: { chapas: 2, fuerzas: [null, 0.8], abanico: 2, ruido: 0.07, entre: 4 },
     normal: { chapas: 3, fuerzas: [null, 0.75, 1], abanico: 3, ruido: 0.025, entre: 2 },
@@ -924,7 +963,7 @@ export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.rand
   const opciones = [];
   const probar = (tiro) => {
     if (!tiro) return;
-    const sim = simular(mesa, def, tiro, { iman: pases < PASES_MAX });
+    const sim = simular(mesa, def, tiro, { iman: pases < PASES_MAX, potencia });
     let valor = valorParaKapi(sim);
     // Un pase le da otro tiro: vale un poco más. Sin tocar la pelota, casi nada.
     if (!sim.gol && sim.receptor != null) valor += 140;
@@ -949,14 +988,15 @@ export function jugadaDeKapi(mesa, def, { dificultad = 'normal', rnd = Math.rand
   const lista = buenas.length ? buenas : opciones;
   const elegida = lista[Math.floor(rnd() * Math.min(ajustes.entre, lista.length))] || lista[0];
   if (!elegida) return null;
-  if (!ajustes.ruido) return elegida.tiro;
+  const ruido = ajustes.ruido + ruidoExtra;
+  if (!ruido) return elegida.tiro;
   // Un poco de mala puntería, sin dejar de tocar la pelota.
   const [i, dx, dy] = elegida.tiro;
-  const angulo = Math.atan2(dy, dx) + (rnd() * 2 - 1) * ajustes.ruido;
+  const angulo = Math.atan2(dy, dx) + (rnd() * 2 - 1) * ruido;
   const fuerza = Math.sqrt(dx * dx + dy * dy) / MAX_TIRO;
   const torcido = tiroDesdeAngulo(i, angulo, fuerza);
   if (torcido) {
-    const sim = simular(mesa, def, torcido, { iman: pases < PASES_MAX });
+    const sim = simular(mesa, def, torcido, { iman: pases < PASES_MAX, potencia });
     if (sim.tocaron.includes(i) || sim.gol) return torcido;
   }
   return elegida.tiro;

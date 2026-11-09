@@ -343,6 +343,185 @@
 }
 
 /* Lo desbloqueado, en el resultado. */
+/* La habilidad de cada camiseta, en el vestuario. */
+.prendaHabilidad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  color: #8b5cf6;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.prendaHabilidad svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* Las habilidades del partido, debajo del marcador. */
+.habilidadesActivas {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.habilidadesActivas > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.habilidadesActivas svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Arma tu equipo (antes del partido contra Michi). */
+.armar {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.camisetas {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.camiseta {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 2.2rem 0.55rem 0.6rem;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: color-mix(in srgb, #8b5cf6 8%, var(--color-surface));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.camiseta:hover:not(:disabled),
+.camiseta:focus-visible {
+  border-color: color-mix(in srgb, #8b5cf6 45%, transparent);
+}
+
+.camiseta:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.camisetaElegida {
+  border-color: #7c3aed;
+  background:
+    linear-gradient(color-mix(in srgb, #8b5cf6 12%, var(--color-surface)), color-mix(in srgb, #8b5cf6 12%, var(--color-surface))) padding-box,
+    var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899)) border-box;
+}
+
+.camisetaCerrada {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.camisetaTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.camisetaTexto strong {
+  font-family: var(--fuente-marca);
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.habilidad,
+.camisetaCandado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.habilidad svg,
+.camisetaCandado svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 0.1rem;
+  color: #8b5cf6;
+}
+
+.habilidad b {
+  font-weight: 800;
+}
+
+.camisetaCheck {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: #fff;
+  transform: translateY(-50%);
+}
+
+.armarTitulo {
+  margin: 0.4rem 0 0;
+  color: #8b5cf6;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.armarFila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.armarChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.25rem 0.75rem 0.25rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, #8b5cf6 8%, var(--color-surface));
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.armarChipPuesto {
+  border-color: #7c3aed;
+}
+
 /* El reto patrocinado: una franja sobre la cancha (logo, premio y cupo). */
 .patrocinio {
   display: flex;

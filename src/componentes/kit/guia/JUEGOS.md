@@ -832,3 +832,9 @@ fondo. Niveles y retos resueltos otra vez con esta regla.
 - Como en las Bolitas: `/admin/pichanga` → **Retos** pone una marca en el reto de un día (`pichangaPatrocinios/{fecha}`) con un cupón y un cupo. La lista del admin es la misma pieza que la de las Bolitas (`RetosPatrocinados` en `paginas/admin/Juegos.jsx`).
 - Quien gana el reto con sesión recibe el cupón (`userCoupons/pichanga_reto_{fecha}_{uid}`, origen `pichanga_reto`), uno por persona y día y hasta llenar el cupo. Lo da `registrarPartidaPichangaSecure` en la misma transacción de la partida.
 - El celular no lee las colecciones de la Pichanga: el patrocinio de hoy llega por `patrocinioPichangaSecure` (`{ marcaId, marcaNombre, texto, quedan, ganado }`). En el juego sale como una franja sobre la cancha (`PatrocinioPichanga`), porque la cancha necesita el alto, y el cupón sale arriba en el resultado (`CuponGanado`).
+
+### La Pichanga de Kapi: las camisetas con habilidad
+
+- Cada camiseta trae una habilidad (`HABILIDADES_PICHANGA` en `pichangaProgreso.mjs`; las que se abren jugando traen dos o tres): Toque de más (4 pases), Ojo de Kapi (ves la ruta al apuntar), Cañonazo (tiros ×1.12), Muralla (arquero de radio 48), Candado (tu arco de 176), Despiste (Michi apunta peor) y Viento frío (tiros de Michi ×0.9).
+- **Solo valen contra Michi.** Antes del partido sale la hoja «Arma tu equipo» (camiseta, pelota, cancha y dificultad). Las ventajas (`ventajasDe`) quedan guardadas en el partido (`partidoNuevo(ventajas)`) y no cambian hasta el próximo, aunque cambies de camiseta en el vestuario.
+- En los niveles y el reto todas las camisetas juegan igual: lo que comprueba el servidor y los rankings no cambian. El motor recibe `potencia` (1 por defecto: los niveles dan exactamente lo mismo), `radioPortero` en la cancha y `potencia`/`ruidoExtra` en `jugadaDeKapi`.

@@ -308,3 +308,42 @@ test('el pase contra un borde o una esquina no deja al receptor girando', () => 
     assert.ok(Math.hypot(r.x - b.x, r.y - b.y) >= r.r + b.r - 0.5, 'sin encimarse con la pelota');
   }
 });
+
+test('las habilidades de la camiseta cambian el partido (y solo el partido)', async () => {
+  const { EQUIPOS_PICHANGA, HABILIDADES_PICHANGA, ventajasDe } = await import('./pichangaProgreso.mjs');
+  // Cada camiseta trae al menos una habilidad que existe.
+  for (const e of EQUIPOS_PICHANGA) {
+    assert.ok(e.habilidades?.length, e.id);
+    for (const h of e.habilidades) assert.ok(HABILIDADES_PICHANGA[h], `${e.id}: ${h}`);
+  }
+  // Sin ventajas, el partido es el de siempre.
+  assert.deepEqual(canchaPartido({}), canchaPartido());
+  // Muralla: el arquero es más grande; Candado: el arco de abajo, más chico.
+  const v = ventajasDe({ habilidades: ['muralla', 'candado'] });
+  const pt = partidoNuevo(v);
+  const arquero = pt.mesa.cuerpos.find((c) => c.portero && c.equipo === 'mia');
+  assert.equal(arquero.r, 48);
+  assert.equal(canchaPartido(v).arcos.abajo, 176);
+  assert.equal(canchaPartido(v).arcos.arriba, canchaPartido().arcos.arriba);
+  // Cañonazo: el mismo tiro manda la pelota más lejos.
+  const tiro = [2, 0, -100];
+  const normal = simularPartido(partidoNuevo(), tiro, { cuadros: true });
+  const fuerte = simularPartido(partidoNuevo(ventajasDe({ habilidades: ['canon'] })), tiro, { cuadros: true });
+  const kb = indicePelota(partidoNuevo().mesa);
+  const lejos = (sim) => Math.max(...sim.cuadros.map((f) => Math.abs(f[kb][1] - sim.cuadros[0][kb][1])));
+  assert.ok(lejos(fuerte) > lejos(normal));
+  // Toque de más: un pase más seguido; las ventajas siguen después de un gol.
+  const conToque = partidoNuevo(ventajasDe({ habilidades: ['toque'] }));
+  let p2 = { ...conToque, pases: PASES_MAX };
+  const pase = { gol: null, mesa: p2.mesa, tocaron: [2, 0], receptor: 0, pasos: 1 };
+  p2 = despuesDelTiroPartido(p2, pase, [2, 0, -100]);
+  assert.equal(p2.turno, 'yo');
+  assert.equal(p2.pases, PASES_MAX + 1);
+  const trasGol = despuesDelTiroPartido(p2, { gol: 'abajo', mesa: p2.mesa, tocaron: [], receptor: null, pasos: 1 }, [2, 0, -100]);
+  assert.equal(trasGol.mesa.cuerpos.find((c) => c.portero && c.equipo === 'mia').r, 38);
+  assert.deepEqual(trasGol.ventajas, conToque.ventajas);
+  // Michi juega igual con las ventajas puestas (y siempre toca la pelota).
+  const conTodo = partidoNuevo(ventajasDe({ habilidades: ['despiste', 'frio', 'candado'] }));
+  const jugada = jugadaDeKapi(conTodo.mesa, canchaPartido(conTodo.ventajas), { rnd: azar(3), potencia: 0.9, ruidoExtra: 0.06 });
+  assert.ok(jugada && conTodo.mesa.cuerpos[jugada[0]].equipo === 'rival');
+});

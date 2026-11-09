@@ -33,6 +33,31 @@ export const PROGRESO_PICHANGA = {
 const entero = (v, min = 0) => Math.max(min, Math.floor(Number(v)) || 0);
 const DIFICULTADES = ['facil', 'normal', 'dificil'];
 
+/* ── Las habilidades de las camisetas ────────────────── */
+/*
+ * Cada camiseta trae una habilidad (las que se abren jugando, dos o tres).
+ * Solo valen en el partido contra Michi, y quedan fijas al empezarlo: los
+ * niveles y el reto son iguales para todos (los rankings y lo que comprueba
+ * el servidor no cambian). `efecto` son las ventajas que lee el motor
+ * (canchaPartido, simularPartido, jugadaDeKapi).
+ */
+export const HABILIDADES_PICHANGA = {
+  toque: { nombre: 'Toque de más', texto: 'Encadenas hasta 4 pases seguidos (los demás, 3).', efecto: { pases: 4 } },
+  ojo: { nombre: 'Ojo de Kapi', texto: 'Al apuntar ves por dónde irá la pelota.', efecto: { ruta: true } },
+  canon: { nombre: 'Cañonazo', texto: 'Tus tiros salen un 12 % más fuertes.', efecto: { potencia: 1.12 } },
+  muralla: { nombre: 'Muralla', texto: 'Tu arquero es más grande y tapa más arco.', efecto: { portero: 48 } },
+  candado: { nombre: 'Candado', texto: 'Tu arco es más chico: le cuesta más a Michi.', efecto: { arco: 176 } },
+  despiste: { nombre: 'Despiste', texto: 'Michi se distrae y apunta peor.', efecto: { ruidoRival: 0.06 } },
+  frio: { nombre: 'Viento frío', texto: 'Los tiros de Michi salen un 10 % más suaves.', efecto: { potenciaRival: 0.9 } },
+};
+
+/** Las ventajas que da una camiseta (para partidoNuevo). */
+export function ventajasDe(equipo) {
+  const v = {};
+  for (const id of equipo?.habilidades || []) Object.assign(v, HABILIDADES_PICHANGA[id]?.efecto || {});
+  return v;
+}
+
 /* ── El vestuario ─────────────────────────────────────── */
 /*
  * Cada cosa con su forma de desbloquearse:
@@ -45,18 +70,18 @@ const DIFICULTADES = ['facil', 'normal', 'dificil'];
  * dibujo ('huella' | 'liso' | 'franjas' | 'mitad' | 'banda' | 'estrella' | 'aro').
  */
 export const EQUIPOS_PICHANGA = [
-  { id: 'huellitas', nombre: 'Las Huellitas', colores: ['#1d4ed8', '#ffffff'], dibujo: 'huella', desbloqueo: { tipo: 'inicio' } },
-  { id: 'wala', nombre: 'Walá', colores: ['#7c3aed', '#ffffff'], dibujo: 'liso', desbloqueo: { tipo: 'inicio' } },
-  { id: 'celeste', nombre: 'Los Celestes', colores: ['#38bdf8', '#ffffff'], dibujo: 'franjas', desbloqueo: { tipo: 'inicio' } },
-  { id: 'barrio', nombre: 'Los Naranjas', colores: ['#f97316', '#ffffff'], dibujo: 'banda', desbloqueo: { tipo: 'inicio' } },
-  { id: 'verde', nombre: 'Verdolagas', colores: ['#16a34a', '#facc15'], dibujo: 'mitad', desbloqueo: { tipo: 'inicio' } },
-  { id: 'rosado', nombre: 'Las Rosadas', colores: ['#ec4899', '#fdf2f8'], dibujo: 'aro', desbloqueo: { tipo: 'goles', n: 15 } },
-  { id: 'dorado', nombre: 'Walá Dorado', colores: ['#f59e0b', '#7c3aed'], dibujo: 'estrella', desbloqueo: { tipo: 'estrellas', n: 30 } },
-  { id: 'invierno', nombre: 'Copos FC', colores: ['#e0f2fe', '#0ea5e9'], dibujo: 'estrella', desbloqueo: { tipo: 'jefe', mundo: 1 } },
-  { id: 'noche', nombre: 'Estrellas de la noche', colores: ['#1e1b4b', '#fde047'], dibujo: 'estrella', desbloqueo: { tipo: 'estrellas', n: 60 } },
-  { id: 'goleador', nombre: 'Los Goleadores', colores: ['#111827', '#f472b6'], dibujo: 'franjas', desbloqueo: { tipo: 'partidos', n: 3 } },
-  { id: 'campeon', nombre: 'Campeones del potrero', colores: ['#065f46', '#fbbf24'], dibujo: 'aro', desbloqueo: { tipo: 'jefe', mundo: 2 } },
-  { id: 'leyenda', nombre: 'Leyendas', colores: ['#ffffff', '#f59e0b'], dibujo: 'estrella', desbloqueo: { tipo: 'estrellas', n: 110 } },
+  { id: 'huellitas', nombre: 'Las Huellitas', colores: ['#1d4ed8', '#ffffff'], dibujo: 'huella', habilidades: ['toque'], desbloqueo: { tipo: 'inicio' } },
+  { id: 'wala', nombre: 'Walá', colores: ['#7c3aed', '#ffffff'], dibujo: 'liso', habilidades: ['ojo'], desbloqueo: { tipo: 'inicio' } },
+  { id: 'celeste', nombre: 'Los Celestes', colores: ['#38bdf8', '#ffffff'], dibujo: 'franjas', habilidades: ['canon'], desbloqueo: { tipo: 'inicio' } },
+  { id: 'barrio', nombre: 'Los Naranjas', colores: ['#f97316', '#ffffff'], dibujo: 'banda', habilidades: ['muralla'], desbloqueo: { tipo: 'inicio' } },
+  { id: 'verde', nombre: 'Verdolagas', colores: ['#16a34a', '#facc15'], dibujo: 'mitad', habilidades: ['candado'], desbloqueo: { tipo: 'inicio' } },
+  { id: 'rosado', nombre: 'Las Rosadas', colores: ['#ec4899', '#fdf2f8'], dibujo: 'aro', habilidades: ['despiste', 'toque'], desbloqueo: { tipo: 'goles', n: 15 } },
+  { id: 'dorado', nombre: 'Walá Dorado', colores: ['#f59e0b', '#7c3aed'], dibujo: 'estrella', habilidades: ['canon', 'ojo'], desbloqueo: { tipo: 'estrellas', n: 30 } },
+  { id: 'invierno', nombre: 'Copos FC', colores: ['#e0f2fe', '#0ea5e9'], dibujo: 'estrella', habilidades: ['frio', 'candado'], desbloqueo: { tipo: 'jefe', mundo: 1 } },
+  { id: 'noche', nombre: 'Estrellas de la noche', colores: ['#1e1b4b', '#fde047'], dibujo: 'estrella', habilidades: ['ojo', 'muralla'], desbloqueo: { tipo: 'estrellas', n: 60 } },
+  { id: 'goleador', nombre: 'Los Goleadores', colores: ['#111827', '#f472b6'], dibujo: 'franjas', habilidades: ['canon', 'toque'], desbloqueo: { tipo: 'partidos', n: 3 } },
+  { id: 'campeon', nombre: 'Campeones del potrero', colores: ['#065f46', '#fbbf24'], dibujo: 'aro', habilidades: ['candado', 'muralla', 'despiste'], desbloqueo: { tipo: 'jefe', mundo: 2 } },
+  { id: 'leyenda', nombre: 'Leyendas', colores: ['#ffffff', '#f59e0b'], dibujo: 'estrella', habilidades: ['canon', 'muralla', 'ojo'], desbloqueo: { tipo: 'estrellas', n: 110 } },
 ];
 
 /** Las pelotas: color de fondo y de los parches. */
