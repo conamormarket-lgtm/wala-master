@@ -83,3 +83,69 @@ export function nivelPichanga(n) {
   if (!armados.has(n)) armados.set(n, armarNivel(n, dato, SOLUCIONES_PICHANGA[n]));
   return armados.get(n);
 }
+
+/* ── El reto del día ───────────────────────────────────── */
+/*
+ * Jugadas de dificultad media, con un poco de todo. Cada una sale también en
+ * espejo (izquierda ↔ derecha), así que hay el doble de retos; el del día se
+ * elige por la fecha (el mismo para todos). Su solución está en
+ * pichangaSoluciones.mjs con la clave `r{número}` (el espejo, después de los
+ * originales: r13 es el espejo de r1).
+ */
+const RETOS_BASE = [
+  { mias: [[160, 760], [440, 760]], pelota: [230, 520], rivales: [[300, 300], [380, 360]], kapi: K(300, 2) },
+  { mias: [[300, 780]], pelota: [120, 470], conos: [[250, 300], [350, 300], [300, 420]], kapi: K(300, 2, 60, 40) },
+  { mias: [[200, 760], [420, 700]], pelota: [300, 560], zonas: [barro(130, 300, 340, 110)], rivales: [[260, 200]], kapi: K(300, 2) },
+  { mias: [[300, 790], [120, 650]], pelota: [460, 520], zonas: [hielo(0, 330, 600, 260)], conos: [[300, 260]] },
+  { mias: [[150, 780], [450, 780]], pelota: [300, 640], arcos: { arriba: 130 }, rivales: [[240, 360], [360, 360]], kapi: K(300, 1.5, 40) },
+  { mias: [[480, 760]], pelota: [520, 520], rivales: [[420, 300], [300, 220]], conos: [[180, 300]], kapi: K(300, 2, 60, 90) },
+  { mias: [[300, 800], [160, 700], [440, 700]], pelota: [300, 600], conos: [[220, 420], [380, 420], [300, 330]], kapi: K(300, 2.5) },
+  { mias: [[220, 770]], pelota: [300, 500], zonas: [barro(0, 380, 250, 200), hielo(350, 150, 250, 300)], rivales: [[300, 280]] },
+  { mias: [[100, 780], [500, 780]], pelota: [150, 420], arcos: { arriba: 140 }, conos: [[300, 300]], kapi: K(300, 2, 45, 30) },
+  { mias: [[300, 760]], pelota: [300, 620], rivales: [[240, 450], [360, 450], [300, 330]], zonas: [hielo(100, 480, 400, 120)], kapi: K(300, 2) },
+  { mias: [[140, 760], [460, 760]], pelota: [470, 400], zonas: [barro(330, 150, 270, 180)], rivales: [[300, 260]], kapi: K(300, 2, 60, 120) },
+  { mias: [[300, 790], [200, 690]], pelota: [380, 560], arcos: { arriba: 130 }, conos: [[250, 260], [350, 260]], zonas: [barro(100, 380, 400, 80)], kapi: K(300, 2, 40, 20) },
+];
+
+/** Una jugada en espejo (lo de la izquierda pasa a la derecha). */
+const espejo = (d) => ({
+  ...d,
+  mias: (d.mias || []).map(([x, y]) => [600 - x, y]),
+  rivales: (d.rivales || []).map(([x, y]) => [600 - x, y]),
+  conos: (d.conos || []).map(([x, y]) => [600 - x, y]),
+  pelota: [600 - d.pelota[0], d.pelota[1]],
+  zonas: (d.zonas || []).map((z) => ({ ...z, x: 600 - z.x - z.w })),
+});
+
+export const RETOS_PICHANGA = [...RETOS_BASE, ...RETOS_BASE.map(espejo)];
+
+/** Un número para cada fecha 'AAAA-MM-DD' (el mismo siempre). */
+function semillaFecha(fecha) {
+  let h = 2166136261;
+  for (const ch of String(fecha)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  return h;
+}
+
+/** Qué reto (1…RETOS_PICHANGA.length) toca en una fecha 'AAAA-MM-DD'. */
+export const indiceRetoDe = (fecha) => (semillaFecha(fecha) % RETOS_PICHANGA.length) + 1;
+
+/**
+ * El reto de una fecha, armado como un nivel (numero null, reto: la fecha).
+ * Toques: par + 2. null si la fecha no sirve.
+ */
+export function retoPichanga(fecha) {
+  if (typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+  const k = indiceRetoDe(fecha);
+  return { ...armarNivel(0, RETOS_PICHANGA[k - 1], SOLUCIONES_PICHANGA[`r${k}`]), numero: null, mundo: null, jefe: false, reto: fecha, indiceReto: k };
+}
+
+/** El lunes de la semana de una fecha 'AAAA-MM-DD' (para el ranking semanal). */
+export function semanaDe(fecha) {
+  const [y, m, d] = fecha.split('-').map(Number);
+  const dia = new Date(Date.UTC(y, m - 1, d));
+  const atras = (dia.getUTCDay() + 6) % 7;
+  return new Date(dia.getTime() - atras * 86400000).toISOString().slice(0, 10);
+}
+
+/** El mes de una fecha ('AAAA-MM'): los goleadores del mes. */
+export const mesDe = (fecha) => fecha.slice(0, 7);

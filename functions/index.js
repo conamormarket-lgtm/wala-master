@@ -42,6 +42,7 @@ const erpCobranza = require("./erpCobranzaLogic");
 const constancia = require("./constanciaPago");
 const referidos = require("./referidosLogic");
 const bolitas = require("./bolitasLogic");
+const pichanga = require("./pichangaLogic");
 const tarjetas = require("./tarjetasGuardadas");
 
 admin.initializeApp();
@@ -10797,4 +10798,195 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
     });
     return { cancelled: true };
   } catch (error) { throw mobileCheckoutError(error); }
+});
+
+// ══ La Pichanga de Kapi ═══════════════════════════════════════════════════════
+// Fútbol de chapas para jugar solo (/pichanga). Todo pasa por estas funciones:
+// el celular no lee ni escribe las colecciones del juego (pichangaProgreso,
+// pichangaRetos, pichangaSemanas, pichangaJugadores, pichangaMeses), así que
+// no hacen falta reglas nuevas para jugar. Detalle en
+// src/componentes/kit/guia/JUEGOS.md ("La Pichanga de Kapi: fase 2").
+const PICHANGA_REWARD = 2;
+const RANKING_PICHANGA_TOP = 20;
+const RANKING_PICHANGA_LEER = 1000;
+
+// Una partida ganada, comprobada. La app manda cada nivel o reto que gana:
+// { modo: 'nivel' | 'reto', nivel | fecha, tiros: [[chapa, dx, dy]…], extras }.
+// El servidor la repite con el mismo motor (copias generadas) y, si mete gol:
+//  - paga +PICHANGA_REWARD si hoy no cobró (lastPichangaReward; fuente
+//    "pichanga_daily" en el libro mayor)
+//  - marca la misión del día ('pichanga_nivel' o 'pichanga_reto')
+//  - el reto de hoy: pichangaRetos/{fecha}_{uid} (el mejor del día) y
+//    pichangaSemanas/{lunes}_{uid}
+//  - pichangaJugadores/{uid}: días jugados y el nivel más alto (el top)
+//  - pichangaMeses/{mes}_{uid}: los goles del mes (cada nivel y el reto
+//    cuentan una vez por día)
+// Devuelve { success, reward, ya, toques, estrellas, mejor, record, golesMes }.
+exports.registrarPartidaPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const hoy = limaTodayStr();
+  let partida;
+  try {
+    partida = await pichanga.comprobarPartidaPichanga(data, hoy);
+  } catch (e) {
+    if (e.codigo) throw new functions.https.HttpsError(e.codigo, e.message);
+    console.error("registrarPartidaPichangaSecure (comprobar) error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo comprobar la partida.");
+  }
+  const esReto = partida.modo === "reto";
+  const [semana, mes] = await Promise.all([pichanga.semanaPichanga(hoy), pichanga.mesPichanga(hoy)]);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const accionesRef = db.collection("userActions").doc(uid + "_" + hoy);
+  const retoRef = esReto ? db.collection("pichangaRetos").doc(hoy + "_" + uid) : null;
+  const semanaRef = esReto ? db.collection("pichangaSemanas").doc(semana + "_" + uid) : null;
+  const jugadorRef = db.collection("pichangaJugadores").doc(uid);
+  const mesRef = db.collection("pichangaMeses").doc(mes + "_" + uid);
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const [userSnap, accionesSnap, retoSnap, semanaSnap, jugadorSnap, mesSnap] = await Promise.all([
+        t.get(userRef),
+        t.get(accionesRef),
+        retoRef ? t.get(retoRef) : null,
+        semanaRef ? t.get(semanaRef) : null,
+        t.get(jugadorRef),
+        t.get(mesRef),
+      ]);
+      if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = userSnap.data();
+      const nombre = bolitas.nombrePublico(u) || bolitas.nombrePublico({ displayName: context.auth.token.name });
+
+      let reward = 0;
+      const ya = u.lastPichangaReward === hoy;
+      if (!ya) {
+        reward = PICHANGA_REWARD;
+        const nuevoSaldo = (u.monedas || 0) + reward;
+        t.update(userRef, { monedas: nuevoSaldo, lastPichangaReward: hoy });
+        writeLedger(t, uid, { type: "earn", amount: reward, source: "pichanga_daily", balanceAfter: nuevoSaldo });
+      }
+
+      const acciones = accionesSnap.exists ? { ...(accionesSnap.data().actions || {}) } : {};
+      acciones[esReto ? "pichanga_reto" : "pichanga_nivel"] = true;
+      t.set(accionesRef, { userId: uid, date: hoy, actions: acciones });
+
+      let mejor = false;
+      if (esReto) {
+        const antes = retoSnap.exists ? retoSnap.data().toques : null;
+        mejor = antes == null || partida.toques < antes;
+        if (mejor) {
+          t.set(retoRef, { uid, fecha: hoy, semana, nombre, toques: partida.toques, hecho: FieldValue.serverTimestamp() });
+          const suma = pichanga.sumarRetoASemana(semanaSnap.exists ? semanaSnap.data() : null, hoy, partida.toques);
+          t.set(semanaRef, { uid, semana, nombre, ...suma, hecho: FieldValue.serverTimestamp() });
+        }
+      }
+
+      const jugadorAntes = jugadorSnap.exists ? jugadorSnap.data() : null;
+      const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre, ahora: Date.now() });
+      t.set(jugadorRef, jugador);
+      const record = jugador.nivelMax > ((jugadorAntes && jugadorAntes.nivelMax) || 0);
+
+      const mesAntes = mesSnap.exists ? mesSnap.data() : null;
+      const sumaMes = pichanga.sumarGolesMes(mesAntes, mes, hoy, esReto ? "reto" : "n" + partida.nivel, partida.goles);
+      if (sumaMes) t.set(mesRef, { uid, nombre, ...sumaMes, hecho: FieldValue.serverTimestamp() });
+      const golesMes = sumaMes ? sumaMes.goles : (mesAntes && mesAntes.mes === mes ? mesAntes.goles || 0 : 0);
+
+      return { success: true, reward, ya, toques: partida.toques, estrellas: partida.estrellas, mejor, record, golesMes };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("registrarPartidaPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar la partida.");
+  }
+});
+
+// Los rankings, uno por pedido ({ tabla }):
+//  - 'reto': hoy (menos toques; empate, quien llegó antes) y la semana (más
+//    retos; empate, menos toques en total)
+//  - 'niveles': el nivel más alto que pasó cada uno
+//  - 'goleadores': los goles del mes
+// Los 20 primeros con el nombre corto y dónde va quien pregunta.
+exports.getRankingPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  const tabla = data && data.tabla;
+  const hoy = limaTodayStr();
+  const fila = (d) => {
+    const f = d.data();
+    return { ...f, uid: f.uid || d.id, hecho: f.hecho && f.hecho.toMillis ? f.hecho.toMillis() : 0 };
+  };
+  const puestoDe = (lista) => (uid ? lista.findIndex((f) => f.uid === uid) + 1 || null : null);
+  const publico = (f, k) => ({ puesto: k + 1, nombre: f.nombre || "Jugador", yo: Boolean(uid) && f.uid === uid });
+  try {
+    if (tabla === "reto") {
+      const semana = await pichanga.semanaPichanga(hoy);
+      const [diaSnap, semanaSnap] = await Promise.all([
+        db.collection("pichangaRetos").where("fecha", "==", hoy).limit(RANKING_PICHANGA_LEER).get(),
+        db.collection("pichangaSemanas").where("semana", "==", semana).limit(RANKING_PICHANGA_LEER).get(),
+      ]);
+      const dia = pichanga.ordenarRetoDia(diaSnap.docs.map(fila));
+      const sem = pichanga.ordenarRetoSemana(semanaSnap.docs.map(fila));
+      await completarNombresBolitas([...dia.slice(0, RANKING_PICHANGA_TOP), ...sem.slice(0, RANKING_PICHANGA_TOP)]);
+      return {
+        tabla, fecha: hoy, semana,
+        hoy: dia.slice(0, RANKING_PICHANGA_TOP).map((f, k) => ({ ...publico(f, k), toques: f.toques })),
+        semanal: sem.slice(0, RANKING_PICHANGA_TOP).map((f, k) => ({ ...publico(f, k), completados: f.completados, total: f.total })),
+        yo: { hoy: puestoDe(dia), semana: puestoDe(sem), jugadoresHoy: dia.length, jugadoresSemana: sem.length },
+      };
+    }
+    if (tabla === "niveles") {
+      const snap = await db.collection("pichangaJugadores").orderBy("nivelMax", "desc").limit(RANKING_PICHANGA_LEER).get();
+      const filas = bolitas.ordenarTopNiveles(snap.docs.map(fila));
+      const top = filas.slice(0, RANKING_PICHANGA_TOP);
+      await completarNombresBolitas(top);
+      const k = uid ? filas.findIndex((f) => f.uid === uid) : -1;
+      return {
+        tabla,
+        top: top.map((f, j) => ({ ...publico(f, j), nivel: f.nivelMax })),
+        yo: { puesto: k >= 0 ? k + 1 : null, nivel: k >= 0 ? filas[k].nivelMax : null, jugadores: filas.length },
+      };
+    }
+    if (tabla === "goleadores") {
+      const mes = await pichanga.mesPichanga(hoy);
+      const snap = await db.collection("pichangaMeses").where("mes", "==", mes).limit(RANKING_PICHANGA_LEER).get();
+      const filas = pichanga.ordenarGoleadores(snap.docs.map(fila));
+      const top = filas.slice(0, RANKING_PICHANGA_TOP);
+      await completarNombresBolitas(top);
+      const k = uid ? filas.findIndex((f) => f.uid === uid) : -1;
+      return {
+        tabla, mes,
+        top: top.map((f, j) => ({ ...publico(f, j), goles: f.goles })),
+        yo: { puesto: k >= 0 ? k + 1 : null, goles: k >= 0 ? filas[k].goles : null, jugadores: filas.length },
+      };
+    }
+    throw new functions.https.HttpsError("invalid-argument", "Tabla desconocida.");
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("getRankingPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo cargar el ranking.");
+  }
+});
+
+// El progreso en la cuenta (pichangaProgreso/{uid}): sin `progreso`, lo
+// devuelve; con él, lo une con lo guardado (lo ganado no se pierde) y guarda
+// el resultado. No vale dinero: el premio y los rankings salen de partidas
+// comprobadas. → { progreso } (null si no hay nada guardado).
+exports.progresoPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const ref = db.collection("pichangaProgreso").doc(uid);
+  const enviado = data && data.progreso;
+  try {
+    if (enviado == null) {
+      const snap = await ref.get();
+      return { progreso: await pichanga.limpiarProgresoPichanga(snap.exists ? snap.data() : null) };
+    }
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const unido = await pichanga.unirProgresoPichanga(enviado, snap.exists ? snap.data() : null);
+      t.set(ref, unido);
+      return { progreso: unido };
+    });
+  } catch (e) {
+    if (e.codigo) throw new functions.https.HttpsError(e.codigo, e.message);
+    console.error("progresoPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo guardar el progreso.");
+  }
 });

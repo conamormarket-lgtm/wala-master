@@ -12,6 +12,8 @@
 //   - Las Bolitas de Kapi    -> 'bolitas_nivel' y 'bolitas_reto': las marca el
 //     SERVIDOR (registrarPartidaBolitasSecure) al comprobar la partida; el
 //     celular no las declara.
+//   - La Pichanga de Kapi    -> 'pichanga_nivel' y 'pichanga_reto': igual, las
+//     marca registrarPartidaPichangaSecure.
 export const MISSION_ACTIONS = {
   visit_catalogo_recompensas: {
     adminLabel: 'Visitó el Catálogo de Recompensas',
@@ -42,5 +44,15 @@ export const MISSION_ACTIONS = {
     adminLabel: 'Hizo el reto del día de Las Bolitas',
     goLabel: 'Ir al reto del día',
     path: '/ball-sort',
+  },
+  pichanga_nivel: {
+    adminLabel: 'Pasó un nivel de La Pichanga de Kapi',
+    goLabel: 'Jugar La Pichanga de Kapi',
+    path: '/pichanga',
+  },
+  pichanga_reto: {
+    adminLabel: 'Hizo el reto del día de La Pichanga',
+    goLabel: 'Ir al reto de la Pichanga',
+    path: '/pichanga',
   },
 };

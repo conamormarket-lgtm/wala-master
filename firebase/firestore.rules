@@ -262,6 +262,11 @@ service cloud.firestore {
       allow read: if notSupervision() && (true);
       allow write: if notSupervision() && (isAdmin());
     }
+    // La Pichanga de Kapi: pichangaProgreso, pichangaRetos, pichangaSemanas,
+    // pichangaJugadores y pichangaMeses no tienen match: el juego las lee y
+    // escribe solo con funciones (progresoPichangaSecure,
+    // registrarPartidaPichangaSecure, getRankingPichangaSecure). Están en
+    // esSoloWala para que la regla general del ERP no las abra.
     match /bolitasConfig/{id} {
       allow read: if notSupervision() && (true);
       allow write: if notSupervision() && (isAdmin());
@@ -572,6 +577,7 @@ service cloud.firestore {
         'notification_settings', 'notification_state', 'notification_stats', 'notifications',
         'order_notifications', 'organizable_events', 'pages', 'pagos_anomalias', 'participantes',
         'payment_link_integrations', 'payouts', 'paypalPlanes', 'paypalSubEvents', 'paypal_ordenes',
+        'pichangaJugadores', 'pichangaMeses', 'pichangaProgreso', 'pichangaRetos', 'pichangaSemanas',
         'pedidos_vinculo_intentos', 'portal_clientes_users', 'productTypes', 'product_reviews',
         'product_view_notifications', 'producto_cliente_personalizado', 'productos_wala', 'recibos',
         'referralClaims', 'referralOrderClaims', 'referrals', 'rewardsCatalog', 'ruletaConfig',

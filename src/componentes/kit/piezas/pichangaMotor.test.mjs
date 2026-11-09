@@ -5,7 +5,36 @@ import {
   comprobarPartida, tiroValido, partidoNuevo, despuesDelTiroPartido, jugadaDeKapi, azar, canchaPartido, chapasDe,
   GOLES_PARTIDO, premioCofre, obstaculosDe, ALTO,
 } from './pichangaMotor.mjs';
-import { NIVELES_PICHANGA, TOTAL_NIVELES_PICHANGA, nivelPichanga } from './pichangaNiveles.mjs';
+import {
+  NIVELES_PICHANGA, TOTAL_NIVELES_PICHANGA, nivelPichanga, RETOS_PICHANGA, retoPichanga, indiceRetoDe, semanaDe, mesDe,
+} from './pichangaNiveles.mjs';
+import { armarNivel } from './pichangaMotor.mjs';
+import { SOLUCIONES_PICHANGA } from './pichangaSoluciones.mjs';
+
+test('cada reto del día tiene una solución que mete gol con el par', () => {
+  assert.equal(RETOS_PICHANGA.length, 24);
+  RETOS_PICHANGA.forEach((dato, k) => {
+    const sol = SOLUCIONES_PICHANGA[`r${k + 1}`];
+    assert.ok(sol, `reto ${k + 1} sin solución: corre npm run gen:pichanga retos`);
+    const lv = armarNivel(0, dato, sol);
+    const r = comprobarPartida(lv, sol.tiros);
+    assert.ok(r.valida && r.ganada, `reto ${k + 1}: la solución ya no mete gol`);
+    assert.equal(r.toques, sol.par);
+  });
+});
+
+test('el reto de una fecha es siempre el mismo y cambia entre días', () => {
+  const a = retoPichanga('2026-11-09');
+  assert.equal(a.reto, '2026-11-09');
+  assert.equal(a.numero, null);
+  assert.deepEqual(retoPichanga('2026-11-09').def, a.def);
+  assert.equal(retoPichanga('9 de noviembre'), null);
+  const usados = new Set(Array.from({ length: 60 }, (_, k) => indiceRetoDe(`2026-12-${String((k % 28) + 1).padStart(2, '0')}`)));
+  assert.ok(usados.size > 10);
+  assert.equal(semanaDe('2026-11-09'), '2026-11-09'); // lunes
+  assert.equal(semanaDe('2026-11-15'), '2026-11-09'); // domingo
+  assert.equal(mesDe('2026-11-09'), '2026-11');
+});
 
 test('un tiro se normaliza a enteros, sin pasar del máximo', () => {
   assert.equal(normalizarTiro(3, 4), null); // muy corto

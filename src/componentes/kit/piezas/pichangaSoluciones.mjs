@@ -1,5 +1,6 @@
 // GENERADO por scripts/generar-pichanga.mjs (npm run gen:pichanga). No editar a mano.
-// Una solución comprobada por nivel: { par: toques, tiros: [[chapa, dx, dy]…] }.
+// Una solución comprobada por nivel (clave: su número) y por reto del día
+// (clave rN): { par: toques, tiros: [[chapa, dx, dy]…] }.
 export const SOLUCIONES_PICHANGA = {
   1: { par: 1, tiros: [[0,-5,-120]] },
   2: { par: 1, tiros: [[0,59,-137]] },
@@ -41,4 +42,28 @@ export const SOLUCIONES_PICHANGA = {
   38: { par: 3, tiros: [[1,-39,-144],[0,-45,-143],[0,50,-17]] },
   39: { par: 2, tiros: [[2,0,-75],[2,4,-97]] },
   40: { par: 3, tiros: [[0,4,-97],[0,-26,-70],[0,4,-97]] },
+  r1: { par: 2, tiros: [[0,39,-114],[0,-47,-142]] },
+  r2: { par: 2, tiros: [[0,-70,-132],[0,14,-51]] },
+  r3: { par: 2, tiros: [[0,75,-129],[0,-83,-124]] },
+  r4: { par: 2, tiros: [[0,71,-132],[0,-39,-35]] },
+  r5: { par: 2, tiros: [[0,105,-107],[0,-11,-149]] },
+  r6: { par: 2, tiros: [[0,24,-94],[0,-12,-119]] },
+  r7: { par: 2, tiros: [[1,125,-82],[1,-16,-119]] },
+  r8: { par: 2, tiros: [[0,30,-146],[0,73,-65]] },
+  r9: { par: 2, tiros: [[0,21,-148],[0,7,-120]] },
+  r10: { par: 2, tiros: [[0,0,-150],[0,-32,-146]] },
+  r11: { par: 2, tiros: [[1,89,-120],[1,-10,-149]] },
+  r12: { par: 3, tiros: [[1,79,-57],[1,53,-140],[1,-16,-50]] },
+  r13: { par: 2, tiros: [[1,108,-104],[1,-35,-115]] },
+  r14: { par: 2, tiros: [[0,70,-132],[0,-26,-70]] },
+  r15: { par: 2, tiros: [[1,107,-105],[1,54,-139]] },
+  r16: { par: 2, tiros: [[0,-71,-132],[0,82,-125]] },
+  r17: { par: 2, tiros: [[1,105,-107],[1,-11,-149]] },
+  r18: { par: 2, tiros: [[0,-18,-148],[0,-106,-106]] },
+  r19: { par: 2, tiros: [[2,125,-82],[2,-16,-119]] },
+  r20: { par: 2, tiros: [[0,-30,-146],[0,-133,-68]] },
+  r21: { par: 2, tiros: [[0,-21,-148],[0,-5,-75]] },
+  r22: { par: 2, tiros: [[0,0,-150],[0,-32,-146]] },
+  r23: { par: 2, tiros: [[1,-89,-120],[1,2,-120]] },
+  r24: { par: 3, tiros: [[0,-39,-144],[0,-113,-98],[0,27,-117]] },
 };

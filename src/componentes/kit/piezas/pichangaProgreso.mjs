@@ -11,6 +11,7 @@ export const PROGRESO_PICHANGA = {
   racha: 0, // niveles seguidos ganados sin reiniciar ni abandonar
   guardadas: { vista: 0, repetir: 0, toque: 0 }, // ayudas de los cofres
   vistos: [], // obstáculos ya explicados
+  reto: null, // el día del último reto hecho ('AAAA-MM-DD')
   goles: 0, // goles hechos en los niveles (y en los partidos ganados)
   partidos: { jugados: 0, ganados: 0 },
   dificultad: 'normal', // la del partido contra Kapi
@@ -134,6 +135,7 @@ export function progresoPichanga(p = {}) {
       toque: entero(base.guardadas?.toque),
     },
     vistos: Array.isArray(base.vistos) ? base.vistos.filter((v) => typeof v === 'string') : [],
+    reto: typeof base.reto === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(base.reto) ? base.reto : null,
     goles: entero(base.goles),
     partidos: { jugados: entero(base.partidos?.jugados), ganados: entero(base.partidos?.ganados) },
     dificultad: DIFICULTADES.includes(base.dificultad) ? base.dificultad : 'normal',
@@ -167,6 +169,7 @@ export function unirProgresos(aparato, cuenta) {
     racha: reciente.racha,
     guardadas: reciente.guardadas,
     vistos: [...new Set([...a.vistos, ...c.vistos])],
+    reto: [a.reto, c.reto].filter(Boolean).sort().pop() || null,
     goles: Math.max(a.goles, c.goles),
     partidos: {
       jugados: Math.max(a.partidos.jugados, c.partidos.jugados),

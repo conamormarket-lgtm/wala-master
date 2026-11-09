@@ -620,9 +620,9 @@ el checkout de punta a punta con un cupón de marca (solo validar), inglés.
 ## La Pichanga de Kapi: fase 1 (2026-11-09)
 
 Fútbol de chapas para jugar solo, en `/pichanga` (a pantalla completa en el
-celular, como los otros juegos). **Todavía no sale en la Zona Arcade** y no da
-monedas: eso llega en la fase 2. La portada ya está en
-`/assets/kapi/banners/pichanga*.webp` (`BANNERS_ARCADE.pichanga`).
+celular, como los otros juegos). La portada está en
+`/assets/kapi/banners/pichanga*.webp` (`BANNERS_ARCADE.pichanga`). La fase 2
+(monedas, reto, rankings y la tarjeta en la Zona Arcade) está más abajo.
 
 **El motor** (`piezas/pichangaMotor.mjs`, puro; `npm run test:pichanga`): una
 cancha de 600 × 900 con el arco arriba, chapas (tapitas), pelota, conos, barro,
@@ -658,7 +658,51 @@ ganados, y el resultado avisa lo que se acaba de abrir.
 guarda en el aparato (`wala_pichanga_progreso`) y `trackMinigame` manda el inicio
 y cada nivel o partido terminado (con los tiros).
 
-**Fase 2 (pendiente):** comprobar las partidas en el servidor (copia del motor
-como en Bolitas), +2 monedas al día, reto del día, rankings (reto, top de
-niveles y goleadores del mes), progreso en la cuenta (`unirProgresos` ya está),
-misiones y la tarjeta en la Zona Arcade.
+## La Pichanga de Kapi: fase 2 (2026-11-09)
+
+Monedas, reto del día, rankings y la tarjeta en la Zona Arcade (quinta
+tarjeta, "Nuevo"; `?pichanga=completado` en el modo diseño).
+
+- **Reto del día** (`retoPichanga(fecha)` en `pichangaNiveles.mjs`): 12 jugadas
+  armadas a mano más sus espejos (24); el del día sale de la fecha, el mismo
+  para todos. Sus soluciones van en `pichangaSoluciones.mjs` (`r1`…`r24`;
+  `npm run gen:pichanga retos`). Toques: par + 2. No cuenta para la racha.
+- **Todo pasa por funciones** (`functions/index.js`, lógica pura en
+  `functions/pichangaLogic.js`): el celular no lee ni escribe las colecciones
+  del juego, así que jugar no depende de las reglas.
+  - `registrarPartidaPichangaSecure`: repite los tiros con el mismo motor
+    (copias en `functions/`, `npm run gen:motor-pichanga`; la prueba avisa si
+    quedaron viejas). Si mete gol: +2 una vez al día de Lima
+    (`lastPichangaReward`, fuente `pichanga_daily` en el libro mayor), la misión
+    (`pichanga_nivel` / `pichanga_reto`, apagadas hasta activarlas en
+    `/admin/misiones`), el reto (`pichangaRetos`, `pichangaSemanas`), el top de
+    niveles (`pichangaJugadores`) y los goles del mes (`pichangaMeses`: cada
+    nivel y el reto cuentan una vez por día).
+  - `getRankingPichangaSecure({ tabla })`: `reto` (hoy por menos toques y la
+    semana por retos hechos), `niveles` (el nivel más alto que pasó) y
+    `goleadores` (goles del mes). Los 20 primeros con el nombre corto.
+  - `progresoPichangaSecure`: lee o guarda `pichangaProgreso/{uid}`, uniendo
+    con lo guardado (lo ganado no se pierde). La tienda lo sube 2,5 s después
+    del último cambio.
+- **La página**: pestañas Niveles / Reto del día / Contra Kapi; la línea del
+  premio en el panel y en el resultado (no se cierra mientras se acredita);
+  "Los mejores" (top de niveles y goleadores del mes) bajo la racha y el
+  ranking del reto en su pestaña (`TablaPichanga`). El partido contra Kapi no
+  da monedas (no se puede comprobar: Kapi juega al azar).
+- **Reglas**: las cinco colecciones (`pichangaProgreso`, `pichangaRetos`,
+  `pichangaSemanas`, `pichangaJugadores`, `pichangaMeses`) están en
+  `esSoloWala` en `firebase/firestore.rules` y sin `match` (solo el servidor).
+  **No están desplegadas**: van con la fusión de reglas pendiente (la copia del
+  ERP ya no es igual a la de Walá). Mientras, con las reglas vivas, alguien con
+  sesión podría escribir esas colecciones a mano y falsear un ranking (como
+  pasó con las de Bolitas); el premio no se puede falsear.
+
+**Probado** con los emuladores: el nivel 1 cobra +2 (50 → 52) y repetirlo no
+vuelve a pagar; los penales del 20 y el reto de hoy se comprueban; una partida
+sin gol y un tiro hecho con la pelota se rechazan; los tres rankings con
+"Cliente D."; el progreso se une (nivel 5 se queda aunque llegue uno viejo);
+con las reglas del repo el celular no puede leer `pichangaRetos`. En el
+navegador: el progreso de la cuenta al entrar, el reto ganado con
+"+2 acreditadas" y el saldo de la barra, y la tarjeta en la Zona Arcade
+("Completado — jugar igual" con la cuenta regresiva). **No probado:** en un
+teléfono real, la misión activada, la versión en inglés.

@@ -14,7 +14,7 @@ import { juegosDelArcade } from '../../componentes/kit/adaptadoresArcade';
 
 /*
  * La Zona Arcade (/minijuegos) con el kit (paso 6, MINIJUEGOS.md):
- * PaginaMinijuegos con las cuatro tarjetas de juegosDelArcade. La misma
+ * PaginaMinijuegos con las cinco tarjetas de juegosDelArcade. La misma
  * lógica que MinijuegosPage:
  *  - el día lo decide la hora de Lima (limaTodayStr); la moneda de Kapi
  *    (lastKapiClaimDate), las bolitas (lastBallSortReward), el doble del reto
@@ -23,7 +23,7 @@ import { juegosDelArcade } from '../../componentes/kit/adaptadoresArcade';
  *  - al entrar con sesión, la misión diaria visit_minijuegos
  *  - "Reclamar moneda" abre a Kapi (open-kapi-pet); ya reclamada, un toast
  *  - mientras se resuelve la sesión no se anuncia nada (botones cargando)
- *  - el modo diseño (?sesion=, ?moneda=, ?bolitas=, ?palabra=, ?ruleta=,
+ *  - el modo diseño (?sesion=, ?moneda=, ?bolitas=, ?pichanga=, ?palabra=, ?ruleta=,
  *    ?dias=, solo en local) cambia lo que se pinta, con su aviso
  * Diferente: la sesión anónima (la de algunas landings) no cuenta como
  * cuenta (tieneCuenta), como en el resto de la tienda.
@@ -42,6 +42,7 @@ export default function MinijuegosDeTienda() {
   const kapiDoble = userProfile?.activeMultiplier === 'kapi_double_3d'
     && Boolean(userProfile?.multiplierExpiresAt) && new Date(userProfile.multiplierExpiresAt) > new Date();
   const bolitasHechas = diseno('bolitas') ? diseno('bolitas') === 'completado' : userProfile?.lastBallSortReward === hoy;
+  const pichangaHecha = diseno('pichanga') ? diseno('pichanga') === 'completado' : userProfile?.lastPichangaReward === hoy;
 
   // La palabra: lo dice el servidor (wordle/{uid}_{fecha}), lo mismo que mira el juego.
   const [palabraHecha, setPalabraHecha] = useState(false);
@@ -98,6 +99,7 @@ export default function MinijuegosDeTienda() {
     kapiReclamado,
     kapiDoble,
     bolitasHechas,
+    pichangaHecha,
     ruleta,
     hasta: {
       manana: new Date(ahora + msHastaMananaLima()).toISOString(),

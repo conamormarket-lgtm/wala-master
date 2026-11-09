@@ -12,11 +12,13 @@
 // De aquí salen el par (las 3 estrellas) y los toques de cada nivel. Si un
 // nivel no tiene solución, se dice y no se guarda nada: hay que mover algo.
 //
-// Uso: node scripts/generar-pichanga.mjs [nivel…]   (sin números: todos)
+// También resuelve los retos del día (claves r1, r2…).
+//
+// Uso: node scripts/generar-pichanga.mjs [nivel… | rN… | retos]   (sin nada: todos)
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { NIVELES_PICHANGA } from '../src/componentes/kit/piezas/pichangaNiveles.mjs';
+import { NIVELES_PICHANGA, RETOS_PICHANGA } from '../src/componentes/kit/piezas/pichangaNiveles.mjs';
 import { SOLUCIONES_PICHANGA } from '../src/componentes/kit/piezas/pichangaSoluciones.mjs';
 import {
   armarNivel, partidaNivel, jugarTiro, tiroDesdeAngulo, chapasDe, indicePelota, comprobarPartida, MAX_TIRO, ANCHO,
@@ -114,35 +116,44 @@ function resolverPenales(lv) {
   return partida.ganada ? tiros : null;
 }
 
-const pedidos = process.argv.slice(2).map(Number).filter((n) => n >= 1 && n <= NIVELES_PICHANGA.length);
-const numeros = pedidos.length ? pedidos : NIVELES_PICHANGA.map((_, k) => k + 1);
+// Lo que se resuelve: los niveles (clave = número) y los retos (clave rN).
+const TAREAS = [
+  ...NIVELES_PICHANGA.map((dato, k) => ({ clave: String(k + 1), numero: k + 1, dato, nombre: `Nivel ${k + 1}` })),
+  ...RETOS_PICHANGA.map((dato, k) => ({ clave: `r${k + 1}`, numero: 0, dato, nombre: `Reto ${k + 1}` })),
+];
+const args = process.argv.slice(2);
+const elegidas = args.length
+  ? TAREAS.filter((t) => args.includes(t.clave) || (args.includes('retos') && t.clave.startsWith('r')))
+  : TAREAS;
 const soluciones = { ...SOLUCIONES_PICHANGA };
 let fallos = 0;
-for (const n of numeros) {
+for (const tarea of elegidas) {
   const inicio = Date.now();
-  const borrador = armarNivel(n, NIVELES_PICHANGA[n - 1], null);
+  const borrador = armarNivel(tarea.numero, tarea.dato, null);
   const tiros = borrador.penales ? resolverPenales(borrador) : resolverNormal(borrador);
   const seg = ((Date.now() - inicio) / 1000).toFixed(1);
   if (!tiros) {
     fallos += 1;
-    delete soluciones[n];
-    console.log(`Nivel ${n}: SIN SOLUCIÓN (${seg} s)`);
+    delete soluciones[tarea.clave];
+    console.log(`${tarea.nombre}: SIN SOLUCIÓN (${seg} s)`);
     continue;
   }
-  const lv = armarNivel(n, NIVELES_PICHANGA[n - 1], { par: tiros.length, tiros });
+  const lv = armarNivel(tarea.numero, tarea.dato, { par: tiros.length, tiros });
   const r = comprobarPartida(lv, tiros);
-  if (!r.ganada) throw new Error(`Nivel ${n}: la solución no se comprueba`);
-  soluciones[n] = { par: tiros.length, tiros };
-  console.log(`Nivel ${n}: ${tiros.length} ${tiros.length === 1 ? 'toque' : 'toques'} (${seg} s)`);
+  if (!r.ganada) throw new Error(`${tarea.nombre}: la solución no se comprueba`);
+  soluciones[tarea.clave] = { par: tiros.length, tiros };
+  console.log(`${tarea.nombre}: ${tiros.length} ${tiros.length === 1 ? 'toque' : 'toques'} (${seg} s)`);
 }
 
-const cuerpo = Object.keys(soluciones).map(Number).sort((a, b) => a - b)
-  .map((n) => `  ${n}: { par: ${soluciones[n].par}, tiros: ${JSON.stringify(soluciones[n].tiros)} },`).join('\n');
+const orden = (k) => (k.startsWith('r') ? 1000 + Number(k.slice(1)) : Number(k));
+const cuerpo = Object.keys(soluciones).sort((a, b) => orden(a) - orden(b))
+  .map((k) => `  ${k}: { par: ${soluciones[k].par}, tiros: ${JSON.stringify(soluciones[k].tiros)} },`).join('\n');
 writeFileSync(destino, `// GENERADO por scripts/generar-pichanga.mjs (npm run gen:pichanga). No editar a mano.
-// Una solución comprobada por nivel: { par: toques, tiros: [[chapa, dx, dy]…] }.
+// Una solución comprobada por nivel (clave: su número) y por reto del día
+// (clave rN): { par: toques, tiros: [[chapa, dx, dy]…] }.
 export const SOLUCIONES_PICHANGA = {
 ${cuerpo}
 };
 `, 'utf8');
-console.log(fallos ? `${fallos} nivel(es) sin solución.` : 'Todos los niveles tienen solución.');
+console.log(fallos ? `${fallos} sin solución.` : 'Todo tiene solución.');
 process.exitCode = fallos ? 1 : 0;

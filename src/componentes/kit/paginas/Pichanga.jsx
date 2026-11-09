@@ -6,14 +6,14 @@ import {
 import Boton from '../Boton';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
-import { HojaInferior } from '../Feedback';
+import { Aviso, HojaInferior } from '../Feedback';
 import { Pestanas } from '../Navegacion';
 import { Estallido } from '../Efectos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
-import { MarcoJuego, BotonIrAlPanel, AyudaJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
+import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
 import { EstrellasNivel } from '../piezas/Bolitas';
-import { CanchaPichanga, MuestraPichanga, MuestraEstadio, EQUIPO_KAPI } from '../piezas/Pichanga';
+import { CanchaPichanga, MuestraPichanga, MuestraEstadio, TablaPichanga, EQUIPO_KAPI } from '../piezas/Pichanga';
 import { efectoPichanga } from '../piezas/efectosPichanga';
 import {
   progresoPichanga, nuevosDesbloqueos, desbloqueado, textoDesbloqueo, estrellasTotales,
@@ -23,7 +23,7 @@ import {
   simular, jugarTiro, partidaNivel, indicePelota, mundoDe, infoMundo, esJefe, estrellasPara, premioCofre,
   RACHA_COFRE, AYUDAS_PICHANGA, partidoNuevo, canchaPartido, despuesDelTiroPartido, jugadaDeKapi, GOLES_PARTIDO,
 } from '../piezas/pichangaMotor.mjs';
-import { nivelPichanga, TOTAL_NIVELES_PICHANGA } from '../piezas/pichangaNiveles.mjs';
+import { nivelPichanga, retoPichanga, TOTAL_NIVELES_PICHANGA } from '../piezas/pichangaNiveles.mjs';
 import { Texto, useTexto } from '../Traduccion';
 import s from './Juegos.module.css';
 import c from '../piezas/Pichanga.module.css';
@@ -60,9 +60,11 @@ const perdidaCon = (lv, partida, extras) => {
   return partida.tiros.length >= lv.toques + extras;
 };
 
-const juegoNuevo = (n) => {
-  const lv = nivelPichanga(n);
-  return { clave: n, lv, partida: partidaNivel(lv), pasados: [], usos: { vista: 0, repetir: 0, toque: 0 }, extras: 0, vistaActiva: false };
+/** Una partida nueva: clave = el número del nivel o 'reto:AAAA-MM-DD'. */
+const juegoNuevo = (clave) => {
+  const lv = typeof clave === 'string' && clave.startsWith('reto:') ? retoPichanga(clave.slice(5)) : nivelPichanga(clave);
+  if (!lv) return null;
+  return { clave, lv, partida: partidaNivel(lv), pasados: [], usos: { vista: 0, repetir: 0, toque: 0 }, extras: 0, vistaActiva: false };
 };
 
 /** El mapa de un mundo: sus 20 niveles con las estrellas; candado en los que faltan; el jefe con corona. */
@@ -191,23 +193,37 @@ function Desbloqueos({ lista }) {
  * penales contra Kapi), de 1 a 3 estrellas según los toques, ayudas por nivel,
  * una racha que abre cofres y un partido contra Kapi por turnos. El vestuario
  * se abre jugando (nada se compra).
+ * Ganar un nivel o el reto del día da monedas una vez al día (lo comprueba el
+ * servidor); sin cuenta se juega igual y el premio invita a entrar.
+ *  - sesion · yaHoy (ya cobró hoy) · monto (2)
+ *  - onGanar({ partida }): cobra; promesa → { monto } | { ya: true } (si falla,
+ *    lanza). Solo con sesión y si no cobró hoy. `partida` es lo que el
+ *    servidor comprueba: { modo: 'nivel' | 'reto', nivel | fecha, tiros: [[chapa, dx, dy]…], extras }
+ *  - onRegistrar(partida): cada victoria con sesión después de cobrar (la
+ *    misión, el reto y los rankings); lo que pase no se muestra
+ *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
+ *  - rankings: { reto, niveles, goleadores } (ver getRankingPichanga) ·
+ *    cargandoRankings: { [tabla]: bool } · onPedirRanking(tabla): para traerlo
  *  - progreso (ver PROGRESO_PICHANGA) · onProgreso(progreso): cada cambio, para guardarlo
- *  - onCompletar({ modo: 'nivel' | 'partido', … }): cada nivel ganado o partido
- *    terminado (la analítica). El nivel trae { nivel, toques, estrellas, tiros, extras }:
- *    lo que el servidor podrá comprobar
- *  - vistaInicial: 'juego' | 'mapa' · modoInicial: 'niveles' | 'partido'
+ *  - onCompletar({ modo: 'nivel' | 'reto' | 'partido', … }): cada nivel o reto
+ *    ganado y cada partido terminado (la analítica)
+ *  - vistaInicial: 'juego' | 'mapa' · modoInicial: 'niveles' | 'reto' | 'partido'
  *  - ayudaVista · onAyudaVista · estado: 'cargando' · monedas: { saldo, cargando } (MarcoJuego)
- * Los textos pasan por la traducción.
+ * Mientras se acredita, la hoja no se cierra. Los textos pasan por la traducción.
  */
 export function PaginaPichanga({
   progreso, onProgreso, onCompletar, vistaInicial = 'juego', modoInicial = 'niveles', ayudaVista = true, onAyudaVista, estado, monedas,
+  sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, hoy, rankings = {}, cargandoRankings = {}, onPedirRanking, urlLogin = '/login',
 }) {
   const [prog, setProg] = useState(() => progresoPichanga(progreso));
   const [modo, setModo] = useState(modoInicial);
   const [vista, setVista] = useState(vistaInicial);
   const [numero, setNumero] = useState(() => Math.min(progresoPichanga(progreso).nivel, TOTAL));
   const [mundoMapa, setMundoMapa] = useState(() => mundoDe(Math.min(progresoPichanga(progreso).nivel, TOTAL)));
-  const [juego, setJuego] = useState(null);
+  // Una partida por modo (niveles y reto): cambiar de pestaña no la pierde.
+  const [juegos, setJuegos] = useState({});
+  const [cobrado, setCobrado] = useState(yaHoy);
+  const [premio, setPremio] = useState(null);
   const [partido, setPartido] = useState(partidoNuevo);
   const [anim, setAnim] = useState(null);
   const [ruta, setRuta] = useState(null);
@@ -236,17 +252,35 @@ export function PaginaPichanga({
     vestuario: useTexto('Vestuario'),
   };
 
-  // El nivel: se arma al cambiar de número (y la primera vez).
+  const esJuegoNivel = modo === 'niveles' || modo === 'reto';
+  const claveJuego = modo === 'reto' ? `reto:${hoy}` : numero;
+  const juego = esJuegoNivel && juegos[modo]?.clave === claveJuego ? juegos[modo] : null;
+  /** Cambia la partida del modo de ahora (o la de `m`). */
+  const setJuego = (u, m = modo) => setJuegos((js) => ({ ...js, [m]: typeof u === 'function' ? u(js[m]) : u }));
+
+  // El perfil puede llegar (o refrescarse) después: si ya cobró hoy, no se vuelve a intentar.
+  useEffect(() => { if (yaHoy) setCobrado(true); }, [yaHoy]);
+
+  // Los rankings se traen al entrar a cada modo (una vez; después los
+  // refresca quien registra la partida).
   useEffect(() => {
-    if (estado === 'cargando' || modo !== 'niveles') return;
-    if (juego?.clave === numero) return;
-    const nuevo = juegoNuevo(numero);
+    if (estado === 'cargando') return;
+    if (modo === 'reto') onPedirRanking?.('reto');
+    if (modo === 'niveles' && !rankings.niveles) onPedirRanking?.('niveles');
+  }, [modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // El nivel (o el reto): se arma al cambiar de número o de modo.
+  useEffect(() => {
+    if (estado === 'cargando' || !esJuegoNivel || (modo === 'reto' && !hoy)) return;
+    if (juego) return;
+    const nuevo = juegoNuevo(claveJuego);
+    if (!nuevo) return;
     setJuego(nuevo);
     setRuta(null);
     const obstaculo = nuevo.lv.obstaculos.find((o) => !prog.vistos.includes(o));
     if (obstaculo) setExplicar(obstaculo);
     else if (nuevo.lv.penales) setAviso(`¡Jefe! Penales contra Kapi: mete ${nuevo.lv.penales.goles} de ${nuevo.lv.penales.tiros}.`);
-  }, [numero, modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [claveJuego, modo, estado, Boolean(juego)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!aviso) return undefined;
@@ -313,9 +347,10 @@ export function PaginaPichanga({
     return () => { vivo = false; ids.forEach(clearTimeout); setPensando(false); setResaltar(null); };
   }, [modo, partido, anim, estado]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (estado === 'cargando' || (modo === 'niveles' && !juego)) return <EsqueletoPagina forma="pichanga" />;
+  if (estado === 'cargando' || (esJuegoNivel && !juego)) return <EsqueletoPagina forma="pichanga" />;
 
   const esPartido = modo === 'partido';
+  const esReto = modo === 'reto';
   const equipo = buscar(EQUIPOS_PICHANGA, prog.equipo);
   const pelota = buscar(PELOTAS_PICHANGA, prog.pelota);
   const estadio = buscar(ESTADIOS_PICHANGA, prog.estadio);
@@ -324,7 +359,8 @@ export function PaginaPichanga({
   const lv = juego?.lv;
   const partida = juego?.partida;
   const ocupado = Boolean(anim);
-  const verMapa = vista === 'mapa' && !esPartido;
+  const acreditando = premio?.estado === 'acreditando';
+  const verMapa = vista === 'mapa' && modo === 'niveles';
 
   /* ── Ayudas del nivel ── */
   const quedanNivel = juego ? {
@@ -350,9 +386,45 @@ export function PaginaPichanga({
 
   /** Reiniciar o dejar un nivel empezado corta la racha. */
   const cortarRacha = () => {
-    if (!enJuego || !prog.racha) return;
+    if (modo !== 'niveles' || !enJuego || !prog.racha) return;
     guardar({ racha: 0 });
     setAviso('Se cortó tu racha de victorias.');
+  };
+
+  /**
+   * El premio de una victoria: sin cuenta invita a entrar; si ya cobró hoy,
+   * solo se registra (misión y rankings); si no, cobra y las monedas vuelan.
+   */
+  const cobrar = async (partidaServidor) => {
+    if (!sesion) { setPremio({ estado: 'sinSesion' }); return; }
+    if (!onGanar) { setPremio(null); return; }
+    if (cobrado) {
+      setPremio({ estado: 'ya', texto: 'Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.' });
+      Promise.resolve(onRegistrar?.(partidaServidor)).catch(() => {});
+      return;
+    }
+    setPremio({ estado: 'acreditando' });
+    try {
+      const r = await onGanar({ partida: partidaServidor });
+      setCobrado(true);
+      setPremio(r?.ya ? { estado: 'ya' } : { estado: 'acreditado', monto: r?.monto || monto });
+    } catch {
+      setPremio({ estado: 'error' });
+    }
+  };
+
+  const ganarReto = (retoJugado, final, extras) => {
+    const toques = final.tiros.length;
+    const estrellas = estrellasPara(toques, retoJugado.par);
+    const p = progRef.current;
+    const mejorAntes = p.reto === retoJugado.reto;
+    guardar({ reto: retoJugado.reto, goles: p.goles + final.goles });
+    setFinPartido(null);
+    setLogro({ reto: true, estrellas, toques, repetido: mejorAntes, desbloqueos: [] });
+    onCompletar?.({ modo: 'reto', fecha: retoJugado.reto, toques, estrellas, tiros: final.tiros, extras });
+    cobrar({ modo: 'reto', fecha: retoJugado.reto, tiros: final.tiros, extras });
+    setTimeout(() => fx('ganar'), 700);
+    setTimeout(() => setResultado(true), 1500);
   };
 
   const ganarNivel = (nivelJugado, final, extras) => {
@@ -374,6 +446,7 @@ export function PaginaPichanga({
       mundoCompleto: esJefe(n) ? mundoDe(n) : null, desbloqueos: nuevosDesbloqueos(viejo, progresoPichanga(nuevo)), numero: n,
     });
     onCompletar?.({ modo: 'nivel', nivel: n, toques, estrellas, tiros: final.tiros, extras });
+    cobrar({ modo: 'nivel', nivel: n, tiros: final.tiros, extras });
     setTimeout(() => fx('ganar'), 700);
     if (cofre) setTimeout(() => fx('cofre'), 1500);
     setTimeout(() => setResultado(true), 1500);
@@ -400,7 +473,7 @@ export function PaginaPichanga({
         fx('fallo');
         setAviso(atajo ? '¡Atajó Kapi!' : '¡Afuera!');
       }
-      if (nueva.ganada) ganarNivel(lv, nueva, antes.extras);
+      if (nueva.ganada) (lv.reto ? ganarReto : ganarNivel)(lv, nueva, antes.extras);
       else if (nueva.perdida) { fx('fallo'); setSinToques(true); }
     });
   };
@@ -439,7 +512,7 @@ export function PaginaPichanga({
   const reiniciar = () => {
     if (ocupado) return;
     cortarRacha();
-    setJuego(juegoNuevo(numero));
+    setJuego(juegoNuevo(claveJuego));
     setSinToques(false);
     setRuta(null);
   };
@@ -450,15 +523,16 @@ export function PaginaPichanga({
     setModo('niveles');
     setNumero(n);
     setMundoMapa(mundoDe(n));
-    if (n !== numero) setJuego(null);
     setVista('juego');
     setResultado(false);
     setSinToques(false);
   };
 
   const siguiente = () => {
-    if (ocupado) return;
+    if (ocupado || acreditando) return;
     setResultado(false);
+    setPremio(null);
+    if (esReto) { cambiarModo('niveles'); return; }
     if (numero >= TOTAL) {
       setAviso('¡Terminaste todos los niveles! Pronto llegan más mundos. Mientras, juega contra Kapi.');
       return;
@@ -467,8 +541,10 @@ export function PaginaPichanga({
   };
 
   const repetirNivel = () => {
+    if (acreditando) return;
     setResultado(false);
-    setJuego(juegoNuevo(numero));
+    setPremio(null);
+    setJuego(juegoNuevo(claveJuego));
   };
 
   const verRepeticion = () => {
@@ -530,11 +606,11 @@ export function PaginaPichanga({
   };
 
   const cambiarModo = (m) => {
-    if (m === modo || ocupado) return;
-    if (m === 'partido') cortarRacha();
+    if (m === modo || ocupado || acreditando) return;
     setModo(m);
     setVista('juego');
     setResultado(false);
+    setPremio(null);
     setSinToques(false);
     setRuta(null);
     if (m === 'partido' && !partido.tiros.yo && !partido.tiros.kapi) fx('silbato');
@@ -573,6 +649,12 @@ export function PaginaPichanga({
     </>
   );
 
+  const promesa = !sesion
+    ? <PremioJuego estado="sinSesion" urlLogin={urlLogin} />
+    : cobrado
+      ? <PremioJuego estado="ya" texto="Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto." />
+      : <PremioJuego estado="promesa" monto={monto} texto="al pasar un nivel o el reto del día." />;
+
   let turnoTexto = null;
   if (esPartido) {
     if (partido.fin) turnoTexto = partido.fin === 'yo' ? '¡Ganaste!' : partido.fin === 'kapi' ? 'Ganó Kapi' : 'Empate';
@@ -593,7 +675,11 @@ export function PaginaPichanga({
               <div className={s.modos}>
                 <Pestanas
                   etiqueta="Modo de juego"
-                  opciones={[{ id: 'niveles', texto: 'Niveles' }, { id: 'partido', texto: 'Contra Kapi' }]}
+                  opciones={[
+                    { id: 'niveles', texto: 'Niveles' },
+                    ...(hoy ? [{ id: 'reto', texto: 'Reto del día' }] : []),
+                    { id: 'partido', texto: 'Contra Kapi' },
+                  ]}
                   valor={modo}
                   onChange={cambiarModo}
                 />
@@ -626,14 +712,23 @@ export function PaginaPichanga({
                   ) : (
                     <div className={s.cabezaNivel}>
                       <div>
-                        <p className={s.mundoLinea}>
-                          <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
-                          {' · '}<Texto>{infoM.nombre}</Texto>
-                        </p>
-                        <p className={s.nivelTitulo}>
-                          {lv.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
-                          <TextoResaltado resaltar={[numero]}>{lv.jefe ? `Nivel ${numero} · Penales` : `Nivel ${numero}`}</TextoResaltado>
-                        </p>
+                        {esReto ? (
+                          <>
+                            <p className={s.mundoLinea}><Texto>El mismo para todos, hoy</Texto></p>
+                            <p className={s.nivelTitulo}><Texto>Reto del día</Texto></p>
+                          </>
+                        ) : (
+                          <>
+                            <p className={s.mundoLinea}>
+                              <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
+                              {' · '}<Texto>{infoM.nombre}</Texto>
+                            </p>
+                            <p className={s.nivelTitulo}>
+                              {lv.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
+                              <TextoResaltado resaltar={[numero]}>{lv.jefe ? `Nivel ${numero} · Penales` : `Nivel ${numero}`}</TextoResaltado>
+                            </p>
+                          </>
+                        )}
                         <p className={s.metaEstrellas}>
                           {lv.penales ? (
                             <TextoResaltado resaltar={[partida.goles, lv.penales.goles, toquesQuedan]}>
@@ -654,9 +749,12 @@ export function PaginaPichanga({
                             <TextoResaltado resaltar={[toquesQuedan]}>{toquesQuedan === 1 ? 'Queda 1 toque' : `Quedan ${toquesQuedan} toques`}</TextoResaltado>
                           </span>
                         )}
-                        <Boton variante="secundario" tamano="sm" icono={<IconoMapa aria-hidden="true" />} onClick={() => { setMundoMapa(mundo); setVista('mapa'); }}><Texto>Mapa</Texto></Boton>
+                        {!esReto && <Boton variante="secundario" tamano="sm" icono={<IconoMapa aria-hidden="true" />} onClick={() => { setMundoMapa(mundo); setVista('mapa'); }}><Texto>Mapa</Texto></Boton>}
                       </div>
                     </div>
+                  )}
+                  {esReto && prog.reto === hoy && !partida.ganada && (
+                    <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez para mejorar tu marca; mañana sale otro.</Texto></Aviso>
                   )}
 
                   <div className={s.mensajeZona} aria-live="polite">
@@ -670,8 +768,8 @@ export function PaginaPichanga({
                       t={mesa.t}
                       equipo={equipo}
                       pelota={pelota}
-                      pasto={esPartido ? estadio.pasto : infoM.pasto}
-                      linea={esPartido ? estadio.linea : infoM.linea}
+                      pasto={esPartido || esReto ? estadio.pasto : infoM.pasto}
+                      linea={esPartido || esReto ? estadio.linea : infoM.linea}
                       puedeTirar={puedeTirar}
                       onTiro={(tiro) => (esPartido ? tirarPartido(tiro, 'yo') : tirarNivel(tiro))}
                       onApuntar={esPartido ? undefined : alApuntar}
@@ -680,7 +778,7 @@ export function PaginaPichanga({
                       onFinAnimacion={alFinAnimacion}
                       onGolpe={alGolpe}
                       resaltar={resaltar}
-                      etiqueta={esPartido ? 'La cancha del partido contra Kapi' : `La cancha del nivel ${numero}`}
+                      etiqueta={esPartido ? 'La cancha del partido contra Kapi' : esReto ? 'La cancha del reto del día' : `La cancha del nivel ${numero}`}
                     />
                     {gol && <span key={gol} className={c.gol} aria-hidden="true">¡GOL!</span>}
                   </div>
@@ -692,8 +790,8 @@ export function PaginaPichanga({
                       </Boton>
                     ) : partida.ganada ? (
                       <>
-                        <Boton icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado}>
-                          <Texto>{numero >= TOTAL ? 'Terminar' : 'Siguiente nivel'}</Texto>
+                        <Boton icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado || acreditando}>
+                          <Texto>{esReto ? 'Seguir con los niveles' : numero >= TOTAL ? 'Terminar' : 'Siguiente nivel'}</Texto>
                         </Boton>
                         {!resultado && <Boton variante="secundario" icono={<Eye aria-hidden="true" />} onClick={() => setResultado(true)} disabled={ocupado}><Texto>Ver resultado</Texto></Boton>}
                       </>
@@ -740,8 +838,36 @@ export function PaginaPichanga({
                       <TextoResaltado resaltar={[GOLES_PARTIDO]}>{`Por turnos: gana quien meta ${GOLES_PARTIDO} goles. Tú atacas hacia arriba.`}</TextoResaltado>
                     </p>
                   </>
+                ) : esReto ? (
+                  <>
+                    {promesa}
+                    <CifrasJuego cifras={[
+                      { etiqueta: 'Reto', valor: (hoy || '').slice(5).split('-').reverse().join('/') },
+                      { etiqueta: 'Toques', valor: tirosHechos },
+                    ]}
+                    />
+                    <TablaPichanga
+                      titulo="Ranking del reto"
+                      sesion={sesion}
+                      urlLogin={urlLogin}
+                      cargando={{ hoy: cargandoRankings.reto, semana: cargandoRankings.reto }}
+                      pestanas={[
+                        {
+                          id: 'hoy', texto: 'Hoy', lista: rankings.reto?.hoy, puesto: rankings.reto?.yo?.hoy, total: rankings.reto?.yo?.jugadoresHoy,
+                          valor: (f) => (f.toques === 1 ? '1 toque' : `${f.toques} toques`),
+                          vacio: 'Nadie hizo el reto de hoy todavía. ¡Sé la primera persona!',
+                        },
+                        {
+                          id: 'semana', texto: 'Esta semana', lista: rankings.reto?.semanal, puesto: rankings.reto?.yo?.semana, total: rankings.reto?.yo?.jugadoresSemana,
+                          valor: (f) => `${f.completados === 1 ? '1 reto' : `${f.completados} retos`} · ${f.total} toques`,
+                          vacio: 'Todavía nadie hizo un reto esta semana.',
+                        },
+                      ]}
+                    />
+                  </>
                 ) : (
                   <>
+                    {promesa}
                     <CifrasJuego cifras={[
                       { etiqueta: 'Nivel', valor: `${numero}/${TOTAL}` },
                       { etiqueta: 'Estrellas', valor: estrellas },
@@ -763,6 +889,26 @@ export function PaginaPichanga({
                         </p>
                       )}
                     </div>
+                    <TablaPichanga
+                      titulo="Los mejores"
+                      sesion={sesion}
+                      urlLogin={urlLogin}
+                      entrar="Inicia sesión para aparecer en los rankings."
+                      cargando={{ niveles: cargandoRankings.niveles, goleadores: cargandoRankings.goleadores }}
+                      onPestana={(id) => { if (!rankings[id]) onPedirRanking?.(id); }}
+                      pestanas={[
+                        {
+                          id: 'niveles', texto: 'Top de niveles', lista: rankings.niveles?.top, puesto: rankings.niveles?.yo?.puesto, total: rankings.niveles?.yo?.jugadores,
+                          valor: (f) => `Pasó el nivel ${f.nivel}`, nota: 'El nivel más alto que pasó cada persona.',
+                          vacio: 'Todavía nadie pasó un nivel. ¡Sé la primera persona!',
+                        },
+                        {
+                          id: 'goleadores', texto: 'Goleadores del mes', lista: rankings.goleadores?.top, puesto: rankings.goleadores?.yo?.puesto, total: rankings.goleadores?.yo?.jugadores,
+                          valor: (f) => (f.goles === 1 ? '1 gol' : `${f.goles} goles`), nota: 'Goles de los niveles y del reto. Cada nivel cuenta una vez por día; se reinicia cada mes.',
+                          vacio: 'Todavía nadie metió un gol este mes.',
+                        },
+                      ]}
+                    />
                   </>
                 )}
                 <button type="button" className={c.vestuarioBoton} onClick={() => setVestuario(true)}>
@@ -856,8 +1002,8 @@ export function PaginaPichanga({
         <ResultadoJuego
           abierta={resultado && Boolean(logro)}
           onCerrar={() => setResultado(false)}
-          ocupado={ocupado}
-          titulo={logro?.penales ? '¡Le ganaste los penales a Kapi!' : `¡Nivel ${logro?.numero} completado!`}
+          ocupado={ocupado || acreditando}
+          titulo={logro?.reto ? '¡Reto del día completado!' : logro?.penales ? '¡Le ganaste los penales a Kapi!' : `¡Nivel ${logro?.numero} completado!`}
           imagen={CARAS_KAPI.feliz}
           texto={logro && (
             <div className={s.logro}>
@@ -868,6 +1014,7 @@ export function PaginaPichanga({
                 </TextoResaltado>
               </p>
               {logro.record && <p className={s.record}><Texto>¡Nuevo récord en este nivel!</Texto></p>}
+              {logro.reto && sesion && <p className={s.notaSuave}><Texto>Tu mejor marca de hoy cuenta para el ranking del reto.</Texto></p>}
               {logro.estrellas < 3 && lv && (
                 <p className={s.notaSuave}>
                   <TextoResaltado resaltar={[lv.par]}>{`Para 3 estrellas: ${lv.par} ${lv.penales ? 'tiros' : 'toques'} o menos.`}</TextoResaltado>
@@ -886,12 +1033,14 @@ export function PaginaPichanga({
           )}
           acciones={(
             <>
-              <Boton bloque icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado}>
-                <Texto>{(logro?.numero || 0) >= TOTAL ? 'Terminar' : `Ir al nivel ${(logro?.numero || 0) + 1}`}</Texto>
+              <Boton bloque icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado || acreditando}>
+                <Texto>{logro?.reto ? 'Seguir con los niveles' : (logro?.numero || 0) >= TOTAL ? 'Terminar' : `Ir al nivel ${(logro?.numero || 0) + 1}`}</Texto>
               </Boton>
-              {repeticion.current && <Boton bloque variante="secundario" icono={<Film aria-hidden="true" />} onClick={verRepeticion} disabled={ocupado}><Texto>Ver la repetición</Texto></Boton>}
+              {repeticion.current && <Boton bloque variante="secundario" icono={<Film aria-hidden="true" />} onClick={verRepeticion} disabled={ocupado || acreditando}><Texto>Ver la repetición</Texto></Boton>}
               {logro && logro.estrellas < 3 && (
-                <Boton bloque variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={repetirNivel} disabled={ocupado}><Texto>Repetir por 3 estrellas</Texto></Boton>
+                <Boton bloque variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={repetirNivel} disabled={ocupado || acreditando}>
+                  <Texto>{logro.reto ? 'Mejorar mi marca' : 'Repetir por 3 estrellas'}</Texto>
+                </Boton>
               )}
             </>
           )}
@@ -907,6 +1056,7 @@ export function PaginaPichanga({
               </div>
             </div>
           )}
+          {premio && <PremioJuego {...premio} urlLogin={urlLogin} />}
           <Desbloqueos lista={logro?.desbloqueos} />
         </ResultadoJuego>
       )}

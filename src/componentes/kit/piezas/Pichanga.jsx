@@ -1,10 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { useTexto } from '../Traduccion';
+import React, { useEffect, useRef, useState } from 'react';
+import { Trophy, LogIn } from 'lucide-react';
+import Boton from '../Boton';
+import { Hueso } from '../Esqueletos';
+import { Pestanas } from '../Navegacion';
+import { TextoResaltado } from './TextoResaltado';
+import { Texto, useTexto } from '../Traduccion';
 import { CARAS_KAPI_MINI } from './Flotantes';
 import {
   ANCHO, ALTO, FONDO_ARCO, RADIO, MAX_TIRO, normalizarTiro, posicionKapi, postes,
 } from './pichangaMotor.mjs';
 import s from './Pichanga.module.css';
+import b from './Bolitas.module.css';
 
 /*
  * La cancha de La Pichanga de Kapi, dibujada en un canvas (liviano: solo se
@@ -567,5 +573,73 @@ export function MuestraEstadio({ estadio, tamano = 56 }) {
       }}
       aria-hidden="true"
     />
+  );
+}
+
+/**
+ * Un ranking con pestañas (el reto: hoy y la semana; los niveles: el top y
+ * los goleadores del mes), con el estilo de los de Las Bolitas.
+ *  - titulo · pestanas: [{ id, texto, lista: [{ puesto, nombre, yo, … }],
+ *    valor: (fila) => texto, vacio, puesto, total, nota }]
+ *  - cargando: { [id]: bool } (sin lista todavía: esqueleto) · onPestana(id):
+ *    al cambiar de pestaña (para traer esa lista)
+ *  - sesion · urlLogin · entrar: el texto para invitar a entrar
+ */
+export function TablaPichanga({ titulo, pestanas = [], cargando = {}, onPestana, sesion = true, urlLogin = '/login', entrar = 'Inicia sesión para aparecer en el ranking.' }) {
+  const [activa, setActiva] = useState(pestanas[0]?.id);
+  const t = { tu: useTexto('Tú'), titulo: useTexto(titulo) };
+  const p = pestanas.find((x) => x.id === activa) || pestanas[0];
+  if (!p) return null;
+  const lista = p.lista || [];
+  const fuera = p.puesto && !lista.some((f) => f.yo);
+  let cuerpo;
+  if (cargando[p.id] && !p.lista) {
+    cuerpo = (
+      <ol className={b.rankingLista} aria-busy="true">
+        {[0, 1, 2, 3].map((k) => (
+          <li key={k}><Hueso forma="circulo" ancho="1.6rem" alto="1.6rem" /><Hueso ancho={`${70 - k * 10}%`} /><Hueso ancho="3.2rem" /></li>
+        ))}
+      </ol>
+    );
+  } else if (!lista.length) {
+    cuerpo = <p className={b.rankingVacio}><Texto>{p.vacio}</Texto></p>;
+  } else {
+    cuerpo = (
+      <ol className={b.rankingLista}>
+        {lista.map((f) => (
+          <li key={`${f.puesto}-${f.nombre}`} className={f.yo ? b.rankingYo : undefined}>
+            <span className={[b.rankingPuesto, f.puesto <= 3 && b[`podio${f.puesto}`]].filter(Boolean).join(' ')}>{f.puesto}</span>
+            <span className={b.rankingNombre}>{f.nombre}{f.yo && <small>{t.tu}</small>}</span>
+            <span className={b.rankingValor}><Texto>{p.valor(f)}</Texto></span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  return (
+    <section className={b.ranking} aria-label={t.titulo} data-componente="TablaPichanga">
+      <p className={b.rankingTitulo}><Trophy aria-hidden="true" />{t.titulo}</p>
+      {pestanas.length > 1 && (
+        <Pestanas
+          opciones={pestanas.map((x) => ({ id: x.id, texto: x.texto }))}
+          valor={p.id}
+          onChange={(id) => { setActiva(id); onPestana?.(id); }}
+          etiqueta={titulo}
+        />
+      )}
+      {p.nota && <p className={b.rankingNota}><Texto>{p.nota}</Texto></p>}
+      {cuerpo}
+      {fuera && (
+        <p className={b.rankingNota}>
+          <TextoResaltado resaltar={[p.puesto]}>{p.total ? `Vas en el puesto ${p.puesto} de ${p.total}.` : `Vas en el puesto ${p.puesto}.`}</TextoResaltado>
+        </p>
+      )}
+      {!sesion && (
+        <div className={b.rankingNota}>
+          <Texto>{entrar}</Texto>
+          <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
+        </div>
+      )}
+    </section>
   );
 }

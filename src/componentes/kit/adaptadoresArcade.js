@@ -15,21 +15,20 @@ export const BANNERS_ARCADE = {
   kapi: foto('alimenta'),
   ruleta: foto('ruleta'),
   bolitas: foto('bolitas'),
-  // La Pichanga de Kapi: lista para su tarjeta (todavía no sale en la Zona Arcade).
   pichanga: foto('pichanga'),
 };
 /* Un banner: { src, srcSet } o solo su URL. */
 const banner = (b) => (typeof b === 'string' ? { imagen: b } : { imagen: b?.src, srcSet: b?.srcSet });
 
 /**
- * Las cuatro tarjetas de la Zona Arcade (props de TarjetaJuego) y cuántos
+ * Las cinco tarjetas de la Zona Arcade (props de TarjetaJuego) y cuántos
  * juegos quedan hoy, con la misma lógica de MinijuegosPage. No decide nada:
  * el día lo dice el servidor (hora de Lima) y la página pasa lo que ya sabe.
  *  - sesion, cargando: sin sesión cada botón lleva a iniciar sesión; mientras
  *    se resuelve, botones "cargando" (que no se anuncie un juego ya hecho).
  *  - palabraHecha (wordle de hoy), kapiReclamado (lastKapiClaimDate === hoy),
  *    kapiDoble (multiplicador kapi_double_3d vigente), bolitasHechas
- *    (lastBallSortReward === hoy)
+ *    (lastBallSortReward === hoy), pichangaHecha (lastPichangaReward === hoy)
  *  - ruleta: { desbloqueada, girada, perdida, empezada, pendienteAnterior,
  *    dias } (getRuletaEligibility)
  *  - hasta: { manana, lunes } fechas ISO de la próxima medianoche de Lima y del
@@ -38,13 +37,14 @@ const banner = (b) => (typeof b === 'string' ? { imagen: b } : { imagen: b?.src,
  */
 export function juegosDelArcade({
   sesion = false, cargando = false, palabraHecha: palabra = false, kapiReclamado: kapi = false, kapiDoble = false,
-  bolitasHechas: bolitas = false, ruleta: ruletaPerfil = {}, hasta = {}, onAlimentar, urlLogin = '/login', banners = BANNERS_ARCADE,
+  bolitasHechas: bolitas = false, pichangaHecha: pichanga = false, ruleta: ruletaPerfil = {}, hasta = {}, onAlimentar, urlLogin = '/login', banners = BANNERS_ARCADE,
 } = {}) {
   // Sin sesión no hay perfil: nada está hecho y la ruleta está en cero (como
   // la tienda con userProfile null).
   const palabraHecha = sesion && palabra;
   const kapiReclamado = sesion && kapi;
   const bolitasHechas = sesion && bolitas;
+  const pichangaHecha = sesion && pichanga;
   const ruleta = sesion ? ruletaPerfil : {};
   const { desbloqueada = false, girada = false, perdida = false, empezada = false, pendienteAnterior = false, porDias = false, siempre = false } = ruleta;
   const dias = Math.max(0, Math.min(7, Number(ruleta.dias) || 0));
@@ -134,10 +134,24 @@ export function juegosDelArcade({
         : bolitasHechas ? { tipo: 'hecho', texto: 'Completado — jugar igual', url: '/ball-sort' }
           : { tipo: 'jugar', texto: 'Jugar ahora', url: '/ball-sort' },
     },
+    {
+      id: 'pichanga',
+      ...banner(banners.pichanga),
+      titulo: 'La Pichanga de Kapi',
+      descripcion: 'Fútbol de chapas: mete goles con tus chapas, vence a Kapi y gana 2 monedas al día.',
+      estado: pichangaHecha ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Nuevo', tono: 'violeta', punto: true },
+      recompensa: { texto: '+2 monedas al día' },
+      atenuada: pichangaHecha,
+      espera: pichangaHecha && sesion ? esperaDiaria : undefined,
+      // Como las bolitas: se juega sin cuenta y, ya cobrada, por diversión.
+      accion: cargando ? boton()
+        : pichangaHecha ? { tipo: 'hecho', texto: 'Completado — jugar igual', url: '/pichanga' }
+          : { tipo: 'jugar', texto: 'Jugar ahora', url: '/pichanga' },
+    },
   ];
 
   const listos = sesion && !cargando
-    ? (palabraHecha ? 0 : 1) + (kapiReclamado ? 0 : 1) + (desbloqueada ? 1 : 0) + (bolitasHechas ? 0 : 1)
+    ? (palabraHecha ? 0 : 1) + (kapiReclamado ? 0 : 1) + (desbloqueada ? 1 : 0) + (bolitasHechas ? 0 : 1) + (pichangaHecha ? 0 : 1)
     : 0;
   // Mientras se resuelve la sesión no se anuncia nada (ni "Hecho hoy" ni
   // "Disponible"): solo el botón cargando.
