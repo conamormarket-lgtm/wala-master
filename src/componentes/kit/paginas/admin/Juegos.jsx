@@ -13,8 +13,9 @@ import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import { PaginaListaAdmin } from './Lista';
 import {
   palabraLimpia, erroresDePalabra, bloqueoPalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDePatrocinio,
-  nuevoPuesto, erroresDePremios, metricasBolitas,
+  nuevoPuesto, erroresDePremios, metricasBolitas, metricasPichanga,
 } from '../../adaptadoresAdmin';
+import { EQUIPOS_PICHANGA } from '../../piezas/pichangaProgreso.mjs';
 import l from './Lista.module.css';
 import s from './Juegos.module.css';
 import { EsqueletoFormulario } from '../../Esqueletos';
@@ -25,6 +26,9 @@ import { EsqueletoFormulario } from '../../Esqueletos';
  * (/admin/bolitas). Lo que se guarda de las Bolitas lo comprueba el servidor
  * (adminBolitasSecure), que pone los topes de los cupones.
  */
+
+/** Los nombres de los equipos del juego, para el vestuario. */
+const NOMBRES_PICHANGA = { equipo: Object.fromEntries(EQUIPOS_PICHANGA.map((e) => [e.id, e.nombre])) };
 
 const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
 const errorDe = (err) => err?.message || 'Vuelve a intentar.';
@@ -197,7 +201,27 @@ function Mundos({ guardados = [], marcas = [], onGuardar }) {
 }
 
 /** Los premios del ranking semanal y premiar una semana a mano. */
-function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana }) {
+/** Los textos de Premios para las Bolitas (semanal); la Pichanga pasa los suyos (mensual). */
+const TEXTOS_PREMIOS_BOLITAS = {
+  titulo: 'Los premios del ranking semanal',
+  ayuda: 'Cada lunes a las 00:15 se premia la semana que terminó (más retos del día hechos; si empatan, menos movimientos). Con marca, el cupón solo descuenta sus productos.',
+  interruptor: 'Entregar premios cada lunes',
+  manualTitulo: 'Premiar una semana a mano',
+  manualAyuda: 'Si el lunes no se entregó (o para probar). Elige el lunes de esa semana; si ya estaba premiada, no se repite.',
+  manualEtiqueta: 'El lunes de la semana',
+  confirmarTitulo: '¿Premiar esa semana?',
+  confirmarTexto: (v) => `Se entregan los cupones del ranking de la semana del ${fechaLarga(v)}, con los premios guardados.`,
+  ya: 'Esa semana ya estaba premiada',
+  hecho: 'Semana premiada',
+};
+
+/**
+ * Los premios de un ranking: puestos → cupón (con marca opcional), guardar, y
+ * premiar un periodo a mano.
+ *  - guardados · marcas · onGuardar(p) · onPremiar(valor) → { ya, sinPremios, entregados }
+ *  - textos (TEXTOS_PREMIOS_BOLITAS) · tipoManual: 'fecha' (un día) | 'mes' ('AAAA-MM')
+ */
+function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana: onPremiar, textos = TEXTOS_PREMIOS_BOLITAS, tipoManual = 'fecha', maxManual }) {
   const toast = useToast();
   const [p, setP] = useState(guardados);
   const [guardando, setGuardando] = useState(false);
@@ -219,8 +243,8 @@ function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana }) {
   };
   return (
     <>
-      <GrupoCampos titulo="Los premios del ranking semanal" ayuda="Cada lunes a las 00:15 se premia la semana que terminó (más retos del día hechos; si empatan, menos movimientos). Con marca, el cupón solo descuenta sus productos.">
-        <Interruptor etiqueta="Entregar premios cada lunes" activo={p.activo} onChange={(v) => setP((x) => ({ ...x, activo: v }))} />
+      <GrupoCampos titulo={textos.titulo} ayuda={textos.ayuda}>
+        <Interruptor etiqueta={textos.interruptor} activo={p.activo} onChange={(v) => setP((x) => ({ ...x, activo: v }))} />
         {p.puestos.map((x, i) => (
           <article key={i} className={s.premio}>
             <header className={s.premioCabeza}>
@@ -237,10 +261,12 @@ function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana }) {
         ))}
         <Boton variante="secundario" icono={<Plus aria-hidden="true" />} onClick={() => setP((v) => ({ ...v, puestos: [...v.puestos, nuevoPuesto(v.puestos)] }))}>Agregar un premio</Boton>
       </GrupoCampos>
-      {onPremiarSemana && (
-        <GrupoCampos titulo="Premiar una semana a mano" ayuda="Si el lunes no se entregó (o para probar). Elige el lunes de esa semana; si ya estaba premiada, no se repite.">
+      {onPremiar && (
+        <GrupoCampos titulo={textos.manualTitulo} ayuda={textos.manualAyuda}>
           <div className={s.agregar}>
-            <CampoFecha etiqueta="El lunes de la semana" valor={semana} onCambiar={setSemana} />
+            {tipoManual === 'mes'
+              ? <Campo etiqueta={textos.manualEtiqueta} type="month" max={maxManual} value={semana} onChange={(e) => setSemana(e.target.value)} />
+              : <CampoFecha etiqueta={textos.manualEtiqueta} valor={semana} onCambiar={setSemana} />}
             <Boton variante="secundario" icono={<Gift aria-hidden="true" />} disabled={!semana} onClick={() => setPreguntar(true)}>Premiar</Boton>
           </div>
         </GrupoCampos>
@@ -248,14 +274,14 @@ function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana }) {
       <BarraGuardar visible={!mismo(p, guardados)} texto={problema || undefined} puedeGuardar={!problema} onDescartar={() => setP(guardados)} onGuardar={guardar} guardando={guardando} />
       <Confirmar
         abierta={preguntar}
-        titulo="¿Premiar esa semana?"
-        texto={`Se entregan los cupones del ranking de la semana del ${fechaLarga(semana)}, con los premios guardados.`}
+        titulo={textos.confirmarTitulo}
+        texto={textos.confirmarTexto(semana)}
         confirmar="Premiar"
         onCancelar={() => setPreguntar(false)}
         onConfirmar={async () => {
           try {
-            const r = await onPremiarSemana(semana);
-            toast(r?.ya ? { tipo: 'aviso', titulo: 'Esa semana ya estaba premiada' } : r?.sinPremios ? { tipo: 'aviso', titulo: 'No hay premios', texto: 'No hay premios guardados o están apagados.' } : { tipo: 'exito', titulo: 'Semana premiada', texto: `${entero(r?.entregados)} cupones entregados.` });
+            const r = await onPremiar(semana);
+            toast(r?.ya ? { tipo: 'aviso', titulo: textos.ya } : r?.sinPremios ? { tipo: 'aviso', titulo: 'No hay premios', texto: 'No hay premios guardados o están apagados.' } : { tipo: 'exito', titulo: textos.hecho, texto: `${entero(r?.entregados)} cupones entregados.` });
           } catch (err) {
             toast({ tipo: 'error', titulo: 'No se pudo premiar', texto: errorDe(err) });
           } finally {
@@ -381,6 +407,133 @@ export function PaginaBolitasAdmin({
                 </BloqueMetrica>
                 <BloqueMetrica titulo="Hacia la tienda, por marca">
                   <ListaBarras filas={Object.entries(m.clicsMarca).sort((a, b) => b[1] - a[1]).map(([id, n]) => ({ id, nombre: nombreMarca(id), valor: n, texto: entero(n) }))} tono="menta" vacio="Todavía no hay datos." />
+                </BloqueMetrica>
+              </ColumnasMetricas>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── La Pichanga de Kapi ───────────────────────────────── */
+
+const PESTANAS_PICHANGA = [
+  { id: 'resultados', texto: 'Cifras' },
+  { id: 'premios', texto: 'Premios del mes' },
+];
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const nombreMes = (mes) => (/^\d{4}-\d{2}$/.test(mes || '') ? `${MESES[Number(mes.slice(5, 7)) - 1]} de ${mes.slice(0, 4)}` : mes || '');
+const mesAnterior = (mes) => {
+  const [y, m] = String(mes || '').split('-').map(Number);
+  if (!y || !m) return '';
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+};
+
+const TEXTOS_PREMIOS_PICHANGA = {
+  titulo: 'Los premios de los goleadores del mes',
+  ayuda: 'El día 1 a las 00:20 se premia el mes que terminó (más goles; si empatan, quien llegó antes). Cada nivel cuenta una vez por día. Con marca, el cupón solo descuenta sus productos.',
+  interruptor: 'Entregar premios cada mes',
+  manualTitulo: 'Premiar un mes a mano',
+  manualAyuda: 'Si el día 1 no se entregó (o para probar). Solo meses que ya terminaron; si ya estaba premiado, no se repite.',
+  manualEtiqueta: 'El mes',
+  confirmarTitulo: '¿Premiar ese mes?',
+  confirmarTexto: (mes) => `Se entregan los cupones a los goleadores de ${nombreMes(mes)}, con los premios guardados.`,
+  ya: 'Ese mes ya estaba premiado',
+  hecho: 'Mes premiado',
+};
+
+/**
+ * La Pichanga de Kapi (/admin/pichanga): cómo va (partidas, retos, goles,
+ * jugadores, dónde se traban, el vestuario y los partidos contra Michi, los
+ * goleadores del mes) y los premios de los goleadores de cada mes.
+ *  - pestana + onPestana · marcas: [{ valor, texto }] · cargando · error · onReintentar
+ *  - metricas: lo de adminPichanga('metricas') · dias + onDias · cargandoMetricas
+ *  - premios: premiosBolitasDesde · premiados: [{ mes, entregados, jugadores }]
+ *  - onGuardarPremios(premios) · onPremiarMes(mes) → { ya, sinPremios, entregados }
+ *  - nombres: { equipo: { id: nombre } } (por defecto, los del juego)
+ */
+export function PaginaPichangaAdmin({
+  pestana: pestanaFuera, onPestana, marcas = [], cargando, error, onReintentar,
+  metricas, dias = 14, onDias, cargandoMetricas = false,
+  premios = { activo: false, puestos: [] }, premiados = [], onGuardarPremios, onPremiarMes, nombres = NOMBRES_PICHANGA,
+}) {
+  const [pestanaDentro, setPestanaDentro] = useState('resultados');
+  const pestana = pestanaFuera || pestanaDentro;
+  const ir = (p) => (onPestana ? onPestana(p) : setPestanaDentro(p));
+  const m = metricas ? metricasPichanga(metricas, nombres) : null;
+  const espera = cargandoMetricas || !m;
+  const mesActual = m?.mes || metricas?.mes || '';
+  return (
+    <div className={s.pagina} data-componente="PaginaPichangaAdmin">
+      <CabezaAdmin icono="pichanga" tono="menta" titulo="La Pichanga de Kapi" subtitulo="El fútbol de chapas: cuánto se juega, dónde se traban, el vestuario y los premios de los goleadores del mes." />
+      <div className={s.pestanas}><Pestanas etiqueta="Partes de la Pichanga" opciones={PESTANAS_PICHANGA} valor={pestana} onChange={ir} /></div>
+      {error ? (
+        <Aviso tipo="error" titulo="No pudimos cargar la Pichanga" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
+      ) : pestana === 'premios' ? (
+        cargando ? <EsqueletoFormulario campos={3} /> : (
+          <>
+            <Premios
+              guardados={premios}
+              marcas={marcas}
+              onGuardar={onGuardarPremios}
+              onPremiarSemana={onPremiarMes}
+              textos={TEXTOS_PREMIOS_PICHANGA}
+              tipoManual="mes"
+              maxManual={mesAnterior(mesActual) || undefined}
+            />
+            {premiados.length > 0 && (
+              <BloqueMetrica titulo="Meses ya premiados">
+                <ListaBarras
+                  filas={premiados.map((x) => ({ id: x.mes, nombre: nombreMes(x.mes), valor: x.entregados || 0.0001, texto: `${entero(x.entregados)} ${x.entregados === 1 ? 'cupón' : 'cupones'} · ${entero(x.jugadores)} ${x.jugadores === 1 ? 'goleador' : 'goleadores'}` }))}
+                  tono="menta"
+                />
+              </BloqueMetrica>
+            )}
+          </>
+        )
+      ) : (
+        <>
+          <div className={s.periodo}>
+            <ElegirUno etiqueta="Periodo" opciones={[{ valor: 7, texto: '7 días' }, { valor: 14, texto: '14 días' }, { valor: 30, texto: '30 días' }]} valor={dias} onElegir={(v) => v && onDias?.(v)} />
+          </div>
+          <p className={s.nota}>Solo cuenta a quienes juegan con sesión (las partidas que comprueba el servidor). Las cifras por día empiezan el 9 de noviembre de 2026; los jugadores y los rankings, desde el inicio.</p>
+          <FilaCifras etiqueta="Resultados de la Pichanga">
+            <Cifra nombre="Niveles ganados" valor={entero(m?.niveles)} cargando={espera} />
+            <Cifra nombre="Retos del día" valor={entero(m?.retos)} tono="exito" cargando={espera} />
+            <Cifra nombre="Goles" valor={entero(m?.goles)} tono="aviso" cargando={espera} />
+            <Cifra nombre="Monedas entregadas" valor={entero(m?.monedas)} tono="neutro" cargando={espera} />
+            <Cifra nombre="Jugadores" valor={entero(m?.jugadores)} ayuda={m ? `${entero(m.nuevos)} ${m.nuevos === 1 ? 'nuevo' : 'nuevos'} en el periodo` : undefined} tono="cielo" cargando={espera} />
+            <Cifra nombre="Volvieron otro día" valor={m?.vuelven == null ? '—' : `${m.vuelven} %`} ayuda="De quienes empezaron en 90 días" tono="violeta" cargando={espera} />
+          </FilaCifras>
+          {m && (
+            <>
+              <GraficoTendencia
+                titulo="Por día"
+                forma="barras"
+                datos={m.porDia.map((d) => ({ etiqueta: d.fecha.slice(8, 10) + '/' + d.fecha.slice(5, 7), valores: { niveles: d.niveles, retos: d.retos } }))}
+                series={[{ id: 'niveles', nombre: 'Niveles', tono: 'violeta' }, { id: 'retos', nombre: 'Retos', tono: 'menta' }]}
+              />
+              <ColumnasMetricas>
+                <BloqueMetrica titulo={`Goleadores de ${nombreMes(m.mes)}`} ayuda="Los que ganan si hay premios del mes.">
+                  <ListaBarras numerada filas={m.goleadores.map((g, i) => ({ id: `${i}`, nombre: g.nombre, valor: g.goles, texto: `${entero(g.goles)} ${g.goles === 1 ? 'gol' : 'goles'}` }))} vacio="Nadie metió goles este mes todavía." />
+                </BloqueMetrica>
+                <BloqueMetrica titulo="Los que más avanzaron" ayuda="El nivel más alto que pasó cada uno.">
+                  <ListaBarras numerada tono="menta" filas={m.top.map((g, i) => ({ id: `${i}`, nombre: g.nombre, valor: g.nivelMax, texto: `Nivel ${g.nivelMax}` }))} vacio="Todavía nadie pasó un nivel." />
+                </BloqueMetrica>
+                <BloqueMetrica titulo="Dónde se traban" ayuda="El nivel más alto de quienes no juegan hace 3 días o más.">
+                  <ListaBarras filas={m.trabados.map((t) => ({ id: t.nivel, nombre: `Nivel ${t.nivel}`, valor: t.n, texto: `${entero(t.n)} ${t.n === 1 ? 'jugador' : 'jugadores'}` }))} vacio="Todavía no hay datos." />
+                </BloqueMetrica>
+                <BloqueMetrica titulo="Hasta dónde llegan" ayuda="Por mundo, según el nivel más alto de cada jugador.">
+                  <ListaBarras tono="menta" filas={m.mundos.map((x) => ({ id: x.mundo, nombre: `Mundo ${x.mundo} (niveles ${(x.mundo - 1) * 20 + 1} a ${x.mundo * 20})`, valor: x.n, texto: `${entero(x.n)} ${x.n === 1 ? 'jugador' : 'jugadores'}` }))} vacio="Todavía no hay datos." />
+                </BloqueMetrica>
+                <BloqueMetrica titulo="El equipo que más usan" ayuda="El que tiene puesto cada cuenta.">
+                  <ListaBarras filas={m.equipos.map((x) => ({ id: x.id, nombre: x.nombre, valor: x.n, texto: entero(x.n) }))} vacio="Todavía no hay datos." />
+                </BloqueMetrica>
+                <BloqueMetrica titulo="Contra Michi" ayuda={m.partidosJugados ? `${entero(m.partidosJugados)} partidos jugados; Michi ganó el ${m.ganaMichi} %. Por la dificultad que tiene puesta cada uno:` : 'Por la dificultad que tiene puesta cada uno.'}>
+                  <ListaBarras tono="menta" filas={m.dificultad.map((x) => ({ id: x.id, nombre: x.nombre, valor: x.n, texto: `${entero(x.n)} ${x.n === 1 ? 'persona' : 'personas'}` }))} vacio="Nadie jugó contra Michi todavía." />
                 </BloqueMetrica>
               </ColumnasMetricas>
             </>

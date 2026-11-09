@@ -4,8 +4,9 @@ import { getAllDailyWords, setDailyWord, deleteDailyWord, palabraAutomatica, con
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { getBrands } from '../../services/brands';
 import { adminBolitas, listarPatrociniosBolitas, leerMundosBolitas, leerPremiosBolitas } from '../../services/firebase/ballSort';
+import { adminPichanga } from '../../services/firebase/pichanga';
 import { limaTodayStr } from '../../utils/fechaLima';
-import { PaginaPalabraAdmin, PaginaBolitasAdmin } from '../../componentes/kit/paginas/admin/Juegos';
+import { PaginaPalabraAdmin, PaginaBolitasAdmin, PaginaPichangaAdmin } from '../../componentes/kit/paginas/admin/Juegos';
 import { palabraDiaDesde, palabrasConAutomaticas, patrocinioDesde, premiosBolitasDesde, premiosBolitasAFirestore } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useInvalidar } from './comun';
 
@@ -154,6 +155,56 @@ export function BolitasDelPanel() {
       dias={dias}
       onDias={setDias}
       cargandoMetricas={metricasQ.isLoading}
+    />
+  );
+}
+
+/* ── La Pichanga de Kapi ───────────────────────────────── */
+
+const PREMIOS_PICHANGA = ['admin-pichanga-premios'];
+
+/**
+ * /admin/pichanga: todo con adminPichanga (adminPichangaSecure): las cifras
+ * del periodo y los premios de los goleadores del mes (como los de las
+ * Bolitas, con las marcas activas y visibles para el cupón de una marca).
+ */
+export function PichangaDelPanel() {
+  const invalidar = useInvalidar();
+  const [pestana, setPestana] = useState('resultados');
+  const [dias, setDias] = useState(14);
+  const marcasQ = useQuery({ queryKey: ['admin-bolitas-marcas'], queryFn: async () => (await sinError(getBrands())) || [] });
+  const metricasQ = useQuery({ queryKey: ['admin-pichanga-metricas', dias], queryFn: () => adminPichanga('metricas', { dias }) });
+  const premiosQ = useQuery({ queryKey: PREMIOS_PICHANGA, queryFn: () => adminPichanga('leerPremios'), enabled: pestana === 'premios' });
+
+  const marcas = useMemo(() => (marcasQ.data || []).filter((m) => m.active !== false && m.visible !== false), [marcasQ.data]);
+  const opcionesMarca = useMemo(() => marcas.map((m) => ({ valor: m.id, texto: m.name })), [marcas]);
+  // Premios copia lo guardado al cambiar: tiene que ser el mismo objeto entre render y render.
+  const premios = useMemo(() => premiosBolitasDesde(premiosQ.data?.premios), [premiosQ.data]);
+  const deLaPestana = pestana === 'premios' ? premiosQ : metricasQ;
+
+  return (
+    <PaginaPichangaAdmin
+      pestana={pestana}
+      onPestana={setPestana}
+      marcas={opcionesMarca}
+      cargando={deLaPestana.isLoading}
+      error={errorDe(deLaPestana, 'No se pudo cargar.')}
+      onReintentar={() => deLaPestana.refetch()}
+      metricas={metricasQ.data}
+      dias={dias}
+      onDias={setDias}
+      cargandoMetricas={metricasQ.isLoading || metricasQ.isFetching}
+      premios={premios}
+      premiados={premiosQ.data?.premiados || []}
+      onGuardarPremios={async (p) => {
+        await adminPichanga('guardarPremios', premiosBolitasAFirestore(p, marcas));
+        await invalidar(PREMIOS_PICHANGA);
+      }}
+      onPremiarMes={async (mes) => {
+        const r = await adminPichanga('premiarMes', { mes });
+        await invalidar(PREMIOS_PICHANGA);
+        return r;
+      }}
     />
   );
 }

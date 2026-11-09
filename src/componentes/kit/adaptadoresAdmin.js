@@ -102,6 +102,7 @@ export const MENU_ADMIN = [
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: PREMIOS },
       { to: '/admin/ruleta', texto: 'La Ruleta de Kapi', icono: 'ruleta', permiso: PREMIOS },
       { to: '/admin/bolitas', texto: 'Las Bolitas de Kapi', icono: 'bolitas', permiso: PREMIOS },
+      { to: '/admin/pichanga', texto: 'La Pichanga de Kapi', icono: 'pichanga', permiso: PREMIOS },
     ],
   },
   {
@@ -3206,6 +3207,45 @@ export function erroresDePatrocinio(d = {}, lista = [], id = null, hoy = '') {
     cupo: Number(d.cupo) >= 1 && Number(d.cupo) <= 1000 ? undefined : 'De 1 a 1000 cupones.',
     cuponValor: cupon.valor,
     cuponVigencia: cupon.vigencia,
+  };
+}
+
+/**
+ * Las cifras de /admin/pichanga (adminPichanga('metricas')) → lo que muestra
+ * la página: totales del periodo, por día, jugadores (como las Bolitas),
+ * hasta dónde llegan (por mundo de 20 niveles), el vestuario y los partidos.
+ *  - nombres: { equipo: { id: nombre } } para el vestuario
+ */
+export function metricasPichanga(data = {}, nombres = {}) {
+  const porDia = [...(data?.porDia || [])].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  const suma = (campo) => porDia.reduce((t, d) => t + (Number(d[campo]) || 0), 0);
+  const j = data?.jugadores || {};
+  const parte = (x = {}) => (x.base ? Math.round((x.cantidad / x.base) * 100) : null);
+  const mundos = {};
+  Object.entries(data?.llegan || {}).forEach(([nivel, n]) => {
+    const mundo = Math.ceil(Number(nivel) / 20) || 1;
+    mundos[mundo] = (mundos[mundo] || 0) + n;
+  });
+  const partidos = data?.partidos || {};
+  const contar = (obj, nombre) => Object.entries(obj || {}).sort((a, b) => b[1] - a[1]).map(([id, n]) => ({ id, nombre: nombre(id), n }));
+  const DIFICULTAD = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
+  return {
+    partidas: suma('partidas'), niveles: suma('niveles'), retos: suma('retos'), goles: suma('goles'), monedas: suma('monedas'), nuevos: suma('nuevos'),
+    jugadores: Number(data?.totalJugadores) || 0,
+    recientes: Number(j.jugadores) || 0,
+    vuelven: parte(j.vuelven),
+    siguen7: parte(j.siguen7),
+    trabados: Object.entries(j.trabados || {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([nivel, n]) => ({ nivel, n })),
+    mundos: Object.entries(mundos).sort((a, b) => Number(a[0]) - Number(b[0])).map(([mundo, n]) => ({ mundo, n })),
+    equipos: contar(data?.equipos, (id) => nombres.equipo?.[id] || id),
+    dificultad: contar(data?.dificultad, (id) => DIFICULTAD[id] || id),
+    partidosJugados: Number(partidos.jugados) || 0,
+    partidosGanados: Number(partidos.ganados) || 0,
+    ganaMichi: partidos.jugados ? 100 - Math.round(((Number(partidos.ganados) || 0) / partidos.jugados) * 100) : null,
+    goleadores: data?.goleadores || [],
+    top: data?.top || [],
+    mes: data?.mes || '',
+    porDia: porDia.map((d) => ({ fecha: d.fecha, niveles: Number(d.niveles) || 0, retos: Number(d.retos) || 0, goles: Number(d.goles) || 0 })),
   };
 }
 

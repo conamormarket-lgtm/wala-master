@@ -809,3 +809,20 @@ gol cuando el centro cruza la línea (en `paso`), así lo que se ve y lo que
 cuenta coinciden. La pelota que está dentro del arco se dibuja antes que la
 red (los hilos y el travesaño quedan por delante) y un poco más adelante del
 fondo. Niveles y retos resueltos otra vez con esta regla.
+
+## La Pichanga de Kapi: el admin (2026-11-09)
+
+`/admin/pichanga` (Premios y juegos, permiso `premios`), todo por
+`adminPichangaSecure`:
+- **Cifras**: por día desde `pichangaStats/{fecha}` (cada partida comprobada
+  suma partidas, niveles o retos, goles, monedas, nuevos y `porNivel`; empieza
+  el 2026-11-09), jugadores como en las Bolitas (`metricasJugadores`: vuelven,
+  siguen, dónde se traban), hasta dónde llegan por mundo, el equipo puesto y
+  los partidos contra Michi (de `pichangaProgreso`, solo cuentas con progreso
+  guardado), y los goleadores del mes y el top de niveles.
+- **Premios del mes**: `pichangaConfig/premios` con los mismos puestos y
+  cupones que los premios semanales de las Bolitas (la pieza `Premios` ahora
+  recibe sus textos). `premiarGoleadoresPichanga` premia el día 1 a las 00:20
+  el mes que terminó (cupón `pichanga_mes_{mes}_{uid}`, marca
+  `pichangaPremios/{mes}`); a mano, solo meses ya terminados. El talón del
+  cupón dice "Goleadores de La Pichanga".

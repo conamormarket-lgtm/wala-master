@@ -33,3 +33,9 @@ export const leerProgresoPichanga = async () => (await llamar('progresoPichangaS
 
 /** Guarda el progreso (se une con lo de la cuenta) → el progreso unido. */
 export const guardarProgresoPichanga = async (progreso) => (await llamar('progresoPichangaSecure', { progreso })).progreso || null;
+
+/**
+ * /admin/pichanga (solo admin): 'metricas' { dias } · 'leerPremios' ·
+ * 'guardarPremios' { activo, puestos } · 'premiarMes' { mes: 'AAAA-MM' }.
+ */
+export const adminPichanga = (accion, datos = {}) => llamar('adminPichangaSecure', { accion, ...datos });

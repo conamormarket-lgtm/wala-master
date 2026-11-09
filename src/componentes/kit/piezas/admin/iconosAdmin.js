@@ -1,4 +1,5 @@
 import {
+  Goal,
   Home, Package, CreditCard, BookOpen, LayoutGrid, Shirt, Tag, Layers, Store, SlidersHorizontal,
   Truck, Target, BarChart3, Eye, Users, MessageCircle, Wrench, Share2, Gift, ListChecks,
   Trophy, Bell, CalendarHeart, ClipboardList, Megaphone, Ticket, Repeat, Link2, MessageSquare, PanelsTopLeft,
@@ -50,6 +51,7 @@ export const ICONOS_ADMIN = {
   palabra: SpellCheck,
   ruleta: Disc3,
   bolitas: FlaskConical,
+  pichanga: Goal,
   ajustes: Settings,
   admins: ShieldCheck,
   whatsapp: MessageCircleMore,
