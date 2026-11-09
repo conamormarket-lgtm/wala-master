@@ -171,21 +171,43 @@ function VestuarioPichanga({ abierto, onCerrar, progreso, onElegir }) {
   );
 }
 
-/** Lo que se acaba de desbloquear, en el resultado. */
-function Desbloqueos({ lista }) {
+/**
+ * Lo que se acaba de desbloquear, en el resultado: va arriba de todo (es la
+ * sorpresa), con un sello "¡Nuevo!", la muestra grande y un botón para
+ * ponérselo ahí mismo.
+ *  - lista: [{ clase, item }] · puestos: { equipo, pelota, estadio } (los ids puestos)
+ *  - onPoner(clase, id)
+ */
+function Desbloqueos({ lista, puestos = {}, onPoner }) {
   if (!lista?.length) return null;
   return (
-    <div className={c.desbloqueos} data-componente="DesbloqueosPichanga">
-      <p className={c.desbloqueosTitulo}><Gift aria-hidden="true" /> <Texto>¡Desbloqueaste algo nuevo para tu vestuario!</Texto></p>
+    <section className={c.desbloqueos} data-componente="DesbloqueosPichanga" aria-label="Lo nuevo de tu vestuario">
+      <span className={c.desbloqueosSello}><Texto>¡Nuevo!</Texto></span>
+      <p className={c.desbloqueosTitulo}>
+        <Texto>{lista.length === 1 ? 'Desbloqueaste algo para tu vestuario' : `Desbloqueaste ${lista.length} cosas para tu vestuario`}</Texto>
+      </p>
       <ul>
-        {lista.map(({ clase, item }) => (
-          <li key={`${clase}-${item.id}`}>
-            {clase === 'estadio' ? <MuestraEstadio estadio={item} tamano={40} /> : <MuestraPichanga tipo={clase === 'pelota' ? 'pelota' : 'chapa'} item={item} tamano={40} />}
-            <span><Texto>{`${item.nombre} (${CLASE[clase]})`}</Texto></span>
-          </li>
-        ))}
+        {lista.map(({ clase, item }) => {
+          const puesto = puestos[clase] === item.id;
+          return (
+            <li key={`${clase}-${item.id}`} className={c.desbloqueo}>
+              <span className={c.desbloqueoMuestra}>
+                {clase === 'estadio' ? <MuestraEstadio estadio={item} tamano={64} /> : <MuestraPichanga tipo={clase === 'pelota' ? 'pelota' : 'chapa'} item={item} tamano={64} />}
+              </span>
+              <span className={c.desbloqueoTexto}>
+                <small><Texto>{CLASE[clase]}</Texto></small>
+                <strong><Texto>{item.nombre}</Texto></strong>
+              </span>
+              {onPoner && (
+                <button type="button" className={c.desbloqueoPoner} onClick={() => onPoner(clase, item.id)} disabled={puesto} aria-pressed={puesto}>
+                  {puesto ? <><Check aria-hidden="true" /> <Texto>Puesto</Texto></> : <><Shirt aria-hidden="true" /> <Texto>Póntelo</Texto></>}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
-    </div>
+    </section>
   );
 }
 
@@ -1063,7 +1085,7 @@ export function PaginaPichanga({
             </>
           )}
         >
-          <Desbloqueos lista={finPartido.desbloqueos} />
+          <Desbloqueos lista={finPartido.desbloqueos} puestos={prog} onPoner={elegirPrenda} />
         </ResultadoJuego>
       ) : (
         <ResultadoJuego
@@ -1112,6 +1134,7 @@ export function PaginaPichanga({
             </>
           )}
         >
+          <Desbloqueos lista={logro?.desbloqueos} puestos={prog} onPoner={elegirPrenda} />
           {logro?.cofre && (
             <div className={s.cofre} data-componente="CofrePichanga">
               <Gift aria-hidden="true" className={s.cofreIcono} />
@@ -1124,7 +1147,6 @@ export function PaginaPichanga({
             </div>
           )}
           {premio && <PremioJuego {...premio} urlLogin={urlLogin} />}
-          <Desbloqueos lista={logro?.desbloqueos} />
         </ResultadoJuego>
       )}
     </>

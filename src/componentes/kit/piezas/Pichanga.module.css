@@ -343,44 +343,147 @@
 }
 
 /* Lo desbloqueado, en el resultado. */
+/* Lo nuevo del vestuario, en el resultado: una tarjeta con el borde del
+   degradado del logo, un sello "¡Nuevo!" y la muestra grande. Entra una vez
+   (sin bucles) y el botón brilla solo al pasar o tocar. */
 .desbloqueos {
+  position: relative;
   display: grid;
-  gap: 0.5rem;
-  padding: 0.8rem;
-  border-radius: 16px;
-  background: color-mix(in srgb, #8b5cf6 10%, var(--color-surface));
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+  padding: 1.15rem 0.9rem 0.9rem;
+  border: 2px solid transparent;
+  text-align: left;
+  border-radius: 20px;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899)) border-box;
+  animation: desbloqueoEntra 0.6s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.desbloqueosSello {
+  position: absolute;
+  top: -0.85rem;
+  left: 0.9rem;
+  padding: 0.2em 0.7em 0.25em;
+  border: 2px solid #fff;
+  border-radius: 10px 18px 18px 18px;
+  background: var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899));
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 rgba(76, 29, 149, 0.45);
+  box-shadow: 0 6px 12px -8px rgba(76, 29, 149, 0.9);
+  transform: rotate(-4deg);
 }
 
 .desbloqueosTitulo {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   margin: 0;
-  font-weight: 700;
-}
-
-.desbloqueosTitulo svg {
-  width: 18px;
-  height: 18px;
-  color: #7c3aed;
+  font-family: var(--fuente-marca);
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .desbloqueos ul {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.55rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.desbloqueos li {
+.desbloqueo {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.9rem;
+  gap: 0.75rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, #8b5cf6 9%, var(--color-surface));
+}
+
+.desbloqueoMuestra {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.desbloqueoTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.desbloqueoTexto small {
+  color: #7c3aed;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.desbloqueoTexto strong {
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.desbloqueoPoner {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.desbloqueoPoner svg {
+  width: 16px;
+  height: 16px;
+}
+
+.desbloqueoPoner:hover:not(:disabled),
+.desbloqueoPoner:focus-visible {
+  box-shadow: 0 0 0 4px color-mix(in srgb, #8b5cf6 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.desbloqueoPoner:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.desbloqueoPoner:disabled {
+  background: color-mix(in srgb, #16a34a 14%, var(--color-surface));
+  color: #15803d;
+  cursor: default;
+}
+
+@keyframes desbloqueoEntra {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .desbloqueos {
+    animation: none;
+  }
+
   .temblor .cancha {
     animation: none;
   }
