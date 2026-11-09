@@ -7920,18 +7920,9 @@ const SORTEO_CONTADOR_SHARDS = 10;
 // strings limpios + `nombre` (nombre completo listo para mostrar). NO valida
 // obligatoriedad: cada CF decide qué campos exige. Se usa tanto en la
 // participación gratis como en la compra de tickets para capturar el lead.
-// ¿La llamada viene de la app (Capacitor)? La app corre en https://localhost
-// (Android) o capacitor://localhost (iOS); la web, en wala.pe (o en un origen
-// con puerto, en desarrollo). Antes bastaba con que el navegador mandara
-// origenApp: true, y cualquiera lo ponía desde la web; ahora además tiene que
-// venir del origen de la app, que un navegador no puede falsear. Sin App Check
-// no resiste una llamada armada fuera del navegador.
-const ORIGENES_APP = new Set(["https://localhost", "capacitor://localhost"]);
-function vieneDeLaApp(data, context) {
-  const cabeceras = (context && context.rawRequest && context.rawRequest.headers) || {};
-  const origen = String(cabeceras.origin || "").toLowerCase();
-  return Boolean(data && data.origenApp === true) && ORIGENES_APP.has(origen);
-}
+// ¿La llamada viene de la app? La de antes (Capacitor) por su Origin; la de
+// ahora (Expo) llama sin Origin desde el SDK nativo. Ver ./origenApp.js.
+const { vieneDeLaApp } = require("./origenApp");
 
 function sanitizarDatosSorteo(datos) {
   const d = datos && typeof datos === "object" ? datos : {};
