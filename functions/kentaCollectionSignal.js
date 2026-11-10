@@ -14,7 +14,9 @@ function instantVersion(value) {
 
 function projection(data, deleted) {
   const debt = data.deudaTotal;
+  const origin = typeof data.whatsappOrigen === 'string' ? data.whatsappOrigen.trim() : '';
   return {
+    sales_origin: origin && origin.length <= 120 ? origin : null,
     phone: typeof data.clienteContacto === 'string' || typeof data.clienteContacto === 'number'
       ? String(data.clienteContacto).slice(0, 40) : '',
     debt: ((typeof debt === 'number' && Number.isFinite(debt)) || typeof debt === 'string') && String(debt).length <= 64
