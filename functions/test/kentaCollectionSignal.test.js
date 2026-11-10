@@ -9,6 +9,14 @@ const data = { tenant_id: config.owner, clienteContacto: '900000000', deudaTotal
 const snap = (value) => ({ exists: value !== null, data: () => value, updateTime: stamp });
 const change = (before, after) => ({ before: snap(before), after: snap(after) });
 
+test('sales origin changes use trigger snapshots, with no extra database read', () => {
+  const signal = buildSignal(change(data, { ...data, whatsappOrigen: ' C.D. 01 ' }), ctx, config);
+  assert.equal(signal.order.sales_origin, 'C.D. 01');
+  assert.equal(buildSignal(change(null, { ...data, whatsappOrigen: 'x'.repeat(121) }), ctx, config).order.sales_origin, null);
+  assert.equal(buildSignal(change(null, { ...data, whatsappOrigen: { id: 'wrong' } }), ctx, config).order.sales_origin, null);
+  assert.equal(buildSignal(change(data, { ...data, whatsappOrigen: '' }), ctx, config), null);
+});
+
 test('ignores unrelated owner and irrelevant changes, without a database object', () => {
   assert.equal(buildSignal(change(null, { ...data, tenant_id: 'other' }), ctx, config), null);
   assert.equal(buildSignal(change(data, { ...data, comprobantes: ['large'], productos: [1], updatedAt: 'x' }), ctx, config), null);
