@@ -1345,7 +1345,11 @@ const CrearStudioPage = () => {
       ctx.textBaseline = 'middle';
       ctx.fillText(texto, x0 + w / 2, y0 + h / 2 + 0.5);
     };
-    lienzo.on('after:render', ({ ctx }) => {
+    lienzo.on('after:render', (evento) => {
+      // fabric 5 también lo dispara desde renderTop (al mover el mouse) sin
+      // el lienzo: ahí no hay nada que dibujar.
+      const ctx = evento?.ctx;
+      if (!ctx) return;
       const h = hoverRef.current;
       const hayHover = h && !h.group && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
       const guias = guiasRef.current;

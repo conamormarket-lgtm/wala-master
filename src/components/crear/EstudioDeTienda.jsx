@@ -1457,7 +1457,11 @@ const EstudioDeTienda = () => {
       ctx.textBaseline = 'middle';
       ctx.fillText(texto, x0 + w / 2, y0 + h / 2 + 0.5);
     };
-    lienzo.on('after:render', ({ ctx }) => {
+    lienzo.on('after:render', (evento) => {
+      // fabric 5 también lo dispara desde renderTop (al mover el mouse) sin
+      // el lienzo: ahí no hay nada que dibujar.
+      const ctx = evento?.ctx;
+      if (!ctx) return;
       // La zona elegida lleva su nombre encima (no mientras otra zona recibe lo arrastrado).
       const guiaElegida = zonaRef.current && !destinoZonaRef.current && nombreZonaRef.current
         ? lienzo.getObjects().find((o) => o.guiaZona === zonaRef.current) : null;
@@ -1732,7 +1736,9 @@ const EstudioDeTienda = () => {
       contenedor.removeEventListener('touchend', alSoltarDedos, true);
       contenedor.removeEventListener('touchcancel', alSoltarDedos, true);
       document.removeEventListener('focusin', alEnfocarOtraCosa);
-      lienzo.dispose();
+      // Al salir (p. ej. al ir al carrito), un fallo de fabric al cerrar el
+      // lienzo no tiene que tumbar la página siguiente.
+      try { lienzo.dispose(); } catch { /* el lienzo ya se iba */ }
       fabricRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
