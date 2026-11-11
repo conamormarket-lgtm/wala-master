@@ -62,8 +62,8 @@ export default function FlotantesDeLaTienda() {
   const conPildora = Boolean(user && userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey)
     && !sinPildora && !SIN_PILDORA.some((r) => pathname.startsWith(r));
 
-  // Semana de bienvenida: su píldora va en el lugar de la de la encuesta y
-  // abre el aviso grande (BienvenidaDeTienda). Discreta: la franja de arriba se quitó.
+  // Semana de bienvenida: su píldora va encima de la de la encuesta (las dos
+  // se ven) y abre el aviso grande (BienvenidaDeTienda). La franja de arriba se quitó.
   const semana = bienvenida?.fase?.estado === 'activa' && !SIN_PILDORA.some((r) => pathname.startsWith(r)) && !pathname.startsWith('/cuenta/referidos');
   const pildoraBienvenida = semana && (
     <PildoraRecompensa
@@ -78,15 +78,20 @@ export default function FlotantesDeLaTienda() {
     <PilaFlotante
       // Y en los minijuegos (modo juego): Walito y WhatsApp tapaban los tubos.
       ocultarEnCelular={CON_BOTON_FIJO.some((r) => pathname.startsWith(r)) || esRutaDeJuego(pathname)}
-      izquierda={pildoraBienvenida || (conPildora && (
-        <PildoraRecompensa
-          titulo="Gana 15 monedas"
-          texto="Completa tu perfil de regalos"
-          monedas={15}
-          to="/encuesta-suscripcion"
-          onCerrar={ocultarPildora}
-        />
-      ))}
+      izquierda={(pildoraBienvenida || conPildora) && (
+        <>
+          {conPildora && (
+            <PildoraRecompensa
+              titulo="Gana 15 monedas"
+              texto="Completa tu perfil de regalos"
+              monedas={15}
+              to="/encuesta-suscripcion"
+              onCerrar={ocultarPildora}
+            />
+          )}
+          {pildoraBienvenida}
+        </>
+      )}
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
       <Suspense fallback={null}><Kapi /></Suspense>

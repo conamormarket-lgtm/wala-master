@@ -14,7 +14,8 @@ import s from './Flotantes.module.css';
 /**
  * Pila de flotantes: abajo a la derecha, uno sobre otro (el primer hijo queda
  * abajo), por encima de la barra inferior en el celular. `izquierda` va
- * abajo a la izquierda (la píldora de recompensa).
+ * abajo a la izquierda (las píldoras de recompensa; varias, una sobre otra,
+ * la primera abajo).
  *  - contenida: dentro de un marco con su propio scroll (demo, editor) en vez
  *    de fija a la ventana.
  *  - ocultarEnCelular: en páginas que ya tienen su botón fijo abajo (la ficha

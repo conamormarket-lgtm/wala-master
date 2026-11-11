@@ -523,15 +523,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         )}
       </>
     ),
-    izquierda: ver('bienvenida') ? (
-      <Parte n="M10" nombre="PildoraRecompensa · onAbrir" bloque={false}>
-        <PildoraRecompensa icono="regalo" titulo="Tienes S/ 20.00 de regalo" texto="Vence en 4 d 7 h" onAbrir={() => setAvisoBienvenida(true)} />
-        <PopupBienvenida abierta={avisoBienvenida} onCerrar={() => setAvisoBienvenida(false)} venceMs={Date.now() + (4 * 24 + 7) * 3600 * 1000} saldo={20} pendiente={10} onInvitar={() => setAvisoBienvenida(false)} />
-      </Parte>
-    ) : conSesion && pildora && !enEncuesta && (
-      <Parte n="M10" nombre="PildoraRecompensa" bloque={false}>
-        <PildoraRecompensa titulo="Gana 15 monedas" texto="Completa tu perfil de regalos" monedas={15} to="/encuesta-suscripcion" onCerrar={() => setPildora(false)} />
-      </Parte>
+    // Las píldoras de la izquierda, una sobre otra (la primera abajo).
+    izquierda: (ver('bienvenida') || (conSesion && pildora && !enEncuesta)) && (
+      <>
+        {conSesion && pildora && !enEncuesta && (
+          <Parte n="M10" nombre="PildoraRecompensa" bloque={false}>
+            <PildoraRecompensa titulo="Gana 15 monedas" texto="Completa tu perfil de regalos" monedas={15} to="/encuesta-suscripcion" onCerrar={() => setPildora(false)} />
+          </Parte>
+        )}
+        {ver('bienvenida') && (
+          <Parte n="M10" nombre="PildoraRecompensa · onAbrir" bloque={false}>
+            <PildoraRecompensa icono="regalo" titulo="Tienes S/ 20.00 de regalo" texto="Vence en 4 d 7 h" onAbrir={() => setAvisoBienvenida(true)} />
+            <PopupBienvenida abierta={avisoBienvenida} onCerrar={() => setAvisoBienvenida(false)} venceMs={Date.now() + (4 * 24 + 7) * 3600 * 1000} saldo={20} pendiente={10} onInvitar={() => setAvisoBienvenida(false)} />
+          </Parte>
+        )}
+      </>
     ),
   };
 
