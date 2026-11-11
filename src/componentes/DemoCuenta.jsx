@@ -9,7 +9,7 @@ import {
 } from './kit';
 import { empresa } from '../config/empresa';
 import { TarjetaBorrarCuenta } from './kit/piezas/BorrarCuenta';
-import { TarjetaBienvenida } from './kit/piezas/Bienvenida';
+import { TarjetaBienvenida, PopupBienvenida } from './kit/piezas/Bienvenida';
 import { SE_BORRA, SE_CONSERVA } from '../config/legales/eliminarCuenta';
 import CREAR from './demo/crear.json';
 import { leerPrendaBase } from '../utils/prendaBase';
@@ -304,6 +304,7 @@ export function CuentaDemo({
   const [cupones, setCupones] = useState(CUPONES);
   const [misiones, setMisiones] = useState(MISIONES);
   const [grupos, setGrupos] = useState(() => gruposReferidosDemo(fotos));
+  const [popupBienvenida, setPopupBienvenida] = useState(false);
   const recompensas = useMemo(() => recompensasDemo(fotos), [fotos]);
   const [creaciones, setCreaciones] = useState(() => creacionesDemo());
   const [comunidad, setComunidad] = useState({ d1: 'publicada' });
@@ -528,6 +529,9 @@ export function CuentaDemo({
       <PaginaReferidos
         // La semana de bienvenida (piezas/Bienvenida): saldo, reloj y cada amigo.
         bienvenida={(
+          <>
+          <Boton variante="contorno" tamano="sm" onClick={() => setPopupBienvenida(true)}>Ver el aviso grande (popup)</Boton>
+          <PopupBienvenida abierta={popupBienvenida} onCerrar={() => setPopupBienvenida(false)} venceMs={Date.now() + (4 * 24 + 7) * 3600 * 1000} saldo={vacio ? 0 : 20} pendiente={vacio ? 0 : 10} onInvitar={() => setPopupBienvenida(false)} />
           <TarjetaBienvenida
             fase={{ estado: 'activa', venceMs: Date.now() + (4 * 24 + 7) * 3600 * 1000 }}
             saldo={vacio ? 0 : 20}
@@ -541,6 +545,7 @@ export function CuentaDemo({
             enPausa
             onInvitar={() => avisar('En el celular', 'Se abriría el menú de compartir del teléfono', 'info')}
           />
+          </>
         )}
         ranking={{ items: vacio ? [] : RANKING, cargando }}
         url="https://www.wala.pe/invitar/ISAAC7K"

@@ -1,8 +1,10 @@
-import React from 'react';
-import { Gift, Lock, Share2, ShoppingBag, Clock, Check, Hourglass, X, Undo2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Gift, Lock, Share2, ShoppingBag, Clock, Check, Hourglass, X, Undo2, UserPlus, BadgeDollarSign } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Interruptor } from '../Formulario';
+import { HojaInferior } from '../Feedback';
+import { CARAS_KAPI_MINI } from './Flotantes';
 import { Sello } from '../Marca';
 import { Texto } from '../Traduccion';
 import { soles } from '../TarjetaProducto';
@@ -217,5 +219,73 @@ export function TarjetaBienvenida({
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * El aviso grande de la semana de bienvenida: una ventana que no se cierra
+ * durante los primeros `espera` segundos (el botón cuenta hacia atrás). La
+ * tienda decide cada cuánto vuelve a salir (BienvenidaDeTienda).
+ *  - abierta · onCerrar · venceMs · saldo · pendiente · premio · minimo
+ *  - espera (5) · onInvitar · urlTienda · urlCondiciones
+ */
+export function PopupBienvenida({
+  abierta, onCerrar, venceMs, saldo = 0, pendiente = 0, premio = 10, minimo = 50, espera = 5,
+  onInvitar, urlTienda = '/tienda', urlCondiciones = '/bienvenida',
+}) {
+  const [resta, setResta] = useState(espera);
+  useEffect(() => {
+    if (!abierta) return undefined;
+    setResta(espera);
+    const id = window.setInterval(() => setResta((r) => {
+      if (r <= 1) { window.clearInterval(id); return 0; }
+      return r - 1;
+    }), 1000);
+    return () => window.clearInterval(id);
+  }, [abierta, espera]);
+  const bloqueada = resta > 0;
+  const conSaldo = saldo > 0;
+  return (
+    <HojaInferior
+      abierta={abierta}
+      onCerrar={onCerrar}
+      bloqueada={bloqueada}
+      titulo="Tu semana de bienvenida"
+      tamano="sm"
+      pie={(
+        <div className={s.popupPie}>
+          {conSaldo
+            ? <Boton to={urlTienda} bloque disabled={bloqueada} icono={<ShoppingBag aria-hidden="true" />} onClick={onCerrar}><Texto>Usar mi saldo</Texto></Boton>
+            : onInvitar && <Boton bloque disabled={bloqueada} icono={<Share2 aria-hidden="true" />} onClick={onInvitar}><Texto>Invitar amigos</Texto></Boton>}
+          <Boton variante="contorno" bloque disabled={bloqueada} onClick={onCerrar}>
+            <Texto>{bloqueada ? `Puedes cerrar en ${resta} s` : 'Entendido'}</Texto>
+          </Boton>
+        </div>
+      )}
+    >
+      <div className={s.popup} data-componente="PopupBienvenida">
+        <img className={s.popupKapi} src={CARAS_KAPI_MINI.feliz} alt="" width="96" height="96" />
+        <h2 className={s.popupTitulo}>
+          <Texto>{conSaldo ? `Tienes ${soles(saldo)} para tu primera compra` : 'Tu primera compra puede salir gratis'}</Texto>
+        </h2>
+        {venceMs && (
+          <span className={s.reloj}>
+            <Clock aria-hidden="true" />
+            <CuentaRegresiva hasta={isoDe(venceMs)} variante="frase" etiqueta="Vence en" textoFin="Tu plazo terminó" />
+          </span>
+        )}
+        <ol className={s.popupPasos}>
+          <li><Sello tamano={30} girar={-8}><UserPlus aria-hidden="true" /></Sello><span><Texto>Invita a un amigo nuevo con tu link.</Texto></span></li>
+          <li><Sello tamano={30} girar={6}><ShoppingBag aria-hidden="true" /></Sello><span><Texto>{`Se registra y compra ${soles(minimo)} o más en productos.`}</Texto></span></li>
+          <li><Sello tamano={30} girar={-8}><BadgeDollarSign aria-hidden="true" /></Sello><span><Texto>{`Tú ganas ${soles(premio)} para tu primera compra, y puedes juntar varios.`}</Texto></span></li>
+        </ol>
+        {pendiente > 0 && <p className={s.tarjetaTexto}><Texto>{`${soles(pendiente)} más esperan que se confirme el pago.`}</Texto></p>}
+        <PausaBienvenida que="monedas" />
+        <p className={s.tarjetaTexto}>
+          <Texto>Tus cupones también quedan en pausa. El saldo paga productos; el envío va aparte.</Texto>{' '}
+          <Enlace to={urlCondiciones} className={s.condiciones} onClick={bloqueada ? undefined : onCerrar}><Texto>Ver condiciones</Texto></Enlace>
+        </p>
+      </div>
+    </HojaInferior>
   );
 }

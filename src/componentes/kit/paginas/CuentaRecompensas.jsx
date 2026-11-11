@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Gift, Ticket, Sticker, History, ChevronDown, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send } from 'lucide-react';
+import { Gift, Ticket, Sticker, History, ChevronDown, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send, Lock } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio } from '../Feedback';
@@ -50,7 +50,7 @@ function Esqueletos({ n = 3, alto = 220, forma = 'tarjeta' }) {
  *  - urlCupones
  * Una sola confirmación abierta a la vez (abrir otra cierra la anterior).
  */
-export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, error = false, onReintentar, onCanjear, urlCupones = '/cuenta/cupones' }) {
+export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, error = false, onReintentar, onCanjear, urlCupones = '/cuenta/cupones', enPausa = false }) {
   const [aviso, setAviso] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
   const canjear = (r) => async () => {
@@ -71,6 +71,7 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
         subtitulo={<Texto>Canjea tus monedas por descuentos y premios.</Texto>}
         accion={<p className={s.saldo}><Moneda tamano={22} /><TextoResaltado resaltar={[miles(saldo)]}>{`${miles(saldo)} monedas`}</TextoResaltado></p>}
       />
+      {enPausa && <Aviso tipo="info" compacto icono={<Lock aria-hidden="true" />}>Tus monedas están en pausa durante tu semana de bienvenida: las sigues ganando, pero se canjean después de tu primera compra o cuando termine tu plazo.</Aviso>}
       {aviso && (
         <Aviso
           tipo={aviso.tipo}
@@ -124,7 +125,7 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
  *  - cargando · error · onReintentar · onCopiar(codigo): promesa
  *  - urlRuleta, urlCatalogo: de dónde salen más cupones
  */
-export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, urlPlayStore, cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo' }) {
+export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, urlPlayStore, cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo', enPausa = false }) {
   const activos = useMemo(() => cupones.filter((c) => c.estado === 'activo'), [cupones]);
   const pasados = useMemo(() => cupones.filter((c) => c.estado !== 'activo'), [cupones]);
   const lista = (cs) => <ul className={s.cupones}>{cs.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}</ul>;
@@ -136,6 +137,7 @@ export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, 
         titulo={<Texto>Mis cupones</Texto>}
         subtitulo={<Texto>Escribe el código en el carrito, en el paso de pago, para aplicar el descuento.</Texto>}
       />
+      {enPausa && <Aviso tipo="info" compacto icono={<Lock aria-hidden="true" />}>Tus cupones están en pausa durante tu semana de bienvenida: se pueden usar después de tu primera compra o cuando termine tu plazo.</Aviso>}
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar tus cupones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
           Revisa tu conexión e inténtalo de nuevo.

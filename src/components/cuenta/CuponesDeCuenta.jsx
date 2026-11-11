@@ -5,6 +5,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { getMisCupones, estadoCupon } from '../../services/cupones';
 import { recordMissionAction } from '../../services/loyalty';
 import { PaginaCupones } from '../../componentes/kit/paginas/CuentaRecompensas';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { cuponDesdeFirestore } from '../../componentes/kit/adaptadores';
 import { modoStickers, estadoStickers, agregarStickers } from '../../services/stickersWhatsapp';
 import { packStickers, archivoSticker, PLAY_STORE_WALA } from '../../constants/stickersWhatsapp';
@@ -101,8 +102,11 @@ export default function CuponesDeCuenta() {
     }
   };
 
+  // Semana de bienvenida: monedas y cupones en pausa.
+  const { bienvenida } = usePrimeraCompra();
   return (
     <PaginaCupones
+      enPausa={Boolean(bienvenida?.enPausa)}
       cupones={cupones}
       stickers={stickers}
       onAgregarStickers={agregar}

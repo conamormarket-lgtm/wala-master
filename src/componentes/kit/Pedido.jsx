@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
+import { PausaBienvenida } from './piezas/Bienvenida';
 import Boton from './Boton';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
@@ -341,12 +342,14 @@ export function BarraEnvioGratis({ actual, meta, compacta = false, estricto = fa
  *    cupón va en el checkout; sin esta prop no sale)
  *  - monedas: las que ganas con la compra · saldoMonedas: las que ya tienes
  *    ("podrás usarlas al pagar")
+ *  - bienvenida: { enPausa, saldo } la semana de bienvenida (piezas/Bienvenida):
+ *    las monedas no se usan y el saldo de bienvenida se usa al pagar
  *  - onPagar · textoBoton · deshabilitado · nota (bajo el botón; por defecto
  *    los medios de pago de la tienda: tarjeta con Culqi, y Yape, Plin o
  *    transferencia acordando por WhatsApp)
  */
 export function ResumenPedido({
-  subtotal, descuento = 0, envio = 0, monedas = 0, saldoMonedas = 0, cupones, onPagar,
+  subtotal, descuento = 0, envio = 0, monedas = 0, saldoMonedas = 0, cupones, onPagar, bienvenida,
   etiquetaSubtotal = 'Subtotal', textoBoton = 'Ir a pagar', deshabilitado = false, nota = 'Pago seguro con tarjeta, Yape, Plin o transferencia',
 }) {
   const etiquetaResumen = useTexto('Resumen del pedido');
@@ -417,7 +420,10 @@ export function ResumenPedido({
       {monedas > 0 && (
         <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${monedas} monedas`, monedas]}>{`Con esta compra ganas ${monedas} monedas`}</TextoResaltado></span></p>
       )}
-      {saldoMonedas > 0 && (
+      {bienvenida?.enPausa && bienvenida.saldo > 0 && (
+        <p className={s.ganas}><Gift aria-hidden="true" /><span><TextoResaltado resaltar={[soles(bienvenida.saldo)]}>{`Tienes ${soles(bienvenida.saldo)} de saldo de bienvenida: úsalo al pagar.`}</TextoResaltado></span></p>
+      )}
+      {bienvenida?.enPausa ? <PausaBienvenida que="monedas" /> : saldoMonedas > 0 && (
         <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${saldoMonedas} monedas`, saldoMonedas]}>{`Tienes ${saldoMonedas} monedas: podrás usarlas al pagar.`}</TextoResaltado></span></p>
       )}
       <Boton tamano="lg" bloque brillo={!deshabilitado} disabled={deshabilitado} onClick={onPagar}><Texto>{textoBoton}</Texto></Boton>

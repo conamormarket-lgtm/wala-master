@@ -7,6 +7,7 @@ import { recordMissionAction } from '../../services/loyalty';
 import { getMisCupones } from '../../services/cupones';
 import { textoPremio } from '../../utils/ruletaModel';
 import { PaginaCatalogo } from '../../componentes/kit/paginas/CuentaRecompensas';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { recompensaDesdeFirestore } from '../../componentes/kit/adaptadores';
 
 /*
@@ -105,8 +106,11 @@ export default function CatalogoDeCuenta() {
     return { codigo: res?.data?.coupon?.code };
   };
 
+  // Semana de bienvenida: monedas y cupones en pausa.
+  const { bienvenida } = usePrimeraCompra();
   return (
     <PaginaCatalogo
+      enPausa={Boolean(bienvenida?.enPausa)}
       recompensas={recompensas}
       saldo={Number(activeMainCoins) || 0}
       cargando={catalogo.isPending}

@@ -14,6 +14,7 @@ import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../../constants/envio';
 import { fuentesDeImagen } from '../common/OptimizedImage/OptimizedImage';
 import TarjetaDeProducto from '../producto/TarjetaDeProducto';
 import { PaginaCarrito } from '../../componentes/kit/paginas/Carrito';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { itemCarritoDesde } from '../../componentes/kit/adaptadores';
 
 /**
@@ -126,12 +127,15 @@ export default function CarritoDeTienda() {
     enabled: abajo,
   });
   // La tarjeta de la tienda (corazón, "Agregar rápido", la impresión).
+  // Semana de bienvenida: las monedas no se usan y el saldo sí (al pagar).
+  const { bienvenida } = usePrimeraCompra();
   const Tarjeta = useMemo(() => function TarjetaRecomendada({ producto }) {
     return <TarjetaDeProducto product={producto} categories={categorias} />;
   }, [categorias]);
 
   return (
     <PaginaCarrito
+      bienvenida={bienvenida?.enPausa ? { enPausa: true, saldo: bienvenida.saldo } : undefined}
       items={filas}
       onCantidad={updateQuantity}
       onQuitar={removeFromCart}
