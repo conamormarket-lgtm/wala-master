@@ -133,7 +133,7 @@ export default function CheckoutDeTienda() {
   const invitacion = useInvitacionReferido();
   const sesion = tieneCuenta(user);
   const queryClient = useQueryClient();
-  const { bienvenida: estadoBienvenida } = usePrimeraCompra();
+  const { bienvenida: estadoBienvenida, cargando: cargandoEstadoBienvenida } = usePrimeraCompra();
 
   // Lo que se paga: los elegidos. Al preparar el pago se congela la lista (el
   // carrito puede cambiar después: al terminar se quitan los pagados).
@@ -309,7 +309,7 @@ export default function CheckoutDeTienda() {
     itemsParaCupon().forEach((it, i) => { out[`l${i}`] = { productoId: it.productId, precio: it.precio, cantidad: it.qty }; });
     return out;
   }, [elegidos]); // eslint-disable-line react-hooks/exhaustive-deps
-  const { data: cotizacion } = useQuery({
+  const { data: cotizacion, isLoading: cotizando, isError: cotizacionFallo } = useQuery({
     queryKey: ['primeraCompraCotizar', user?.uid, JSON.stringify(productosCotizar)],
     queryFn: () => cotizarPrimeraCompra(productosCotizar),
     // Solo si está en su semana o llegó con una invitación (si no, no hay nada que mostrar).
@@ -317,7 +317,15 @@ export default function CheckoutDeTienda() {
     staleTime: 60_000,
     retry: 1,
   });
+  const enSemana = estadoBienvenida?.fase?.estado === 'activa';
   const bienvenida = useMemo(() => {
+    // Mientras no se sabe si está en su semana, monedas y cupón esperan
+    // (si no, se podían prender y después aparecía la pausa).
+    if (sesion && (cargandoEstadoBienvenida || cotizando)) return { cargando: true };
+    // Si no se pudo calcular el saldo en su semana: pausa sin saldo (el servidor rechazaría monedas y cupones).
+    if (!cotizacion && enSemana && cotizacionFallo) {
+      return { enPausa: true, saldo: 0, tope: 0, venceMs: estadoBienvenida?.fase?.venceMs };
+    }
     if (!cotizacion) return undefined;
     if (!cotizacion.enPausa && !cotizacion.invitador) return undefined;
     return {
@@ -327,7 +335,7 @@ export default function CheckoutDeTienda() {
       venceMs: estadoBienvenida?.fase?.venceMs,
       invitador: cotizacion.invitador || undefined,
     };
-  }, [cotizacion, estadoBienvenida?.fase?.venceMs]);
+  }, [cotizacion, estadoBienvenida?.fase?.venceMs, sesion, cargandoEstadoBienvenida, cotizando, enSemana, cotizacionFallo]);
 
   /* ── Preparar el pago (aún no hay pedido) ── */
   const alPreparar = async (datos) => {

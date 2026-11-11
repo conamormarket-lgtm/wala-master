@@ -82,12 +82,20 @@ export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, carga
  *    cupón, debajo) · onAplicar(codigo): promesa (si no vale, lanza un Error
  *    con el mensaje) · onQuitar (sin él, el aplicado no se quita)
  *  - enPausa: semana de bienvenida: los cupones no se usan (se dice por qué)
+ *  - cargando: mientras se sabe si se pueden usar (no se escribe nada)
  */
-export function CampoCupon({ aplicado, onAplicar, onQuitar, enPausa = false }) {
+export function CampoCupon({ aplicado, onAplicar, onQuitar, enPausa = false, cargando = false }) {
   const [codigo, setCodigo] = useState('');
   const [error, setError] = useState('');
   const [validando, setValidando] = useState(false);
   const textos = { placeholder: useTexto('¿Tienes un cupón?'), etiqueta: useTexto('Código de cupón') };
+  if (cargando) {
+    return (
+      <div className={s.cuponPausa} data-componente="CampoCupon" aria-busy="true">
+        <span className={s.cargandoLinea} /><span className={s.oculto}><Texto>Revisando tus cupones…</Texto></span>
+      </div>
+    );
+  }
   if (enPausa && !aplicado) {
     return <div className={s.cuponPausa} data-componente="CampoCupon"><PausaBienvenida que="cupones" /></div>;
   }

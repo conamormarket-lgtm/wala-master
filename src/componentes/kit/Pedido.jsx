@@ -343,7 +343,8 @@ export function BarraEnvioGratis({ actual, meta, compacta = false, estricto = fa
  *  - monedas: las que ganas con la compra · saldoMonedas: las que ya tienes
  *    ("podrás usarlas al pagar")
  *  - bienvenida: { enPausa, saldo } la semana de bienvenida (piezas/Bienvenida):
- *    las monedas no se usan y el saldo de bienvenida se usa al pagar
+ *    las monedas no se usan y el saldo de bienvenida se usa al pagar; { cargando }
+ *    mientras se sabe (no se promete nada de las monedas)
  *  - onPagar · textoBoton · deshabilitado · nota (bajo el botón; por defecto
  *    los medios de pago de la tienda: tarjeta con Culqi, y Yape, Plin o
  *    transferencia acordando por WhatsApp)
@@ -423,7 +424,7 @@ export function ResumenPedido({
       {bienvenida?.enPausa && bienvenida.saldo > 0 && (
         <p className={s.ganas}><Gift aria-hidden="true" /><span><TextoResaltado resaltar={[soles(bienvenida.saldo)]}>{`Tienes ${soles(bienvenida.saldo)} de saldo de bienvenida: úsalo al pagar.`}</TextoResaltado></span></p>
       )}
-      {bienvenida?.enPausa ? <PausaBienvenida que="monedas" /> : saldoMonedas > 0 && (
+      {bienvenida?.enPausa ? <PausaBienvenida que="monedas" /> : !bienvenida?.cargando && saldoMonedas > 0 && (
         <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${saldoMonedas} monedas`, saldoMonedas]}>{`Tienes ${saldoMonedas} monedas: podrás usarlas al pagar.`}</TextoResaltado></span></p>
       )}
       <Boton tamano="lg" bloque brillo={!deshabilitado} disabled={deshabilitado} onClick={onPagar}><Texto>{textoBoton}</Texto></Boton>

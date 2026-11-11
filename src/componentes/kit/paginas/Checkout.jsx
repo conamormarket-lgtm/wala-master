@@ -45,8 +45,10 @@ const STICKERS = [
  */
 const cuentasDe = ({ items, usar: usarPedido, saldo, cupon: cuponPedido, reglaEnvio, bienvenida, usarSaldo }) => {
   const pausa = Boolean(bienvenida?.enPausa);
-  const cupon = pausa ? null : cuponPedido;
-  const usar = pausa ? false : usarPedido;
+  // Mientras se sabe si está en su semana (bienvenida.cargando), ni monedas ni cupón.
+  const bloqueados = pausa || Boolean(bienvenida?.cargando);
+  const cupon = bloqueados ? null : cuponPedido;
+  const usar = bloqueados ? false : usarPedido;
   const subtotal = items.reduce((tot, it) => tot + it.precio * it.cantidad, 0);
   // Tope de monedas: el de la marca de cada producto (topeMonedas: un % o
   // monedas por producto; sin él, la mitad). La misma cuenta que hace el
@@ -115,7 +117,8 @@ const textoInvitacion = ({ nombre, aceptada }) => {
  *  - onPaso(n): al cambiar de paso (0 envío, 1 pago, 2 listo)
  *  - entrega: { fecha, ocasion, destinatario, aviso } (un regalo de una lista de deseos)
  *  - invitacion: { nombre, aceptada } (compra con un enlace de invitación)
- *  - bienvenida: { enPausa, saldo, tope, venceMs, invitador } la semana de
+ *  - bienvenida: { cargando } mientras se sabe (monedas y cupón esperan), o
+ *    { enPausa, saldo, tope, venceMs, invitador } la semana de
  *    bienvenida (piezas/Bienvenida): monedas y cupones en pausa, el saldo paga
  *    productos hasta `tope`; invitador: { nombre, premio, genera, motivo, falta }
  *    (props de AvisoInvitador: si la compra le da el premio a quien invitó)
@@ -257,7 +260,7 @@ export function PaginaCheckout({
     try {
       const datos = {
         direccion, correo: pedirCorreo ? correo.trim() : perfil.email, guardar: modo === 'formulario' && guardar,
-        regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: bienvenida?.enPausa ? undefined : cupon?.codigo, descuentoCupon: cuentas.descuentoCupon, total: cuentas.total,
+        regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: bienvenida?.enPausa || bienvenida?.cargando ? undefined : cupon?.codigo, descuentoCupon: cuentas.descuentoCupon, total: cuentas.total,
         saldoBienvenida: cuentas.descuentoSaldo,
       };
       const r = await onPreparar?.(datos);
@@ -370,13 +373,13 @@ export function PaginaCheckout({
               total={cuentas.total}
               abierto={resumenAbierto}
               onAlternar={() => setResumenAbierto((a) => !a)}
-              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarEnPago('monedas'), cargando: monedas.cargando, sesion, urlLogin, bloqueado: Boolean(ocupado), enPausa: Boolean(bienvenida?.enPausa) }}
+              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarEnPago('monedas'), cargando: monedas.cargando || Boolean(bienvenida?.cargando), sesion, urlLogin, bloqueado: Boolean(ocupado), enPausa: Boolean(bienvenida?.enPausa) }}
               saldoBienvenida={bienvenida?.enPausa && bienvenida.saldo > 0 ? {
                 saldo: bienvenida.saldo, maximo: cuentas.maximoSaldo, usar: usarSaldo, venceMs: bienvenida.venceMs,
                 onUsar: paso === 0 ? setUsarSaldo : cambiarEnPago('saldo'), bloqueado: Boolean(ocupado),
               } : undefined}
               /* Ya en el pago, el cupón queda como se preparó (para cambiarlo, "Cambiar el envío"). */
-              cupones={bienvenida?.enPausa ? { enPausa: true } : onCupon && (paso === 0 || cupon) ? {
+              cupones={bienvenida?.cargando ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true } : onCupon && (paso === 0 || cupon) ? {
                 aplicado: cupon,
                 onAplicar: async (c) => setCupon(await onCupon(c, { subtotal: cuentas.subtotal, subtotalProductos: cuentas.subtotal, envio: cuentas.envioBase })),
                 onQuitar: paso === 0 ? () => setCupon(null) : undefined,

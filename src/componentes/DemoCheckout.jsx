@@ -24,6 +24,7 @@ export const ESTADOS_CHECKOUT = [
   ['regalo', 'Regalo programado'],
   ['invitacion', 'Con invitación'],
   ['bienvenida', 'Semana de bienvenida (S/ 50)'],
+  ['bienvenidaCargando', 'Revisando la semana de bienvenida'],
   ['invitadoPremia', 'Invitado: premia a quien invitó'],
   ['incompleto', 'Falta una talla'],
   ['pestanaWhatsapp', 'Pestaña de WhatsApp'],
@@ -106,7 +107,7 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
       invitacion={estados.includes('invitacion') ? { nombre: 'Andrea', aceptada: true } : undefined}
       // La semana de bienvenida (piezas/Bienvenida): monedas y cupones en pausa,
       // S/ 50 de saldo para productos; o un invitado que ve si su compra premia.
-      bienvenida={estados.includes('bienvenida') || estados.includes('invitadoPremia') ? {
+      bienvenida={estados.includes('bienvenidaCargando') ? { cargando: true } : estados.includes('bienvenida') || estados.includes('invitadoPremia') ? {
         enPausa: true,
         saldo: estados.includes('bienvenida') ? 50 : 0,
         tope: 1000,

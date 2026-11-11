@@ -36,7 +36,7 @@ const sumar = (items, f) => items.reduce((a, it) => a + f(it), 0);
  *    del pago (no se puede volver a pagar; "Vaciar" pasa a "Cancelar pedido")
  *  - metaEnvio, costoEnvio (constants/envio: gratis en compras de MÁS de S/ 200)
  *  - saldoMonedas · cupones (solo para probar; en la tienda van en el checkout)
- *  - bienvenida: { enPausa, saldo } (semana de bienvenida; ver ResumenPedido)
+ *  - bienvenida: { enPausa, saldo } o { cargando } (semana de bienvenida; ver ResumenPedido)
  *  - recomendados: productos_wala para "También te puede gustar"; onAgregar(producto)
  *    · tarjeta: otra tarjeta (la de la tienda) · catalogo: { marcas, categorias }
  *  - onVerAbajo(): una vez, cuando "También te puede gustar" se acerca a la

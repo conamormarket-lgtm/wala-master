@@ -128,14 +128,14 @@ export default function CarritoDeTienda() {
   });
   // La tarjeta de la tienda (corazón, "Agregar rápido", la impresión).
   // Semana de bienvenida: las monedas no se usan y el saldo sí (al pagar).
-  const { bienvenida } = usePrimeraCompra();
+  const { bienvenida, cargando: cargandoBienvenida } = usePrimeraCompra();
   const Tarjeta = useMemo(() => function TarjetaRecomendada({ producto }) {
     return <TarjetaDeProducto product={producto} categories={categorias} />;
   }, [categorias]);
 
   return (
     <PaginaCarrito
-      bienvenida={bienvenida?.enPausa ? { enPausa: true, saldo: bienvenida.saldo } : undefined}
+      bienvenida={cargandoBienvenida ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true, saldo: bienvenida.saldo } : undefined}
       items={filas}
       onCantidad={updateQuantity}
       onQuitar={removeFromCart}
