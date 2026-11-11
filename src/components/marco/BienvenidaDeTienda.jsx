@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import usePrimeraCompra from '../../hooks/usePrimeraCompra';
+import { tomarTurno, soltarTurno, useTurnoVentanas } from '../../utils/turnoVentanas';
 
 // La pieza del kit baja solo si la cuenta está en su semana de bienvenida.
 const PopupBienvenida = lazy(() => import('../../componentes/kit/piezas/Bienvenida').then((m) => ({ default: m.PopupBienvenida })));
@@ -16,6 +17,22 @@ const popupToca = () => {
 const marcarPopup = () => {
   try { localStorage.setItem(POPUP_KEY, String(Date.now())); } catch { /* modo privado */ }
 };
+
+// Donde el aviso no sale (ahí estorba o ya está la tarjeta).
+const FUERA = ['/checkout', '/cuenta/referidos', '/admin', '/bienvenida', '/login', '/registro'];
+const estaFuera = (ruta) => FUERA.some((r) => ruta.startsWith(r));
+
+/**
+ * ¿Las otras ventanas que se abren solas (Walito, la campaña) tienen que
+ * esperar al aviso de bienvenida? Sí mientras se sabe si la cuenta está en su
+ * semana, y si le toca salir en esta página (utils/turnoVentanas).
+ */
+export function useEsperaBienvenida() {
+  const { bienvenida, cargando } = usePrimeraCompra();
+  const { pathname } = useLocation();
+  if (cargando) return true;
+  return bienvenida?.fase?.estado === 'activa' && !estaFuera(pathname) && popupToca();
+}
 
 /** Abre el aviso grande desde cualquier parte (la píldora flotante). */
 export const abrirAvisoBienvenida = () => window.dispatchEvent(new Event(EVENTO_ABRIR));
@@ -39,15 +56,29 @@ export default function BienvenidaDeTienda() {
 
   const fase = bienvenida?.fase;
   const activa = fase?.estado === 'activa';
-  const fuera = ['/checkout', '/cuenta/referidos', '/admin', '/bienvenida', '/login', '/registro'].some((r) => pathname.startsWith(r));
+  const fuera = estaFuera(pathname);
+  const turno = useTurnoVentanas();
 
-  // Al entrar y cada 4 horas (se anota al abrirse).
+  // Al entrar y cada 4 horas (se anota al abrirse), con su turno: una sola
+  // ventana grande a la vez (utils/turnoVentanas).
   useEffect(() => {
     if (!activa || fuera || popup || !popupToca()) return;
+    if (!tomarTurno('bienvenida')) return;
     marcarPopup();
     setPorLaPersona(false);
     setPopup(true);
-  }, [activa, fuera]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activa, fuera, turno]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const cerrar = () => {
+    setPopup(false);
+    soltarTurno('bienvenida');
+  };
+  // Si se va a una página donde no sale (p. ej. "Ver condiciones"), se cierra
+  // y suelta el turno; también al desmontarse.
+  useEffect(() => {
+    if (fuera && popup) cerrar();
+  }, [fuera]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => soltarTurno('bienvenida'), []);
 
   // La píldora flotante lo abre cuando quiera.
   useEffect(() => {
@@ -63,13 +94,13 @@ export default function BienvenidaDeTienda() {
       <PopupBienvenida
         abierta={popup}
         espera={porLaPersona ? 0 : 5}
-        onCerrar={() => setPopup(false)}
+        onCerrar={cerrar}
         venceMs={fase.venceMs}
         saldo={bienvenida.saldo}
         pendiente={bienvenida.pendiente}
         premio={promo.premio}
         minimo={promo.minimoNeto}
-        onInvitar={() => { setPopup(false); navigate('/cuenta/referidos'); }}
+        onInvitar={() => { cerrar(); navigate('/cuenta/referidos'); }}
       />
     </Suspense>
   );

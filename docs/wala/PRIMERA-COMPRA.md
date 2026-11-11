@@ -80,3 +80,9 @@ S/ 3 por pagar (mínimo de Culqi en la app) en vez de S/ 1.
 - Medir: costo por comprador nuevo (saldo usado ÷ amigos que compraron, en el
   admin) contra lo que cuesta una compra con publicidad; revisiones a los 30,
   60 y 90 días.
+
+## Orden de las ventanas
+
+Al crear una cuenta, el aviso de bienvenida va primero; Walito (con su
+recorrido) y el popup de campaña esperan su turno (`src/utils/turnoVentanas.js`),
+con 15 s entre una y otra.

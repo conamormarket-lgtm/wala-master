@@ -33,7 +33,7 @@ const FRASES = {
  *  - reto: props de RetoSemanal (o nada si no hay reto activo)
  *
  * Los id kapi-pet-container, kapi-stats y kapi-feed-btn son los que usa el
- * recorrido de bienvenida de la tienda (driver.js).
+ * recorrido de bienvenida de la tienda (GuiaPasos, en marco/Kapi.jsx).
  */
 export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'feliz', felicidad = 0, alimentado = false, recompensa = 1, hasta, onAlimentar, reto }) {
   const [comiendo, setComiendo] = useState(false);

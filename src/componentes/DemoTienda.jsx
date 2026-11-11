@@ -9,6 +9,7 @@ import {
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ESQUELETO_MARCA, ETAPAS_PRODUCCION,
 } from './kit';
 import { PopupBienvenida } from './kit/piezas/Bienvenida';
+import { GuiaPasos } from './kit/piezas/GuiaPasos';
 import { PaginaEncuestaEntrega } from './kit/paginas/EncuestaEntrega';
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
@@ -134,6 +135,7 @@ const EXTRAS = [
   ['triste', 'Walito triste'],
   ['invitacion', 'Aviso de invitación'],
   ['bienvenida', 'Semana de bienvenida'],
+  ['recorrido', 'Recorrido de Walito'],
 ];
 
 /* Reto de ejemplo (mismos campos que globals/activeChallenge; hoy no hay uno
@@ -1357,6 +1359,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           reto={ver('reto') ? { ...retoDesdePerfil(RETO_DEMO, {}), onEnviar: () => new Promise((r) => setTimeout(r, 800)) } : undefined}
         />
       )}
+      {/* El recorrido de la primera vez (GuiaPasos), con "Recorrido de Walito". */}
+      <GuiaPasos
+        abierta={conSesion && kapiAbierta && ver('recorrido')}
+        pasos={[
+          { selector: '#kapi-pet-container', titulo: 'Conoce a Walito', texto: '¡Esta es tu mascota! Crece contigo mientras usas Walá.' },
+          { selector: '#kapi-stats', titulo: 'Su felicidad', texto: 'Si te olvidas de darle de comer, se pone triste y su barra de felicidad baja.' },
+          { selector: '#kapi-feed-btn', titulo: '¡A comer!', texto: 'Dale de comer cada día aquí. A cambio te regala monedas para canjear por recompensas.' },
+        ]}
+        onTerminar={() => alternar('recorrido')}
+      />
     </>
   );
 }

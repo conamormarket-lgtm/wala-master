@@ -1,0 +1,145 @@
+/* El recorrido guiado (GuiaPasos.jsx): encima de las ventanas (900) y debajo
+   de los avisos (10100). Sin bucles: entra una vez y se queda quieto. */
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  pointer-events: none;
+}
+
+/* El hueco iluminado: una sombra enorme oscurece el resto. */
+.resalte {
+  position: fixed;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(20, 12, 40, 0.55);
+  outline: 3px solid var(--violet-300);
+  outline-offset: 0;
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+  pointer-events: none;
+}
+
+.velo {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 12, 40, 0.55);
+}
+
+.tarjeta {
+  position: fixed;
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem 1rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 22%, var(--color-border));
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 18px 40px rgba(20, 12, 40, 0.28);
+  pointer-events: auto;
+  outline: none;
+  animation: entrar 0.22s ease-out;
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.lado_arriba {
+  animation-name: entrarArriba;
+}
+
+@keyframes entrarArriba {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta { animation: none; }
+  .resalte { transition: none; }
+}
+
+.cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.numero {
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.titulo {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.saltar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.saltar:hover,
+.saltar:focus-visible {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--color-text);
+}
+
+.saltar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.texto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.puntos {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-border);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.puntoActual {
+  width: 18px;
+  background: var(--primary-color);
+}
+
+.botones {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
