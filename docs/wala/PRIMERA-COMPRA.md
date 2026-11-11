@@ -43,6 +43,7 @@ instancia del servidor tarda hasta 1 minuto en enterarse (caché).
 | Costos de Lumi y ajustes iniciales | `scripts/primera-compra-config.js` + `scripts/data/lumi-costos.json` |
 | Piezas del kit | `src/componentes/kit/piezas/Bienvenida.jsx` (franja, fila del checkout, pausa, aviso al invitado, tarjeta de Mi cuenta) |
 | Checkout | `paginas/Checkout.jsx` (prop `bienvenida`), `components/checkout/CheckoutDeTienda.jsx`, `services/pedidoCheckout.js` (`saldoBienvenida`) |
+| Checkout de la app | `functions/mobileCheckout.js` (`welcomeBalance`), capacidad en `getMobileCheckoutStatusSecure` |
 | Franja arriba de la tienda | `components/marco/BienvenidaDeTienda.jsx` |
 | Mi cuenta → Referidos | `components/cuenta/ReferidosDeCuenta.jsx` |
 | Condiciones | `/bienvenida` (`config/legales/bienvenida.js`) y sección "Promociones" de los términos |
@@ -61,10 +62,20 @@ reglas.
 - Fase cerrada: los pendientes vencen.
 - "Te quedan 24 horas": una vez por cuenta con saldo.
 
+## App wala-mobile
+
+Hecha el 2026-11-11 (`features/welcome` de wala-mobile; `docs/CHECKOUT.md`,
+"Saldo de bienvenida"): franja de arriba, tarjeta en Mis referidos y, en el
+checkout, la pausa, la fila del saldo y el aviso al invitado. El saldo viaja
+como `welcomeBalance` en el contrato `mobile-v1` (`functions/mobileCheckout.js`
+→ `saldoBienvenida`, revisado por `revisarCheckout` como el de la web; sin el
+campo la huella del intento es la de siempre) y la app solo lo ofrece si
+`getMobileCheckoutStatusSecure` responde `welcomeBalance: true`. La app deja
+S/ 3 por pagar (mínimo de Culqi en la app) en vez de S/ 1.
+
 ## Falta
 
-- **wala-mobile**: repetir la promo (franja, Mi cuenta, checkout). Mientras
-  tanto el servidor rechaza el saldo desde esa app y explica la pausa.
+- Probar la app en un teléfono con la promo prendida.
 - Publicar una versión nueva de la app Capacitor antes de prender la promo.
 - Medir: costo por comprador nuevo (saldo usado ÷ amigos que compraron, en el
   admin) contra lo que cuesta una compra con publicidad; revisiones a los 30,

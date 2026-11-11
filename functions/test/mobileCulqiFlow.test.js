@@ -188,6 +188,25 @@ test('preparación REAL con monedas: tope de la marca y saldo del servidor, se r
   await f.cancel(withCoins.requestId);
   assert.equal(f.ledger.get('a').monedas, 30);
 });
+test('preparación REAL con saldo de bienvenida: lo revisa primeraCompra, baja el cobro y queda en el pedido', async () => {
+  const f = await fixture(approved);
+  const vistos = [];
+  // revisarCheckout real: fase, tope y saldo (functions/primeraCompra.js); aquí aprueba hasta S/ 40.
+  f.context.primeraCompra.revisarCheckout = async (_t, { orderPayload, monedas, cupon }) => {
+    vistos.push({ saldo: orderPayload.saldoBienvenida, monedas, cupon });
+    if (orderPayload.saldoBienvenida > 40) throw new HttpsError('failed-precondition', 'En este pedido puedes usar hasta S/ 40.00 de tu saldo de bienvenida.');
+    return { saldo: orderPayload.saldoBienvenida || 0, escribir: () => {} };
+  };
+  const conSaldo = { ...f.input, requestId: 'bienvenidasaldo00001', welcomeBalance: 40, expectedTotal: 124.7 };
+  const session = await f.prepare({ mobileCheckout: conSaldo });
+  assert.deepEqual(vistos[0], { saldo: 40, monedas: 0, cupon: false });
+  assert.equal(session.totals.welcomeBalance, 40); assert.equal(session.totals.total, 124.7);
+  const guardado = f.ledger.get(session.intentId);
+  assert.equal(guardado.amountPen, 124.7); assert.equal(guardado.orderPayload.saldoBienvenida, 40);
+  assert.equal(guardado.totalesServidor.saldoBienvenida, 40);
+  // Más de lo que permite el servidor: no se prepara nada.
+  await assert.rejects(f.prepare({ mobileCheckout: { ...conSaldo, requestId: 'bienvenidasaldo00002', welcomeBalance: 50, expectedTotal: 114.7 } }), /hasta S\/ 40/);
+});
 test('preparación REAL con regalo: el pedido guardado lleva giftDetails y la app ve para quién es', async () => {
   const f = await fixture(approved);
   const gift = { recipientName: 'María', message: '¡Feliz cumpleaños!', sticker: 'kapi-love' };

@@ -572,7 +572,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     const envioPrevio = totalEsperadoCheckout({ subtotal, envioGratis, envioEstandar: ENVIO_ESTANDAR, envioGratisDesde }).envio;
     const bienvenida = await primeraCompra.revisarCheckout(t, {
       uid, intentId, orderPayload, subtotal, envio: envioPrevio,
-      monedas: monedasPedidas, cupon: Boolean(cuponCode), mobile: Boolean(mobile),
+      monedas: monedasPedidas, cupon: Boolean(cuponCode),
     });
     const saldoBienvenida = bienvenida.saldo;
 
@@ -10845,7 +10845,9 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // metadata.pedidoId, como la web: sin 3DS); la llave pública es la misma del checkout.
   // talCual: vende las prendas de Crear con seVendeTalCual como un producto de la tienda (con la talla de su color).
   // giftDelivery: el regalo de una lista de deseos lleva su fecha de entrega, la ocasión y el código de la lista.
+  // welcomeBalance: acepta el saldo de bienvenida (semana de bienvenida, primeraCompra.js) en el pago móvil.
   if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true, talCual: true, giftDelivery: true,
+    welcomeBalance: true,
     balance: true, publicKey: /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') ? process.env.CULQI_PUBLIC_KEY : null,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {

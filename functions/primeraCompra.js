@@ -210,7 +210,7 @@ module.exports = function crearPrimeraCompra({
    * pedido: en la fase no van monedas ni cupones, y el saldo pedido tiene que
    * alcanzar y respetar el tope. Devuelve { saldo, escribir(t) }.
    */
-  async function revisarCheckout(t, { uid, intentId, orderPayload, subtotal, envio, monedas, cupon, mobile }) {
+  async function revisarCheckout(t, { uid, intentId, orderPayload, subtotal, envio, monedas, cupon }) {
     const saldoPedido = Math.max(0, L.redondear(orderPayload && orderPayload.saldoBienvenida));
     if (!uid) {
       if (saldoPedido > 0) throw new HttpsError("failed-precondition", "Inicia sesión para usar tu saldo de bienvenida.");
@@ -225,7 +225,7 @@ module.exports = function crearPrimeraCompra({
     }
     if (monedas > 0) throw new HttpsError("failed-precondition", MSG_PAUSA_MONEDAS);
     if (cupon) throw new HttpsError("failed-precondition", MSG_PAUSA_CUPONES);
-    if (mobile && saldoPedido > 0) throw new HttpsError("failed-precondition", "El saldo de bienvenida todavía no se puede usar en esta app. Úsalo en wala.pe.");
+    // La app (wala-mobile) lo manda desde 2026-11-11 como mobileCheckout.welcomeBalance → saldoBienvenida: las mismas reglas.
 
     // Otro pedido que reservó el saldo y no se pagó: se reemplaza (como las monedas).
     const reservaPrevia = estado.reserva && estado.reserva.intentId && String(estado.reserva.intentId) !== String(intentId)

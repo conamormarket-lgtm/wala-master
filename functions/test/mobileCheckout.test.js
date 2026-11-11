@@ -150,6 +150,29 @@ test('monedas: enteras y positivas; cambian la huella del intento, pero sin ella
   assert.equal(mobile.identity({ ...input(), coins: 0 }, 'a').hash, plain.hash);
   assert.notEqual(mobile.identity({ ...input(), coins: 10 }, 'a').hash, plain.hash);
 });
+test('saldo de bienvenida: baja los productos, va al pedido como saldoBienvenida y queda en el resumen', async () => {
+  const withWelcome = { ...input(), welcomeBalance: 20.5, expectedTotal: 149.7 - 20.5 + 15 };
+  const result = await mobile.build(withWelcome, 'a', read());
+  assert.equal(result.payload.montoTotal, 144.2);
+  assert.equal(result.payload.saldoBienvenida, 20.5);
+  assert.equal(result.payload.descuentoMonedas, undefined);
+  assert.deepEqual(result.meta.summary.totals, { subtotal: 149.7, shipping: 15, welcomeBalance: 20.5, total: 144.2 });
+  assert.equal(result.meta.input.welcomeBalance, 20.5);
+  // La misma cuenta que revisa prepareCheckoutPayment (el saldo descuenta como las monedas).
+  assert.equal(totalEsperadoCheckout({ subtotal: 149.7, monedas: 20.5, envioEstandar: 15, envioGratisDesde: 200 }).total, 144.2);
+  // Al cobrar se vuelve a armar con lo guardado: el total sigue cuadrando.
+  assert.equal((await mobile.build(result.meta.input, 'a', read())).payload.montoTotal, 144.2);
+  await assert.rejects(mobile.build({ ...withWelcome, expectedTotal: 164.7 }, 'a', read()));
+  assert.equal((await mobile.build(input(), 'a', read())).payload.saldoBienvenida, undefined);
+});
+test('saldo de bienvenida: con céntimos y positivo; cambia la huella, pero sin él es la de siempre', () => {
+  for (const welcomeBalance of [-1, '5', 1.234, NaN, 200_000]) assert.throws(() => mobile.welcomeOf({ welcomeBalance }));
+  assert.equal(mobile.welcomeOf({}), 0); assert.equal(mobile.welcomeOf({ welcomeBalance: 0 }), 0);
+  assert.equal(mobile.welcomeOf({ welcomeBalance: 10.1 }), 10.1);
+  const plain = mobile.identity(input(), 'a');
+  assert.equal(mobile.identity({ ...input(), welcomeBalance: 0 }, 'a').hash, plain.hash);
+  assert.notEqual(mobile.identity({ ...input(), welcomeBalance: 10 }, 'a').hash, plain.hash);
+});
 test('regalo: para quién, mensaje y sticker llegan al pedido como giftDetails, como la web', async () => {
   const gift = { recipientName: '  María   José ', message: '¡Feliz cumpleaños!', sticker: 'kapi-party' };
   const result = await mobile.build({ ...input(), gift }, 'a', read());
