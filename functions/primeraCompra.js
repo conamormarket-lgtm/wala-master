@@ -592,6 +592,7 @@ module.exports = function crearPrimeraCompra({
         usado: Number(e.usado) || 0,
         orderId: e.orderId || null,
         motivo: e.motivo || null,
+        cerradaMs: L.aMs(e.cerradaAt) || null,
       };
     });
     const premios = premiosSnap.docs.map((d) => {
@@ -609,14 +610,38 @@ module.exports = function crearPrimeraCompra({
         fechaMs: L.aMs(p.createdAt) || null,
       };
     }).sort((a, b) => (b.fechaMs || 0) - (a.fechaMs || 0));
-    // Nombres de quienes invitaron (para la bandeja).
-    const uids = [...new Set(premios.map((p) => p.invitadorUid))].slice(0, 300);
-    const nombres = {};
-    if (uids.length) {
-      const snaps = await db.getAll(...uids.map((u) => db.collection(USERS).doc(u)), { fieldMask: ["displayName", "nombre", "email"] });
-      snaps.forEach((s) => { if (s.exists) nombres[s.id] = primerNombre(s.data()) || s.get("email") || null; });
+    // Quién es cada cuenta (nombre, correo, teléfono) y sus amigos, para que el
+    // admin no vea solo códigos.
+    const uids = [...new Set([...premios.map((p) => p.invitadorUid), ...fases.map((f) => f.uid)])].slice(0, 500);
+    const perfiles = {};
+    for (let i = 0; i < uids.length; i += 100) {
+      const snaps = await db.getAll(...uids.slice(i, i + 100).map((u) => db.collection(USERS).doc(u)), { fieldMask: ["displayName", "nombre", "email", "phone"] });
+      snaps.forEach((sp) => {
+        if (!sp.exists) return;
+        const d = sp.data() || {};
+        perfiles[sp.id] = {
+          nombre: String(d.displayName || d.nombre || "").trim() || null,
+          primerNombre: primerNombre(d) || null,
+          email: d.email || null,
+          telefono: d.phone || null,
+        };
+      });
     }
-    return { fases, premios: premios.map((p) => ({ ...p, invitadorNombre: nombres[p.invitadorUid] || null })) };
+    const amigos = {};
+    premios.forEach((p) => {
+      const a = amigos[p.invitadorUid] || (amigos[p.invitadorUid] = { compraron: 0, suman: 0, saldo: 0, pendiente: 0 });
+      a.compraron += 1;
+      if (p.estado === "disponible") { a.suman += 1; a.saldo += p.monto; }
+      if (p.estado === "pendiente") { a.suman += 1; a.pendiente += p.monto; }
+    });
+    return {
+      fases: fases.map((f) => ({
+        ...f,
+        ...(perfiles[f.uid] || {}),
+        amigos: amigos[f.uid] || { compraron: 0, suman: 0, saldo: 0, pendiente: 0 },
+      })),
+      premios: premios.map((p) => ({ ...p, invitadorNombre: (perfiles[p.invitadorUid] && (perfiles[p.invitadorUid].primerNombre || perfiles[p.invitadorUid].email)) || null })),
+    };
   });
 
   const revertirSecure = functions.https.onCall(async (data, context) => {

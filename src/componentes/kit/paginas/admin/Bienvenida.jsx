@@ -9,6 +9,7 @@ import { TablaAdmin, BarraFiltros, InsigniaEstado } from '../../piezas/admin/Dat
 import { GrupoCampos, CampoDinero } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { normalizarBusqueda } from '../../adaptadoresAdmin';
+import { tiempoRestante } from '../../../../utils/primeraCompra';
 import l from './Lista.module.css';
 import s from './Fidelidad.module.css';
 
@@ -34,8 +35,8 @@ export const ESTADOS_PREMIO_BIENVENIDA = {
 
 export const ESTADOS_FASE_BIENVENIDA = {
   activa: { texto: 'En su semana', tono: 'violeta' },
-  usada: { texto: 'Compró', tono: 'exito' },
-  vencida: { texto: 'Venció sin comprar', tono: 'neutro' },
+  usada: { texto: 'Ya compró', tono: 'exito' },
+  vencida: { texto: 'Se le venció', tono: 'neutro' },
   no_aplica: { texto: 'No participa', tono: 'neutro' },
 };
 
@@ -46,8 +47,8 @@ const MOTIVOS = {
   con_saldo: 'Pagó con su saldo de bienvenida',
   revertido: 'Canceló o devolvió',
   vencido: 'Su pago se confirmó después del plazo',
-  cuenta_anterior: 'Su cuenta es de antes del lanzamiento',
-  cliente_previo: 'Ya era cliente',
+  cuenta_anterior: 'Se registró antes de prender la promo',
+  cliente_previo: 'Ya compraba antes',
 };
 
 const PESTANAS = [
@@ -177,22 +178,7 @@ export function PaginaPrimeraCompraAdmin({
       )}
 
       {pestana === 'cuentas' && (
-        <TablaAdmin
-          etiqueta="Cuentas con semana de bienvenida"
-          filas={[...fases].sort((a, b) => (b.inicioMs || 0) - (a.inicioMs || 0))}
-          idDe={(f) => f.uid}
-          nombreDe={(f) => f.uid}
-          cargando={cargando}
-          error={error}
-          onReintentar={onReintentar}
-          vacio={{ titulo: 'Todavía no hay cuentas', texto: 'Con la promo prendida, cada cuenta nueva aparece aquí al entrar a la tienda.' }}
-          columnas={[
-            { id: 'cuenta', titulo: 'Cuenta', tarjeta: 'titulo', celda: (f) => <>{f.uid}<span className={l.sub}>Desde {fechaHora(f.inicioMs)}</span></> },
-            { id: 'vence', titulo: 'Vence', ancho: 160, tarjeta: 'detalle', celda: (f) => <span className={l.sub}>{fechaHora(f.venceMs)}</span> },
-            { id: 'usado', titulo: 'Saldo usado', alinear: 'fin', ancho: 130, tarjeta: 'detalle', celda: (f) => <span className={l.numero}>{f.usado ? soles(f.usado) : '—'}{f.orderId && <span className={l.sub}>Pedido {f.orderId}</span>}</span> },
-            { id: 'estado', titulo: 'Estado', ancho: 170, tarjeta: 'estado', celda: (f) => <>{<InsigniaEstado estado={f.estado} estados={ESTADOS_FASE_BIENVENIDA} />}{f.motivo && <span className={l.sub}>{MOTIVOS[f.motivo] || f.motivo}</span>}</> },
-          ]}
-        />
+        <CuentasPrimeraCompra fases={fases} horas={config?.horas} cargando={cargando} error={error} onReintentar={onReintentar} />
       )}
 
       {pestana === 'ajustes' && config && (
@@ -216,6 +202,97 @@ export function PaginaPrimeraCompraAdmin({
         onCancelar={() => setRevertir(null)}
       />
     </div>
+  );
+}
+
+const fechaCorta = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '—');
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+/** Cómo va la semana de una cuenta, en palabras. */
+function textoSemana(f, ahora) {
+  if (f.estado === 'activa') return { texto: `Le quedan ${tiempoRestante(f.venceMs, ahora)}`, sub: `Vence el ${fechaHora(f.venceMs)}` };
+  if (f.estado === 'usada') return { texto: `Compró el ${fechaCorta(f.cerradaMs || f.venceMs)}`, sub: f.orderId ? `Pedido ${f.orderId}` : '' };
+  if (f.estado === 'vencida') return { texto: `Venció el ${fechaCorta(f.venceMs)}`, sub: 'Sin comprar' };
+  return { texto: MOTIVOS[f.motivo] || 'No participa', sub: '' };
+}
+
+/**
+ * Cuentas: quién está en su semana de bienvenida, cuánto le queda, cuántos
+ * amigos compraron con su invitación y su saldo. Las que no participan (cuentas
+ * de antes, clientes que ya compraban) quedan fuera salvo que se pidan.
+ */
+function CuentasPrimeraCompra({ fases, horas = 168, cargando, error, onReintentar }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [estado, setEstado] = useState('');
+  const ahora = Date.now();
+  const noParticipan = fases.filter((f) => f.estado === 'no_aplica').length;
+  const filas = useMemo(() => {
+    const q = normalizarBusqueda(busqueda);
+    const orden = { activa: 0, usada: 1, vencida: 2, no_aplica: 3 };
+    return fases
+      .filter((f) => (estado ? f.estado === estado : f.estado !== 'no_aplica'))
+      .filter((f) => !q || normalizarBusqueda(`${f.nombre || ''} ${f.email || ''} ${f.telefono || ''}`).includes(q))
+      .sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.inicioMs || 0) - (a.inicioMs || 0)));
+  }, [fases, busqueda, estado]);
+  return (
+    <>
+      <Aviso tipo="info" compacto>
+        {`Cada cuenta nueva tiene ${Math.round(horas / 24)} días para invitar amigos y usar su saldo en su primera compra. `}
+        {noParticipan > 0 && !estado && `${noParticipan === 1 ? 'No se muestra 1 cuenta que no participa' : `No se muestran ${noParticipan} cuentas que no participan`} (creadas antes de prender la promo o que ya compraban): para verlas, elige «No participa» en Estado.`}
+      </Aviso>
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={setBusqueda}
+        placeholder="Buscar por nombre, correo o teléfono"
+        filtros={[{
+          id: 'estado', etiqueta: 'Estado', todos: 'Las que participan',
+          opciones: Object.entries(ESTADOS_FASE_BIENVENIDA).map(([valor, e]) => ({ valor, texto: e.texto })), valor: estado,
+        }]}
+        onFiltro={(_, v) => setEstado(v)}
+        total={cargando || error ? undefined : filas.length}
+        unidad={['cuenta', 'cuentas']}
+      />
+      <TablaAdmin
+        etiqueta="Cuentas con semana de bienvenida"
+        filas={filas}
+        idDe={(f) => f.uid}
+        nombreDe={(f) => f.nombre || f.email || 'Cuenta sin nombre'}
+        cargando={cargando}
+        error={error}
+        onReintentar={onReintentar}
+        vacio={fases.length
+          ? { titulo: 'Nada coincide', texto: 'Prueba con otro estado o busca otra cosa.' }
+          : { titulo: 'Todavía no hay cuentas', texto: 'Cada cuenta nueva aparece aquí cuando entra a la tienda por primera vez.' }}
+        columnas={[
+          {
+            id: 'cliente', titulo: 'Cliente', tarjeta: 'titulo',
+            celda: (f) => <>{f.nombre || f.email || 'Cuenta sin nombre'}<span className={l.sub}>{[f.nombre && f.email, f.telefono].filter(Boolean).join(' · ') || `Se registró el ${fechaCorta(f.inicioMs)}`}</span></>,
+          },
+          {
+            id: 'semana', titulo: 'Su semana', ancho: 190, tarjeta: 'detalle',
+            celda: (f) => { const t = textoSemana(f, ahora); return <>{t.texto}{t.sub && <span className={l.sub}>{t.sub}</span>}</>; },
+          },
+          {
+            id: 'amigos', titulo: 'Amigos que compraron', alinear: 'fin', ancho: 170, tarjeta: 'detalle',
+            celda: (f) => (f.amigos?.compraron
+              ? <span className={l.numero}><span className={l.soloTarjeta}>Amigos que compraron </span>{entero(f.amigos.compraron)}<span className={l.sub}>{plural(f.amigos.suman, 'suma saldo', 'suman saldo')}</span></span>
+              : <span className={l.sub}><span className={l.soloTarjeta}>Amigos que compraron </span>Ninguno todavía</span>),
+          },
+          {
+            id: 'saldo', titulo: 'Saldo', alinear: 'fin', ancho: 150, tarjeta: 'detalle',
+            celda: (f) => {
+              if (f.estado === 'usada') return <span className={l.numero}><span className={l.soloTarjeta}>Saldo </span>{f.usado ? `Usó ${soles(f.usado)}` : 'No usó saldo'}</span>;
+              if (f.estado === 'activa') {
+                const a = f.amigos || {};
+                return <span className={l.numero}><span className={l.soloTarjeta}>Saldo </span>{soles(a.saldo)}<span className={l.sub}>{a.pendiente ? `${soles(a.pendiente)} por confirmar` : 'disponible'}</span></span>;
+              }
+              return <span className={l.sub}>—</span>;
+            },
+          },
+          { id: 'estado', titulo: 'Estado', ancho: 150, tarjeta: 'estado', celda: (f) => <InsigniaEstado estado={f.estado} estados={ESTADOS_FASE_BIENVENIDA} /> },
+        ]}
+      />
+    </>
   );
 }
 

@@ -1453,10 +1453,10 @@ function PanelDePrueba() {
           { id: 'b4', invitadorUid: 'u3', invitadorNombre: 'Valeria', compradorNombre: 'Sofía', orderId: 'PD-MH2Z7', estado: 'revertido', monto: 10, motivo: 'revertido', neto: 89, contribucion: 46, fechaMs: ahora - 80 * H },
         ]}
         fases={vacio ? [] : [
-          { uid: 'u1', estado: 'activa', inicioMs: ahora - 2 * 24 * H, venceMs: ahora + 5 * 24 * H, usado: 0 },
-          { uid: 'u2', estado: 'usada', inicioMs: ahora - 6 * 24 * H, venceMs: ahora + 24 * H, usado: 40, orderId: 'PD-MH1B3' },
-          { uid: 'u3', estado: 'vencida', inicioMs: ahora - 9 * 24 * H, venceMs: ahora - 2 * 24 * H, usado: 0 },
-          { uid: 'u4', estado: 'no_aplica', motivo: 'cliente_previo', inicioMs: null, venceMs: null, usado: 0 },
+          { uid: 'u1', nombre: 'Ana Torres', email: 'ana@correo.com', telefono: '987654321', estado: 'activa', inicioMs: ahora - 2 * 24 * H, venceMs: ahora + 5 * 24 * H, usado: 0, amigos: { compraron: 2, suman: 2, saldo: 10, pendiente: 10 } },
+          { uid: 'u2', nombre: 'Rodrigo Díaz', email: 'rodrigo@correo.com', estado: 'usada', inicioMs: ahora - 6 * 24 * H, venceMs: ahora + 24 * H, cerradaMs: ahora - 20 * H, usado: 40, orderId: 'PD-MH1B3', amigos: { compraron: 1, suman: 0, saldo: 0, pendiente: 0 } },
+          { uid: 'u3', nombre: 'Valeria Ruiz', telefono: '912345678', estado: 'vencida', inicioMs: ahora - 9 * 24 * H, venceMs: ahora - 2 * 24 * H, usado: 0, amigos: { compraron: 0, suman: 0, saldo: 0, pendiente: 0 } },
+          { uid: 'u4', email: 'cliente.antiguo@correo.com', estado: 'no_aplica', motivo: 'cuenta_anterior', inicioMs: null, venceMs: null, usado: 0 },
         ]}
         cargando={con('cargando')}
         error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
