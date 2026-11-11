@@ -5,8 +5,9 @@
  * prenderse, SIN prenderla (activa queda como esté; nueva = apagada):
  *  - los costos por producto de Lumi (scripts/data/lumi-costos.json, del
  *    Excel de márgenes): con ellos el filtro de S/ 15 usa el margen real;
- *  - Lumi y Daida con 10 % pagable con saldo y un margen conservador para los
- *    productos sin costo (las demás marcas usan 66,67 % y 100 % por defecto).
+ *  - Lumi y Daida con 100 % pagable con saldo (desde el 2026-11-11; antes 10 %)
+ *    y un margen conservador para los productos sin costo (las demás marcas
+ *    usan 66,67 % y 100 % por defecto).
  * Se puede volver a correr: solo pisa costos y las filas de esas dos marcas.
  *
  * USO:
@@ -27,8 +28,8 @@ admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.proje
 const db = admin.firestore();
 
 const LUMI = 'pMujqcyIIDUF2EdSSX5V';
-// Margen y % pagable con saldo (decidido el 2026-11-11).
-const AJUSTES = { lumi: { margenPct: 25, saldoPct: 10 }, daida: { margenPct: 20, saldoPct: 10 } };
+// Margen y % pagable con saldo (2026-11-11: el saldo paga el 100 % también en Lumi y Daida).
+const AJUSTES = { lumi: { margenPct: 25, saldoPct: 100 }, daida: { margenPct: 20, saldoPct: 100 } };
 
 async function main() {
   console.log(CONFIRMED ? '→ ESCRIBIENDO en Firebase real' : '→ PRUEBA (no escribe nada; --confirm para aplicar)');

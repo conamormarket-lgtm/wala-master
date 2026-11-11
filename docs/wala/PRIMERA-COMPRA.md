@@ -15,7 +15,7 @@ ajustado para dirección está en un artifact privado del usuario. Construida el
   **S/ 15** de margen (margen por marca, o costo real si lo hay; menos 4 % de
   comisión y S/ 5 de provisión de monedas), quien invitó gana **S/ 10**.
 - El saldo paga **solo productos**, hasta el % de cada marca (100 % por
-  defecto; Lumi y Daida 10 %). El envío va aparte. Si dejaría el pedido en
+  defecto; desde el 2026-11-11 también Lumi y Daida al 100 %). El envío va aparte. Si dejaría el pedido en
   S/ 0, deja **S/ 1**.
 - Durante la semana, monedas y cupones se ganan pero están **en pausa**
   (checkout, `spendCoinsSecure`, `freezeCoinsSecure`, `redeemRewardSecure`,

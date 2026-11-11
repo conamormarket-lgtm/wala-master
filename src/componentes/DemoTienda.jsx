@@ -474,6 +474,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   /* ── Marco: igual en todas las páginas ── */
   const cabecera = {
+    // Semana de bienvenida: el saldo al lado de las monedas (abre su aviso).
+    ...(ver('bienvenida') && conSesion ? { saldoBienvenida: { saldo: 20, premio: 10, onAbrir: () => setAvisoBienvenida(true) } } : {}),
     enlaces: [
       { id: 'tienda', texto: 'Tienda', url: '/tienda', menu: 'tienda' },
       { id: 'crear', texto: 'Crear', url: '/personalizar' },

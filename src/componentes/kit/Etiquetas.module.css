@@ -366,6 +366,45 @@
   background: linear-gradient(110deg, transparent 25%, rgba(255, 220, 140, 0.3) 50%, transparent 75%);
 }
 
+/* ── Saldo de bienvenida (al lado de las monedas) ──────── */
+.saldoBienvenida {
+  padding: 0 0.8rem 0 0.55rem;
+  border-color: color-mix(in srgb, var(--primary-color) 35%, transparent);
+  background: linear-gradient(180deg, #f5f3ff 0%, #ddd6fe 140%);
+  color: var(--violet-700, #6d28d9);
+  box-shadow: 0 2px 8px -4px rgba(109, 40, 217, 0.45);
+  white-space: nowrap;
+}
+
+.saldoRegalo {
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .saldoBienvenida:hover {
+    box-shadow: 0 6px 14px -6px rgba(109, 40, 217, 0.55);
+  }
+}
+
+@media (max-width: 760px) {
+  .saldoGana {
+    display: none;
+  }
+}
+
+.saldoBienvenida:focus-visible {
+  outline-color: var(--violet-500);
+}
+
+:global([data-theme='dark']) .saldoBienvenida {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.25) 0%, rgba(139, 92, 246, 0.12) 100%);
+  color: var(--violet-300);
+  box-shadow: none;
+}
+
 /* ── Contador ──────────────────────────────────────────── */
 /* Se ancla a la esquina superior derecha del icono (su contenedor debe
    tener position: relative) y la monta un poco, como en las apps. */

@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, User, Heart, Bell, BellRing, ChevronDown } from 'lucide-react';
-import { Contador, SaldoMonedas } from './Etiquetas';
+import { Contador, SaldoMonedas, SaldoBienvenida } from './Etiquetas';
 import Boton from './Boton';
 import { Buscador } from './Formulario';
 import { RESORTE } from './Efectos';
@@ -75,6 +75,8 @@ export function Logo({ alto = 32 }) {
  *  - menuTienda: props de <MenuTienda>  · menuMarcas: props de <MenuMarcas>
  *  - tema: 'claro' | 'noche' + onTema → botón de tema (no en el celular)
  *  - monedas (null = aún no se sabe: "–"), monedasCargando (la píldora vacía)
+ *  - saldoBienvenida: { saldo, premio, onAbrir } la semana de bienvenida: el
+ *    saldo para la primera compra, al lado de las monedas (abre su aviso)
  *  - notificaciones: [{ id, titulo, texto, fecha, leida, tipo, imagen, url }]
  *    + onLeer(id, notificacion) (con `url` el menú se cierra), onMarcarLeidas,
  *    onVerTodas (sin ella no hay botón), limiteNotificaciones (5),
@@ -115,6 +117,7 @@ export function Cabecera({
   onTema,
   monedas = 0,
   monedasCargando = false,
+  saldoBienvenida,
   notificaciones = [],
   onLeer,
   onMarcarLeidas,
@@ -263,6 +266,9 @@ export function Cabecera({
       <div className={s.acciones}>
         {onTema && <span className={s.ocultarMovil}><BotonTema tema={tema} onCambiar={onTema} /></span>}
 
+        {usuario && saldoBienvenida && (
+          <SaldoBienvenida saldo={saldoBienvenida.saldo} premio={saldoBienvenida.premio} onClick={saldoBienvenida.onAbrir} />
+        )}
         {usuario && (monedasCargando ? (
           <SaldoMonedas cargando />
         ) : (

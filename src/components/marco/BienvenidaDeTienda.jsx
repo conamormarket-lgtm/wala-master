@@ -20,7 +20,7 @@ const marcarPopup = () => {
 
 // Donde el aviso no sale (ahí estorba o ya está la tarjeta).
 const FUERA = ['/checkout', '/cuenta/referidos', '/admin', '/bienvenida', '/login', '/registro'];
-const estaFuera = (ruta) => FUERA.some((r) => ruta.startsWith(r));
+export const estaFuera = (ruta) => FUERA.some((r) => ruta.startsWith(r));
 
 /**
  * ¿Las otras ventanas que se abren solas (Walito, la campaña) tienen que

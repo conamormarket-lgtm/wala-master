@@ -28,6 +28,8 @@ import { Cabecera } from '../../componentes/kit/Navegacion';
 import { navDeMarca, rutaDeMarca, sugerenciasDesdeBusqueda } from '../../componentes/kit/adaptadores';
 import s from './CabeceraDeTienda.module.css';
 import { nombreDeNivel } from '../../constants/tiers';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
+import { abrirAvisoBienvenida, estaFuera } from './BienvenidaDeTienda';
 
 // La cabecera de antes, solo con el interruptor cabeceraVieja (guia/ELIMINAR.md).
 const Header = lazy(() => import('../common/Header'));
@@ -395,8 +397,18 @@ function CabeceraConDatos() {
     navigate(`/buscar${params.toString() ? `?${params}` : ''}`);
   };
 
+  const { bienvenida } = usePrimeraCompra();
   const cabecera = (
     <Cabecera
+      // Semana de bienvenida: el saldo al lado de las monedas (abre su aviso).
+      saldoBienvenida={bienvenida?.fase?.estado === 'activa'
+        ? {
+          saldo: bienvenida.saldo,
+          premio: bienvenida.promo?.premio,
+          // Donde el aviso no sale (checkout, Referidos…), a la tarjeta de Mi cuenta.
+          onAbrir: () => (estaFuera(pathname) ? navigate('/cuenta/referidos') : abrirAvisoBienvenida()),
+        }
+        : undefined}
       // En la vista de celular del editor, con la forma del celular.
       celular={celular || (isEditModeActive && isPreviewMobile)}
       enlaces={enlaces}
