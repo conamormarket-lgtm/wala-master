@@ -44,7 +44,7 @@ instancia del servidor tarda hasta 1 minuto en enterarse (caché).
 | Piezas del kit | `src/componentes/kit/piezas/Bienvenida.jsx` (franja, fila del checkout, pausa, aviso al invitado, tarjeta de Mi cuenta) |
 | Checkout | `paginas/Checkout.jsx` (prop `bienvenida`), `components/checkout/CheckoutDeTienda.jsx`, `services/pedidoCheckout.js` (`saldoBienvenida`) |
 | Checkout de la app | `functions/mobileCheckout.js` (`welcomeBalance`), capacidad en `getMobileCheckoutStatusSecure` |
-| Franja arriba de la tienda | `components/marco/BienvenidaDeTienda.jsx` |
+| Aviso grande (popup: al entrar y cada 4 h, 5 s sin cerrar) y la píldora flotante que lo abre | `components/marco/BienvenidaDeTienda.jsx`, `components/marco/FlotantesDeLaTienda.jsx` (la franja de arriba se quitó el 2026-11-11) |
 | Mi cuenta → Referidos | `components/cuenta/ReferidosDeCuenta.jsx` |
 | Condiciones | `/bienvenida` (`config/legales/bienvenida.js`) y sección "Promociones" de los términos |
 | Admin | `/admin/primera-compra` (`paginas/admin/Bienvenida.jsx`, `components/panel/PrimeraCompraDelPanel.jsx`) |

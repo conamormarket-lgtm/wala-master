@@ -222,6 +222,16 @@
   text-decoration: none;
 }
 
+/* La píldora que abre algo (un botón): sin el aspecto de botón del navegador. */
+.pildoraBoton {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .pildoraEnlace:focus-visible {
   outline: 3px solid var(--violet-300);
   outline-offset: 2px;

@@ -106,13 +106,17 @@ export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiquet
  * Va con la moneda en un sello blanco de aro dorado. En el celular se
  * recoge en ese sello con "+15".
  *  - to: adónde lleva  · onIr: además de ir (cerrar menús…)
+ *  - onAbrir: sin `to`, la píldora es un botón que abre algo (la semana de
+ *    bienvenida abre su aviso grande)
  *  - onCerrar: la X (la tienda decide cuánto se oculta)
  */
-export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, icono = 'moneda' }) {
+export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, onAbrir, icono = 'moneda' }) {
   const t = { titulo: useTexto(titulo), texto: useTexto(texto), ocultar: useTexto('Ocultar') };
+  const Contenedor = !to && onAbrir ? 'button' : Enlace;
+  const props = !to && onAbrir ? { type: 'button', onClick: onAbrir } : { to, onClick: onIr };
   return (
     <div className={s.pildora}>
-      <Enlace to={to} onClick={onIr} className={s.pildoraEnlace} aria-label={[t.titulo, t.texto].filter(Boolean).join('. ')}>
+      <Contenedor {...props} className={[s.pildoraEnlace, !to && onAbrir && s.pildoraBoton].filter(Boolean).join(' ')} aria-label={[t.titulo, t.texto].filter(Boolean).join('. ')}>
         <span className={s.pildoraSello}>
           <IconoWala nombre={icono} tamano={36} sticker={false} />
           {monedas ? <span className={s.pildoraMonedas} aria-hidden="true">+{monedas}</span> : null}
@@ -121,7 +125,7 @@ export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, 
           <strong>{t.titulo}</strong>
           {t.texto && <span>{t.texto}</span>}
         </span>
-      </Enlace>
+      </Contenedor>
       {onCerrar && (
         <button type="button" className={s.pildoraCerrar} onClick={onCerrar} aria-label={t.ocultar}>
           <X aria-hidden="true" />

@@ -8,6 +8,7 @@ import {
   VentanaCampana, AvisoIdioma, AvisoInvitacion, ProveedorEnlaces, ProveedorTraduccion, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ESQUELETO_MARCA, ETAPAS_PRODUCCION,
 } from './kit';
+import { PopupBienvenida } from './kit/piezas/Bienvenida';
 import { PaginaEncuestaEntrega } from './kit/paginas/EncuestaEntrega';
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
@@ -132,6 +133,7 @@ const EXTRAS = [
   ['reto', 'Reto semanal'],
   ['triste', 'Walito triste'],
   ['invitacion', 'Aviso de invitación'],
+  ['bienvenida', 'Semana de bienvenida'],
 ];
 
 /* Reto de ejemplo (mismos campos que globals/activeChallenge; hoy no hay uno
@@ -333,6 +335,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const esAdmin = rol === 'admin';
   const enEditor = esAdmin && editando && pagina === 'inicio';
   const ver = (x) => extras.includes(x);
+  const [avisoBienvenida, setAvisoBienvenida] = useState(false);
   const alternar = (x) => setExtras((xs) => (xs.includes(x) ? xs.filter((y) => y !== x) : [...xs, x]));
   const avisar = useCallback((titulo, texto) => toast({ tipo: 'info', titulo, texto, duracion: 2200 }), [toast]);
 
@@ -518,7 +521,12 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         )}
       </>
     ),
-    izquierda: conSesion && pildora && !enEncuesta && (
+    izquierda: ver('bienvenida') ? (
+      <Parte n="M10" nombre="PildoraRecompensa · onAbrir" bloque={false}>
+        <PildoraRecompensa icono="regalo" titulo="Tienes S/ 20.00 de regalo" texto="Vence en 4 d 7 h" onAbrir={() => setAvisoBienvenida(true)} />
+        <PopupBienvenida abierta={avisoBienvenida} onCerrar={() => setAvisoBienvenida(false)} venceMs={Date.now() + (4 * 24 + 7) * 3600 * 1000} saldo={20} pendiente={10} onInvitar={() => setAvisoBienvenida(false)} />
+      </Parte>
+    ) : conSesion && pildora && !enEncuesta && (
       <Parte n="M10" nombre="PildoraRecompensa" bloque={false}>
         <PildoraRecompensa titulo="Gana 15 monedas" texto="Completa tu perfil de regalos" monedas={15} to="/encuesta-suscripcion" onCerrar={() => setPildora(false)} />
       </Parte>

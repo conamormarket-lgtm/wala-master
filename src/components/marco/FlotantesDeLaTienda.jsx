@@ -3,6 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { PilaFlotante, BotonWhatsApp, PildoraRecompensa } from '../../componentes/kit/piezas/Flotantes';
 import useWhatsAppDeLaRuta from './useWhatsAppDeLaRuta';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
+import { abrirAvisoBienvenida } from './BienvenidaDeTienda';
+import { tiempoRestante } from '../../utils/primeraCompra';
 import { esRutaDeJuego } from './modoJuego';
 
 // Walito (con su ventana, el reto y el recorrido) llega en su propio archivo,
@@ -43,6 +46,7 @@ export default function FlotantesDeLaTienda() {
   const { user, userProfile } = useAuth();
   const whatsapp = useWhatsAppDeLaRuta();
   const [sinPildora, setSinPildora] = useState(pildoraOculta);
+  const { bienvenida } = usePrimeraCompra();
 
   const ocultarPildora = () => {
     setSinPildora(true);
@@ -58,11 +62,23 @@ export default function FlotantesDeLaTienda() {
   const conPildora = Boolean(user && userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey)
     && !sinPildora && !SIN_PILDORA.some((r) => pathname.startsWith(r));
 
+  // Semana de bienvenida: su píldora va en el lugar de la de la encuesta y
+  // abre el aviso grande (BienvenidaDeTienda). Discreta: la franja de arriba se quitó.
+  const semana = bienvenida?.fase?.estado === 'activa' && !SIN_PILDORA.some((r) => pathname.startsWith(r)) && !pathname.startsWith('/cuenta/referidos');
+  const pildoraBienvenida = semana && (
+    <PildoraRecompensa
+      icono="regalo"
+      titulo={bienvenida.saldo > 0 ? `Tienes S/ ${Number(bienvenida.saldo).toFixed(2)} de regalo` : 'Tu primera compra gratis'}
+      texto={`Vence en ${tiempoRestante(bienvenida.fase.venceMs)}`}
+      onAbrir={abrirAvisoBienvenida}
+    />
+  );
+
   return (
     <PilaFlotante
       // Y en los minijuegos (modo juego): Walito y WhatsApp tapaban los tubos.
       ocultarEnCelular={CON_BOTON_FIJO.some((r) => pathname.startsWith(r)) || esRutaDeJuego(pathname)}
-      izquierda={conPildora && (
+      izquierda={pildoraBienvenida || (conPildora && (
         <PildoraRecompensa
           titulo="Gana 15 monedas"
           texto="Completa tu perfil de regalos"
@@ -70,7 +86,7 @@ export default function FlotantesDeLaTienda() {
           to="/encuesta-suscripcion"
           onCerrar={ocultarPildora}
         />
-      )}
+      ))}
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
       <Suspense fallback={null}><Kapi /></Suspense>
