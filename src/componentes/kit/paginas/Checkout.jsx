@@ -15,6 +15,8 @@ import { ListaEleccion } from '../piezas/Cuenta';
 import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
 import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from '../piezas/Direccion';
 import { PasosCompra, ResumenCompra, MetodoPago } from '../piezas/Checkout';
+import { AvisoInvitador } from '../piezas/Bienvenida';
+import { saldoAplicable } from '../../../utils/primeraCompra';
 import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
 import { TextoResaltado } from '../piezas/TextoResaltado';
 import { topeMonedasCheckout, repartoTopeCupon } from '../../../utils/topeMonedas';
@@ -35,8 +37,16 @@ const STICKERS = [
   { valor: 'kapi-smile', texto: 'Feliz', icono: <Smile aria-hidden="true" /> },
 ];
 
-/** Las cuentas del resumen (con o sin las monedas). */
-const cuentasDe = ({ items, usar, saldo, cupon, reglaEnvio }) => {
+/**
+ * Las cuentas del resumen (con o sin las monedas). En la semana de bienvenida
+ * (`bienvenida.enPausa`) no hay monedas ni cupón, y el saldo de bienvenida paga
+ * productos hasta su tope sin dejar el pedido en S/ 0 (utils/primeraCompra, la
+ * misma cuenta que el servidor).
+ */
+const cuentasDe = ({ items, usar: usarPedido, saldo, cupon: cuponPedido, reglaEnvio, bienvenida, usarSaldo }) => {
+  const pausa = Boolean(bienvenida?.enPausa);
+  const cupon = pausa ? null : cuponPedido;
+  const usar = pausa ? false : usarPedido;
   const subtotal = items.reduce((tot, it) => tot + it.precio * it.cantidad, 0);
   // Tope de monedas: el de la marca de cada producto (topeMonedas: un % o
   // monedas por producto; sin él, la mitad). La misma cuenta que hace el
@@ -50,7 +60,12 @@ const cuentasDe = ({ items, usar, saldo, cupon, reglaEnvio }) => {
   const descuentoCupon = reparto.descuentoCupon;
   const envioBase = subtotal > reglaEnvio.gratisDesde ? 0 : reglaEnvio.costo;
   const envio = cupon?.envioGratis ? 0 : envioBase;
-  return { subtotal, maximo, tope, descuentoMonedas, descuentoCupon, envioBase, envio, total: Math.max(0, subtotal - descuentoMonedas - descuentoCupon) + envio };
+  const maximoSaldo = pausa ? saldoAplicable({ disponible: bienvenida.saldo, tope: bienvenida.tope, subtotal, envio }) : 0;
+  const descuentoSaldo = pausa && usarSaldo ? maximoSaldo : 0;
+  return {
+    subtotal, maximo, tope, descuentoMonedas, descuentoCupon, envioBase, envio, maximoSaldo, descuentoSaldo,
+    total: Math.round((Math.max(0, subtotal - descuentoMonedas - descuentoCupon - descuentoSaldo) + envio) * 100) / 100,
+  };
 };
 
 const correoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c || '').trim());
@@ -100,6 +115,10 @@ const textoInvitacion = ({ nombre, aceptada }) => {
  *  - onPaso(n): al cambiar de paso (0 envío, 1 pago, 2 listo)
  *  - entrega: { fecha, ocasion, destinatario, aviso } (un regalo de una lista de deseos)
  *  - invitacion: { nombre, aceptada } (compra con un enlace de invitación)
+ *  - bienvenida: { enPausa, saldo, tope, venceMs, invitador } la semana de
+ *    bienvenida (piezas/Bienvenida): monedas y cupones en pausa, el saldo paga
+ *    productos hasta `tope`; invitador: { nombre, premio, genera, motivo, falta }
+ *    (props de AvisoInvitador: si la compra le da el premio a quien invitó)
  *  - Para pagar hace falta una cuenta: sin sesión se llena todo, pero el botón
  *    es "Inicia sesión para pagar" · onEntrar(ruta, datos): guardar lo llenado
  *    antes de ir a urlLogin o urlRegistro (al volver, llega en `inicial`)
@@ -112,7 +131,7 @@ export function PaginaCheckout({
   inicial = {}, paisSugerido,
   envio: reglaEnvio = { costo: 15, gratisDesde: 200 }, monedas = {}, onCupon, onPreparar, pago = {},
   listo, onListo, onPaso,
-  entrega, invitacion, urlCarrito = '/carrito', urlTienda = '/tienda', urlPedidos = '/cuenta/pedidos', urlLogin = '/login', urlRegistro = '/registro', onEntrar,
+  entrega, invitacion, bienvenida, urlCarrito = '/carrito', urlTienda = '/tienda', urlPedidos = '/cuenta/pedidos', urlLogin = '/login', urlRegistro = '/registro', onEntrar,
   estado, vacio,
 }) {
   const principal = direcciones.find((d) => d.principal) || direcciones[0];
@@ -139,6 +158,7 @@ export function PaginaCheckout({
   const [errores, setErrores] = useState({});
   const [error, setError] = useState('');
   const [usarMonedas, setUsarMonedas] = useState(false);
+  const [usarSaldo, setUsarSaldo] = useState(true);
   const [cupon, setCupon] = useState(null);
   const [paso, setPaso] = useState(0);
   const [pedido, setPedido] = useState(null);
@@ -156,8 +176,8 @@ export function PaginaCheckout({
   };
 
   const cuentas = useMemo(
-    () => cuentasDe({ items, usar: usarMonedas, saldo: monedas.saldo, cupon, reglaEnvio }),
-    [items, usarMonedas, monedas.saldo, cupon, reglaEnvio],
+    () => cuentasDe({ items, usar: usarMonedas, saldo: monedas.saldo, cupon, reglaEnvio, bienvenida, usarSaldo }),
+    [items, usarMonedas, monedas.saldo, cupon, reglaEnvio, bienvenida, usarSaldo],
   );
   // Lo último que se mandó a preparar (para volver a prepararlo si cambian las monedas en el pago).
   const preparados = useRef(null);
@@ -237,7 +257,8 @@ export function PaginaCheckout({
     try {
       const datos = {
         direccion, correo: pedirCorreo ? correo.trim() : perfil.email, guardar: modo === 'formulario' && guardar,
-        regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: cupon?.codigo, descuentoCupon: cuentas.descuentoCupon, total: cuentas.total,
+        regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: bienvenida?.enPausa ? undefined : cupon?.codigo, descuentoCupon: cuentas.descuentoCupon, total: cuentas.total,
+        saldoBienvenida: cuentas.descuentoSaldo,
       };
       const r = await onPreparar?.(datos);
       preparados.current = datos;
@@ -251,13 +272,20 @@ export function PaginaCheckout({
     }
   };
 
-  // Ya en el pago, las monedas se pueden prender o apagar: se vuelve a preparar
-  // el pago con el total nuevo (antes quedaban bloqueadas hasta "Cambiar el envío").
-  const cambiarMonedasEnPago = async (usar) => {
+  // Ya en el pago, las monedas (o el saldo de bienvenida) se pueden prender o
+  // apagar: se vuelve a preparar el pago con el total nuevo (antes quedaban
+  // bloqueadas hasta "Cambiar el envío").
+  const cambiarEnPago = (cual) => async (usar) => {
     if (ocupado || !preparados.current) return;
-    const nuevas = cuentasDe({ items, usar, saldo: monedas.saldo, cupon, reglaEnvio });
-    const datos = { ...preparados.current, guardar: false, monedas: nuevas.descuentoMonedas, total: nuevas.total, motivo: 'monedas' };
-    setUsarMonedas(usar);
+    const conSaldo = cual === 'saldo';
+    const nuevas = cuentasDe({
+      items, usar: conSaldo ? usarMonedas : usar, saldo: monedas.saldo, cupon, reglaEnvio, bienvenida, usarSaldo: conSaldo ? usar : usarSaldo,
+    });
+    const datos = {
+      ...preparados.current, guardar: false, monedas: nuevas.descuentoMonedas, saldoBienvenida: nuevas.descuentoSaldo, total: nuevas.total, motivo: 'monedas',
+    };
+    const setUsar = conSaldo ? setUsarSaldo : setUsarMonedas;
+    setUsar(usar);
     setError('');
     setOcupado('preparar');
     try {
@@ -266,8 +294,8 @@ export function PaginaCheckout({
       setPedido({ numero: r?.numero });
       setTarjetaFallo(false);
     } catch (err) {
-      setUsarMonedas(!usar);
-      setError(err?.message || 'No pudimos cambiar las monedas. Intenta nuevamente.');
+      setUsar(!usar);
+      setError(err?.message || (conSaldo ? 'No pudimos cambiar el saldo. Intenta nuevamente.' : 'No pudimos cambiar las monedas. Intenta nuevamente.'));
     } finally {
       setOcupado(null);
     }
@@ -334,23 +362,30 @@ export function PaginaCheckout({
               items={items}
               subtotal={cuentas.subtotal}
               descuentoMonedas={cuentas.descuentoMonedas}
+              descuentoSaldo={cuentas.descuentoSaldo}
               // El cupón con lo que de verdad descuenta (recortado al tope de la marca).
-              cupon={cupon && { ...cupon, descuento: cuentas.descuentoCupon }}
+              cupon={cupon && !bienvenida?.enPausa ? { ...cupon, descuento: cuentas.descuentoCupon } : null}
               envio={cuentas.envio}
               gratisDesde={reglaEnvio.gratisDesde}
               total={cuentas.total}
               abierto={resumenAbierto}
               onAlternar={() => setResumenAbierto((a) => !a)}
-              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarMonedasEnPago, cargando: monedas.cargando, sesion, urlLogin, bloqueado: Boolean(ocupado) }}
+              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarEnPago('monedas'), cargando: monedas.cargando, sesion, urlLogin, bloqueado: Boolean(ocupado), enPausa: Boolean(bienvenida?.enPausa) }}
+              saldoBienvenida={bienvenida?.enPausa && bienvenida.saldo > 0 ? {
+                saldo: bienvenida.saldo, maximo: cuentas.maximoSaldo, usar: usarSaldo, venceMs: bienvenida.venceMs,
+                onUsar: paso === 0 ? setUsarSaldo : cambiarEnPago('saldo'), bloqueado: Boolean(ocupado),
+              } : undefined}
               /* Ya en el pago, el cupón queda como se preparó (para cambiarlo, "Cambiar el envío"). */
-              cupones={onCupon && (paso === 0 || cupon) ? {
+              cupones={bienvenida?.enPausa ? { enPausa: true } : onCupon && (paso === 0 || cupon) ? {
                 aplicado: cupon,
                 onAplicar: async (c) => setCupon(await onCupon(c, { subtotal: cuentas.subtotal, subtotalProductos: cuentas.subtotal, envio: cuentas.envioBase })),
                 onQuitar: paso === 0 ? () => setCupon(null) : undefined,
               } : undefined}
               pie={(
                 <>
-                  {invitacion && <p className={s.invitacion}><Gift aria-hidden="true" /> <Texto>{textoInvitacion(invitacion)}</Texto></p>}
+                  {bienvenida?.invitador
+                    ? <AvisoInvitador {...bienvenida.invitador} />
+                    : invitacion && <p className={s.invitacion}><Gift aria-hidden="true" /> <Texto>{textoInvitacion(invitacion)}</Texto></p>}
                   {fuera && local && <p className={s.nota}><TextoResaltado resaltar={[local]}>{`Equivalente aprox.: ${local}`}</TextoResaltado></p>}
                   {fuera && usd != null && <p className={s.nota}><TextoResaltado resaltar={[`US$ ${usd.toFixed(2)}`]}>{`Pagarás por PayPal: US$ ${usd.toFixed(2)}. El cobro internacional es en dólares.`}</TextoResaltado></p>}
                 </>

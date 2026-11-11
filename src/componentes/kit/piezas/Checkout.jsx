@@ -8,6 +8,7 @@ import { Interruptor } from '../Formulario';
 import { Sello } from '../Marca';
 import { soles } from '../TarjetaProducto';
 import { FotoProducto } from './FotoProducto';
+import { FilaSaldoBienvenida, PausaBienvenida } from './Bienvenida';
 import s from './Checkout.module.css';
 
 /*
@@ -45,11 +46,13 @@ export function PasosCompra({ pasos = ['Envío', 'Pago'], actual = 0 }) {
  * Dice por qué no se puede si no se puede.
  *  - saldo · maximo (el tope de esta compra) · usar · onUsar(bool) · cargando
  *  - sesion · urlLogin · bloqueado (mientras se procesa)
+ *  - enPausa: semana de bienvenida (piezas/Bienvenida): no se usan, se dice por qué
  */
-export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, cargando = false, sesion = true, urlLogin = '/login', bloqueado = false }) {
+export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, cargando = false, sesion = true, urlLogin = '/login', bloqueado = false, enPausa = false }) {
   const usables = Math.min(saldo, maximo);
   let cuerpo;
-  if (cargando) cuerpo = <span className={s.monedasTexto}><span className={s.cargandoLinea} /><span className={s.oculto}><Texto>Cargando tus monedas…</Texto></span></span>;
+  if (enPausa && !cargando) cuerpo = <span className={s.monedasTexto}><strong><Texto>{saldo ? `Tienes ${saldo} monedas` : 'Monedas Walá'}</Texto></strong><PausaBienvenida que="monedas" /></span>;
+  else if (cargando) cuerpo = <span className={s.monedasTexto}><span className={s.cargandoLinea} /><span className={s.oculto}><Texto>Cargando tus monedas…</Texto></span></span>;
   else if (!sesion) cuerpo = <span className={s.monedasTexto}><strong><Texto>Monedas Walá</Texto></strong><small><Enlace to={urlLogin}><Texto>Inicia sesión</Texto></Enlace> <Texto>y paga parte de tu compra con tus monedas.</Texto></small></span>;
   else if (!saldo) cuerpo = <span className={s.monedasTexto}><strong><Texto>Monedas Walá</Texto></strong><small><Texto>Aún no tienes monedas. Gánalas en los minijuegos y retos.</Texto></small></span>;
   else if (usables < 1) cuerpo = <span className={s.monedasTexto}><strong><Texto>{`Tienes ${saldo} monedas`}</Texto></strong><small><Texto>Con monedas se paga solo una parte del precio de los productos; en esta compra no alcanza.</Texto></small></span>;
@@ -78,12 +81,16 @@ export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, carga
  *  - aplicado: { codigo, texto, aviso? } (aviso: lo que dice el servidor del
  *    cupón, debajo) · onAplicar(codigo): promesa (si no vale, lanza un Error
  *    con el mensaje) · onQuitar (sin él, el aplicado no se quita)
+ *  - enPausa: semana de bienvenida: los cupones no se usan (se dice por qué)
  */
-export function CampoCupon({ aplicado, onAplicar, onQuitar }) {
+export function CampoCupon({ aplicado, onAplicar, onQuitar, enPausa = false }) {
   const [codigo, setCodigo] = useState('');
   const [error, setError] = useState('');
   const [validando, setValidando] = useState(false);
   const textos = { placeholder: useTexto('¿Tienes un cupón?'), etiqueta: useTexto('Código de cupón') };
+  if (enPausa && !aplicado) {
+    return <div className={s.cuponPausa} data-componente="CampoCupon"><PausaBienvenida que="cupones" /></div>;
+  }
   if (aplicado) {
     return (
       <>
@@ -131,12 +138,14 @@ export function CampoCupon({ aplicado, onAplicar, onQuitar }) {
  *  - subtotal · descuentoMonedas · cupon: { codigo, descuento, envioGratis } ·
  *    envio · gratisDesde · total
  *  - monedas: props de FilaMonedas · cupones: props de CampoCupon
+ *  - descuentoSaldo · saldoBienvenida: props de FilaSaldoBienvenida (semana de
+ *    bienvenida: el saldo paga productos)
  *  - abierto · onAlternar (solo celular) · pie: lo que va al final (invitación,
  *    equivalencia en otra moneda)
  */
 export function ResumenCompra({
-  items = [], subtotal = 0, descuentoMonedas = 0, cupon, envio = 0, gratisDesde, total = 0,
-  monedas, cupones, abierto = false, onAlternar, pie,
+  items = [], subtotal = 0, descuentoMonedas = 0, descuentoSaldo = 0, cupon, envio = 0, gratisDesde, total = 0,
+  monedas, cupones, saldoBienvenida, abierto = false, onAlternar, pie,
 }) {
   const unidades = items.reduce((n, it) => n + it.cantidad, 0);
   // El envío es gratis en compras de MÁS de gratisDesde (con S/ 200 justos se cobra).
@@ -167,10 +176,12 @@ export function ResumenCompra({
             </li>
           ))}
         </ul>
+        {saldoBienvenida && <FilaSaldoBienvenida {...saldoBienvenida} />}
         {monedas && <FilaMonedas {...monedas} />}
         {cupones && <CampoCupon {...cupones} />}
         <dl className={s.cuentas}>
           <div><dt><Texto>Subtotal</Texto></dt><dd>{soles(subtotal)}</dd></div>
+          {descuentoSaldo > 0 && <div className={s.ahorro}><dt><Texto>Saldo de bienvenida</Texto></dt><dd>−{soles(descuentoSaldo)}</dd></div>}
           {descuentoMonedas > 0 && <div className={s.ahorro}><dt><Texto>Monedas Walá</Texto></dt><dd>−{soles(descuentoMonedas)}</dd></div>}
           {cupon?.descuento > 0 && !cupon?.envioGratis && <div className={s.ahorro}><dt><Texto>Cupón</Texto> {cupon.codigo}</dt><dd>−{soles(cupon.descuento)}</dd></div>}
           <div><dt><Texto>Envío</Texto></dt><dd>{envio === 0 ? <span className={s.gratis}><Texto>Gratis</Texto></span> : soles(envio)}</dd></div>

@@ -18,6 +18,8 @@ import {
 import { getProduct } from '../../services/products';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { PaginaReferidos } from '../../componentes/kit/paginas/CuentaRecompensas';
+import { TarjetaBienvenida } from '../../componentes/kit/piezas/Bienvenida';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { useTexto } from '../../componentes/kit/Traduccion';
 
 /*
@@ -168,6 +170,7 @@ export default function ReferidosDeCuenta() {
   // Lo que se comparte, en el idioma de quien invita (la frase entera).
   const textoInvitacion = useTexto(`Te invito a Walá: crea tu cuenta con mi link y recibe ${BONO_BIENVENIDA_INVITACION} monedas para tu primera compra.`);
   const queryClient = useQueryClient();
+  const { bienvenida } = usePrimeraCompra();
   const [ahora, setAhora] = useState(() => Date.now());
   const [abiertos, setAbiertos] = useState([]);
   const [verRanking, setVerRanking] = useState(false);
@@ -339,8 +342,21 @@ export default function ReferidosDeCuenta() {
     ganadas: personas.reduce((acc, r) => acc + (r.status === 'claimed' ? r.earnedCoins || 0 : 0), 0),
   };
 
+  const promo = bienvenida?.promo || {};
   return (
     <PaginaReferidos
+      bienvenida={bienvenida?.fase ? (
+        <TarjetaBienvenida
+          fase={bienvenida.fase}
+          saldo={bienvenida.saldo}
+          pendiente={bienvenida.pendiente}
+          premio={promo.premio}
+          minimo={promo.minimoNeto}
+          premios={bienvenida.premios}
+          enPausa={bienvenida.enPausa}
+          onInvitar={url ? compartir : undefined}
+        />
+      ) : null}
       url={url}
       codigo={codigo}
       monedas={Number(userProfile?.monedas) || 0}

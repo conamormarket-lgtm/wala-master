@@ -99,6 +99,7 @@ export const MENU_ADMIN = [
       { to: '/admin/misiones', texto: 'Misiones diarias', icono: 'misiones', permiso: PREMIOS },
       { to: '/admin/retos', texto: 'Retos semanales', icono: 'retos', permiso: PREMIOS },
       { to: '/admin/referidos', texto: 'Referidos', icono: 'referidos', permiso: PREMIOS },
+      { to: '/admin/primera-compra', texto: 'Primera compra gratis', icono: 'recompensas', permiso: PREMIOS },
       { to: '/admin/wordle', texto: 'La Palabra del día', icono: 'palabra', permiso: PREMIOS },
       { to: '/admin/ruleta', texto: 'La Ruleta de Walito', icono: 'ruleta', permiso: PREMIOS },
       { to: '/admin/bolitas', texto: 'Las Bolitas de Walito', icono: 'bolitas', permiso: PREMIOS },

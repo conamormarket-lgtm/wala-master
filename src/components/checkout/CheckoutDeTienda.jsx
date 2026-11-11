@@ -1,5 +1,7 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import usePrimeraCompra, { CLAVE_PRIMERA_COMPRA } from '../../hooks/usePrimeraCompra';
+import { cotizarPrimeraCompra } from '../../services/primeraCompra';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -130,6 +132,8 @@ export default function CheckoutDeTienda() {
   const toast = useGlobalToast();
   const invitacion = useInvitacionReferido();
   const sesion = tieneCuenta(user);
+  const queryClient = useQueryClient();
+  const { bienvenida: estadoBienvenida } = usePrimeraCompra();
 
   // Lo que se paga: los elegidos. Al preparar el pago se congela la lista (el
   // carrito puede cambiar después: al terminar se quitan los pagados).
@@ -298,6 +302,33 @@ export default function CheckoutDeTienda() {
     return cupon;
   };
 
+  /* ── Semana de bienvenida: el saldo que se puede usar en estos productos y,
+     para quien llegó con una invitación, si su compra premia a quien lo invitó ── */
+  const productosCotizar = useMemo(() => {
+    const out = {};
+    itemsParaCupon().forEach((it, i) => { out[`l${i}`] = { productoId: it.productId, precio: it.precio, cantidad: it.qty }; });
+    return out;
+  }, [elegidos]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { data: cotizacion } = useQuery({
+    queryKey: ['primeraCompraCotizar', user?.uid, JSON.stringify(productosCotizar)],
+    queryFn: () => cotizarPrimeraCompra(productosCotizar),
+    // Solo si está en su semana o llegó con una invitación (si no, no hay nada que mostrar).
+    enabled: sesion && elegidos.length > 0 && (estadoBienvenida?.fase?.estado === 'activa' || Boolean(invitacion)),
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const bienvenida = useMemo(() => {
+    if (!cotizacion) return undefined;
+    if (!cotizacion.enPausa && !cotizacion.invitador) return undefined;
+    return {
+      enPausa: cotizacion.enPausa,
+      saldo: cotizacion.saldo || 0,
+      tope: cotizacion.topeSaldo || 0,
+      venceMs: estadoBienvenida?.fase?.venceMs,
+      invitador: cotizacion.invitador || undefined,
+    };
+  }, [cotizacion, estadoBienvenida?.fase?.venceMs]);
+
   /* ── Preparar el pago (aún no hay pedido) ── */
   const alPreparar = async (datos) => {
     if (!elegidos.length) throw new Error('Selecciona al menos un producto para pagar.');
@@ -321,12 +352,14 @@ export default function CheckoutDeTienda() {
     const descuentoCupon = cuponEnvioGratis ? 0 : (datos.descuentoCupon ?? cupon?.descuento ?? 0);
     const cuponAplicado = cupon ? { code: cupon.codigo, descuento: descuentoCupon, envioGratis: cupon.envioGratis } : null;
     const shipping = cuponEnvioGratis ? 0 : costoEnvio(subtotal);
-    const total = Math.max(0, subtotal - discount - descuentoCupon) + shipping;
+    // Semana de bienvenida: el saldo paga productos (el servidor lo revisa).
+    const saldoBienvenida = Math.max(0, Number(datos.saldoBienvenida) || 0);
+    const total = Math.round((Math.max(0, subtotal - discount - descuentoCupon - saldoBienvenida) + shipping) * 100) / 100;
     // El teléfono con el código del país: fuera del Perú (en el Perú, el número tal cual, como antes).
     const phoneFull = extranjero ? `${prefijoDe(d.pais)}${values.phone}` : '';
 
     const { pseudoOrderId, esPeru, webOrderPayload } = armarPedidoWeb({
-      values, phoneFull, selectedItems: elegidos, discount, shipping, total, cuponAplicado, descuentoCupon, cuponEnvioGratis,
+      values, phoneFull, selectedItems: elegidos, discount, shipping, total, cuponAplicado, descuentoCupon, cuponEnvioGratis, saldoBienvenida,
       user, registryEventLabel, giftRegistryItem, muestraColor: (item) => muestraColor(item, catalogo),
     });
 
@@ -341,7 +374,7 @@ export default function CheckoutDeTienda() {
     }
 
     const { waLink, waGroups } = armarWhatsapp({
-      values, selectedItems: elegidos, subtotal, discount, shipping, total, cuponAplicado, descuentoCupon, esPeru, pseudoOrderId,
+      values, selectedItems: elegidos, subtotal, discount, shipping, total, cuponAplicado, descuentoCupon, esPeru, pseudoOrderId, saldoBienvenida,
       whatsappConfig, brandsList: marcas, registryEventLabel,
     });
 
@@ -403,6 +436,8 @@ export default function CheckoutDeTienda() {
     if (efectosRef.current || !datos) return;
     efectosRef.current = true;
     await aplicarEfectosDeCompra({ datos, pedidoWebId, user, freezeMonedas, toast });
+    // La primera compra cierra la semana de bienvenida: el saldo y las monedas cambian.
+    queryClient.invalidateQueries({ queryKey: [CLAVE_PRIMERA_COMPRA] });
     emitirCompra(metodo, datos);
   };
 
@@ -613,6 +648,7 @@ export default function CheckoutDeTienda() {
       onListo={alListo}
       onPaso={alPaso}
       entrega={entrega}
+      bienvenida={bienvenida}
       invitacion={invitacion ? { nombre: invitacion.nombre, aceptada: invitacion.tipo === 'invitacion' && invitacion.invitacion === 'aceptada' } : undefined}
       urlLogin={urlLogin('/checkout')}
       urlRegistro={`/registro?redirect=${encodeURIComponent('/checkout')}`}

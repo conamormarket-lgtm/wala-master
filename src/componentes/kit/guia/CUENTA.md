@@ -890,3 +890,10 @@ componente o su forma de recibir datos.
 
 Para volver atrás: cada paso en su propio commit; las páginas viejas no se
 borran hasta que las nuevas lleven un tiempo en producción.
+
+## Semana de bienvenida en Mis referidos (2026-11-11)
+
+`PaginaReferidos` lleva arriba la prop `bienvenida` (un nodo): la tienda pone
+`TarjetaBienvenida` (piezas/Bienvenida.jsx) con el reloj, el saldo disponible y
+por confirmar, la pausa de monedas y cada amigo con su estado. Sin semana, nada.
+Ver `docs/wala/PRIMERA-COMPRA.md`.

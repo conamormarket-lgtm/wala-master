@@ -23,6 +23,8 @@ export const ESTADOS_CHECKOUT = [
   ['variasMarcas', 'Varias marcas'],
   ['regalo', 'Regalo programado'],
   ['invitacion', 'Con invitación'],
+  ['bienvenida', 'Semana de bienvenida (S/ 50)'],
+  ['invitadoPremia', 'Invitado: premia a quien invitó'],
   ['incompleto', 'Falta una talla'],
   ['pestanaWhatsapp', 'Pestaña de WhatsApp'],
 ];
@@ -102,6 +104,15 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
       }}
       entrega={estados.includes('regalo') ? { fecha: '24 de octubre', ocasion: 'Cumpleaños', destinatario: 'María', aviso: 'Está cerca: la preparación y el envío toman de 7 a 30 días hábiles.' } : undefined}
       invitacion={estados.includes('invitacion') ? { nombre: 'Andrea', aceptada: true } : undefined}
+      // La semana de bienvenida (piezas/Bienvenida): monedas y cupones en pausa,
+      // S/ 50 de saldo para productos; o un invitado que ve si su compra premia.
+      bienvenida={estados.includes('bienvenida') || estados.includes('invitadoPremia') ? {
+        enPausa: true,
+        saldo: estados.includes('bienvenida') ? 50 : 0,
+        tope: 1000,
+        venceMs: Date.now() + (3 * 24 + 5) * 3600 * 1000,
+        invitador: estados.includes('invitadoPremia') ? { nombre: 'Andrea', premio: 10, genera: true } : undefined,
+      } : undefined}
       onEntrar={() => avisar('Lo llenado queda guardado', 'En la tienda vuelve al checkout después de entrar.', 'info')}
       onIrA={onIrA}
     />

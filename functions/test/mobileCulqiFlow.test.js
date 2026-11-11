@@ -74,6 +74,9 @@ async function fixture(provider) {
     verificarPreciosYStock: async (products) => ({ subtotal: Object.values(products).reduce((sum, p) => sum + p.precio * p.cantidad, 0), topeMonedas: 0 }),
     totalEsperadoCheckout: require('../checkoutTotals').totalEsperadoCheckout, ENVIO_ESTANDAR: 15, ENVIO_GRATIS_DESDE: 100,
     toleranciaCheckout: () => 0.01,
+    repartoTopeCupon: require('../checkoutTotals').repartoTopeCupon,
+    // La promo de bienvenida apagada: no toca nada del checkout de la app.
+    primeraCompra: { revisarCheckout: async () => ({ saldo: 0, escribir: () => {} }), alCrearPedido: async () => {} },
     mobileCheckoutResponse: (id, i) => ({ ...mobile.view(id, i), publicKey: 'pk_test_fixture' }),
   };
   context.pagos.limpiarPayloadCliente = (payload) => payload;
@@ -252,6 +255,7 @@ test('pedir por WhatsApp desde la app marca el cupón usado una sola vez; el de 
         runTransaction: async (fn) => fn({ get: async (r) => ({ exists: erp.has(r.id) }), set: (r, d) => erp.set(r.id, { ...erp.get(r.id), ...d }) }) }),
       congelarDisenos: async (p) => p, camposErpWala: async () => ({}), ERP_CANAL_WALA: 'WALA', WALA_ORDERS_COLLECTION: 'wala_pedidos', sanearWalaDocId: (x) => x,
       pagos: { resumirProductos: () => [] }, marcarCreacionesDelPedido: async () => {}, vincularCompraReferido: async () => {},
+      primeraCompra: { alCrearPedido: async () => {} },
       buscarCupon: async (_uid, code) => { const [id, cupon] = [...coupons].find(([, c]) => c.code === code) || []; return id ? { ref: { id }, cupon } : null; },
       db: { runTransaction: async (fn) => fn({ update: (r, d) => coupons.set(r.id, { ...coupons.get(r.id), ...d }) }) },
     };

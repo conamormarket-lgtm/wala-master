@@ -9,6 +9,7 @@ import {
 } from './kit';
 import { empresa } from '../config/empresa';
 import { TarjetaBorrarCuenta } from './kit/piezas/BorrarCuenta';
+import { TarjetaBienvenida } from './kit/piezas/Bienvenida';
 import { SE_BORRA, SE_CONSERVA } from '../config/legales/eliminarCuenta';
 import CREAR from './demo/crear.json';
 import { leerPrendaBase } from '../utils/prendaBase';
@@ -525,6 +526,22 @@ export function CuentaDemo({
   } else if (ruta === '/cuenta/referidos') {
     pagina = (
       <PaginaReferidos
+        // La semana de bienvenida (piezas/Bienvenida): saldo, reloj y cada amigo.
+        bienvenida={(
+          <TarjetaBienvenida
+            fase={{ estado: 'activa', venceMs: Date.now() + (4 * 24 + 7) * 3600 * 1000 }}
+            saldo={vacio ? 0 : 20}
+            pendiente={vacio ? 0 : 10}
+            premios={vacio ? [] : [
+              { id: 'a', nombre: 'Lucía', estado: 'disponible', monto: 10 },
+              { id: 'b', nombre: 'Diego', estado: 'disponible', monto: 10 },
+              { id: 'c', nombre: 'Carla', estado: 'pendiente', monto: 10 },
+              { id: 'd', nombre: 'Mateo', estado: 'no_elegible', monto: 0, motivo: 'Su compra en productos no llegó al mínimo.' },
+            ]}
+            enPausa
+            onInvitar={() => avisar('En el celular', 'Se abriría el menú de compartir del teléfono', 'info')}
+          />
+        )}
         ranking={{ items: vacio ? [] : RANKING, cargando }}
         url="https://www.wala.pe/invitar/ISAAC7K"
         codigo="ISAAC7K"

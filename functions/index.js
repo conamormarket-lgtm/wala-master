@@ -33,6 +33,7 @@ const {
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
 const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon, monedasDeLinea, topeDeMarca } = require("./checkoutTotals");
+const primeraCompraLogic = require("./primeraCompraLogic");
 const niveles = require("./nivelesLogic");
 const popupsEmbudo = require("./popupsEmbudo");
 const { adminConPermiso } = require("./adminAuth");
@@ -257,6 +258,15 @@ async function buscarPedidoPorCodigoWeb(erpDb, codigo) {
   }
   return null;
 }
+
+// ── Promo "Tu primera compra puede salir gratis" (functions/primeraCompra.js) ──
+// Saldo de bienvenida, pausa de monedas y cupones en la semana de bienvenida y
+// premio de S/ 10 por amigo. Lo usan el checkout, la creación del pedido, los
+// canjes y el reinicio de monedas.
+const primeraCompra = require("./primeraCompra")({
+  db, getErpDb, callerIsAdmin, duenoDeCodigo, buscarPedidoPorCodigoWeb, walaOrdersCollection: "wala_pedidos",
+});
+for (const [nombre, fn] of Object.entries(primeraCompra.callables)) exports[nombre] = fn;
 
 async function readCheckoutIntent(intentId, context, { exigirVigente = false } = {}) {
   const id = String(intentId || "").trim();
@@ -554,6 +564,18 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     const reparto = repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis, topeCupon });
     descuentoCupon = reparto.descuentoCupon;
 
+    // ── Semana de bienvenida (primeraCompra.js) ──
+    // Sin monedas ni cupones; el saldo de bienvenida paga productos hasta el
+    // tope de cada marca y nunca deja el pedido en S/ 0. Solo lee: lo que
+    // escribe va con las demás escrituras (bienvenida.escribir).
+    const envioGratisDesde = mobile ? 200 : ENVIO_GRATIS_DESDE;
+    const envioPrevio = totalEsperadoCheckout({ subtotal, envioGratis, envioEstandar: ENVIO_ESTANDAR, envioGratisDesde }).envio;
+    const bienvenida = await primeraCompra.revisarCheckout(t, {
+      uid, intentId, orderPayload, subtotal, envio: envioPrevio,
+      monedas: monedasPedidas, cupon: Boolean(cuponCode), mobile: Boolean(mobile),
+    });
+    const saldoBienvenida = bienvenida.saldo;
+
     // ── Monedas ──
     const historial = Array.isArray(u.historialMonedasEspera) ? [...u.historialMonedasEspera] : [];
     let liberar = 0;
@@ -582,9 +604,11 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     }
 
     // ── Total ──
+    // El saldo de bienvenida descuenta productos igual que las monedas (en la
+    // semana de bienvenida no hay monedas: nunca van juntos).
     const { envio, total: esperado } = totalEsperadoCheckout({
-      subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis,
-      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde: mobile ? 200 : ENVIO_GRATIS_DESDE,
+      subtotal, monedas: monedasPedidas + saldoBienvenida, descuentoCupon, envioGratis,
+      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde,
     });
     const unidades = Object.values(orderPayload.productos || {})
       .reduce((acc, p) => acc + Math.max(1, Number(p && p.cantidad) || 1), 0);
@@ -616,12 +640,14 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     // servidor al confirmar el cobro) y con la cuenta real de quien compra. El
     // `referido` tampoco se acepta del navegador: lo pone el servidor si validó
     // el enlace (referidoParaCheckout).
-    const { referido: _referidoDelCliente, ...payloadCliente } = pagos.limpiarPayloadCliente(orderPayload);
+    const { referido: _referidoDelCliente, saldoBienvenida: _saldoDelCliente, ...payloadCliente } = pagos.limpiarPayloadCliente(orderPayload);
     const payloadGuardado = {
       ...payloadCliente,
       ...(referido ? { referido } : {}),
       ...(uid ? { userId: uid } : {}),
       ...(cuponMovil ? { montoTotal: cobro.cobroPen, costoEnvio: envio, descuentoCupon } : {}),
+      // Lo puso el servidor tras revisarlo; el del navegador se descarta.
+      ...(saldoBienvenida > 0 ? { saldoBienvenida } : {}),
       modalidadPago: cobro.modalidad,
       montoAdelanto: 0,
       montoPendiente: cobro.cobroPen,
@@ -638,10 +664,11 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       amountPen: montoCobro,
       cobro,
       orderPayload: payloadGuardado,
-      totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado },
+      totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado, saldoBienvenida },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+    bienvenida.escribir(t);
 
     if (liberar > 0) {
       t.update(anteriorRef, { status: "reemplazada", reemplazadaPor: intentId, updatedAt: FieldValue.serverTimestamp() });
@@ -963,6 +990,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   await escribirEspejoPagado({ orderId, payload: pedido, uid, pago, montos });
   await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
+  await primeraCompra.alCrearPedido({ orderId, payload, uid, pagado: true });
 
   // 4) El cobro en Finanzas del ERP (adelanto pendiente de validar). Al aprobar el
   // pedido, el ERP lo enlaza con el número de pedido nuevo (origenPedidoWebId).
@@ -1070,6 +1098,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
   }
   await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
+  await primeraCompra.alCrearPedido({ orderId, payload, uid, pagado: false });
   await checkout.ref.set({ whatsappSolicitado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { id: orderId };
 });
@@ -1841,10 +1870,27 @@ exports.resetKapiCoins = onSchedule(
 
     // Un batch admite 500 escrituras. Con la tienda creciendo, un solo batch
     // reventaria en silencio y dejaria a media tienda con el saldo intacto.
+    // Semana de bienvenida (primeraCompra.js): sus monedas estuvieron en pausa;
+    // no se borran en la fase ni en los días siguientes.
+    const configBienvenida = await primeraCompra.leerConfig({ fresca: true });
+    const ahoraMs = Date.now();
+    const protegidos = new Set();
+    for (let i = 0; i < docs.length; i += 300) {
+      const refs = docs.slice(i, i + 300).map((d) => primeraCompra.estadoRef(d.id));
+      const snaps = await db.getAll(...refs);
+      snaps.forEach((s) => {
+        if (s.exists && primeraCompraLogic.protegidoDelReinicio(s.data(), ahoraMs, configBienvenida)) {
+          protegidos.add(s.ref.parent.parent.id);
+        }
+      });
+    }
+    if (protegidos.size) console.log(`resetKapiCoins: ${protegidos.size} cuentas en su semana de bienvenida no se reinician.`);
+
     const TAMANO_LOTE = 400;
     for (let i = 0; i < docs.length; i += TAMANO_LOTE) {
       const batch = db.batch();
       for (const doc of docs.slice(i, i + TAMANO_LOTE)) {
+        if (protegidos.has(doc.id)) continue;
         totalUnspent += Number(doc.data().monedas) || 0;
         batch.update(doc.ref, {
           monedas: 0,
@@ -4223,6 +4269,7 @@ exports.recordChallengeEventSecure = functions.https.onCall(async (data, context
 // ── Gastar monedas (canje de catálogo) ────────────────────────────────────────
 exports.spendCoinsSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid);
   const amount = Number(data && data.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
@@ -4249,6 +4296,7 @@ exports.spendCoinsSecure = functions.https.onCall(async (data, context) => {
 // ── Congelar monedas para un pedido (descuento en checkout) ────────────────────
 exports.freezeCoinsSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid);
   const amount = Number(data && data.amount);
   const orderId = data && data.orderId;
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -4600,6 +4648,14 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
 
   if (r.status === "claimed") {
     throw new functions.https.HttpsError("already-exists", "Ya reclamaste las monedas de este referido.");
+  }
+  // Compras de tu semana de bienvenida (dan saldo, no monedas) o pagadas con
+  // saldo de bienvenida (no dan premio): primeraCompra.registrarPremio.
+  if (r.premioModo === "primera_compra") {
+    throw new functions.https.HttpsError("failed-precondition", "Esta compra fue durante tu semana de bienvenida: su premio es en saldo, no en monedas.");
+  }
+  if (r.premioModo === "sin_premio") {
+    throw new functions.https.HttpsError("failed-precondition", "Esta compra se pagó con saldo de bienvenida, así que no genera monedas.");
   }
   // No puede referirse a sí mismo (la compra no puede ser del propio referrer).
   const ownOrder = (orderData.userId && orderData.userId === uid) ||
@@ -5328,6 +5384,7 @@ exports.llevarEnComboSecure = functions.https.onCall(async (data, context) => {
 
 exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid);
   const rewardId = data && data.rewardId;
   if (!rewardId) {
     throw new functions.https.HttpsError("invalid-argument", "Falta rewardId.");
@@ -5898,6 +5955,7 @@ async function calcularDescuentoCupon(cupon, datos) {
 // ── Validar un cupón (no lo consume) ──────────────────────────────────────────
 exports.validarCuponSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid, { cupones: true });
   try {
     const encontrado = await buscarCupon(uid, data && data.code);
     const motivo = motivoRechazo(encontrado && encontrado.cupon);

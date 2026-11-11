@@ -172,12 +172,13 @@ export const businessDaysUntil = (isoDate) => {
  *  - values: los del formulario · phoneFull: el teléfono con su código de país
  *  - selectedItems: los elegidos del carrito
  *  - discount (monedas), shipping, total, cuponAplicado ({ code }),
- *    descuentoCupon, cuponEnvioGratis
+ *    descuentoCupon, cuponEnvioGratis, saldoBienvenida (semana de bienvenida:
+ *    el servidor lo vuelve a revisar y es el que queda en el pedido)
  *  - user · registryEventLabel, giftRegistryItem (el regalo de /regalar)
  *  - muestraColor(item): si el color del artículo dice algo (cartValidation)
  */
 export function armarPedidoWeb({
-  values, phoneFull, selectedItems, discount, shipping, total, cuponAplicado, descuentoCupon, cuponEnvioGratis,
+  values, phoneFull, selectedItems, discount, shipping, total, cuponAplicado, descuentoCupon, cuponEnvioGratis, saldoBienvenida = 0,
   user, registryEventLabel, giftRegistryItem, muestraColor,
 }) {
     const pseudoOrderId = `PD-${Date.now().toString(36).toUpperCase()}`;
@@ -542,6 +543,7 @@ export function armarPedidoWeb({
       montoPendiente: total,
       costoEnvio: shipping, // se persiste el envío para que el desglose del detalle cuadre
       ...(discount > 0 && { descuentoMonedas: discount }),
+      ...(saldoBienvenida > 0 && { saldoBienvenida }),
       // Deja rastro del cupón en el pedido: sin esto, el desglose del detalle
       // no cuadra con lo que se cobró y nadie sabe de dónde salió la rebaja.
       ...(cuponAplicado?.code && { cuponCode: cuponAplicado.code }),
@@ -662,7 +664,7 @@ export function armarPedidoWeb({
  *  - whatsappConfig: { principalNumber, multimarca, customText } · brandsList
  */
 export function armarWhatsapp({
-  values, selectedItems, subtotal, discount, shipping, total, cuponAplicado, descuentoCupon, esPeru, pseudoOrderId,
+  values, selectedItems, subtotal, discount, shipping, total, cuponAplicado, descuentoCupon, esPeru, pseudoOrderId, saldoBienvenida = 0,
   whatsappConfig, brandsList, registryEventLabel,
 }) {
     const refGuardado = leerReferidoGuardado();
@@ -706,6 +708,9 @@ export function armarWhatsapp({
 
     message += `Resumen de Pago:\n`;
     message += `Producto(s): S/ ${subtotal.toFixed(2)}\n`;
+    if (saldoBienvenida > 0) {
+      message += `Saldo de bienvenida: - S/ ${saldoBienvenida.toFixed(2)}\n`;
+    }
     if (discount > 0) {
       message += `Descuento (Monedas): - S/ ${discount.toFixed(2)}\n`;
     }
@@ -769,6 +774,7 @@ export function armarWhatsapp({
       if (brandLabel) {
         m += `(Parte del pedido #${pseudoOrderId}; puede incluir productos de otras marcas con otros asesores.)\n`;
       } else {
+        if (saldoBienvenida > 0) m += `Saldo de bienvenida: - S/ ${saldoBienvenida.toFixed(2)}\n`;
         if (discount > 0) m += `Descuento (Monedas): - S/ ${discount.toFixed(2)}\n`;
         if (cuponAplicado?.code) {
           m += descuentoCupon > 0

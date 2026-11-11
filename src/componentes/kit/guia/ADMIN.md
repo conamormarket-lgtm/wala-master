@@ -2789,3 +2789,13 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 | 2026-11-02 | D3b en el kit: `PaginaPagos` (historial, nuevo enlace, ajustes) y `GraficoTendencia` (líneas o barras, teclado, tabla oculta, colores validados); adaptadores de pagos con pruebas | `paginas/admin/Pagos.jsx`, `piezas/admin/Grafico.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3 dividido en tramos (a: recepción, b: pagos, c: cuentas y reclamos). D3a en el kit: `PaginaRecepcion`, `Cifra` / `FilaCifras`, `TarjetaEnvio`; adaptadores de recepción con pruebas | `paginas/admin/Pedidos.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Pedidos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2d en el kit: `PaginaBlueprints`, `PasoAdmin` y `PaginaPlantillasYoryo` (siete pasos, uno a la vez); adaptadores de blueprints con pruebas. **D2 completo en el kit** | `paginas/admin/Herramientas.jsx`, `piezas/admin/Pasos.jsx`, `adaptadoresAdmin.js` |
+
+## Primera compra gratis (/admin/primera-compra, 2026-11-11)
+
+`PaginaPrimeraCompraAdmin` (paginas/admin/Bienvenida.jsx), en "Premios y
+juegos": cifras (en su semana, primeras compras, amigos que compraron, saldo
+usado por amigo), pestañas Premios (con "Revertir" en ⋯), Cuentas y Ajustes
+(interruptor con confirmación, montos y margen / % pagable por marca). Nace en
+el kit (sin página vieja). Datos: `primeraCompraConfigSecure`,
+`primeraCompraListaSecure`, `primeraCompraRevertirSecure`. Ver
+`docs/wala/PRIMERA-COMPRA.md`.

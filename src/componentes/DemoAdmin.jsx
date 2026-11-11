@@ -34,6 +34,7 @@ import { normalizarPopup, POPUP_ENCUESTA_DEFAULT } from '../services/popupsLogic
 import { normalizarPremio, normalizarConfig } from '../utils/ruletaModel';
 import MARCAS_TIENDA from './demo/marcas.json';
 import { CargandoPanel } from './kit/piezas/admin/CargandoPanel';
+import { PaginaPrimeraCompraAdmin } from './kit/paginas/admin/Bienvenida';
 import cs from './ComponentesPage.module.css';
 import s from './DemoAdmin.module.css';
 
@@ -77,6 +78,7 @@ const HECHAS = [
   ['/admin/gestion-pagos', 'Pagos'],
   ['/admin/libro-reclamaciones', 'Reclamos'],
   ['/admin/referidos', 'Referidos'],
+  ['/admin/primera-compra', 'Primera compra gratis'],
   ['/admin/misiones', 'Misiones'],
   ['/admin/retos', 'Retos'],
   ['/admin/recompensas', 'Recompensas'],
@@ -1432,6 +1434,36 @@ function PanelDePrueba() {
           <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Esta pestaña todavía no está en el kit" texto={`Se arma en ${{ tecnico: 'D4d' }[resPestana] || 'D4'} (guia/ADMIN.md).`} />
         )}
       </MarcoResultados>
+    );
+  } else if (ruta === '/admin/primera-compra') {
+    const ahora = Date.now();
+    const H = 3600 * 1000;
+    pagina = (
+      <PaginaPrimeraCompraAdmin
+        config={{
+          activa: true, desdeMs: ahora - 9 * 24 * H, horas: 168, premio: 10, minimoNeto: 50, margenMinimo: 15, comisionPct: 4,
+          provisionMonedas: 5, margenPorDefecto: 66.67, saldoPctPorDefecto: 100, diasProteccionMonedas: 7, cantidadCostos: 49,
+          marcas: { lumi: { margenPct: 25, saldoPct: 10 }, daida: { margenPct: 20, saldoPct: 10 } },
+        }}
+        marcas={[{ id: 'geeks', nombre: 'Con Amor Geeks' }, { id: 'yoryo', nombre: 'Yoryo' }, { id: 'lumi', nombre: 'Lumi' }, { id: 'daida', nombre: 'Daida Hogar' }]}
+        premios={vacio ? [] : [
+          { id: 'b1', invitadorUid: 'u1', invitadorNombre: 'Ana', compradorNombre: 'Lucía', orderId: 'PD-MH3K2', estado: 'disponible', monto: 10, neto: 79, contribucion: 41.2, fechaMs: ahora - 30 * H },
+          { id: 'b2', invitadorUid: 'u1', invitadorNombre: 'Ana', compradorNombre: 'Diego', orderId: 'PD-MH4Q9', estado: 'pendiente', monto: 10, neto: 65, contribucion: 30.1, fechaMs: ahora - 6 * H },
+          { id: 'b3', invitadorUid: 'u2', invitadorNombre: 'Rodrigo', compradorNombre: 'Mateo', orderId: 'PD-MH5A1', estado: 'no_elegible', monto: 0, motivo: 'margen', neto: 62, contribucion: 4.9, fechaMs: ahora - 50 * H },
+          { id: 'b4', invitadorUid: 'u3', invitadorNombre: 'Valeria', compradorNombre: 'Sofía', orderId: 'PD-MH2Z7', estado: 'revertido', monto: 10, motivo: 'revertido', neto: 89, contribucion: 46, fechaMs: ahora - 80 * H },
+        ]}
+        fases={vacio ? [] : [
+          { uid: 'u1', estado: 'activa', inicioMs: ahora - 2 * 24 * H, venceMs: ahora + 5 * 24 * H, usado: 0 },
+          { uid: 'u2', estado: 'usada', inicioMs: ahora - 6 * 24 * H, venceMs: ahora + 24 * H, usado: 40, orderId: 'PD-MH1B3' },
+          { uid: 'u3', estado: 'vencida', inicioMs: ahora - 9 * 24 * H, venceMs: ahora - 2 * 24 * H, usado: 0 },
+          { uid: 'u4', estado: 'no_aplica', motivo: 'cliente_previo', inicioMs: null, venceMs: null, usado: 0 },
+        ]}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))}
+        onGuardar={async () => { await espera(700); }}
+        onRevertir={async () => { await espera(700); }}
+      />
     );
   } else if (ruta === '/admin/referidos') {
     pagina = <PaginaReferidosAdmin referidos={vacio ? [] : REFERIDOS_DEMO} personas={vacio ? [] : referentesDesde(REFERIDOS_DEMO, REFERENTES_DEMO)} cargando={con('cargando')} error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined} onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))} />;

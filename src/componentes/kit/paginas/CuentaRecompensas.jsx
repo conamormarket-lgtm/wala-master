@@ -400,7 +400,7 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
  */
 export function PaginaReferidos({
   url, codigo, monedas = 0, resumen = {}, grupos = [], cargando = false, bono = 10, premio = 15,
-  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking, onVerAbajo,
+  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking, onVerAbajo, bienvenida,
 }) {
   const { entraron = 0, cuentasNuevas = 0, compras = 0, porReclamar = 0, ganadas = 0 } = resumen;
   const otros = grupos.filter((g) => g.tipo !== 'invitacion');
@@ -430,6 +430,8 @@ export function PaginaReferidos({
         titulo={<Texto>Invita y gana monedas</Texto>}
         subtitulo={<Texto>Cada moneda vale S/ 1 de descuento, y la ganas cuando el pedido se entrega.</Texto>}
       />
+      {/* La semana de bienvenida (piezas/Bienvenida: TarjetaBienvenida), si la cuenta la tiene. */}
+      {bienvenida}
       <div className={s.formas}>
         <FormaGanar icono="regalo" titulo="Invita a alguien nuevo">
           <TextoResaltado resaltar={[`${bono} monedas`, `${premio} monedas`]}>{`Con tu link crea su cuenta y recibe ${bono} monedas. Con su primera compra (tiene 30 días) tú ganas ${premio} monedas, o el 5 % / 10 % si es más.`}</TextoResaltado>

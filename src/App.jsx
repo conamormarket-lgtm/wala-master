@@ -64,6 +64,8 @@ const Footer = lazy(() => import('./components/common/Footer'));
 const AnuncioDeCampana = lazy(() => import('./components/marco/AnuncioDeCampana'));
 // El aviso de una invitación (el del kit; con campanasViejo, el de antes).
 const AvisoInvitacion = lazy(() => import('./components/marco/AvisoInvitacionDeTienda'));
+const BienvenidaDeTienda = lazy(() => import('./components/marco/BienvenidaDeTienda'));
+const BienvenidaPage = lazy(() => import('./pages/BienvenidaPage'));
 const FirebaseWarning = lazy(() => import('./components/common/FirebaseWarning'));
 const RastreoCalor = lazy(() => import('./components/analytics/RastreoCalor'));
 
@@ -185,6 +187,7 @@ const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion')
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
 const RutasPrendasCrear = lazy(() => import('./pages/admin/RutasPrendasCrear'));
 const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
+const AdminPrimeraCompra = lazy(() => import('./pages/admin/AdminPrimeraCompra'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
 const AdminCategorias = lazy(() => import('./pages/admin/AdminCategorias'));
 const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
@@ -331,6 +334,7 @@ const GlobalLayout = ({ children }) => {
       {/* En la vista previa del mapa de calor no van avisos ni popups: la
           página tiene que verse como la vio el visitante, sin nada encima. */}
       {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AvisoInvitacion /></Suspense>}
+      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><BienvenidaDeTienda /></Suspense>}
       <ScrollTracker />
       <BarraDeAdmin />
       {isEditModeActive && (
@@ -530,6 +534,7 @@ function App() {
 
                                       <Route path="whatsapp" element={<AdminWhatsApp />} />
                                       <Route path="referidos" element={<AdminReferidos />} />
+                                      <Route path="primera-compra" element={<AdminPrimeraCompra />} />
 
                                       {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
                                       <Route path="gestion-pagos" element={<AdminGestionPagos />} />
@@ -588,6 +593,7 @@ function App() {
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                                  <Route path="/bienvenida" element={<BienvenidaPage />} />
                                   {/* Pública: cómo borrar la cuenta (el enlace de Google Play). */}
                                   <Route path="/eliminar-cuenta" element={<EliminarCuentaPage />} />
                                   {/* El registro enlazaba aquí y daba página no encontrada. */}

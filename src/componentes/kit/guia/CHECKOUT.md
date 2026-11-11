@@ -309,3 +309,21 @@ varias marcas; sin sesión en la tienda (sí en la demo); la app Android.
 4. Cambiar la etapa de pago por `MetodoPago`, sin tocar Culqi ni PayPal.
 5. Agregar los pasos y la pantalla de listo.
 6. Borrar `CheckoutPage.module.css` cuando lleve un tiempo en producción.
+
+## Semana de bienvenida (2026-11-11)
+
+Promo "Tu primera compra puede salir gratis" (`docs/wala/PRIMERA-COMPRA.md`).
+`PaginaCheckout` recibe `bienvenida: { enPausa, saldo, tope, venceMs, invitador }`
+(la tienda la arma con `primeraCompraCotizarSecure`). En la semana:
+
+- `FilaMonedas` y `CampoCupon` con `enPausa` dicen por qué no se usan
+  (`PausaBienvenida`); el pedido va sin monedas ni cupón.
+- `FilaSaldoBienvenida` (piezas/Bienvenida.jsx): "Usar mi saldo de
+  bienvenida −S/ x", prendido por defecto; en el pago se cambia y se vuelve a
+  preparar (como las monedas). Paga productos hasta `tope` y deja S/ 1
+  (`utils/primeraCompra.js`, espejo del servidor).
+- El resumen suma la línea "Saldo de bienvenida".
+- Con `invitador`, el pie dice si la compra premia a quien invitó o cuánto
+  falta (`AvisoInvitador`), en vez de la nota de monedas.
+
+En la demo: estados "Semana de bienvenida (S/ 50)" e "Invitado: premia a quien invitó".
