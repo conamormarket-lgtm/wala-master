@@ -1,0 +1,37 @@
+.page { max-width: 1160px; margin: 24px auto 80px; padding: 0 24px; }
+:global(#main-content-area:has([data-kapi-product-page])) { flex: 1 0 auto; }
+.page nav { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; font-size: 14px; }
+.page a { color: inherit; text-underline-offset: 4px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 42px; }
+.photo { display: flex; align-items: center; justify-content: center; border-radius: 24px; background: #f1eff5; min-height: 300px; overflow: hidden; }
+.photo img { width: 100%; max-height: 560px; object-fit: contain; }
+.details { align-self: center; min-width: 0; }
+.page h1 { font-size: clamp(24px, 3vw, 36px); line-height: 1.18; margin: 12px 0 20px; overflow-wrap: anywhere; }
+.page h2 { font-size: 18px; margin: 22px 0 10px; }
+.page p { line-height: 1.65; }
+.eyebrow { font-size: 11px; letter-spacing: .12em; font-weight: 700; opacity: .75; }
+.price { font-size: 28px; font-weight: 750; margin: 0; }
+.options { padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.options li { border: 1px solid #937bb066; border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.note { font-size: 12px; opacity: .7; }
+.explain { margin: 18px 0 4px; padding: 13px 20px; background: #7741b2; color: white; border: 0; border-radius: 12px; font: inherit; cursor: pointer; }
+.explain:focus-visible { outline: 3px solid #bb8af3; outline-offset: 4px; }
+.description { max-width: 760px; margin-top: 36px; }
+@media (min-width: 769px) {
+  :global(body:has([data-kapi-bubble-mode="chat"])) .page { margin-left: 32px; margin-right: 350px; max-width: none; }
+}
+@media (min-width: 769px) and (max-width: 1199px) {
+  :global(body:has([data-kapi-bubble-mode="chat"])) .grid { grid-template-columns: 1fr; gap: 24px; }
+}
+@media (max-width: 768px) and (min-height: 640px) {
+  :global(body:has([data-kapi-bubble-mode="chat"]) #root:has([data-kapi-product-page])) {
+    height: calc(100dvh - 350px - var(--bottom-nav-height, 56px)); min-height: 0;
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+}
+@media (max-width: 768px) {
+  .page { margin-top: 18px; padding: 0 20px; margin-bottom: 150px; }
+  .grid { grid-template-columns: 1fr; gap: 24px; }
+  .photo { min-height: 220px; }
+  .photo img { max-height: 370px; }
+}

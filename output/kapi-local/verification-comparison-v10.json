@@ -1,0 +1,1229 @@
+[
+  {
+    "request": "Quiero una casaca de Naruto para regalar, tengo hasta 120 soles. Muéstrame tres opciones.",
+    "status": 200,
+    "elapsedMs": 12349,
+    "response": {
+      "message": "¡Encontré tres casacas de Naruto dentro de tu presupuesto! Hay diseños de Modo Chakra Kurama, Naruto y Kurama, y Naruto Niño y Hokage. ¿Cuál crees que le gustaría más?",
+      "gesture": "wave",
+      "guide": null,
+      "product_ids": [
+        "CRgvIlaI3PTpKT17gxWC",
+        "b7auhoBIAw4e2flktska",
+        "uDhUbWBUzRp8Oyo91j67"
+      ],
+      "comparison": null,
+      "products": [
+        {
+          "id": "CRgvIlaI3PTpKT17gxWC",
+          "name": "Casaca Naruto · Modo Chakra Kurama",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FCRgvIlaI3PTpKT17gxWC%2Fmain_var_1788976285322_1792701142122_Sudadera%20rosa%20con%20estampados%20naranjas.webp?alt=media&token=add5e2b6-5668-42e8-b9bb-54966f27600c",
+          "path": "/producto/CRgvIlaI3PTpKT17gxWC"
+        },
+        {
+          "id": "b7auhoBIAw4e2flktska",
+          "name": "Casaca Naruto · Naruto y Kurama",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fb7auhoBIAw4e2flktska%2Fmain_var_1788976285313_1792697529313_Sudadera%20negra%20Naruto%20con%20gr%C3%A1ficos%20frontales.webp?alt=media&token=6d92753c-21bd-42a6-baff-1c7a980f6e77",
+          "path": "/producto/b7auhoBIAw4e2flktska"
+        },
+        {
+          "id": "uDhUbWBUzRp8Oyo91j67",
+          "name": "Casaca Naruto · Naruto Niño y Hokage",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FuDhUbWBUzRp8Oyo91j67%2Fmain_var_1788976285321_1792700285006_Sudadera%20marfil%20con%20emblema%20y%20estampado.webp?alt=media&token=a52afa02-f84b-4579-aeb3-a206a8a66ea4",
+          "path": "/producto/uDhUbWBUzRp8Oyo91j67"
+        }
+      ],
+      "usage": {
+        "inputTokens": 12106,
+        "outputTokens": 258,
+        "embeddingTokens": 7
+      },
+      "provider": "OpenAI",
+      "model": "gpt-6-luna",
+      "catalog": {
+        "projectId": "sistema-gestion-3b225",
+        "source": "Catálogo publicado de Walá · solo lectura",
+        "loaded": true,
+        "count": 205,
+        "partial": false
+      }
+    }
+  },
+  {
+    "request": "Compara las tres: le gusta mucho Kurama, ¿cuál me conviene más?",
+    "status": 200,
+    "elapsedMs": 5735,
+    "response": {
+      "message": "Te conviene más “Naruto y Kurama”: es el único cuyo diseño menciona a Kurama directamente y coincide mejor con su gusto. “Modo Chakra Kurama” también podría gustarle, mientras que “Naruto Niño y Hokage” destaca otros aspectos; las tres tienen las mismas tallas y opciones de color. ¿Sabes qué talla usa?",
+      "gesture": "think",
+      "guide": null,
+      "product_ids": [
+        "CRgvIlaI3PTpKT17gxWC",
+        "b7auhoBIAw4e2flktska",
+        "uDhUbWBUzRp8Oyo91j67"
+      ],
+      "comparison": {
+        "budget": 120,
+        "rows": [
+          {
+            "id": "CRgvIlaI3PTpKT17gxWC",
+            "advantage": "El diseño alude a Kurama mediante su Modo Chakra, que también encaja con su gusto.",
+            "limitation": "El nombre no menciona a Naruto y Kurama juntos.",
+            "price": 109,
+            "stock": "available",
+            "withinBudget": true,
+            "overBudgetBy": 0
+          },
+          {
+            "id": "b7auhoBIAw4e2flktska",
+            "advantage": "El diseño nombra directamente a Naruto y Kurama, ideal si le gusta mucho Kurama.",
+            "limitation": "No destaca el Modo Chakra Kurama.",
+            "price": 109,
+            "stock": "available",
+            "withinBudget": true,
+            "overBudgetBy": 0
+          },
+          {
+            "id": "uDhUbWBUzRp8Oyo91j67",
+            "advantage": "Presenta a Naruto en sus etapas de niño y Hokage.",
+            "limitation": "No menciona a Kurama en el diseño.",
+            "price": 109,
+            "stock": "available",
+            "withinBudget": true,
+            "overBudgetBy": 0
+          }
+        ],
+        "lowestPriceIds": [
+          "CRgvIlaI3PTpKT17gxWC",
+          "b7auhoBIAw4e2flktska",
+          "uDhUbWBUzRp8Oyo91j67"
+        ],
+        "priceGap": 0,
+        "totalPrice": 327,
+        "recommendedId": "b7auhoBIAw4e2flktska"
+      },
+      "products": [
+        {
+          "id": "CRgvIlaI3PTpKT17gxWC",
+          "name": "Casaca Naruto · Modo Chakra Kurama",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FCRgvIlaI3PTpKT17gxWC%2Fmain_var_1788976285322_1792701142122_Sudadera%20rosa%20con%20estampados%20naranjas.webp?alt=media&token=add5e2b6-5668-42e8-b9bb-54966f27600c",
+          "path": "/producto/CRgvIlaI3PTpKT17gxWC"
+        },
+        {
+          "id": "b7auhoBIAw4e2flktska",
+          "name": "Casaca Naruto · Naruto y Kurama",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fb7auhoBIAw4e2flktska%2Fmain_var_1788976285313_1792697529313_Sudadera%20negra%20Naruto%20con%20gr%C3%A1ficos%20frontales.webp?alt=media&token=6d92753c-21bd-42a6-baff-1c7a980f6e77",
+          "path": "/producto/b7auhoBIAw4e2flktska"
+        },
+        {
+          "id": "uDhUbWBUzRp8Oyo91j67",
+          "name": "Casaca Naruto · Naruto Niño y Hokage",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FuDhUbWBUzRp8Oyo91j67%2Fmain_var_1788976285321_1792700285006_Sudadera%20marfil%20con%20emblema%20y%20estampado.webp?alt=media&token=a52afa02-f84b-4579-aeb3-a206a8a66ea4",
+          "path": "/producto/uDhUbWBUzRp8Oyo91j67"
+        }
+      ],
+      "usage": {
+        "inputTokens": 5197,
+        "outputTokens": 391,
+        "embeddingTokens": 0
+      },
+      "provider": "OpenAI",
+      "model": "gpt-6-luna",
+      "catalog": {
+        "projectId": "sistema-gestion-3b225",
+        "source": "Catálogo publicado de Walá · solo lectura",
+        "loaded": true,
+        "count": 205,
+        "partial": false
+      }
+    }
+  },
+  {
+    "request": "¿Y si solo puedo gastar 100 soles, cuál elegirías de esas tres?",
+    "status": 200,
+    "elapsedMs": 5282,
+    "response": {
+      "message": "Con un máximo de 100 soles, no elegiría ninguna de esas tres: todas superan tu presupuesto y cuestan lo mismo. Si puedes subir el límite un poco, elegiría “Naruto y Kurama” porque le gusta Kurama; si no, buscamos otra opción que sí entre en 100. ¿Qué prefieres?",
+      "gesture": "think",
+      "guide": null,
+      "product_ids": [
+        "CRgvIlaI3PTpKT17gxWC",
+        "b7auhoBIAw4e2flktska",
+        "uDhUbWBUzRp8Oyo91j67"
+      ],
+      "comparison": {
+        "budget": 100,
+        "rows": [
+          {
+            "id": "CRgvIlaI3PTpKT17gxWC",
+            "advantage": "Incluye a Kurama en el diseño, según el nombre del producto.",
+            "limitation": "Supera el límite de 100 soles.",
+            "price": 109,
+            "stock": "available",
+            "withinBudget": false,
+            "overBudgetBy": 9
+          },
+          {
+            "id": "b7auhoBIAw4e2flktska",
+            "advantage": "El nombre del diseño menciona directamente a Naruto y Kurama.",
+            "limitation": "Supera el límite de 100 soles.",
+            "price": 109,
+            "stock": "available",
+            "withinBudget": false,
+            "overBudgetBy": 9
+          },
+          {
+            "id": "uDhUbWBUzRp8Oyo91j67",
+            "advantage": "Presenta a Naruto niño y Hokage.",
+            "limitation": "Supera el límite de 100 soles y no menciona a Kurama.",
+            "price": 109,
+            "stock": "available",
+            "withinBudget": false,
+            "overBudgetBy": 9
+          }
+        ],
+        "lowestPriceIds": [
+          "CRgvIlaI3PTpKT17gxWC",
+          "b7auhoBIAw4e2flktska",
+          "uDhUbWBUzRp8Oyo91j67"
+        ],
+        "priceGap": 0,
+        "totalPrice": 327,
+        "recommendedId": null
+      },
+      "products": [
+        {
+          "id": "CRgvIlaI3PTpKT17gxWC",
+          "name": "Casaca Naruto · Modo Chakra Kurama",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FCRgvIlaI3PTpKT17gxWC%2Fmain_var_1788976285322_1792701142122_Sudadera%20rosa%20con%20estampados%20naranjas.webp?alt=media&token=add5e2b6-5668-42e8-b9bb-54966f27600c",
+          "path": "/producto/CRgvIlaI3PTpKT17gxWC"
+        },
+        {
+          "id": "b7auhoBIAw4e2flktska",
+          "name": "Casaca Naruto · Naruto y Kurama",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fb7auhoBIAw4e2flktska%2Fmain_var_1788976285313_1792697529313_Sudadera%20negra%20Naruto%20con%20gr%C3%A1ficos%20frontales.webp?alt=media&token=6d92753c-21bd-42a6-baff-1c7a980f6e77",
+          "path": "/producto/b7auhoBIAw4e2flktska"
+        },
+        {
+          "id": "uDhUbWBUzRp8Oyo91j67",
+          "name": "Casaca Naruto · Naruto Niño y Hokage",
+          "description": "Polos personalizados de tus animes favoritos Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo . Disponibles en varios colores y tallas , son unisex.",
+          "price": 109,
+          "currency": "PEN",
+          "stock": "available",
+          "sizes": [],
+          "variants": [
+            {
+              "name": "Perla",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Negro",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Blanco",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Melange",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Azul Acero",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Guinda",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Naranja",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Rosado",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            },
+            {
+              "name": "Celeste",
+              "sizes": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL"
+              ]
+            }
+          ],
+          "customizable": false,
+          "categories": [
+            "Casacas"
+          ],
+          "tags": [
+            "Geek",
+            "Naruto"
+          ],
+          "characters": [
+            "Naruto"
+          ],
+          "collections": [
+            "Anime"
+          ],
+          "image": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FuDhUbWBUzRp8Oyo91j67%2Fmain_var_1788976285321_1792700285006_Sudadera%20marfil%20con%20emblema%20y%20estampado.webp?alt=media&token=a52afa02-f84b-4579-aeb3-a206a8a66ea4",
+          "path": "/producto/uDhUbWBUzRp8Oyo91j67"
+        }
+      ],
+      "usage": {
+        "inputTokens": 6273,
+        "outputTokens": 360,
+        "embeddingTokens": 0
+      },
+      "provider": "OpenAI",
+      "model": "gpt-6-luna",
+      "catalog": {
+        "projectId": "sistema-gestion-3b225",
+        "source": "Catálogo publicado de Walá · solo lectura",
+        "loaded": true,
+        "count": 205,
+        "partial": false
+      }
+    }
+  }
+]

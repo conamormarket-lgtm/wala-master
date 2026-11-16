@@ -7,6 +7,9 @@ import { getCategories } from '../services/products';
 import FichaDeProducto from '../components/producto/FichaDeProducto';
 import { leerPersonalizarEn } from '../utils/personalizarEn';
 import { esProductoDeTienda } from '../utils/enTienda.mjs';
+import useKapiPreview from '../components/kapi-local/useKapiPreview';
+
+const KapiProductPage = import.meta.env.DEV ? lazy(() => import('../components/kapi-local/KapiProductPage')) : null;
 
 // La ficha vieja solo baja si el interruptor fichaVieja está puesto.
 const ProductDetail = lazy(() => import('./Tienda/components/ProductDetail'));
@@ -115,4 +118,9 @@ const ProductPage = () => {
   );
 };
 
-export default ProductPage;
+export default function ProductRoute() {
+  const preview = useKapiPreview();
+  return preview && KapiProductPage
+    ? <Suspense fallback={<p>Cargando producto…</p>}><KapiProductPage /></Suspense>
+    : <ProductPage />;
+}

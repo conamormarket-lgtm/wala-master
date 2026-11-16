@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { createDocumentByteMeter } from './src/observability/firestore-byte-meter.mjs';
 import { storefrontBootstrap } from './scripts/storefront-bootstrap.mjs';
+import { kapiLocalPlugin } from './scripts/kapi-local/plugin.mjs';
 
 // Migración CRA -> Vite (Fase 1). Para NO obligar a renombrar el .env ni el código,
 // se mantienen las variables `REACT_APP_*` y `process.env.*` resolviéndolas vía `define`.
@@ -44,7 +45,7 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react(), {
+    plugins: [react(), kapiLocalPlugin(), {
       name: 'public-storefront-bootstrap',
       apply: 'build',
       transformIndexHtml() {

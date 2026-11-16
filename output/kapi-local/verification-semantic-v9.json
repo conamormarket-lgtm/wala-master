@@ -1,0 +1,133 @@
+[
+  {
+    "query": "Busco una espada voladora.",
+    "status": 200,
+    "pass": true,
+    "seconds": 14.7,
+    "message": "¡Encontré una espada dron de juguete que vuela y tiene luces LED! ¿Te referías a algo así?",
+    "products": [
+      {
+        "id": "YkAvod8hGPyRTFBuQtAR",
+        "name": "Espada dron de juguete con luces LED",
+        "price": 43.5
+      }
+    ],
+    "usage": {
+      "inputTokens": 8476,
+      "outputTokens": 167,
+      "embeddingTokens": 31576
+    }
+  },
+  {
+    "query": "¿Tienen un juguete con forma de espada que se mantenga en el aire?",
+    "status": 200,
+    "pass": true,
+    "seconds": 8.8,
+    "message": "¡Sí! Hay una espada dron de juguete con luces LED y cuatro hélices con aros protectores, diseñada para mantenerse en el aire. ¿Quieres que te la muestre?",
+    "products": [
+      {
+        "id": "YkAvod8hGPyRTFBuQtAR",
+        "name": "Espada dron de juguete con luces LED",
+        "price": 43.5
+      }
+    ],
+    "usage": {
+      "inputTokens": 8508,
+      "outputTokens": 220,
+      "embeddingTokens": 15
+    }
+  },
+  {
+    "query": "Necesito periféricos para mi compu que funcionen sin cables.",
+    "status": 200,
+    "pass": true,
+    "seconds": 9.3,
+    "message": "Encontré un set de teclado y mouse inalámbricos W3300. Usa un receptor USB de 2,4 GHz, es compatible con Windows, Mac y Linux e incluye ambos periféricos.",
+    "products": [
+      {
+        "id": "oDsYoMUaDpkjeWwD4UmT",
+        "name": "Teclado y mouse inalámbricos W3300",
+        "price": 26.25
+      }
+    ],
+    "usage": {
+      "inputTokens": 9037,
+      "outputTokens": 213,
+      "embeddingTokens": 22
+    }
+  },
+  {
+    "query": "Busco algo para que una niña calque dibujos usando una lucecita.",
+    "status": 200,
+    "pass": true,
+    "seconds": 7.8,
+    "message": "Encontré una mesita de dibujo con proyector en forma de jirafa; incluye discos con imágenes, plumón, borrador y bloc para dibujar. ¿Te gustaría ver sus detalles?",
+    "products": [
+      {
+        "id": "c1u5PtJoUFkwMkvvIfRb",
+        "name": "Proyector de dibujo infantil Jirafa",
+        "price": 15.75
+      }
+    ],
+    "usage": {
+      "inputTokens": 6506,
+      "outputTokens": 198,
+      "embeddingTokens": 21
+    }
+  },
+  {
+    "query": "Quiero una espada voladora sin luces.",
+    "status": 200,
+    "pass": true,
+    "seconds": 6,
+    "message": "No encontré una espada voladora sin luces en el catálogo consultado. ¿Quieres que cambiemos algún criterio, por ejemplo buscar una espada que no vuele?",
+    "products": [],
+    "usage": {
+      "inputTokens": 7234,
+      "outputTokens": 118,
+      "embeddingTokens": 10
+    }
+  },
+  {
+    "query": "Busco una espada voladora y mi máximo es 10 soles.",
+    "status": 200,
+    "pass": true,
+    "seconds": 3.7,
+    "message": "No encontré una espada voladora dentro de tu presupuesto de hasta 10 soles. ¿Qué prefieres cambiar: el tipo de producto o el presupuesto?",
+    "products": [],
+    "usage": {
+      "inputTokens": 2620,
+      "outputTokens": 101,
+      "embeddingTokens": 0
+    }
+  },
+  {
+    "query": "¿Tienen algo del ninja rubio de la aldea de la hoja?",
+    "status": 200,
+    "pass": true,
+    "seconds": 7.6,
+    "message": "¡Sí! Encontré casacas con diseños de Naruto: Naruto Niño y Hokage, Naruto y Kurama, y Modo Chakra Kurama. ¿Te interesa alguno en particular?",
+    "products": [
+      {
+        "id": "uDhUbWBUzRp8Oyo91j67",
+        "name": "Casaca Naruto · Naruto Niño y Hokage",
+        "price": 109
+      },
+      {
+        "id": "b7auhoBIAw4e2flktska",
+        "name": "Casaca Naruto · Naruto y Kurama",
+        "price": 109
+      },
+      {
+        "id": "CRgvIlaI3PTpKT17gxWC",
+        "name": "Casaca Naruto · Modo Chakra Kurama",
+        "price": 109
+      }
+    ],
+    "usage": {
+      "inputTokens": 11135,
+      "outputTokens": 267,
+      "embeddingTokens": 32
+    }
+  }
+]
