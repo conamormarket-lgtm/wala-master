@@ -88,6 +88,14 @@ Validación automatizada: `node --test scripts/test/kapiLocal.test.mjs scripts/t
 
 Verificación real: comparación de tres casacas de igual precio, cambio de presupuesto que deja todas fuera y empate sin gustos de diseño. Por interfaz, comparación de proyector de dibujo y tina de juguete: recuerda S/50, calcula S/3.60 de diferencia y elige el proyector al saber que a la persona le gusta dibujar. Se comprobó restauración tras recarga, navegación a la ficha y regreso a reposo al cerrar. Verificación visual en 1440×900, 390×844, 320×640 y ventana baja de 390×380: sin desbordamiento horizontal, con input y cierre visibles. En los móviles de al menos 640 px de alto, la ficha permanece en su área superior separada del globo. Las explicaciones usan todo el ancho de la tarjeta, debajo de su cabecera con foto. Evidencias en `output/kapi-local/verification-comparison-v10.json`, `verification-comparison-tie-v10.json`, `verification-comparison-ui-v10.json`, `comparison-desktop-v10.jpg` y `comparison-mobile-v10.jpg`.
 
+## Aislamiento del build de Vercel
+
+El primer preview de `2e0d38d8` falló al resolver `functions/catalogPricing.js`: `.vercelignore` excluye `functions`, pero el import estático del plugin local hacía que Vite intentara empaquetar esa dependencia al cargar su configuración. `apply: 'serve'` no impide que el empaquetador resuelva imports estáticos.
+
+La configuración carga ahora el plugin mediante una URL de importación solo con `command === 'serve'`. Los builds no resuelven ni necesitan el backend local. Se conserva la exclusión de `functions` y la demo sigue limitada a desarrollo.
+
+Regresión: `scripts/test/kapiBuild.test.mjs` carga la configuración en un directorio temporal sin `functions` ni `scripts/kapi-local`, tanto en modo production como preview, y comprueba por separado que desarrollo sí registra el plugin. La suite completa de Kapi pasa 44 pruebas; el endpoint local de salud responde HTTP 200. El build completo con `VERCEL=1` también incluye la página de componentes.
+
 ## Lumi: propuesta pendiente, sin activar
 
 Alcance acordado: solo definir la idea de Lumi. Esta entrega no cambia su página, no activa Kapi en `/lumi` y no crea una mascota nueva.
