@@ -6,7 +6,7 @@ import { askKapi, localGesture } from './chatClient.mjs';
 import { localProductPath, productIdFromPath, readConversation, saveConversation } from './session.mjs';
 import s from './KapiLocal.module.css';
 
-const BASE = '/output/kapi-local';
+const BASE = import.meta.env.DEV ? '/output/kapi-local' : '/assets/kapi/companion-v1';
 const POINT_HOLD = BASE + '/assets/point-hold.png';
 const INTRO = '¡Hola! Tócame para conversar.';
 const money = amount => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(amount);
@@ -86,6 +86,7 @@ export default function KapiLocal() {
   const operation = useRef(null);
   const chatRequest = useRef(null);
   const sessionId = useRef(restored?.sessionId || null);
+  const sessionToken = useRef(restored?.sessionToken || null);
   const conversationBody = useRef(null);
   const blobs = useRef(new Map());
   const mounted = useRef(true);
@@ -99,7 +100,7 @@ export default function KapiLocal() {
 
   useEffect(() => {
     if (pending) return;
-    try { saveConversation(sessionStorage, { sessionId: sessionId.current, chatMessage, userMessage, products, comparison, mode: mode === 'chat' ? 'chat' : 'none' }); } catch { /* storage optional */ }
+    try { saveConversation(sessionStorage, { sessionId: sessionId.current, sessionToken: sessionToken.current, chatMessage, userMessage, products, comparison, mode: mode === 'chat' ? 'chat' : 'none' }); } catch { /* storage optional */ }
   }, [chatMessage, userMessage, products, comparison, mode, pending]);
 
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function KapiLocal() {
       if (!r.ok) throw Error('Manifest missing');
       return r.json();
     }).then(setManifest).catch(e => {
-      if (e.name !== 'AbortError') setError('Faltan las animaciones locales. Ejecuta el preparador de assets y recarga.');
+      if (e.name !== 'AbortError') setError('No pude cargar las animaciones. Recarga la página para intentarlo otra vez.');
     });
     const media = matchMedia('(prefers-reduced-motion: reduce)');
     const change = () => setReduced(media.matches);
@@ -466,9 +467,10 @@ export default function KapiLocal() {
     run(async () => {}, false, 'think');
     const timeout = setTimeout(() => controller.abort(), 65000);
     try {
-      const response = await askKapi({ message, sessionId: sessionId.current, currentProductId, signal: controller.signal });
+      const response = await askKapi({ message, sessionId: sessionId.current, sessionToken: sessionToken.current, currentProductId, signal: controller.signal });
       if (!mounted.current || chatRequest.current !== controller || controller.signal.aborted) return;
       sessionId.current = response.sessionId;
+      sessionToken.current = response.sessionToken || null;
       chatRequest.current = null; setPending(false);
       setChatMessage(response.message); setText(response.message); setProducts(response.products);
       setComparison(response.comparison || null);
@@ -479,12 +481,19 @@ export default function KapiLocal() {
     } catch (e) {
       if (!mounted.current || chatRequest.current !== controller) return;
       chatRequest.current = null; setPending(false);
+      if (e.code === 'session_expired') { sessionId.current = null; sessionToken.current = null; }
       const message = e.name === 'AbortError' ? 'La consulta está tardando. ¿Lo intentamos otra vez?'
         : e.message || 'No pude conectarme. Puedes seguir usando mis guías.';
       setText(message); setChatMessage(message);
       run(signal => play('confused', signal));
     } finally { clearTimeout(timeout); }
   };
+  useEffect(() => {
+    if (!import.meta.env.DEV && currentProductId && mode === 'chat' && !hidden) document.body.dataset.kapiProductReader = 'true';
+    else delete document.body.dataset.kapiProductReader;
+    return () => { delete document.body.dataset.kapiProductReader; };
+  }, [currentProductId, mode, hidden]);
+
   const send = e => { e.preventDefault(); sendMessage(input.trim()); };
   useEffect(() => {
     const explain = event => {
@@ -496,7 +505,7 @@ export default function KapiLocal() {
     return () => window.removeEventListener('wala:kapi-explain-product', explain);
   });
   const resetChat = () => {
-    cancelChat(); sessionId.current = null; setProducts([]); setComparison(null); setUserMessage(''); setError('');
+    cancelChat(); sessionId.current = null; sessionToken.current = null; setProducts([]); setComparison(null); setUserMessage(''); setError('');
     const message = 'Empecemos de nuevo. ¿Qué te gustaría encontrar?';
     setChatMessage(message); setText(message); run(async () => {});
   };
@@ -548,7 +557,7 @@ export default function KapiLocal() {
           {products.filter(product => comparison || product.id !== currentProductId).map(product => {
             const row = comparison?.rows?.find(item => item.id === product.id);
             return <Link className={s.product} key={product.id} data-kapi-product-id={product.id} data-kapi-recommended={comparison?.recommendedId === product.id} data-kapi-comparison={Boolean(row)}
-            to={localProductPath(product.id)}
+            to={import.meta.env.DEV ? localProductPath(product.id) : `/producto/${encodeURIComponent(product.id)}`}
             aria-label={`Ver detalles de ${product.name}`}>
             {product.image && <img src={product.image} alt="" loading="lazy" onError={e => { e.currentTarget.hidden = true; }} />}
             <div>{comparison?.recommendedId === product.id && <span className={s.recommendationBadge}>La elegiría para ti</span>}
@@ -577,7 +586,7 @@ export default function KapiLocal() {
     </section>}
     {!target && !controls && <button ref={controlsTrigger} className={s.controlsTrigger} style={position.x < viewport.width / 2 ? { left: 'auto', right: 12 } : undefined} aria-label="Abrir controles de Kapi" onClick={openControls}>⚙ <span>Controles de Kapi</span></button>}
     {controls && <aside className={s.panel} data-kapi-panel role="dialog" aria-label="Controles de Kapi" style={{ maxHeight: Math.max(130,viewport.height - bottomSpace(viewport) - 80) }}>
-      <header className={s.heading}><div><strong>Controles de Kapi</strong><small>Prueba local</small></div><button ref={panelClose} aria-label="Cerrar controles de Kapi" onClick={closeControls}>×</button></header>
+      <header className={s.heading}><div><strong>Controles de Kapi</strong>{import.meta.env.DEV && <small>Prueba local</small>}</div><button ref={panelClose} aria-label="Cerrar controles de Kapi" onClick={closeControls}>×</button></header>
       <div className={s.panelContent}>
         <div className={s.motionControls}>
           <button aria-label="Caminar a la izquierda" onClick={() => startWalk({ x: point.current.x - 220, y: point.current.y })}>←</button>
@@ -587,11 +596,11 @@ export default function KapiLocal() {
         </div>
         <div className={s.panelActions}><button onClick={() => { setControls(false); setMode('hint'); setTarget(null); setTour(null); setText('Haz clic en un espacio libre para llamarme.'); setPicking(true); }}>Llamar a Kapi</button><button onClick={() => { operation.current?.abort(); setControls(false); setHidden(true); }}>Ocultar a Kapi</button></div>
         {reduced && <p>Movimiento reducido según tu dispositivo.</p>}
-        <h3>Probar un gesto</h3>
-        <div className={s.grid}>{Object.entries(manifest || {}).map(([name,item]) => <button key={name} aria-pressed={sprite.name === name} onClick={() => gesture(name)}>{item.label}</button>)}</div>
-        <p className={s.note}>{assistantInfo?.configured ? `${assistantInfo.provider === 'Local' ? 'Respuesta local' : `OpenAI · ${assistantInfo.model}`}. Catálogo publicado en modo de solo lectura.` : 'La conexión con IA aún no está disponible. Las guías y los gestos siguen activos.'}</p>
-        {assistantInfo?.usage && <p className={s.note}>Última consulta: {assistantInfo.usage.inputTokens} tokens de entrada y {assistantInfo.usage.outputTokens} de salida.</p>}
-        {assistantInfo?.usage?.embeddingTokens > 0 && <p className={s.note}>Búsqueda semántica: {assistantInfo.usage.embeddingTokens} tokens de embeddings.</p>}
+        {import.meta.env.DEV && <h3>Probar un gesto</h3>}
+        {import.meta.env.DEV && <div className={s.grid}>{Object.entries(manifest || {}).map(([name,item]) => <button key={name} aria-pressed={sprite.name === name} onClick={() => gesture(name)}>{item.label}</button>)}</div>}
+        {import.meta.env.DEV && <p className={s.note}>{assistantInfo?.configured ? `${assistantInfo.provider === 'Local' ? 'Respuesta local' : `OpenAI · ${assistantInfo.model}`}. Catálogo publicado en modo de solo lectura.` : 'La conexión con IA aún no está disponible. Las guías y los gestos siguen activos.'}</p>}
+        {import.meta.env.DEV && assistantInfo?.usage && <p className={s.note}>Última consulta: {assistantInfo.usage.inputTokens} tokens de entrada y {assistantInfo.usage.outputTokens} de salida.</p>}
+        {import.meta.env.DEV && assistantInfo?.usage?.embeddingTokens > 0 && <p className={s.note}>Búsqueda semántica: {assistantInfo.usage.embeddingTokens} tokens de embeddings.</p>}
       </div>
     </aside>}
   </div>, document.body);

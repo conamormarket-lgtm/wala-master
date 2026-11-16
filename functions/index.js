@@ -47,6 +47,7 @@ const pichanga = require("./pichangaLogic");
 const tarjetas = require("./tarjetasGuardadas");
 
 admin.initializeApp();
+exports.kapiAssistant = require('./kapiFunction').kapiAssistant;
 const auth = admin.auth();
 // A16: human-confirmed vouchers. Auth/scope checks precede all database or storage IO.
 const { createHandler: createKentaReceiptHandler } = require('./kentaReceiptHandler');

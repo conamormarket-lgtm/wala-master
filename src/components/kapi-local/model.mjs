@@ -1,3 +1,6 @@
+export const isKapiPublicRoute = pathname => ['/', '/home', '/tienda', '/personalizar', '/carrito'].includes(pathname)
+  || /^\/producto\/[\w-]{1,160}$/.test(pathname);
+
 export function isKapiPreview({ dev, hostname, pathname, search, enabled = false }) {
   const flag = new URLSearchParams(search).get('kapiDemo');
   return Boolean(dev && ['localhost', '127.0.0.1', '[::1]'].includes(hostname)

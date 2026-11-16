@@ -1,3 +1,7 @@
+# Estado actual
+
+Este documento conserva el historial de la demo. La activación pública y su arquitectura de servidor están descritas en [KAPI-PRODUCCION.md](./KAPI-PRODUCCION.md); las menciones históricas a exclusión de producción ya no describen la versión actual.
+
 # Kapi: prueba local de interacción
 
 Abrir `http://127.0.0.1:3000/?kapiDemo=1` después de `npm run dev -- --host 127.0.0.1 --port 3000`.

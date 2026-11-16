@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PilaFlotante, BotonWhatsApp, PildoraRecompensa } from '../../componentes/kit/piezas/Flotantes';
 import useWhatsAppDeLaRuta from './useWhatsAppDeLaRuta';
 import useKapiPreview from '../kapi-local/useKapiPreview';
+import { isKapiPublicRoute } from '../kapi-local/model.mjs';
 import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { abrirAvisoBienvenida } from './BienvenidaDeTienda';
 import { tiempoRestante } from '../../utils/primeraCompra';
@@ -12,8 +13,7 @@ import { esRutaDeJuego } from './modoJuego';
 // Walito (con su ventana, el reto y el recorrido) llega en su propio archivo,
 // como antes: no hace falta para ver la página.
 const Kapi = lazy(() => import('./Kapi'));
-// DEV-only opt-in: this component and its local artwork never enter production.
-const KapiLocal = import.meta.env.DEV ? lazy(() => import('../kapi-local/KapiLocal')) : null;
+const KapiLocal = lazy(() => import('../kapi-local/KapiLocal'));
 
 // Páginas con su propio botón fijo abajo: en el celular la pila tapaba
 // título, precio y opciones (antes, .App:has(.product-detail-page)).
@@ -47,6 +47,7 @@ const pildoraOculta = () => {
 export default function FlotantesDeLaTienda() {
   const { pathname } = useLocation();
   const kapiPreview = useKapiPreview();
+  const kapiActive = kapiPreview || (!import.meta.env.DEV && isKapiPublicRoute(pathname));
   const { user, userProfile } = useAuth();
   const whatsapp = useWhatsAppDeLaRuta();
   const [sinPildora, setSinPildora] = useState(pildoraOculta);
@@ -98,7 +99,7 @@ export default function FlotantesDeLaTienda() {
       )}
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
-      <Suspense fallback={null}>{kapiPreview && KapiLocal ? <KapiLocal /> : <Kapi />}</Suspense>
+      <Suspense fallback={null}>{kapiActive ? <KapiLocal /> : <Kapi />}</Suspense>
     </PilaFlotante>
   );
 }

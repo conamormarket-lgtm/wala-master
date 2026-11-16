@@ -584,7 +584,7 @@ service cloud.firestore {
         'cuentasEliminadas', 'cuestionarios_templates', 'culqiCharges', 'culqiPorBorrar', 'culqiWebhookEvents',
         'customShapes', 'designs',
         'enlaces_pago', 'flashOffers', 'fonts', 'fx', 'galeria', 'ganadores_galeria', 'heatmap_events',
-        'inventoryLogs', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyConfig', 'loyaltyLedger',
+        'inventoryLogs', 'kapi_server', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyConfig', 'loyaltyLedger',
         'messages', 'missions', 'niches', 'notification_campaigns', 'notification_drafts',
         'notification_settings', 'notification_state', 'notification_stats', 'notifications',
         'order_notifications', 'organizable_events', 'pages', 'pagos_anomalias', 'participantes',
