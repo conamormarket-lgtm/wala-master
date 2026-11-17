@@ -12,6 +12,54 @@
   object-fit: contain;
 }
 
+.cargando {
+  position: absolute;
+  inset: 0 0 52px;
+  pointer-events: none;
+}
+
+.portada {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #f5f4f8;
+}
+
+.cargando span {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(21, 18, 27, 0.85);
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.contenedor .reproducir {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: rgba(21, 18, 27, 0.75);
+  color: #fff;
+  cursor: pointer;
+}
+
+.reproducir svg { width: 28px; height: 28px; fill: currentColor; }
+.reproducir:focus-visible { outline: 3px solid #a78bfa; outline-offset: 4px; }
+
 .error {
   position: absolute;
   inset: 25% 1rem auto;

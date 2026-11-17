@@ -138,7 +138,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
           {imagenes.map((img, i) => (
             <div key={`${img.url}-${i}`} className={s.lamina} aria-hidden={i !== sel || undefined}>
               {img.tipo === 'video' ? (
-                i === sel ? <VideoProducto key={img.url} url={img.url} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
+                i === sel ? <VideoProducto key={img.url} url={img.url} portada={imagenes.find((f) => f.tipo !== 'video' && !f.juntas)?.url} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
               ) : img.juntas ? <Juntas fotos={img.juntas} grande /> : (
               // El nombre del producto llega traducido; el de la foto se traduce aquí.
               <Traducido texto={img.nombre}>{(lado) => (

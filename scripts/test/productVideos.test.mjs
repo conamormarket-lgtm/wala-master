@@ -65,7 +65,9 @@ test('la galería solo monta el vídeo seleccionado, con controles y sin autopla
   assert.equal((html.match(/<video /g) || []).length, 1);
   assert.match(html, /controls=""/);
   assert.match(html, /playsinline=""/);
-  assert.match(html, /preload="none"/);
+  assert.match(html, /preload="metadata"/);
+  assert.match(html, /aria-label="Reproducir Producto · Cómo se ve"/);
+  assert.match(html, /Cargando vista previa/);
   assert.match(html, /aria-label="Producto · Cómo se ve"/);
   assert.doesNotMatch(html, /autoplay|Pasa el cursor|src="https:\/\/example.test\/dos.webm"/i);
 });
