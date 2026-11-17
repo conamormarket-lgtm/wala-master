@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isKapiPreview, actorSize, rectAt, intersects, stageBounds, placeCompanion, walkingRoute, replyTo } from './model.mjs';
+import { isKapiPreview, actorSize, bubbleHeightAt, rectAt, intersects, stageBounds, placeCompanion, walkingRoute, replyTo } from './model.mjs';
 
 test('preview requires development, loopback, allowed route and explicit opt-in', () => {
   const base = { dev: true, hostname: '127.0.0.1', pathname: '/', search: '?kapiDemo=1' };
@@ -57,6 +57,27 @@ test('loading page content and its scrollbar do not relocate an open conversatio
   checkPlacement(loaded, stageBounds({width:1432,height:900}), null);
   const guided = placeCompanion({ viewport, actor, bubble, preferred: initial.actor, lockActor: true, target: initial.actor });
   assert.equal(intersects(guided.actor, initial.actor, 12), false, 'a real guide still relocates away from its target');
+});
+
+test('opening, growing and closing a balloon keep a stationary actor in place', () => {
+  for (const viewport of [{width:390,height:844},{width:1280,height:720},{width:1858,height:942}]) {
+    const actor = actorSize(viewport.width), bottomInset = viewport.width <= 768 ? 74 : 18;
+    const bounds = stageBounds(viewport,bottomInset), width = Math.min(300,viewport.width-24);
+    for (const point of [{x:bounds.left,y:bounds.top},{x:bounds.right-actor.width,y:bounds.bottom-actor.height},
+      {x:(bounds.left+bounds.right-actor.width)/2,y:(bounds.top+bounds.bottom-actor.height)/2}]) {
+      const contentHeight = bubbleHeightAt({viewport,actor,point,width,bottomInset});
+      assert.ok(contentHeight >= 160, 'normal mobile and desktop layouts keep a usable chat');
+      for (const height of [100,260,360]) {
+        const result = placeCompanion({viewport,actor,bottomInset,preferred:point,lockActor:true,
+          bubble:{width,height:Math.min(height,contentHeight+2)},avoid:[rectAt(0,0,viewport.width,viewport.height)]});
+        assert.ok(result.bubble, 'a long reply shrinks instead of hiding the chat');
+        assert.equal(result.actor.x,point.x); assert.equal(result.actor.y,point.y);
+        checkPlacement(result,bounds,null);
+      }
+      const closed = placeCompanion({viewport,actor,bottomInset,preferred:point,lockActor:true});
+      assert.equal(closed.actor.x,point.x); assert.equal(closed.actor.y,point.y);
+    }
+  }
 });
 
 test('insufficient space never falls back to covering the protected content', () => {

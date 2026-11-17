@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { actorSize, placeCompanion, stageBounds, walkingRoute, GUIDES } from './model.mjs';
+import { actorSize, bubbleHeightAt, placeCompanion, stageBounds, walkingRoute, GUIDES } from './model.mjs';
 import { askKapi, localGesture } from './chatClient.mjs';
 import { localProductPath, productIdFromPath, readConversation, saveConversation } from './session.mjs';
 import { createScrollGate, sameViewport, scrollMovesTarget } from './scrollLayout.mjs';
@@ -110,6 +110,7 @@ export default function KapiLocal({ suspended = false }) {
   const bubbleWidth = mode !== 'chat' ? hintWidth(viewport)
     : currentProductId && viewport.width <= 768 && viewport.height >= 640
       ? Math.min(300, viewport.width - size.width - 40) : Math.min(300, viewport.width - 24);
+  const bubbleMaxHeight = bubbleHeightAt({ viewport, actor: size, point: position, width: bubbleWidth, bottomInset: bottomSpace(viewport) });
 
   useEffect(() => {
     if (pending) return;
@@ -286,7 +287,9 @@ export default function KapiLocal({ suspended = false }) {
       if (latest.current.moving) return;
       const bubble = mode !== 'none' && !controls && bubbleElement.current
         ? { width: bubbleWidth, height: bubbleElement.current.getBoundingClientRect().height } : null;
-      const key = `${pathname}:${mode}:${controls}:${Boolean(target)}`;
+      // Opening/closing a balloon or controls is not a request to move. Only a
+      // new page gets an initial placement; guides and explicit walks move Kapi.
+      const key = pathname;
       const next = placeCompanion({
         viewport: view, actor: body, bubble,
         preferred: point.current, target: visibleTarget ? protectedRect : null,
@@ -590,13 +593,13 @@ export default function KapiLocal({ suspended = false }) {
         <img className={s.sprite} style={{ width: size.image, height: size.image, left: (size.width - size.image) / 2, top: size.imageTop, transform: 'scaleX(' + direction + ')' }} src={sprite.src} alt="" draggable="false" data-animation={sprite.name} data-pose-phase={sprite.phase || 'animation'} />
       </button>
     </div>
-    {mode !== 'none' && <section ref={bubbleElement} className={[s.bubble, mode === 'hint' ? s.hint : s.chat, mode === 'chat' && viewport.height < 520 ? s.shortChat : ''].join(' ')}
+    {mode !== 'none' && <section ref={bubbleElement} className={[s.bubble, mode === 'hint' ? s.hint : s.chat, mode === 'chat' && (viewport.height < 520 || bubbleMaxHeight < 240) ? s.shortChat : ''].join(' ')}
       data-kapi-bubble-mode={mode} data-side={layout.side || 'bottom'}
       aria-label={mode === 'chat' ? 'Conversación con Kapi' : 'Mensaje de Kapi'}
       aria-hidden={!bubbleVisible} inert={!bubbleVisible ? '' : undefined}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setHovered(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHovered(false); }}
-      style={{ width: bubbleWidth, left: layout.bubble?.left ?? 12, top: layout.bubble?.top ?? 12, visibility: bubbleVisible ? 'visible' : 'hidden', '--tail': (layout.tail || 24) + 'px', '--bubble-max-height': Math.max(80, viewport.height - bottomSpace(viewport) - size.height - 42) + 'px' }}>
+      style={{ width: bubbleWidth, left: layout.bubble?.left ?? 12, top: layout.bubble?.top ?? 12, visibility: bubbleVisible ? 'visible' : 'hidden', '--tail': (layout.tail || 24) + 'px', '--bubble-max-height': bubbleMaxHeight + 'px' }}>
       <div className={s.bubbleContent}>
         {mode === 'chat' ? <header className={s.heading}><strong>Kapi</strong><div className={s.chatHeaderActions}><button className={s.resetChat} onClick={resetChat} aria-label="Nueva conversación con Kapi">Nueva</button><button onClick={dismiss} aria-label="Cerrar conversación">×</button></div></header>
           : <button className={s.hintClose} onClick={dismiss} aria-label="Cerrar mensaje de Kapi">×</button>}

@@ -24,6 +24,18 @@ export function stageBounds(viewport, bottomInset = 16) {
   return { left, top, right: left + viewport.width - 24, bottom: Math.max(top, (viewport.top || 0) + viewport.height - bottomInset) };
 }
 
+// Resize the conversation around the stationary actor instead of moving the
+// actor to make room. The content scrolls when a tall reply cannot fit beside it.
+export function bubbleHeightAt({ viewport, actor, point, width, bottomInset = 16 }) {
+  const bounds = stageBounds(viewport, bottomInset), gap = 16;
+  const x = clamp(point.x, bounds.left, bounds.right - actor.width);
+  const y = clamp(point.y, bounds.top, bounds.bottom - actor.height);
+  const beside = x - bounds.left >= width + gap || bounds.right - x - actor.width >= width + gap;
+  const available = beside ? bounds.bottom - bounds.top
+    : Math.max(y - bounds.top - gap, bounds.bottom - y - actor.height - gap);
+  return Math.max(0, available - 2); // Balloon borders sit outside its content.
+}
+
 // Solve both bodies together: staying within the viewport alone is insufficient.
 // If no unobstructed placement exists, omit the overlay rather than hide a target.
 export function placeCompanion({ viewport, actor, bubble, preferred, target = null, avoid = [], bottomInset = 16, nearTarget = Boolean(target), lockActor = false, preferredSide }) {
