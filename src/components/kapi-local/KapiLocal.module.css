@@ -1,9 +1,10 @@
 .layer { position: fixed; inset: 0; pointer-events: none; z-index: 970; font: 14px/1.45 system-ui, sans-serif; color: #302342; }
 @media (min-width: 769px) {
-  :global(body[data-kapi-product-reader="true"] #main-content-area) { margin-right: 350px; min-width: 0; }
+  :global(body[data-kapi-product-reader="true"] #main-content-area) { width: calc(100% - 350px); margin-right: 350px; min-width: 0; }
 }
 @media (max-width: 768px) and (min-height: 640px) {
   :global(body[data-kapi-product-reader="true"] #root) { height: calc(100dvh - 350px - var(--bottom-nav-height, 56px)); min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  :global(body[data-kapi-product-reader="true"] #main-content-area) { flex: 1 0 auto; }
 }
 .layer *, .restore { box-sizing: border-box; }
 .layer button, .layer select, .restore { font: inherit; cursor: pointer; }

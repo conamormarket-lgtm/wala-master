@@ -28,6 +28,8 @@ const readingAreas = view => {
   const root = document.getElementById('root');
   const clip = root && getComputedStyle(root).overflowY === 'auto' ? root.getBoundingClientRect() : null;
   if (clip) return [clip]; // Mobile product reader has a dedicated scroll region.
+  const productReader = document.body.dataset.kapiProductReader === 'true' && document.getElementById('main-content-area');
+  if (productReader) return [productReader.getBoundingClientRect()];
   return [...(root?.querySelectorAll('h1, h2, h3, p, a, button, input, select, textarea, [role="button"], [data-kapi-important]') || [])]
     .filter(el => !el.closest('[data-kapi-local]'))
     .map(el => el.getBoundingClientRect())
