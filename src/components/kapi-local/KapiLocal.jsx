@@ -22,7 +22,8 @@ const bottomSpace = viewport => viewport.width <= 768
     + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0) + 18 : 18;
 const homePoint = (viewport, x = Infinity) => {
   const size = actorSize(viewport.width), bounds = stageBounds(viewport, bottomSpace(viewport));
-  return { x: x < viewport.width / 2 ? bounds.left : bounds.right - size.width, y: bounds.bottom - size.height };
+  // Leave the bottom corner's contact button accessible while parked.
+  return { x: x < viewport.width / 2 ? bounds.left : bounds.right - size.width, y: Math.max(bounds.top, bounds.bottom - size.height - 144) };
 };
 const hintWidth = view => Math.min(224, view.width - actorSize(view.width).width - 40);
 const readingAreas = view => {
@@ -52,7 +53,7 @@ const wait = (ms, signal) => new Promise((resolve, reject) => {
   signal.addEventListener('abort', cancel, { once: true });
 });
 
-export default function KapiLocal() {
+export default function KapiLocal({ suspended = false }) {
   const { pathname } = useLocation();
   const currentProductId = productIdFromPath(pathname);
   const [restored] = useState(() => { try { return readConversation(sessionStorage); } catch { return null; } });
@@ -91,6 +92,7 @@ export default function KapiLocal() {
   const actor = useRef(null);
   const bubbleElement = useRef(null);
   const messageInput = useRef(null);
+  const initialFocus = useRef(true);
   const panelClose = useRef(null);
   const controlsTrigger = useRef(null);
   const operation = useRef(null);
@@ -101,6 +103,7 @@ export default function KapiLocal() {
   const blobs = useRef(new Map());
   const mounted = useRef(true);
   const point = useRef(position);
+  const placement = useRef(null);
   const latest = useRef({});
   latest.current = { manifest, paused, reduced, viewport, speed, mode, moving, busy, target, controls, hidden, pending, animation: sprite.name };
   const size = actorSize(viewport.width);
@@ -263,15 +266,15 @@ export default function KapiLocal() {
   // Give a bottom-nav explanation room on small screens without covering the
   // brand cards above it. Restore the page as soon as the guide closes.
   useLayoutEffect(() => {
-    if (target?.closest('[data-kapi-guide-nav]') && mode === 'hint' && !hidden) document.body.dataset.kapiNavGuide = 'true';
+    if (target?.closest('[data-kapi-guide-nav]') && mode === 'hint' && !hidden && !suspended) document.body.dataset.kapiNavGuide = 'true';
     else delete document.body.dataset.kapiNavGuide;
     return () => { delete document.body.dataset.kapiNavGuide; };
-  }, [target, mode, hidden]);
+  }, [target, mode, hidden, suspended]);
 
   // Keep the companion anchored while browsing. Only a guide follows a page
   // target, and only after scrolling ends; the hot scroll path measures nothing.
   useLayoutEffect(() => {
-    if (hidden) return;
+    if (hidden || suspended) return;
     let frame, scrollGate;
     setGuideScrolling(false);
     const arrange = () => {
@@ -283,11 +286,15 @@ export default function KapiLocal() {
       if (latest.current.moving) return;
       const bubble = mode !== 'none' && !controls && bubbleElement.current
         ? { width: bubbleWidth, height: bubbleElement.current.getBoundingClientRect().height } : null;
+      const key = `${pathname}:${mode}:${controls}:${Boolean(target)}`;
       const next = placeCompanion({
         viewport: view, actor: body, bubble,
         preferred: point.current, target: visibleTarget ? protectedRect : null,
-        avoid: mode === 'none' && !target ? [] : readingAreas(view), bottomInset: bottomSpace(view),
+        avoid: readingAreas(view), bottomInset: bottomSpace(view),
+        lockActor: !target && placement.current?.key === key,
+        preferredSide: placement.current?.side,
       });
+      placement.current = { key, side: next.side };
       if (target && !visibleTarget) next.bubble = null;
       if (visibleTarget && next.actor) setDirection((protectedRect.left + protectedRect.right) / 2 < next.actor.x + body.width / 2 ? -1 : 1);
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
@@ -327,7 +334,7 @@ export default function KapiLocal() {
     if (currentProductId && mode === 'chat' && document.getElementById('root')) observer.observe(document.getElementById('root'));
     if (target) window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     return () => { scrollGate.dispose(); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll, true); };
-  }, [viewport, mode, text, error, products, pending, target, tour, moving, hidden, controls, bubbleWidth, moveTo, freeze, pathname, currentProductId]);
+  }, [viewport, mode, text, error, products, pending, target, tour, moving, hidden, suspended, controls, bubbleWidth, moveTo, freeze, pathname, currentProductId]);
 
   useEffect(() => { if (manifest) run(signal => play('wave', signal)); }, [manifest, run, play]);
 
@@ -365,6 +372,8 @@ export default function KapiLocal() {
   }, [mode, target, tour, busy, hovered, picking, text]);
 
   useEffect(() => {
+    // Restoring a conversation must not summon the mobile keyboard on reload.
+    if (initialFocus.current) { initialFocus.current = false; return; }
     if (mode === 'chat') messageInput.current?.focus({ preventScroll: true });
   }, [mode]);
   useEffect(() => { if (controls) panelClose.current?.focus({ preventScroll: true }); }, [controls]);
@@ -534,10 +543,10 @@ export default function KapiLocal() {
     } finally { clearTimeout(timeout); }
   };
   useEffect(() => {
-    if (!import.meta.env.DEV && currentProductId && mode === 'chat' && !hidden) document.body.dataset.kapiProductReader = 'true';
+    if (!import.meta.env.DEV && currentProductId && mode === 'chat' && !hidden && !suspended) document.body.dataset.kapiProductReader = 'true';
     else delete document.body.dataset.kapiProductReader;
     return () => { delete document.body.dataset.kapiProductReader; };
-  }, [currentProductId, mode, hidden]);
+  }, [currentProductId, mode, hidden, suspended]);
 
   const send = e => { e.preventDefault(); sendMessage(input.trim()); };
   useEffect(() => {
@@ -560,6 +569,7 @@ export default function KapiLocal() {
     run(async () => {});
   };
 
+  if (suspended) return null;
   if (hidden) return createPortal(<button className={s.restore} data-kapi-local onClick={() => {
     setHidden(false); setMode('hint'); setText(INTRO); moveTo(homePoint(viewportNow())); run(signal => play('wave', signal));
   }}>Mostrar a Kapi</button>, document.body);

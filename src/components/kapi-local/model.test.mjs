@@ -46,6 +46,19 @@ test('long conversation fits short keyboard viewport or yields space safely', ()
   }
 });
 
+test('loading page content and its scrollbar do not relocate an open conversation', () => {
+  const viewport = { width: 1440, height: 900 }, actor = actorSize(1440), bubble = { width: 300, height: 320 };
+  const initial = placeCompanion({ viewport, actor, bubble, preferred: { x: 1316, y: 580 } });
+  const loaded = placeCompanion({ viewport: { width: 1432, height: 900 }, actor, bubble,
+    preferred: initial.actor, avoid: [rectAt(200,100,1200,800)], lockActor: true, preferredSide: initial.side });
+  assert.equal(loaded.actor.y, initial.actor.y);
+  assert.equal(loaded.actor.x, initial.actor.x - 8);
+  assert.equal(loaded.side, initial.side);
+  checkPlacement(loaded, stageBounds({width:1432,height:900}), null);
+  const guided = placeCompanion({ viewport, actor, bubble, preferred: initial.actor, lockActor: true, target: initial.actor });
+  assert.equal(intersects(guided.actor, initial.actor, 12), false, 'a real guide still relocates away from its target');
+});
+
 test('insufficient space never falls back to covering the protected content', () => {
   const viewport = {width:320,height:250}, actor = actorSize(320);
   assert.deepEqual(placeCompanion({viewport,actor,bubble:{width:224,height:80},target:rectAt(0,0,320,250)}),{actor:null,bubble:null});

@@ -56,7 +56,7 @@ const tutorialEnNavegador = () => {
  *  - Mientras come no se cierra (lo cuida VentanaKapi).
  *  - Modo diseño: ?sesion=activa&kapi=feliz|hambriento|triste&felicidad=25.
  */
-export default function Kapi() {
+export default function Kapi({ onOpenChange }) {
   const { user, userProfile, feedKapi, calentarKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
   const { addToast } = useGlobalToast();
   const layout = useLayoutContext();
@@ -67,6 +67,8 @@ export default function Kapi() {
   const sinFlotante = sinKapiFlotante(pathname);
   const enMomentoTranquilo = esMomentoTranquilo(pathname);
   const [abierta, setAbierta] = useState(false);
+  useEffect(() => { onOpenChange?.(abierta); }, [abierta, onOpenChange]);
+  useEffect(() => () => onOpenChange?.(false), [onOpenChange]);
   // Abierta sola (la primera vez): con su turno, que se suelta al cerrar.
   const turno = useTurnoVentanas();
   const esperaBienvenida = useEsperaBienvenida();

@@ -26,7 +26,8 @@ export function stageBounds(viewport, bottomInset = 16) {
 
 // Solve both bodies together: staying within the viewport alone is insufficient.
 // If no unobstructed placement exists, omit the overlay rather than hide a target.
-export function placeCompanion({ viewport, actor, bubble, preferred, target = null, avoid = [], bottomInset = 16, nearTarget = Boolean(target) }) {
+export function placeCompanion({ viewport, actor, bubble, preferred, target = null, avoid = [], bottomInset = 16, nearTarget = Boolean(target), lockActor = false, preferredSide }) {
+  lockActor = lockActor && !target;
   const bounds = stageBounds(viewport, bottomInset), gap = 16;
   const clampActor = point => ({ x: clamp(point.x, bounds.left, bounds.right - actor.width), y: clamp(point.y, bounds.top, bounds.bottom - actor.height) });
   const desired = clampActor(preferred || { x: bounds.right - actor.width, y: bounds.bottom - actor.height });
@@ -57,8 +58,8 @@ export function placeCompanion({ viewport, actor, bubble, preferred, target = nu
   // clamping and keep only the best result; don't sort thousands of duplicates.
   let best = null;
   const consider = candidate => { if (!best || candidate.score < best.score) best = candidate; };
-  for (const x of new Set(xs.map(x => clamp(x, bounds.left, bounds.right - actor.width))))
-    for (const y of new Set(ys.map(y => clamp(y, bounds.top, bounds.bottom - actor.height)))) {
+  for (const x of new Set((lockActor ? [desired.x] : xs).map(x => clamp(x, bounds.left, bounds.right - actor.width))))
+    for (const y of new Set((lockActor ? [desired.y] : ys).map(y => clamp(y, bounds.top, bounds.bottom - actor.height)))) {
     const point = { x, y };
     const body = rectAt(point.x, point.y, actor.width, actor.height);
     if (body.right > bounds.right || body.bottom > bounds.bottom || intersects(body, target, 12) || blocksContent(body)) continue;
@@ -73,18 +74,23 @@ export function placeCompanion({ viewport, actor, bubble, preferred, target = nu
       [point.x + actor.width + gap, point.y + actor.height / 2 - bubble.height / 2, 'left'],
       [point.x + actor.width / 2 - bubble.width / 2, point.y + actor.height + gap, 'top'],
     ];
-    options.forEach(([bx, by, side], index) => {
+    if (lockActor && preferredSide) options.sort((a, b) => Number(b[2] === preferredSide) - Number(a[2] === preferredSide));
+    for (const [index, [bx, by, side]] of options.entries()) {
       const speech = rectAt(clamp(bx, bounds.left, bounds.right - bubble.width), clamp(by, bounds.top, bounds.bottom - bubble.height), bubble.width, bubble.height);
       // 12px also protects the balloon's tail (7px) and the target's outline.
-      if (intersects(speech, target, 12) || intersects(speech, body, 8) || blocksContent(speech)) return;
+      if (intersects(speech, target, 12) || intersects(speech, body, 8) || blocksContent(speech)) continue;
       const horizontal = side === 'bottom' || side === 'top';
       const tail = horizontal ? clamp(point.x + actor.width / 2 - speech.left, 20, speech.width - 20)
         : clamp(point.y + actor.height / 2 - speech.top, 20, speech.height - 20);
-      consider({ actor: body, bubble: speech, side, tail, score: distance + (target ? 0 : obstruction(speech) * 8) + index * (target ? .5 : 8) });
-    });
+      const candidate = { actor: body, bubble: speech, side, tail, score: distance + (target ? 0 : obstruction(speech) * 8) + index * (target ? .5 : 8) };
+      // Late content and scrollbar appearance may resize the viewport, but must
+      // not send an already-open conversation to a different side of the page.
+      if (lockActor) return candidate;
+      consider(candidate);
+    }
   }
   if (best) return best;
-  if (bubble) return placeCompanion({ viewport, actor, bubble: null, preferred, target, avoid, bottomInset, nearTarget });
+  if (bubble) return placeCompanion({ viewport, actor, bubble: null, preferred, target, avoid, bottomInset, nearTarget, lockActor });
   return { actor: null, bubble: null };
 }
 

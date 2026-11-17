@@ -51,6 +51,7 @@ export default function FlotantesDeLaTienda() {
   const { user, userProfile } = useAuth();
   const whatsapp = useWhatsAppDeLaRuta();
   const [sinPildora, setSinPildora] = useState(pildoraOculta);
+  const [petOpen, setPetOpen] = useState(false);
   const { bienvenida } = usePrimeraCompra();
 
   const ocultarPildora = () => {
@@ -99,7 +100,8 @@ export default function FlotantesDeLaTienda() {
       )}
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
-      <Suspense fallback={null}>{kapiActive ? <KapiLocal /> : <Kapi />}</Suspense>
+      <Suspense fallback={null}><Kapi onOpenChange={setPetOpen} /></Suspense>
+      {kapiActive && <Suspense fallback={null}><KapiLocal suspended={petOpen} /></Suspense>}
     </PilaFlotante>
   );
 }
