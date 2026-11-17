@@ -55,14 +55,17 @@ test('la ficha conserva fotos por color y añade vídeos generales sin contamina
   assert.doesNotMatch(JSON.stringify(tarjetaDesdeProducto(p)), /demo\.mp4/);
   const html = render(PaginaProducto, { ...ficha, fuentes: url => { assert.notEqual(url, video.url); return { src: url }; } });
   assert.match(html, /Vídeo 1/);
-  assert.doesNotMatch(html, /<video/);
+  assert.match(html, /data-video-miniatura=""/);
+  assert.doesNotMatch(html, /<video[^>]*controls=""/);
 });
 
-test('la galería solo monta el vídeo seleccionado, con controles y sin autoplay ni zoom', () => {
+test('la galería monta miniaturas sin controles y un solo reproductor para el vídeo seleccionado', () => {
   const fotos = [{ url: '/foto.jpg', nombre: 'Foto' }];
   const videos = fichaProductoDesde({ videos: [video, { url: 'https://example.test/dos.webm' }] }).videos;
   const html = render(GaleriaProducto, { imagenes: [...fotos, ...videos], inicial: 1, nombre: 'Producto' });
-  assert.equal((html.match(/<video /g) || []).length, 1);
+  assert.equal((html.match(/data-video-miniatura=""/g) || []).length, 2);
+  assert.equal((html.match(/<video[^>]*controls=""/g) || []).length, 1);
+  assert.match(html, /tabindex="-1" aria-hidden="true"/);
   assert.match(html, /controls=""/);
   assert.match(html, /playsinline=""/);
   assert.match(html, /preload="metadata"/);
