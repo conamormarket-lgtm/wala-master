@@ -20,6 +20,7 @@ import {
   cambiarPlantillaDelProducto, quitarPlantillaDelProducto, traerPlantillas, fotoDeTiendaConPlantilla,
 } from '../../pages/Crear/plantillasProducto';
 import GenerarFrenteEspalda from '../../pages/Tienda/admin/GenerarFrenteEspalda';
+import ProductVideosEditor from '../../pages/Tienda/admin/ProductVideosEditor';
 import { PaginaFichaProducto } from '../../componentes/kit/paginas/admin/Ficha';
 import { fichaDesdeProducto, fichaAProducto, productoAdminDesde, puedeVer } from '../../componentes/kit/adaptadoresAdmin';
 import { SinPermiso } from '../../componentes/kit/piezas/admin/Marco';
@@ -250,6 +251,7 @@ export default function FichaDelPanel({ modo = 'producto' }) {
       coloresDe={(productoId) => (crudosPorId.get(productoId)?.variants || []).map((v) => ({ nombre: v.name, foto: v.imageUrl }))}
       destinosCrear={destinosQ.data || []}
       subirImagen={subirImagen}
+      editorVideos={(props) => <ProductVideosEditor {...props} productId={draftId} />}
       onGuardar={guardar}
       onVolver={() => navigate(rutaLista)}
       onBorrador={nuevo ? (datos) => {

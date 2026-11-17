@@ -48,6 +48,7 @@ function Bloque({ children, hidden = false }) {
  *  - onBorrador(datos): mientras se escribe uno nuevo (el admin lo guarda en el aparato)
  *  - descripcion(valor, onCambiar) → nodo: el editor de texto con formato (sin él, un texto largo)
  *  - extraGaleria(variante, agregar(url)) → nodo: algo más bajo la galería (frente y espalda)
+ *  - editorVideos({ videos, onChange, onUploaded, onBusyChange, disabled }) → nodo
  *  - pestanaInicial ('general' | 'colores' | 'diseno' | 'plantillas' | 'donde') · onPestana (en el admin, ?pestana=)
  * Un personalizable de Crear (datos.esPrenda, D2c) suma Diseño (vistas y
  * zonas) y Plantillas, y sus colores llevan fotos para diseñar y de tienda:
@@ -59,7 +60,7 @@ export function PaginaFichaProducto({
   inicial, nuevo = false, cargando, error, onReintentar,
   marcas = [], categorias = [], colecciones = [], tipos = [], personajes = [], etiquetas = [], onCrear, equipos = [],
   productos = [], coloresDe = () => [], destinosCrear = [], subirImagen,
-  onGuardar, onVolver, onPasarACrear, onBorrador, descripcion, extraGaleria,
+  onGuardar, onVolver, onPasarACrear, onBorrador, descripcion, extraGaleria, editorVideos,
   pestanaInicial = 'general', onPestana, fotoConPlantilla, plantillas: plantillasVivas, accionesPlantillas = {},
 }) {
   const toast = useToast();
@@ -68,6 +69,7 @@ export function PaginaFichaProducto({
   const [pestana, setPestanaEstado] = useState(pestanaInicial);
   const [errores, setErrores] = useState({});
   const [guardando, setGuardando] = useState(false);
+  const [subiendoVideos, setSubiendoVideos] = useState(false);
   const [falla, setFalla] = useState('');
   const [salir, setSalir] = useState(false);
   const [pasar, setPasar] = useState(false);
@@ -138,6 +140,7 @@ export function PaginaFichaProducto({
   const idCampo = (c) => `ficha-${c}`;
 
   const guardar = async () => {
+    if (subiendoVideos || guardando) return;
     const e = erroresDeFicha(datos);
     const primero = Object.keys(e)[0];
     if (primero) {
@@ -180,12 +183,14 @@ export function PaginaFichaProducto({
   const PESTANAS = (esPrenda ? [
     { id: 'general', texto: 'General' },
     { id: 'colores', texto: `Colores y fotos · ${datos.variantes.length}` },
+    ...(editorVideos ? [{ id: 'videos', texto: 'Vídeos' }] : []),
     { id: 'diseno', texto: `Diseño · ${vistasPrenda.length} vistas` },
     { id: 'plantillas', texto: `Plantillas · ${numPlantillas}` },
     { id: 'donde', texto: 'Dónde se ve' },
   ] : [
     { id: 'general', texto: 'General' },
     { id: 'colores', texto: datos.esCombo ? 'Piezas del combo' : `Colores y tallas · ${datos.variantes.length}` },
+    ...(editorVideos ? [{ id: 'videos', texto: 'Vídeos' }] : []),
     { id: 'donde', texto: 'Dónde se ve' },
   ]).map((p) => ({ ...p, texto: conError(p.id) ? `${p.texto} •` : p.texto }));
 
@@ -498,6 +503,18 @@ export function PaginaFichaProducto({
         </Bloque>
       </div>
 
+      {editorVideos && (
+        <div hidden={pestana !== 'videos'} className={s.pestana}>
+          {editorVideos({
+            videos: datos.videos || [],
+            disabled: guardando,
+            onBusyChange: setSubiendoVideos,
+            onChange: (videos) => cambiar('videos', videos),
+            onUploaded: (video) => setDatos((d) => ({ ...d, videos: [...(d.videos || []), video] })),
+          })}
+        </div>
+      )}
+
       {/* ── Dónde se ve ── */}
       <div hidden={pestana !== 'donde'} className={s.pestana}>
         {esPrenda ? (
@@ -542,9 +559,9 @@ export function PaginaFichaProducto({
 
       {/* Guardar: siempre a mano, pegado abajo */}
       <div className={s.guardar}>
-        <span className={s.guardarEstado} aria-live="polite">{guardando ? 'Guardando…' : sucio ? 'Cambios sin guardar' : nuevo ? '' : 'Todo guardado'}</span>
+        <span className={s.guardarEstado} aria-live="polite">{subiendoVideos ? 'Subiendo vídeos…' : guardando ? 'Guardando…' : sucio ? 'Cambios sin guardar' : nuevo ? '' : 'Todo guardado'}</span>
         <Boton variante="fantasma" onClick={volver} disabled={guardando}>Salir</Boton>
-        <Boton onClick={guardar} cargando={guardando} disabled={!sucio && !nuevo}>{nuevo ? (esPrenda ? 'Crear personalizable' : 'Crear producto') : 'Guardar'}</Boton>
+        <Boton onClick={guardar} cargando={guardando} disabled={subiendoVideos || (!sucio && !nuevo)}>{nuevo ? (esPrenda ? 'Crear personalizable' : 'Crear producto') : 'Guardar'}</Boton>
       </div>
 
       <EncuadreFoto

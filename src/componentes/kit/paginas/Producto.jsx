@@ -110,7 +110,7 @@ const galeriaCombo = (combo, piezas, colores) => {
  *  - estado: 'cargando' | 'error' | 'noDisponible' · onReintentar · urlTienda
  */
 export function PaginaProducto({
-  producto = {}, opciones = {}, varianteInicial, fotos = {}, opiniones = {}, onOpinar, onUtil,
+  producto = {}, opciones = {}, varianteInicial, fotos = {}, videos = [], opiniones = {}, onOpinar, onUtil,
   relacionados = [], onAgregarRelacionado, onAgregar, onComprar, onPersonalizar, onCompartir, onVariante,
   carrito = 0, urlPagar = '/checkout', onPagarCarrito, sesion = false, urlLogin = '/login',
   estado, onReintentar, urlTienda = '/tienda',
@@ -180,12 +180,12 @@ export function PaginaProducto({
   const galeria = useMemo(() => {
     const lista = fotos.combo ? galeriaCombo(fotos.combo, piezas, colores) : (variante && fotos[variante.id]) || fotos.base || [];
     // Las copias de cada foto (si la tienda las da): la galería baja solo la que hace falta.
-    if (!fuentes) return lista;
-    return lista.map((f) => {
+    const imagenes = !fuentes ? lista : lista.map((f) => {
       const { src, srcSet } = fuentes(f.url) || {};
       return { ...f, url: src || f.url, srcSet };
     });
-  }, [fotos, piezas, colores, variante, fuentes]);
+    return [...imagenes, ...videos];
+  }, [fotos, piezas, colores, variante, fuentes, videos]);
   useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // La más útil (con al menos un voto) va primero, destacada.

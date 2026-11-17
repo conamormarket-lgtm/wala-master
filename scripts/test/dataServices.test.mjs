@@ -6,7 +6,7 @@ import vm from 'node:vm';
 
 // Carga los servicios reales con un SDK simulado. No usa credenciales ni red.
 async function loadService(file, mocks, globals = {}) {
-  const context = vm.createContext({ console, ...globals });
+  const context = vm.createContext({ console, TextEncoder, ...globals });
   const modules = new Map();
   async function load(id) {
     if (modules.has(id)) return modules.get(id);
@@ -46,6 +46,77 @@ async function loadService(file, mocks, globals = {}) {
 }
 
 const unused = () => { throw Error('Unexpected SDK call'); };
+
+test('la subida de vídeos usa progreso, MIME y ruta propia; cancelar y fallar no publican URLs', async () => {
+  const calls = [];
+  let fail = false, downloads = 0;
+  const api = await loadService('src/services/productVideoUpload.js', {
+    './firebase/config': { obtenerStorage: async () => ({}) },
+    'firebase/storage': {
+      ref: (storage, path) => ({ path }),
+      uploadBytesResumable: (reference, file, metadata) => {
+        calls.push({ reference, file, metadata });
+        let reject;
+        return {
+          snapshot: { ref: reference },
+          cancel: () => reject(new Error('cancelled')),
+          on: (type, progress, error, complete) => {
+            reject = error;
+            queueMicrotask(() => {
+              progress({ bytesTransferred: 50, totalBytes: 100 });
+              if (fail) error(new Error('permission-denied'));
+              else complete();
+            });
+          },
+        };
+      },
+      getDownloadURL: async () => { downloads++; return 'https://example.test/upload.webm'; },
+    },
+  }, { crypto: { randomUUID: () => 'unique' } });
+  const progress = [];
+  const file = { name: 'Detalle.webm', type: '', size: 100 };
+  const result = await api.uploadProductVideo(file, 'product-1', { onProgress: p => progress.push(p) });
+  assert.equal(result.name, 'Detalle');
+  assert.equal(result.url, 'https://example.test/upload.webm');
+  assert.deepEqual(progress, [50]);
+  assert.equal(calls[0].reference.path, 'products/product-1/videos/unique.webm');
+  assert.equal(calls[0].metadata.contentType, 'video/webm');
+  const controller = new AbortController();
+  await assert.rejects(api.uploadProductVideo(file, 'product-1', { signal: controller.signal, onProgress: () => controller.abort() }), /cancelled/);
+  fail = true;
+  await assert.rejects(api.uploadProductVideo(file, 'product-1'), /permission-denied/);
+  assert.equal(downloads, 1);
+  await assert.rejects(api.uploadProductVideo(file, '../otro'), /identificar/);
+  await assert.rejects(api.uploadProductVideo({ ...file, size: 0 }, 'product-1'), /vacío/);
+  assert.equal(calls.length, 3);
+});
+
+test('los vídeos sobreviven creación, lectura y edición; omitir conserva y vaciar elimina', async () => {
+  const writes = [];
+  const api = await loadService('src/services/products.js', {
+    './firebase/firestore': {
+      getCollection: async () => ({ data: [], error: null }), getDocument: unused, getCollectionPaginated: unused,
+      createDocument: async (collection, payload) => { writes.push(payload); return { id: 'p' }; },
+      updateDocument: async (collection, id, payload) => { writes.push(payload); return {}; },
+      deleteDocument: unused, setDocument: unused,
+    },
+    'firebase/firestore': sdk,
+    './firebase/config': { db: {} },
+  }, { localStorage: { getItem: () => null, setItem() {}, removeItem() {} } });
+  const video = { url: 'https://example.test/video.mp4', name: 'Presentación' };
+  await api.createProduct({ name: 'Demo', videos: [video] });
+  assert.equal(writes[0].videos[0].url, video.url);
+  const saved = api.normalizeProductForRead({ id: 'p', ...writes[0] });
+  assert.equal(saved.videos[0].name, video.name);
+  assert.ok(saved.images.every(url => url !== video.url));
+  await api.updateProduct('p', { ...saved, videos: [{ ...video, name: 'Nuevo título' }] });
+  assert.equal(writes[1].videos[0].name, 'Nuevo título');
+  await api.updateProduct('p', { name: 'Sin cambiar vídeos' });
+  assert.equal(Object.hasOwn(writes[2], 'videos'), false);
+  await api.updateProduct('p', { name: 'Sin vídeos', videos: [] });
+  assert.equal(writes[3].videos.length, 0);
+  assert.equal(api.normalizeProductForRead({ name: 'Antiguo' }).videos.length, 0);
+});
 
 test('las creaciones del personalizador anterior conservan sus archivos en uso', async () => {
   const api = await loadService('src/services/designs.js', {

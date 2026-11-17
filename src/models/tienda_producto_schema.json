@@ -4,6 +4,18 @@
   "description": "Estructura de un producto en la colección products con soporte V2 para Mockups y Galerías por Variante.",
   "type": "object",
   "properties": {
+    "videos": {
+      "type": "array",
+      "description": "Vídeos generales de la ficha individual, separados de las imágenes de catálogo. El editor admite hasta cinco MP4/WebM de 100 MB cada uno.",
+      "items": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "name": { "type": "string", "maxLength": 120 }
+        }
+      }
+    },
     "name": {
       "type": "string",
       "description": "Nombre público del producto."

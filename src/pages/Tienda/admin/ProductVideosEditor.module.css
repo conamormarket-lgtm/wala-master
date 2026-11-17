@@ -1,0 +1,16 @@
+.editor { margin-top: 1.5rem; padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; color: #111827; }
+.editor h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.editor p { color: #4b5563; line-height: 1.5; font-size: 0.875rem; }
+.list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; margin: 1rem 0; }
+.item { min-width: 0; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 12px; }
+.preview { aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; }
+.name { display: grid; gap: 0.35rem; margin-top: 0.75rem; font-size: 0.8rem; }
+.name input { min-width: 0; width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.editor button { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.5rem 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; color: #374151; background: #fff; cursor: pointer; }
+.editor button:disabled { opacity: 0.4; cursor: default; }
+.upload { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; font-weight: 600; }
+.upload input { max-width: 100%; font-weight: 400; }
+.progress { display: grid; justify-items: start; gap: 0.5rem; margin-top: 1rem; overflow-wrap: anywhere; }
+.progress progress { width: 100%; accent-color: #7c3aed; }
+.editor .error { color: #b91c1c; overflow-wrap: anywhere; }

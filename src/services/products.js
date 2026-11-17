@@ -6,6 +6,7 @@ import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import { createInFlightReads } from './shared/inFlightReads.mjs';
 import { leerPersonalizarEn } from '../utils/personalizarEn';
 import { esProductoDeTienda } from '../utils/enTienda.mjs';
+import { normalizeProductVideos } from '../utils/productVideos.mjs';
 
 const COLLECTION = 'productos_wala';
 const productReads = createInFlightReads();
@@ -416,6 +417,7 @@ export function normalizeProductForRead(doc) {
     behaviorImpressionsThreshold,
     images,
     imagesByColor,
+    videos: normalizeProductVideos(doc.videos),
     isComboProduct,
     ...(comboLayout && { comboLayout }),
     comboItems,
@@ -1457,6 +1459,8 @@ function normalizeProductPayload(data) {
     salePrice: finalSalePrice,
     images: images.length ? images : [],
     imagesByColor: Object.keys(imagesByColor).length ? imagesByColor : {},
+    // Omitir conserva los vídeos; [] los quita al guardar explícitamente.
+    ...(data.videos !== undefined && { videos: normalizeProductVideos(data.videos) }),
     description: (data.description ?? '').toString(),
     // null = sin límite (una prenda de Crear sin stock cargado): borra el campo.
     inStock: data.inStock === null ? null : typeof data.inStock === 'number' ? data.inStock : parseInt(data.inStock, 10) || 0,

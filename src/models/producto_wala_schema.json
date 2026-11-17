@@ -26,6 +26,9 @@
   "characters": [],
   
   "mainImage": "https://firebasestorage.googleapis.com/.../main_image.jpg",
+  "videos": [
+    { "url": "https://firebasestorage.googleapis.com/.../presentacion.mp4", "name": "Conoce el producto" }
+  ],
   "mainSizes": ["S", "M", "L", "XL"],
   
   "hasVariants": true,

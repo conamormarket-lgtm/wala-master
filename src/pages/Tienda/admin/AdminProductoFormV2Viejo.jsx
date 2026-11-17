@@ -28,6 +28,8 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import styles from './AdminProductoFormV2.module.css';
 import { PUBLICOS, EDADES } from '../../../utils/giftRecommender.mjs';
+import ProductVideosEditor from './ProductVideosEditor';
+import { normalizeProductVideos } from '../../../utils/productVideos.mjs';
 
 const Size = Quill.import('attributors/style/size');
 Size.whitelist = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
@@ -117,6 +119,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
 
   const [form, setForm] = useState({
     name: '',
+    videos: [],
     description: '',
     price: '',
     salePrice: '',
@@ -164,6 +167,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [designUrlInput, setDesignUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
 
   // Editor inline de encuadre (crop no destructivo) de la portada de la variante activa.
   const [cropEditing, setCropEditing] = useState(false);
@@ -282,6 +286,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
 
       const newForm = {
         name: productData.name || '',
+        videos: normalizeProductVideos(productData.videos),
         description: productData.description || '',
         price: productData.price || '',
         salePrice: productData.salePrice || '',
@@ -701,6 +706,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (videoUploading || uploading || saveMutation.isPending) return;
     if (!form.name.trim() || (!form.isComboProduct && form.variants.length === 0)) return;
     // Antes esto no se validaba: se podía guardar un "combo" con 0 productos
     // agregados y quedaba visible/comprable en la tienda sin mostrar nada al
@@ -780,6 +786,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
       const payload = {
         name: form.name,
         description: form.description,
+        videos: normalizeProductVideos(form.videos),
         price: Number(form.price) || 0,
         salePrice: Number(form.salePrice) || 0,
         inStock: esPrenda && form.inStock === '' ? null : Number(form.inStock) || 0,
@@ -833,8 +840,8 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
   const esPersonalizable = form.esPrendaBase && !form.isComboProduct;
   const nPlantillas = leerPlantillas(form.prendaBase?.plantillas).length;
   const PESTANAS = esPersonalizable
-    ? [['general', 'General'], ['colores', 'Colores y fotos'], ['diseno', 'Diseño'], ['plantillas', `Plantillas (${nPlantillas})`], ['donde', 'Dónde se ve']]
-    : [['general', 'General'], ['colores', form.isComboProduct ? 'Piezas del combo' : 'Colores y tallas'], ['donde', 'Dónde se ve']];
+    ? [['general', 'General'], ['colores', 'Colores, fotos y vídeos'], ['diseno', 'Diseño'], ['plantillas', `Plantillas (${nPlantillas})`], ['donde', 'Dónde se ve']]
+    : [['general', 'General'], ['colores', form.isComboProduct ? 'Piezas y vídeos' : 'Colores, tallas y vídeos'], ['donde', 'Dónde se ve']];
   const pestanaActual = PESTANAS.some(([k]) => k === pestana) ? pestana : 'general';
   // La clase que esconde lo que no es de la pestaña abierta (no se desmonta:
   // así no se pierde lo que se está editando).
@@ -1746,6 +1753,14 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
               <PersonalizacionPrenda {...propsPrenda} seccion="colores" />
             </div>
           )}
+          <ProductVideosEditor
+            videos={form.videos || []}
+            productId={draftId}
+            disabled={uploading || saveMutation.isPending}
+            onBusyChange={setVideoUploading}
+            onChange={(videos) => setForm((f) => ({ ...f, videos }))}
+            onUploaded={(video) => setForm((f) => ({ ...f, videos: [...(f.videos || []), video] }))}
+          />
           </div>
 
           {esPersonalizable && (
@@ -1865,7 +1880,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
             <Button
               type="submit"
               className={styles.saveBtn}
-              disabled={uploading || saveMutation.isPending}
+              disabled={uploading || videoUploading || saveMutation.isPending}
             >
               {uploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               {uploading ? <span key="uploading">Procesando...</span> : <span key="default">{isNew ? (esModoPrenda ? 'Guardar prenda' : 'Guardar Producto (Oficial)') : 'Guardar Cambios'}</span>}

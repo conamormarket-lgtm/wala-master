@@ -178,6 +178,17 @@
   mix-blend-mode: multiply;
 }
 
+.miniaturaVideo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  color: #ede9fe;
+  background: #302044;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
 .miniaturaNombre {
   position: absolute;
   inset: auto 0 0 0;

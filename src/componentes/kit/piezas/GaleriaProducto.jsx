@@ -1,9 +1,10 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ZoomIn } from 'lucide-react';
+import { Play, ZoomIn } from 'lucide-react';
 import { RESORTE } from '../Efectos';
 import { Texto, useTexto } from '../Traduccion';
 import { Traducido } from './TextoResaltado';
+import { VideoProducto } from './VideoProducto';
 import s from './GaleriaProducto.module.css';
 
 /**
@@ -21,6 +22,7 @@ import s from './GaleriaProducto.module.css';
  *    prenda en blanco), atenuada (la prenda todavía sin diseño) o juntas:
  *    [{ url, relleno, atenuada }] (varias fotos lado a lado, como "Todo el
  *    combo"; esa no se acerca)
+ *  - un vídeo lleva tipo: 'video' y url; solo se monta cuando se selecciona
  *  - inicial: la que se ve primero
  *  - salto: { indice, vez } para ir a otra foto desde fuera (la prenda de un
  *    combo que se recoloreó): cada `vez` nueva, la tira se desliza hasta ella
@@ -44,8 +46,9 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
   const marca = useId();
   const reducir = useReducedMotion();
   const actual = imagenes[Math.min(sel, total - 1)];
-  const acercar = zoom && !actual?.juntas;
-  const fotos = useTexto('Fotos');
+  const esVideo = actual?.tipo === 'video';
+  const acercar = zoom && !actual?.juntas && !esVideo;
+  const fotos = useTexto('Fotos y vídeos');
 
   // Abre en la inicial sin animar.
   useLayoutEffect(() => {
@@ -108,7 +111,9 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
               {/* La foto y su nombre se recortan aquí dentro; el borde va fuera
                   de ese recorte para que al viajar no se vea cortado. */}
               <span className={s.miniaturaFoto}>
-                {img.juntas
+                {img.tipo === 'video'
+                  ? <span className={s.miniaturaVideo}><Play aria-hidden="true" /></span>
+                  : img.juntas
                   ? <Juntas fotos={img.juntas} />
                   : <img src={img.url} srcSet={img.srcSet} sizes={img.srcSet ? SIZES_MINIATURA : undefined} alt="" loading="lazy" decoding="async" draggable={false} className={img.atenuada ? s.atenuada : undefined} style={conRelleno(img)} />}
                 {(img.corto || img.nombre) && <span className={s.miniaturaNombre}><Texto>{img.corto || img.nombre}</Texto></span>}
@@ -121,7 +126,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
         </div>
       )}
       <div
-        className={[s.marco, acercar && s.acercado, actual?.juntas && s.sinZoom].filter(Boolean).join(' ')}
+        className={[s.marco, acercar && s.acercado, (actual?.juntas || esVideo) && s.sinZoom].filter(Boolean).join(' ')}
         // El zoom es solo con ratón: con el dedo, el toque también dispara
         // eventos de ratón y la foto se acercaba sola al deslizar.
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setZoom(true); }}
@@ -132,7 +137,9 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
         <div ref={tira} className={s.tira} onScroll={alDeslizar}>
           {imagenes.map((img, i) => (
             <div key={`${img.url}-${i}`} className={s.lamina} aria-hidden={i !== sel || undefined}>
-              {img.juntas ? <Juntas fotos={img.juntas} grande /> : (
+              {img.tipo === 'video' ? (
+                i === sel ? <VideoProducto key={img.url} url={img.url} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
+              ) : img.juntas ? <Juntas fotos={img.juntas} grande /> : (
               // El nombre del producto llega traducido; el de la foto se traduce aquí.
               <Traducido texto={img.nombre}>{(lado) => (
               <img
@@ -153,9 +160,9 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
             </div>
           ))}
         </div>
-        {actual?.nombre && <span key={actual.nombre} className={s.lado}><Texto>{actual.nombre}</Texto></span>}
-        {actual && !actual.juntas && <span className={s.pista} aria-hidden="true"><ZoomIn /> <Texto>Pasa el cursor para ver de cerca</Texto></span>}
-        {total > 1 && (
+        {actual?.nombre && !esVideo && <span key={actual.nombre} className={s.lado}><Texto>{actual.nombre}</Texto></span>}
+        {actual && !actual.juntas && !esVideo && <span className={s.pista} aria-hidden="true"><ZoomIn /> <Texto>Pasa el cursor para ver de cerca</Texto></span>}
+        {total > 1 && !esVideo && (
           <span className={s.puntos} aria-hidden="true">
             {imagenes.map((img, i) => <i key={`${img.url}-${i}`} className={i === sel ? s.puntoActivo : undefined} />)}
           </span>

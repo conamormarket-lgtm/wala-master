@@ -657,6 +657,7 @@ export function fichaDesdeProducto(p, nuevo = {}) {
     const id = `var_${Date.now()}`;
     return {
       nombre: '', precio: '', oferta: '', sku: '', stock: 0, descripcion: '',
+      videos: [],
       esCombo: false, cumplimiento: '', marcaId: nuevo.marcaId || '', categoria: '', colecciones: [], tipo: '', personajes: [], etiquetas: [],
       publico: '', edadMinima: null, equipo: '',
       whatsappActivo: true, whatsappNumero: '', whatsappMensaje: '',
@@ -706,6 +707,7 @@ export function fichaDesdeProducto(p, nuevo = {}) {
     // Antes un producto normal se abría con 0 y al guardar quedaba agotado.
     stock: p.inStock === null || p.inStock === undefined || p.inStock === '' ? '' : (Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0),
     descripcion: p.description || '',
+    videos: lista(p.videos).map((v) => typeof v === 'string' ? { url: v, name: '' } : { ...v }),
     esCombo: p.isComboProduct === true,
     cumplimiento: p.fulfillmentType || '',
     marcaId: p.brandId || '',
@@ -779,6 +781,7 @@ export function fichaAProducto(f, original = {}, { prendaBaseParaGuardar } = {})
   return {
     name: String(f.nombre || '').trim(),
     description: f.descripcion || '',
+    ...(f.videos !== undefined && { videos: lista(f.videos) }),
     price: Number(f.precio) || 0,
     salePrice: Number(f.oferta) || 0,
     // Vacío = sin límite: null borra el campo (updateDocument / createProduct).
