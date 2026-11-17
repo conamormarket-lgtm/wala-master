@@ -68,7 +68,7 @@ export function placeCompanion({ viewport, actor, bubble, preferred, target = nu
     * Math.max(0, Math.min(rect.bottom, item.bottom + 6) - Math.max(rect.top, item.top - 6)), 0);
   // Many off-stage coordinates collapse to the same edge. Deduplicate after
   // clamping and keep only the best result; don't sort thousands of duplicates.
-  let best = null;
+  let best = null, lockedFallback = null;
   const consider = candidate => { if (!best || candidate.score < best.score) best = candidate; };
   for (const x of new Set((lockActor ? [desired.x] : xs).map(x => clamp(x, bounds.left, bounds.right - actor.width))))
     for (const y of new Set((lockActor ? [desired.y] : ys).map(y => clamp(y, bounds.top, bounds.bottom - actor.height)))) {
@@ -95,12 +95,18 @@ export function placeCompanion({ viewport, actor, bubble, preferred, target = nu
       const tail = horizontal ? clamp(point.x + actor.width / 2 - speech.left, 20, speech.width - 20)
         : clamp(point.y + actor.height / 2 - speech.top, 20, speech.height - 20);
       const candidate = { actor: body, bubble: speech, side, tail, score: distance + (target ? 0 : obstruction(speech) * 8) + index * (target ? .5 : 8) };
-      // Late content and scrollbar appearance may resize the viewport, but must
-      // not send an already-open conversation to a different side of the page.
-      if (lockActor) return candidate;
+      // Keep the actor anchored, but use a clear balloon side when its previous
+      // side would cover the product reader. If every side is crowded, preserve
+      // the existing side instead of shuffling it on late content changes.
+      if (lockActor) {
+        lockedFallback ||= candidate;
+        if (obstruction(speech) === 0) return candidate;
+        continue;
+      }
       consider(candidate);
     }
   }
+  if (lockedFallback) return lockedFallback;
   if (best) return best;
   if (bubble) return placeCompanion({ viewport, actor, bubble: null, preferred, target, avoid, bottomInset, nearTarget, lockActor });
   return { actor: null, bubble: null };

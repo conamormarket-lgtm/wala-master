@@ -80,6 +80,14 @@ test('opening, growing and closing a balloon keep a stationary actor in place', 
   }
 });
 
+test('an anchored conversation uses the reserved product space instead of covering purchase controls', () => {
+  const viewport={width:1272,height:720}, actor=actorSize(1272), preferred={x:1136,y:396};
+  const reader=rectAt(0,80,922,640);
+  const result=placeCompanion({viewport,actor,preferred,bubble:{width:300,height:282},avoid:[reader],lockActor:true,preferredSide:'right'});
+  assert.equal(result.actor.x,preferred.x);assert.equal(result.actor.y,preferred.y);
+  assert.equal(intersects(result.bubble,reader,6),false);assert.equal(result.side,'bottom');
+});
+
 test('insufficient space never falls back to covering the protected content', () => {
   const viewport = {width:320,height:250}, actor = actorSize(320);
   assert.deepEqual(placeCompanion({viewport,actor,bubble:{width:224,height:80},target:rectAt(0,0,320,250)}),{actor:null,bubble:null});
