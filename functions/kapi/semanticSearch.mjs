@@ -50,7 +50,7 @@ export function validateSelection(decision, products) {
   return { products: decision.clarification ? [] : [...selected].map(id => candidates.get(id)), clarification: decision.clarification };
 }
 
-export function createSemanticSearch({ catalog, embed, select, loadCache = async () => null, saveCache = async () => {} }) {
+export function createSemanticSearch({ catalog, embed, select, loadCache = async () => null, saveCache = async () => {}, pruneMissing = true }) {
   const vectors = new Map(), queryCache = new Map();
   let loaded;
   async function load() {
@@ -96,7 +96,10 @@ export function createSemanticSearch({ catalog, embed, select, loadCache = async
         batch.forEach((r, index) => vectors.set(r.hash, embeddingsBatch[index]));
       }
       const liveHashes = new Set(records.map(r => r.hash));
-      const removed = [...vectors.keys()].filter(hash => !liveHashes.has(hash));
+      // A brand sees a subset of the shared index. Its missing products are not
+      // deletions: keep those vectors so switching mascots does not rebuild them.
+      const outsideScope = [...vectors.keys()].filter(hash => !liveHashes.has(hash));
+      const removed = pruneMissing ? outsideScope : outsideScope.slice(0, Math.max(0, vectors.size - 800));
       removed.forEach(hash => vectors.delete(hash));
       if (missing.length || removed.length) {
         cancelled(signal);

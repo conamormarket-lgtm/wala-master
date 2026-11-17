@@ -103,7 +103,7 @@ export function createAssistant({ catalog, getKey, fetchImpl = fetch, model = 'g
     text: { format: { type: 'json_schema', name: 'kapi_reply', strict: true, schema: RESPONSE_SCHEMA } },
     tools: TOOLS, tool_choice: allowTools ? 'auto' : 'none', parallel_tool_calls: false, ...overrides,
   }, signal);
-  const searchFor = scoped => semanticSearch ? createSemanticSearch({ catalog: scoped, loadCache: loadSearchCache, saveCache: saveSearchCache,
+  const searchFor = scoped => semanticSearch ? createSemanticSearch({ catalog: scoped, loadCache: loadSearchCache, saveCache: saveSearchCache, pruneMissing: scoped === catalog,
     embed: async (texts, signal) => {
       const data = await api('embeddings', { model: EMBEDDING_MODEL, dimensions: EMBEDDING_DIMENSIONS, encoding_format: 'float', input: texts }, signal);
       const sorted = data.data?.slice().sort((a, b) => a.index - b.index);

@@ -53,6 +53,18 @@ test('price/stock filters run before ranking and again after rereading candidate
   assert.deepEqual(result.products, []); assert.equal(selected, false);
 });
 
+test('brand searches retain shared vectors without exposing products outside their scope', async () => {
+  let saved; const batches=[];
+  const options={embed:async texts=>{batches.push(texts);return {vectors:texts.map(()=>vector(0))};},
+    select:selectAll,loadCache:async()=>saved,saveCache:async value=>{saved=value;}};
+  const signal=new AbortController().signal;
+  await createSemanticSearch({...options,catalog:catalogOf([sword,keyboard])}).search(args('regalo'),signal);
+  const result=await createSemanticSearch({...options,catalog:catalogOf([sword]),pruneMissing:false}).search(args('juguete'),signal);
+  assert.deepEqual(result.products.map(p=>p.id),['sword']);assert.equal(saved.entries.length,2);
+  await createSemanticSearch({...options,catalog:catalogOf([sword,keyboard])}).search(args('teclado'),signal);
+  assert.deepEqual(batches.map(b=>b.length),[2,1,1,1],'only the first call embeds products; handoffs embed just the new query');
+});
+
 test('semantic closeness alone cannot force a card, and ambiguity asks for clarification', async () => {
   for (const clarification of [null, '¿Buscas ropa o un accesorio?']) {
     const search = createSemanticSearch({ catalog: catalogOf([sword]), embed: async texts => ({ vectors: texts.map(() => vector(0)) }),
