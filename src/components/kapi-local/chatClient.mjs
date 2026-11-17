@@ -4,6 +4,9 @@ export function localGesture(message) {
   const text = message.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z\s]/g, '').replace(/^kapi\s+/, '').replace(/\s+por favor$/, '').trim();
   if (/^(camina|ven aqui|muevete)$/.test(text)) return { move: true };
+  // Match standalone movement requests, never questions about price or stock.
+  if (/^(sube|sube un poco|arriba|mas arriba|(?:ve|camina|muevete)(?: hacia)? arriba)$/.test(text)) return { move: true, direction: 'up' };
+  if (/^(baja|baja un poco|abajo|mas abajo|(?:ve|camina|muevete)(?: hacia)? abajo)$/.test(text)) return { move: true, direction: 'down' };
   const gestures = {
     saluda: ['wave', '¡Hola! Qué gusto verte.'], saludame: ['wave', '¡Hola! Qué gusto verte.'],
     duerme: ['sleep', 'Una siestita y vuelvo.'], descansa: ['sleep', 'Una siestita y vuelvo.'],

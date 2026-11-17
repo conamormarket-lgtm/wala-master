@@ -124,6 +124,18 @@ test('simple mascot commands stay local without intercepting product questions',
   assert.equal(localGesture('Saluda y recomiéndame un polo'), null);
 });
 
+test('vertical movement commands stay local and leave catalog questions to the assistant', () => {
+  for (const message of ['Sube', 'Kapi, sube un poco por favor', 'Muévete hacia arriba', 'más arriba']) {
+    assert.deepEqual(localGesture(message), { move: true, direction: 'up' });
+  }
+  for (const message of ['Baja', 'Kapi, baja un poco', 'Camina hacia abajo', 'más abajo']) {
+    assert.deepEqual(localGesture(message), { move: true, direction: 'down' });
+  }
+  for (const message of ['¿Baja de precio?', 'Sube mi presupuesto a 100 soles', 'Quiero el producto de arriba', 'Baja y recomienda un polo']) {
+    assert.equal(localGesture(message), null);
+  }
+});
+
 test('current product is verified server-side and replaces previous page context', async () => {
   const seen = [];
   const assistant = createAssistant({ catalog: { ...catalogStub, get: async id => ({ ...product, id, name: `Producto ${id}` }) },

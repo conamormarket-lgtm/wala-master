@@ -422,7 +422,8 @@ export default function KapiLocal({ suspended = false }) {
     const choose = e => {
       if (e.target.closest('[data-kapi-local], button, a, input, select, textarea, [role="button"]')) return;
       setMode('none');
-      run(signal => walk({ x: e.clientX - actorSize(window.innerWidth).width / 2, y: point.current.y }, signal), true);
+      const body = actorSize(viewportNow().width);
+      run(signal => walk({ x: e.clientX - body.width / 2, y: e.clientY - body.height / 2 }, signal), true);
     };
     document.addEventListener('pointerdown', choose);
     return () => document.removeEventListener('pointerdown', choose);
@@ -450,6 +451,7 @@ export default function KapiLocal({ suspended = false }) {
     setControls(false); setMode('none'); setTarget(null); setTour(null);
     run(signal => walk(destination, signal), true);
   };
+  const stepVertical = direction => startWalk({ x: point.current.x, y: point.current.y + (direction === 'up' ? -180 : 180) });
   const gesture = name => {
     cancelChat();
     setControls(false); setTarget(null); setTour(null); setMode('hint');
@@ -509,7 +511,8 @@ export default function KapiLocal({ suspended = false }) {
     const local = localGesture(message);
     if (local) {
       setInput(''); setUserMessage(displayMessage); setProducts([]); setComparison(null);
-      if (local.move) startWalk(homePoint(viewportNow(), point.current.x > viewport.width / 2 ? 0 : Infinity));
+      if (local.direction) stepVertical(local.direction);
+      else if (local.move) startWalk(homePoint(viewportNow(), point.current.x > viewport.width / 2 ? 0 : Infinity));
       else {
         setText(local.message); setChatMessage(local.message);
         run(signal => play(local.gesture, signal));
@@ -648,12 +651,19 @@ export default function KapiLocal({ suspended = false }) {
       <header className={s.heading}><div><strong>Controles de Kapi</strong>{import.meta.env.DEV && <small>Prueba local</small>}</div><button ref={panelClose} aria-label="Cerrar controles de Kapi" onClick={closeControls}>×</button></header>
       <div className={s.panelContent}>
         <div className={s.motionControls}>
-          <button aria-label="Caminar a la izquierda" onClick={() => startWalk({ x: point.current.x - 220, y: point.current.y })}>←</button>
-          <button aria-label="Caminar a la derecha" onClick={() => startWalk({ x: point.current.x + 220, y: point.current.y })}>→</button>
-          <button aria-pressed={paused} onClick={() => setPaused(!paused)}>{paused ? 'Reanudar' : 'Pausar'}</button>
-          <select aria-label="Velocidad al caminar" value={speed} onChange={e => setSpeed(Number(e.target.value))}><option value="0.7">Lento</option><option value="1">Normal</option><option value="1.4">Rápido</option></select>
+          <div className={s.directionPad} role="group" aria-label="Mover a Kapi">
+            <button aria-label="Caminar hacia arriba" onClick={() => stepVertical('up')}>↑</button>
+            <button aria-label="Caminar a la izquierda" onClick={() => startWalk({ x: point.current.x - 220, y: point.current.y })}>←</button>
+            <button aria-label="Caminar hacia abajo" onClick={() => stepVertical('down')}>↓</button>
+            <button aria-label="Caminar a la derecha" onClick={() => startWalk({ x: point.current.x + 220, y: point.current.y })}>→</button>
+          </div>
+          <div className={s.walkSettings}>
+            <button aria-pressed={paused} onClick={() => setPaused(!paused)}>{paused ? 'Reanudar' : 'Pausar'}</button>
+            <select aria-label="Velocidad al caminar" value={speed} onChange={e => setSpeed(Number(e.target.value))}><option value="0.7">Lento</option><option value="1">Normal</option><option value="1.4">Rápido</option></select>
+          </div>
         </div>
-        <div className={s.panelActions}><button onClick={() => { setControls(false); setMode('hint'); setTarget(null); setTour(null); setText('Haz clic en un espacio libre para llamarme.'); setPicking(true); }}>Llamar a Kapi</button><button onClick={() => { operation.current?.abort(); setControls(false); setHidden(true); }}>Ocultar a Kapi</button></div>
+        <div className={s.panelActions}><button onClick={() => { setControls(false); setMode('hint'); setTarget(null); setTour(null); setText('Haz clic o toca un espacio libre para que vaya allí.'); setPicking(true); }}>Llamar a Kapi</button><button onClick={() => { operation.current?.abort(); setControls(false); setHidden(true); }}>Ocultar a Kapi</button></div>
+        <p>También puedes decirme «sube» o «baja».</p>
         {reduced && <p>Movimiento reducido según tu dispositivo.</p>}
         {import.meta.env.DEV && <h3>Probar un gesto</h3>}
         {import.meta.env.DEV && <div className={s.grid}>{Object.entries(manifest || {}).map(([name,item]) => <button key={name} aria-pressed={sprite.name === name} onClick={() => gesture(name)}>{item.label}</button>)}</div>}

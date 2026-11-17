@@ -82,6 +82,12 @@
 .panel > .heading { padding: 14px; border-bottom: 1px solid #eee7f3; }
 .panelContent { padding: 12px 14px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .motionControls { display: flex; align-items: center; gap: 5px; }
+.directionPad { display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 40px); gap: 5px; flex-shrink: 0; }
+.directionPad button:nth-child(1) { grid-area: 1 / 2; }
+.directionPad button:nth-child(2) { grid-area: 2 / 1; }
+.directionPad button:nth-child(3) { grid-area: 2 / 2; }
+.directionPad button:nth-child(4) { grid-area: 2 / 3; }
+.walkSettings { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 5px; }
 .motionControls button, .motionControls select { font-size: 11px; min-height: 36px; border: 1px solid #e4d9ee; border-radius: 8px; padding: 7px; background: #fff; color: #69527c; }
 .motionControls button:first-child, .motionControls button:nth-child(2) { min-width: 32px; }
 .motionControls select { flex: 1; min-width: 0; }
