@@ -1,0 +1,46 @@
+{
+  "idle": {
+    "label": "En reposo",
+    "src": "/assets/companions/lumi-v1/idle.webp",
+    "still": "/assets/companions/lumi-v1/idle.png",
+    "duration": 2820,
+    "frames": 49
+  },
+  "walk": {
+    "label": "Caminar",
+    "src": "/assets/companions/lumi-v1/walk.webp",
+    "still": "/assets/companions/lumi-v1/walk.png",
+    "duration": 1280,
+    "frames": 64
+  },
+  "wave": {
+    "label": "Saludar",
+    "src": "/assets/companions/lumi-v1/wave.webp",
+    "still": "/assets/companions/lumi-v1/wave.png",
+    "duration": 1440,
+    "frames": 48
+  },
+  "talk": {
+    "label": "Hablar",
+    "src": "/assets/companions/lumi-v1/talk.webp",
+    "still": "/assets/companions/lumi-v1/talk.png",
+    "duration": 1440,
+    "frames": 48
+  },
+  "think": {
+    "label": "Pensar",
+    "src": "/assets/companions/lumi-v1/think.webp",
+    "still": "/assets/companions/lumi-v1/think.png",
+    "duration": 1940,
+    "frames": 49
+  },
+  "point": {
+    "label": "Señalar",
+    "src": "/assets/companions/lumi-v1/point.webp",
+    "still": "/assets/companions/lumi-v1/point.png",
+    "duration": 1940,
+    "frames": 49,
+    "hold": "/assets/companions/lumi-v1/point-hold.png",
+    "holdAfter": 720
+  }
+}

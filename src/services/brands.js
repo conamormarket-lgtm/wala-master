@@ -7,6 +7,7 @@ import { getDefaultSettings } from '../pages/Tienda/services/storefront';
 import { leerLandingPages } from '../pages/Tienda/services/landingPages';
 import { BLOQUES_MARCA } from '../componentes/kit/adaptadores';
 import { pctMonedasDeMarca, cantidadMonedasDeMarca } from '../utils/topeMonedas';
+import { normalizeCompanionConfig } from '../components/kapi-local/companionProfiles.mjs';
 
 const COLLECTION = 'tienda_brands';
 
@@ -538,6 +539,7 @@ export const createBrand = async (data) => {
   // detectable como página /<slug> desde el Header.
   const slug = slugify(data.slug) || slugify(data.name);
   const result = await createDocument(COLLECTION, {
+    ...(data.companion !== undefined && { companion: normalizeCompanionConfig(data.companion, data) }),
     name: data.name || '',
     slug,
     logoUrl: data.logoUrl || '',
@@ -662,6 +664,7 @@ export const updateBrand = async (id, data) => {
   if (data.topeMonedasCantidad !== undefined) payload.topeMonedasCantidad = cantidadMonedasDeMarca(data) ?? '';
   // Identidad de la página de la marca: el mapa entero se reescribe.
   if (data.identidad !== undefined) payload.identidad = normalizeIdentidad(data.identidad);
+  if (data.companion !== undefined) payload.companion = normalizeCompanionConfig(data.companion, data);
   // Cambió la URL: primero la página (si no se puede, la marca no cambia).
   if (payload.slug !== undefined) {
     const { data: previa } = await getDocument(COLLECTION, id);

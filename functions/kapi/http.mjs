@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { createAssistant, validInput, KapiError } from './assistant.mjs';
 import { createCatalog } from './catalog.mjs';
 import { sealSession, openSession } from './sessionToken.mjs';
+import { KAPI_PROFILE, publicProfile } from './companions.mjs';
 
 export const ALLOWED_ORIGINS = new Set(['https://www.wala.pe', 'https://wala.pe']);
 export function createBudgetStore(db, secret) {
@@ -34,6 +35,10 @@ export function createPublicHandler({ getKey, budgetFor, catalog = createCatalog
     }
     const route = req.path?.replace(/\/$/, '') || '/';
     if (req.method === 'GET' && route === '/health') return res.json({ configured: Boolean(getKey()), provider: 'OpenAI' });
+    if (req.method === 'GET' && route === '/companions') {
+      const profiles = catalog.companions ? await catalog.companions().catch(() => [KAPI_PROFILE]) : [KAPI_PROFILE];
+      return res.json({ profiles: profiles.map(publicProfile) });
+    }
     if (req.method !== 'POST' || route !== '/chat') return res.status(404).json({ error: 'No disponible.' });
     if (!origin || req.headers['x-kapi-client'] !== '1' || !req.headers['content-type']?.startsWith('application/json')) return res.status(403).json({ error: 'Solicitud no válida.' });
     if ((req.rawBody?.length || Buffer.byteLength(JSON.stringify(req.body || {}))) > 60000) return res.status(413).json({ error: 'El mensaje es demasiado largo.' });

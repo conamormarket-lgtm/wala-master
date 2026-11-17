@@ -133,3 +133,5 @@ releases/
 # Kapi local: private key and verification builds
 .wala-kapi.env*
 output/kapi-local/build-check/
+output/imagegen/
+output/kapi-local/companion-config-preview.*

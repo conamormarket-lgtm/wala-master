@@ -2,6 +2,7 @@ import { esProductoDeTienda, rutaDeCrear } from './visibility.mjs';
 import giftLogic from '../giftLogic.js';
 const { normalizar } = giftLogic;
 import pricing from '../catalogPricing.js';
+import { profilesFromBrands } from './companions.mjs';
 
 const FIELDS = ['name', 'description', 'price', 'salePrice', 'visible', 'deleted', 'reemplazadoPor',
   'esPrendaBase', 'esComboCrear', 'enTienda', 'comboCrear.publicado', 'inStock', 'mainImage', 'images',
@@ -43,6 +44,7 @@ export function mapProduct(p, dicts = {}) {
     ...(Array.isArray(p.images) ? p.images : []), ...(Array.isArray(p.galleryImages) ? p.galleryImages : [])]
     .map(safeImage).find(Boolean) || '';
   return { id: p.id, name: cleanText(p.name, 140), description: cleanText(p.description),
+    brandId: identifier(p.brandId) ? p.brandId : null,
     price: price !== null && price >= 0 ? price : null, currency: 'PEN', stock, sizes, variants,
     customizable: Boolean(p.customizable || p.customizationViews?.length || p.esPrendaBase || p.esComboCrear),
     categories: labels('categories'), tags: labels('tags'), characters: labels('characters'), collections: labels('collections'),
@@ -69,7 +71,7 @@ export const productFacts = ({ image, path, ...facts }) => facts;
 export function createCatalog({ projectId, fetchImpl = fetch, ttl = 300000, limit = 800 }) {
   if (!/^[a-z0-9-]+$/.test(projectId || '')) throw Error('Invalid catalog project');
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
-  let cached, loading;
+  let cached, loading, companionCache, companionLoading;
   const read = async (url, options = {}) => {
     const response = await fetchImpl(url, { ...options, signal: AbortSignal.timeout(12000) });
     if (!response.ok) throw Error('CATALOG_UNAVAILABLE');
@@ -101,6 +103,13 @@ export function createCatalog({ projectId, fetchImpl = fetch, ttl = 300000, limi
     return mapProduct(documentData(await response.json()), cached?.dicts);
   }
   return {
+    async companions() {
+      if (companionCache && Date.now() - companionCache.at < 60000) return companionCache.profiles;
+      if (!companionLoading) companionLoading = query('tienda_brands', ['name', 'slug', 'companion'], 100)
+        .then(brands => { const profiles = profilesFromBrands(brands); companionCache = { at: Date.now(), profiles }; return profiles; })
+        .finally(() => { companionLoading = null; });
+      return companionLoading;
+    },
     get, snapshot,
     async search(args) {
       const data = await snapshot();

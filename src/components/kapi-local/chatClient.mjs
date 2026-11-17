@@ -17,10 +17,10 @@ export function localGesture(message) {
   return choice ? { gesture: choice[0], message: choice[1] } : null;
 }
 
-export async function askKapi({ message, sessionId, sessionToken = null, currentProductId = null, signal, fetchImpl = fetch }) {
+export async function askKapi({ message, sessionId, sessionToken = null, currentProductId = null, pathname = '/', signal, fetchImpl = fetch }) {
   const response = await fetchImpl('/__kapi/chat', { method: 'POST', signal,
     headers: { 'Content-Type': 'application/json', 'X-Kapi-Local': '1', 'X-Kapi-Client': '1' },
-    body: JSON.stringify({ message, sessionId, sessionToken, currentProductId }) });
+    body: JSON.stringify({ message, sessionId, sessionToken, currentProductId, pathname }) });
   const data = await response.json();
   if (!response.ok) throw Object.assign(Error(data.error || 'No pude responder ahora. Puedes usar mis guías.'), { code: data.code });
   return data;

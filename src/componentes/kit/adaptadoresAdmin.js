@@ -391,6 +391,7 @@ export function textoTopeMonedas({ tipoTope, topeMonedas, monedasPorProducto } =
 
 export function marcaDesdeFirestore(doc = {}) {
   return {
+    companion: doc.companion,
     id: doc.id,
     nombre: doc.name || '',
     slug: doc.slug || '',
@@ -415,6 +416,7 @@ export function marcaDesdeFirestore(doc = {}) {
  */
 export function marcaAFirestore(m = {}) {
   return {
+    ...(m.companion !== undefined && { companion: m.companion }),
     name: String(m.nombre || '').trim(),
     slug: String(m.slug || '').trim(),
     logoUrl: String(m.logo || '').trim(),

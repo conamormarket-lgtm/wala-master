@@ -58,6 +58,9 @@
 .comparisonReason .overBudget { color: #913554; }
 .choices { display: flex; flex-wrap: wrap; gap: 5px; }
 .layer button:disabled { cursor: wait; opacity: .55; }
+.layer .character:disabled { opacity: 1; cursor: default; }
+.layer .form button, .layer .choices button { background: var(--companion-color, #7741b2); border-color: var(--companion-color, #7741b2); }
+.layer .bubble { border-color: var(--companion-color, #e4d8ed); }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .heading strong { font-size: 14px; }
 .heading small { display: block; font-size: 10px; color: #8a719c; margin-top: 2px; }

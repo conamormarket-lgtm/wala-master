@@ -1,6 +1,6 @@
 # Kapi en la tienda publicada
 
-Kapi acompaña en `/`, `/home`, `/tienda`, `/personalizar`, `/carrito` y `/producto/:id`. Conserva los globos, las 20 animaciones aprobadas, las guías que señalan elementos, la búsqueda semántica y la comparación según presupuesto. Las tarjetas abren la ficha real en la misma pestaña. Lumi sigue como propuesta, sin activar este asistente en su página.
+Kapi acompaña en `/`, `/home`, `/tienda`, `/personalizar`, `/carrito` y `/producto/:id`. Conserva los globos, las 20 animaciones aprobadas, las guías que señalan elementos, la búsqueda semántica y la comparación según presupuesto. Las tarjetas abren la ficha real en la misma pestaña. El sistema de [mascotas por marca](KAPI-MASCOTAS-POR-MARCA.md) incorpora a la cuyita de Lumi y habilita las páginas de marcas configuradas.
 
 ## Conexión y secretos
 

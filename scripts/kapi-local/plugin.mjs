@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { createCatalog } from './catalog.mjs';
 import { createAssistant, KapiError } from './assistant.mjs';
+import { publicProfile } from '../../functions/kapi/companions.mjs';
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const LOOPBACK_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
@@ -63,6 +64,10 @@ export function kapiLocalPlugin({ projectId = 'sistema-gestion-3b225' } = {}) {
         if (!pathname?.startsWith('/__kapi/')) return next();
         const send = (status, data) => { if (res.destroyed) return; res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); res.end(JSON.stringify(data)); };
         if (!allowedRequest(req)) return send(403, { error: 'Solo disponible desde esta página local.' });
+        if (pathname === '/__kapi/companions' && req.method === 'GET') {
+          try { return send(200, { profiles: (await catalog.companions()).map(publicProfile) }); }
+          catch { return send(503, { error: 'No pude cargar las mascotas.' }); }
+        }
         if (pathname === '/__kapi/health' && req.method === 'GET') return send(200, {
           configured: Boolean(await readKey()), provider: 'OpenAI', model: 'gpt-6-luna', catalog: catalog.status(), dailyCallLimit: 200,
         });

@@ -7,6 +7,7 @@ import { createAssistant } from '../../functions/kapi/assistant.mjs';
 import { esProductoDeTienda as clientVisible, rutaDeCrear as clientPath } from '../../src/utils/enTienda.mjs';
 import { esProductoDeTienda, rutaDeCrear } from '../../functions/kapi/visibility.mjs';
 import { isKapiPublicRoute } from '../../src/components/kapi-local/model.mjs';
+import { profilesFromBrands } from '../../functions/kapi/companions.mjs';
 
 const secret = 'test-secret-not-an-api-key';
 const id = '00000000-0000-0000-0000-000000000000';
@@ -69,9 +70,20 @@ test('restored assistant retains budget and IDs on a fresh instance', async () =
   const reply = await assistant.chat({ message: 'escribe un script', sessionId: id }, new AbortController().signal);
   assert.equal(reply.sessionId, id); assert.equal(saved.session.budget, 80);
 });
-test('published mascot stays off account, checkout, admin and brand pages', () => {
+test('base public routes exclude account, checkout, admin and unconfigured brand pages', () => {
   for (const route of ['/', '/tienda', '/producto/abc']) assert.equal(isKapiPublicRoute(route), true);
   for (const route of ['/admin', '/checkout', '/cuenta', '/lumi', '/login', '/minijuegos']) assert.equal(isKapiPublicRoute(route), false);
+});
+
+test('public companion registry requires no provider calls, hides orientation and rejects foreign origins', async () => {
+  const handler = createPublicHandler({ getKey: () => { throw Error('Registry must not access the key'); },
+    catalog: { companions: async () => profilesFromBrands([{id:'lumi',name:'Lumi'}]) },
+    budgetFor: () => { throw Error('Registry must not charge'); } });
+  const res = response(); await handler(request({path:'/companions',method:'GET'}), res);
+  assert.equal(res.statusCode,200); assert.equal(res.body.profiles[1].brandId,'lumi');
+  assert.equal(res.body.profiles[1].instructions,undefined);
+  const rejected = response(); await handler(request({path:'/companions',method:'GET',headers:{origin:'https://foreign.example'}}), rejected);
+  assert.equal(rejected.statusCode,403);
 });
 test('deployable catalog visibility stays equivalent to the storefront', () => {
   for (const product of [null, {}, { id: 'a', visible: false }, { id: 'a', deleted: true }, { id: 'a', reemplazadoPor: 'b' },

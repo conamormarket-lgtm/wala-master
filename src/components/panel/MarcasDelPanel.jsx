@@ -11,7 +11,7 @@ import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
 
 // CampoImagen pide la carpeta: el logo y la textura van donde iban.
-const CARPETAS = { logos: subirA('brands/logos', 'logo'), fondos: subirA('brands/backgrounds', 'fondo') };
+const CARPETAS = { logos: subirA('brands/logos', 'logo'), fondos: subirA('brands/backgrounds', 'fondo'), mascotas: subirA('brands/companions', 'mascota') };
 const subirImagen = (blob, opciones = {}) => (CARPETAS[opciones.carpeta] || CARPETAS.logos)(blob, opciones);
 
 /** El texto del resultado de ensureAllBrandLandings (como lo decía AdminMarcas). */

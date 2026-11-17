@@ -16,6 +16,8 @@ import { FotoCelda, NumeroCelda, porNombre, porOrden } from './celdas';
 import l from './Lista.module.css';
 import s from './Marcas.module.css';
 import { EsqueletoTexto } from '../../Esqueletos';
+import CamposMascota from './CamposMascota';
+import { normalizeCompanionConfig, ANIMATION_NAMES } from '../../../../components/kapi-local/companionProfiles.mjs';
 
 /*
  * Marcas (/admin/marcas, D1): los datos de cada marca que usa toda la tienda
@@ -226,10 +228,12 @@ export function PaginaMarcas({
           vacio: ({ registros }) => ({ ...VACIA, orden: registros.reduce((x, m) => Math.max(x, m.orden + 1), 0) }),
           desde: (m) => ({ ...VACIA, ...m, id: undefined }),
           validar: (d, { id, registros }) => {
+            const mascota = normalizeCompanionConfig(d.companion, { name: d.nombre, slug: d.slug });
             const slug = slugDeMarca(d.slug) || slugDeMarca(d.nombre);
             const duena = registros.find((m) => m.id !== id && (slugDeMarca(m.slug) || slugDeMarca(m.nombre)) === slug);
             return {
               nombre: !d.nombre.trim() ? 'Escribe el nombre de la marca.' : undefined,
+              companion: mascota.enabled && (!mascota.name || !mascota.specialty || (mascota.assetPack === 'custom' && (!mascota.portrait || !ANIMATION_NAMES.every(name=>mascota.animations[name]?.src)))) ? 'Completa el nombre, la especialidad y las seis animaciones de la mascota.' : undefined,
               slug: slug && duena ? `wala.pe/${slug} ya es de «${duena.nombre}». Elige otra.` : undefined,
               monedasPorProducto: d.tipoTope === 'monedas' && monedasPorProductoDe(d.monedasPorProducto) === '' ? 'Escribe cuántas monedas por producto (0: ninguna).' : undefined,
             };
@@ -297,6 +301,8 @@ function CamposMarca({ datos, cambiar, errores, idDe, id, subirImagen, muestraDe
       <GrupoCampos titulo="Logo">
         <CampoImagen etiqueta="Logo de la marca" ayuda="PNG con fondo transparente. Se sube tal cual." valor={datos.logo} onCambiar={(url) => cambiar('logo', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'logos' }))} forma="circulo" />
       </GrupoCampos>
+      <CamposMascota datos={datos} cambiar={cambiar} idDe={idDe} subirImagen={subirImagen} />
+      {errores.companion && <p role="alert">{errores.companion}</p>}
 
       <GrupoCampos titulo="Atención">
         <Campo

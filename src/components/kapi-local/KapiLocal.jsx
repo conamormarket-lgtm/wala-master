@@ -5,6 +5,7 @@ import { actorSize, bubbleHeightAt, placeCompanion, stageBounds, walkingRoute, G
 import { askKapi, localGesture } from './chatClient.mjs';
 import { localProductPath, productIdFromPath, readConversation, saveConversation } from './session.mjs';
 import { createScrollGate, sameViewport, scrollMovesTarget } from './scrollLayout.mjs';
+import { KAPI_PROFILE, profileForPath, loadCompanionAnimations } from './companions.mjs';
 import s from './KapiLocal.module.css';
 
 const BASE = import.meta.env.DEV ? '/output/kapi-local' : '/assets/kapi/companion-v1';
@@ -53,14 +54,24 @@ const wait = (ms, signal) => new Promise((resolve, reject) => {
   signal.addEventListener('abort', cancel, { once: true });
 });
 
-export default function KapiLocal({ suspended = false }) {
+export default function KapiLocal({ suspended = false, profiles = [KAPI_PROFILE] }) {
   const { pathname } = useLocation();
   const currentProductId = productIdFromPath(pathname);
   const [restored] = useState(() => { try { return readConversation(sessionStorage); } catch { return null; } });
+  const [companion, setCompanion] = useState(() => {
+    const route = profileForPath(profiles, pathname);
+    return route.id !== 'kapi' && restored?.pathname !== pathname ? route : profiles.find(p => p.id === restored?.companionId) || route;
+  });
+  const introduced = useRef(new Set(restored?.introduced || []));
+  const firstGreeting = useRef(false);
+  const greetedRoute = useRef(pathname);
+  const [handoff, setHandoff] = useState(false);
+  const idleStill = companion.assetPack === 'lumi' ? '/assets/companions/lumi-v1/idle.png' : companion.portrait || BASE + '/assets/idle.png';
   const previousPath = useRef(pathname);
   const [manifest, setManifest] = useState(null);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState(restored?.mode || 'hint');
+  const routeEntry = companion.id !== 'kapi' && companion.id !== restored?.companionId && profileForPath(profiles, pathname).id === companion.id;
+  const [mode, setMode] = useState(routeEntry ? 'hint' : restored?.mode || 'hint');
   const [controls, setControls] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -72,14 +83,15 @@ export default function KapiLocal({ suspended = false }) {
   const [relocating, setRelocating] = useState(false);
   const [direction, setDirection] = useState(-1);
   const [speed, setSpeed] = useState(1);
-  const [sprite, setSprite] = useState({ name: 'idle', src: BASE + '/assets/idle.png' });
-  const [text, setText] = useState(restored?.mode === 'chat' ? restored.chatMessage : INTRO);
+  const [sprite, setSprite] = useState({ name: 'idle', src: idleStill });
+  const [text, setText] = useState(routeEntry ? companion.greeting : restored?.mode === 'chat' ? restored.chatMessage : companion.id === 'kapi' ? INTRO : companion.greeting);
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(false);
   const [products, setProducts] = useState(restored?.products || []);
   const [comparison, setComparison] = useState(restored?.comparison || null);
   const [userMessage, setUserMessage] = useState(restored?.userMessage || '');
   const [chatMessage, setChatMessage] = useState(restored?.chatMessage || '¡Hola! Cuéntame qué te gusta y cuánto quieres gastar. También puedo mostrarte la página.');
+  const [replyAuthor, setReplyAuthor] = useState(restored?.replyAuthor || (restored && (!restored.companionId || restored.companionId === 'kapi') ? 'Kapi' : companion.name));
   const [assistantInfo, setAssistantInfo] = useState(null);
   const [picking, setPicking] = useState(false);
   const [tour, setTour] = useState(null);
@@ -105,7 +117,7 @@ export default function KapiLocal({ suspended = false }) {
   const point = useRef(position);
   const placement = useRef(null);
   const latest = useRef({});
-  latest.current = { manifest, paused, reduced, viewport, speed, mode, moving, busy, target, controls, hidden, pending, animation: sprite.name };
+  latest.current = { manifest, paused, reduced, viewport, speed, mode, moving, busy, target, controls, hidden, pending, handoff, animation: sprite.name };
   const size = actorSize(viewport.width);
   const bubbleWidth = mode !== 'chat' ? hintWidth(viewport)
     : currentProductId && viewport.width <= 768 && viewport.height >= 640
@@ -114,16 +126,13 @@ export default function KapiLocal({ suspended = false }) {
 
   useEffect(() => {
     if (pending) return;
-    try { saveConversation(sessionStorage, { sessionId: sessionId.current, sessionToken: sessionToken.current, chatMessage, userMessage, products, comparison, mode: mode === 'chat' ? 'chat' : 'none' }); } catch { /* storage optional */ }
-  }, [chatMessage, userMessage, products, comparison, mode, pending]);
+    try { saveConversation(sessionStorage, { sessionId: sessionId.current, sessionToken: sessionToken.current, chatMessage, userMessage, products, comparison, replyAuthor, pathname, companionId: companion.id, introduced: [...introduced.current], mode: mode === 'chat' ? 'chat' : 'none' }); } catch { /* storage optional */ }
+  }, [chatMessage, userMessage, products, comparison, replyAuthor, pathname, mode, pending, companion.id]);
 
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
-    fetch(`${BASE}/manifest.json`, { signal: controller.signal }).then(r => {
-      if (!r.ok) throw Error('Manifest missing');
-      return r.json();
-    }).then(setManifest).catch(e => {
+    loadCompanionAnimations(companion).then(value => { if (!controller.signal.aborted) setManifest(value); }).catch(e => {
       if (e.name !== 'AbortError') setError('No pude cargar las animaciones. Recarga la página para intentarlo otra vez.');
     });
     const media = matchMedia('(prefers-reduced-motion: reduce)');
@@ -137,12 +146,12 @@ export default function KapiLocal({ suspended = false }) {
   const loadBlob = useCallback(async (name) => {
     const asset = latest.current.manifest?.[name];
     if (!asset) throw Error('Unknown animation');
-    if (!blobs.current.has(name)) {
+    if (!blobs.current.has(asset.src)) {
       const promise = fetch(asset.src).then(r => { if (!r.ok) throw Error('Asset missing'); return r.blob(); });
-      blobs.current.set(name, promise);
-      promise.catch(() => blobs.current.delete(name));
+      blobs.current.set(asset.src, promise);
+      promise.catch(() => blobs.current.delete(asset.src));
     }
-    return blobs.current.get(name);
+    return blobs.current.get(asset.src);
   }, []);
 
   useEffect(() => {
@@ -209,14 +218,14 @@ export default function KapiLocal({ suspended = false }) {
     const controller = new AbortController();
     operation.current = controller;
     freeze(); setBusy(true); setMoving(startsMoving); setError(''); setPicking(false);
-    (async () => {
+    return (async () => {
       try {
         await task(controller.signal);
         if (!controller.signal.aborted && latest.current.manifest) await show(ending, controller.signal);
       } catch (e) {
         if (e.name !== 'AbortError' && mounted.current && !controller.signal.aborted) {
           setError('No pude cargar ese gesto. Inténtalo otra vez.');
-          setSprite({ name: 'idle', src: BASE + '/assets/idle.png' });
+          setSprite({ name: 'idle', src: latest.current.manifest?.idle.still || BASE + '/assets/idle.png' });
         }
       } finally {
         if (mounted.current && operation.current === controller) {
@@ -230,6 +239,37 @@ export default function KapiLocal({ suspended = false }) {
     await show(name, signal);
     await wait(latest.current.paused || latest.current.reduced ? 200 : latest.current.manifest[name].duration, signal);
   }, [show]);
+
+  const changeCompanion = useCallback(async (next, message = '') => {
+    if (next.id === companion.id) return;
+    const nextManifest = await loadCompanionAnimations(next);
+    await run(async signal => {
+      const anchor = freeze(), view = viewportNow();
+      setHandoff(true); setTarget(null); setTour(null); setControls(false);
+      try {
+        setMode('hint'); setText(message || `Te presento a ${next.name}.`);
+        await show('talk', signal); await wait(latest.current.reduced ? 100 : 850, signal);
+        setMode('none'); setMoving(true);
+        if (!latest.current.reduced && !latest.current.paused) {
+          setDirection(1);
+          await show('walk', signal);
+          moveTo({ x: view.left + view.width + 40, y: anchor.y }, 500);
+          await wait(500, signal);
+        }
+        setCompanion(next); setManifest(nextManifest);
+        setDirection(-1);
+        setSprite({ name: 'walk', src: nextManifest.walk.src });
+        await wait(32, signal);
+        moveTo(anchor, latest.current.reduced || latest.current.paused ? 0 : 500);
+        await wait(latest.current.reduced || latest.current.paused ? 32 : 500, signal);
+        setMoving(false); setHandoff(false);
+        setDirection(anchor.x < view.width / 2 ? 1 : -1);
+        await play('wave', signal);
+      } finally {
+        if (mounted.current) { moveTo(anchor); setMoving(false); setHandoff(false); }
+      }
+    });
+  }, [companion.id, freeze, moveTo, play, run, show]);
 
   const walk = useCallback(async (destination, signal, obstacle = null) => {
     const from = freeze(), view = viewportNow(), body = actorSize(view.width);
@@ -339,7 +379,9 @@ export default function KapiLocal({ suspended = false }) {
     return () => { scrollGate.dispose(); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll, true); };
   }, [viewport, mode, text, error, products, pending, target, tour, moving, hidden, suspended, controls, bubbleWidth, moveTo, freeze, pathname, currentProductId]);
 
-  useEffect(() => { if (manifest) run(signal => play('wave', signal)); }, [manifest, run, play]);
+  useEffect(() => {
+    if (manifest && !firstGreeting.current) { firstGreeting.current = true; introduced.current.add(companion.id); run(signal => play('wave', signal)); }
+  }, [manifest, run, play, companion.id]);
 
   useEffect(() => {
     let frame;
@@ -351,7 +393,7 @@ export default function KapiLocal({ suspended = false }) {
         setViewport(next);
         // Keyboard/rotation may interrupt a walk, but ordinary scroll must not
         // restart an animation or create/decode a fresh image URL.
-        if (latest.current.moving) {
+        if (latest.current.moving && !latest.current.handoff) {
           run(async () => {}, false, restingPose());
         }
       });
@@ -392,17 +434,29 @@ export default function KapiLocal({ suspended = false }) {
   useEffect(() => {
     if (previousPath.current === pathname) return;
     previousPath.current = pathname;
+    greetedRoute.current = null;
     cancelChat(); setTarget(null); setTour(null); setControls(false);
     setMode(currentProductId ? 'hint' : 'none');
     setText(currentProductId ? '¡Aquí está! Puedo explicarte este producto. Tócame cuando quieras.' : chatMessage);
     run(async () => {});
   }, [pathname, currentProductId, cancelChat, run, chatMessage]);
 
+  useEffect(() => {
+    const next = profileForPath(profiles, pathname);
+    if (!manifest || greetedRoute.current === pathname || next.id === 'kapi' || next.id === companion.id || handoff || pending) return;
+    greetedRoute.current = pathname;
+    changeCompanion(next).then(() => {
+      if (!mounted.current || previousPath.current !== pathname) return;
+      const greeting = introduced.current.has(next.id) ? `Aquí estoy para ayudarte con ${next.brandName}.` : next.greeting;
+      introduced.current.add(next.id); setText(greeting); setMode('hint');
+    }).catch(() => { /* Keep the current mascot if the new artwork cannot load. */ });
+  }, [pathname, profiles, manifest, companion.id, handoff, pending, changeCompanion]);
+
   const dismiss = useCallback(() => {
     cancelChat();
     setMode('none'); setControls(false); setTarget(null); setTour(null); setPicking(false);
     // Close cancels the guide immediately, including an in-flight walk or decode.
-    setSprite({ name: 'idle', src: BASE + '/assets/idle.png' });
+    setSprite({ name: 'idle', src: latest.current.manifest?.idle.still || BASE + '/assets/idle.png' });
     run(async () => {});
     actor.current?.querySelector('button')?.focus({ preventScroll: true });
   }, [run, cancelChat]);
@@ -435,11 +489,14 @@ export default function KapiLocal({ suspended = false }) {
 
   useEffect(() => {
     const visibility = () => {
+      // A short identity handoff must finish atomically even if the tab loses
+      // focus; otherwise the next answer could appear under the old character.
+      if (latest.current.handoff) return;
       if (document.hidden) {
         operation.current?.abort(); freeze(); setBusy(false); setMoving(false);
         setSprite(restingPose() === 'point-hold'
           ? { name: 'point', src: latest.current.manifest?.point.hold || POINT_HOLD, phase: 'hold' }
-          : { name: 'idle', src: BASE + '/assets/idle.png' });
+          : { name: 'idle', src: latest.current.manifest?.idle.still || BASE + '/assets/idle.png' });
       } else if (latest.current.manifest) run(async () => {}, false, restingPose());
     };
     document.addEventListener('visibilitychange', visibility);
@@ -514,7 +571,7 @@ export default function KapiLocal({ suspended = false }) {
       if (local.direction) stepVertical(local.direction);
       else if (local.move) startWalk(homePoint(viewportNow(), point.current.x > viewport.width / 2 ? 0 : Infinity));
       else {
-        setText(local.message); setChatMessage(local.message);
+        setText(local.message); setChatMessage(local.message); setReplyAuthor(companion.name);
         run(signal => play(local.gesture, signal));
       }
       return;
@@ -527,12 +584,24 @@ export default function KapiLocal({ suspended = false }) {
     run(async () => {}, false, 'think');
     const timeout = setTimeout(() => controller.abort(), 65000);
     try {
-      const response = await askKapi({ message, sessionId: sessionId.current, sessionToken: sessionToken.current, currentProductId, signal: controller.signal });
+      const response = await askKapi({ message, sessionId: sessionId.current, sessionToken: sessionToken.current, currentProductId, pathname, signal: controller.signal });
       if (!mounted.current || chatRequest.current !== controller || controller.signal.aborted) return;
+      const next = response.companion;
+      let characterReady = true;
+      if (next?.id && next.id !== companion.id) {
+        try { await changeCompanion(next, response.handoff?.message); }
+        catch { characterReady = false; /* The answer remains available if the new artwork fails. */ }
+      }
+      if (!mounted.current || chatRequest.current !== controller) return;
+      if (controller.signal.aborted) throw abortError();
+      const greeting = characterReady && next && !introduced.current.has(next.id) ? response.handoff?.greeting || next.greeting : '';
+      if (characterReady && next) introduced.current.add(next.id);
+      const answer = greeting ? `${greeting}\n${response.message}` : response.message;
       sessionId.current = response.sessionId;
       sessionToken.current = response.sessionToken || null;
       chatRequest.current = null; setPending(false);
-      setChatMessage(response.message); setText(response.message); setProducts(response.products);
+      setMode('chat'); setChatMessage(answer); setText(answer); setProducts(response.products);
+      setReplyAuthor(next?.name || companion.name);
       setComparison(response.comparison || null);
       setAssistantInfo(previous => ({ ...previous, ...response, configured: true }));
       if (response.guide) guide(response.guide, null, response.message);
@@ -545,6 +614,7 @@ export default function KapiLocal({ suspended = false }) {
       const message = e.name === 'AbortError' ? 'La consulta está tardando. ¿Lo intentamos otra vez?'
         : e.message || 'No pude conectarme. Puedes seguir usando mis guías.';
       setText(message); setChatMessage(message);
+      setReplyAuthor(companion.name);
       run(signal => play('confused', signal));
     } finally { clearTimeout(timeout); }
   };
@@ -567,7 +637,7 @@ export default function KapiLocal({ suspended = false }) {
   const resetChat = () => {
     cancelChat(); sessionId.current = null; sessionToken.current = null; setProducts([]); setComparison(null); setUserMessage(''); setError('');
     const message = 'Empecemos de nuevo. ¿Qué te gustaría encontrar?';
-    setChatMessage(message); setText(message); run(async () => {});
+    setChatMessage(message); setText(message); setReplyAuthor(companion.name); run(async () => {});
   };
   const openControls = () => {
     cancelChat();
@@ -578,13 +648,13 @@ export default function KapiLocal({ suspended = false }) {
   if (suspended) return null;
   if (hidden) return createPortal(<button className={s.restore} data-kapi-local onClick={() => {
     setHidden(false); setMode('hint'); setText(INTRO); moveTo(homePoint(viewportNow())); run(signal => play('wave', signal));
-  }}>Mostrar a Kapi</button>, document.body);
+  }}>Mostrar a {companion.name}</button>, document.body);
 
   const bubbleVisible = Boolean(layout.bubble && !moving && !controls && mode !== 'none' && !guideScrolling);
   // Keep both rendered rectangles from the same layout while stationary;
   // async gesture completion must not briefly desynchronize them during scroll.
   const drawPoint = !moving && layout.actor ? layout.actor : position;
-  return createPortal(<div className={s.layer} data-kapi-local data-kapi-product-chat={Boolean(currentProductId && mode === 'chat')}>
+  return createPortal(<div className={s.layer} style={{ '--companion-color': companion.color }} data-kapi-local data-companion-id={companion.id} data-kapi-product-chat={Boolean(currentProductId && mode === 'chat')}>
     {highlight && !guideScrolling && <div className={s.highlight} style={highlight} data-kapi-highlight aria-hidden="true" />}
     <div ref={actor} data-kapi-actor className={s.actor} style={{
       width: size.width, height: size.height,
@@ -592,25 +662,26 @@ export default function KapiLocal({ suspended = false }) {
       transition: travel ? 'transform ' + travel + 'ms linear' : 'none',
       visibility: guideScrolling || relocating || (!layout.actor && !moving) ? 'hidden' : 'visible',
     }}>
-      <button className={s.character} aria-label="Hablar con Kapi" aria-expanded={mode === 'chat'} onClick={openChat}>
+      <button className={s.character} aria-label={`Hablar con ${companion.name}`} aria-expanded={mode === 'chat'} onClick={openChat} disabled={handoff}>
         <img className={s.sprite} style={{ width: size.image, height: size.image, left: (size.width - size.image) / 2, top: size.imageTop, transform: 'scaleX(' + direction + ')' }} src={sprite.src} alt="" draggable="false" data-animation={sprite.name} data-pose-phase={sprite.phase || 'animation'} />
       </button>
     </div>
     {mode !== 'none' && <section ref={bubbleElement} className={[s.bubble, mode === 'hint' ? s.hint : s.chat, mode === 'chat' && (viewport.height < 520 || bubbleMaxHeight < 240) ? s.shortChat : ''].join(' ')}
       data-kapi-bubble-mode={mode} data-side={layout.side || 'bottom'}
-      aria-label={mode === 'chat' ? 'Conversación con Kapi' : 'Mensaje de Kapi'}
+      aria-label={mode === 'chat' ? `Conversación con ${companion.name}` : `Mensaje de ${companion.name}`}
       aria-hidden={!bubbleVisible} inert={!bubbleVisible ? '' : undefined}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setHovered(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHovered(false); }}
       style={{ width: bubbleWidth, left: layout.bubble?.left ?? 12, top: layout.bubble?.top ?? 12, visibility: bubbleVisible ? 'visible' : 'hidden', '--tail': (layout.tail || 24) + 'px', '--bubble-max-height': bubbleMaxHeight + 'px' }}>
       <div className={s.bubbleContent}>
-        {mode === 'chat' ? <header className={s.heading}><strong>Kapi</strong><div className={s.chatHeaderActions}><button className={s.resetChat} onClick={resetChat} aria-label="Nueva conversación con Kapi">Nueva</button><button onClick={dismiss} aria-label="Cerrar conversación">×</button></div></header>
-          : <button className={s.hintClose} onClick={dismiss} aria-label="Cerrar mensaje de Kapi">×</button>}
+        {mode === 'chat' ? <header className={s.heading}><strong>{companion.name}</strong><div className={s.chatHeaderActions}><button className={s.resetChat} onClick={resetChat} aria-label={`Nueva conversación con ${companion.name}`}>Nueva</button><button onClick={dismiss} aria-label="Cerrar conversación">×</button></div></header>
+          : <button className={s.hintClose} onClick={dismiss} aria-label={`Cerrar mensaje de ${companion.name}`}>×</button>}
         <div ref={conversationBody} className={mode === 'chat' ? s.conversationBody : undefined} aria-busy={pending}>
         {mode === 'chat' && userMessage && <p className={s.userMessage}>{userMessage}</p>}
+        {mode === 'chat' && !pending && replyAuthor !== companion.name && <p className={s.catalogNote}>{replyAuthor} respondió:</p>}
         <p className={s.message} role="status" aria-live="polite">{text}</p>
         {error && <p className={s.error} role="alert">{error}</p>}
-        {mode === 'chat' && products.length > 0 && <div className={s.products} aria-label="Productos recomendados por Kapi">
+        {mode === 'chat' && products.length > 0 && <div className={s.products} aria-label={`Productos recomendados por ${replyAuthor}`}>
           {comparison && <div className={s.comparisonSummary} aria-label="Resumen de la comparación">
             {comparison.budget != null && <p>Tu presupuesto: <strong>{money(comparison.budget)}</strong></p>}
             {comparison.priceGap != null && <p>{comparison.priceGap === 0 ? 'Estas opciones tienen el mismo precio.' : `Diferencia entre menor y mayor precio: ${money(comparison.priceGap)}.`}</p>}
@@ -639,19 +710,19 @@ export default function KapiLocal({ suspended = false }) {
         {mode === 'chat' && manifest && <>
           {products.length >= 2 && !comparison && <div className={s.choices}><button disabled={pending} onClick={() => sendMessage('Compara los productos que me recomendaste y dime cuál conviene más según mi presupuesto y lo que busco.', '¿Cuál de estas opciones me conviene más?')}>Comparar opciones</button></div>}
           {currentProductId && !comparison && <div className={s.choices}><button disabled={pending} onClick={() => sendMessage('Explícame este producto.')}>Explícame este producto</button></div>}
-          {!userMessage && <div className={s.choices}><button onClick={() => sendMessage('Ayúdame a elegir un regalo.')}>Buscar un regalo</button><button onClick={() => guide(GUIDES[0].id, 0)}>Muéstrame la página</button></div>}
+          {!userMessage && <div className={s.choices}><button onClick={() => sendMessage(companion.id === 'kapi' ? 'Ayúdame a elegir un regalo.' : `Ayúdame a elegir productos de ${companion.brandName}.`)}>{companion.id === 'kapi' ? 'Buscar un regalo' : 'Elegir productos'}</button><button onClick={() => guide(GUIDES[0].id, 0)}>Muéstrame la página</button></div>}
           {!currentProductId && !products.length && !pending && <div className={s.links}>{GUIDES.map(item => <button key={item.id} onClick={() => guide(item.id)}>{item.label}</button>)}</div>}
-          <form className={s.form} onSubmit={send}><input ref={messageInput} aria-label="Mensaje para Kapi" placeholder={pending ? 'Kapi está pensando…' : 'Escríbele a Kapi…'} maxLength={1000} value={input} onChange={e => setInput(e.target.value)} /><button type="submit" disabled={pending || !input.trim()} aria-label="Enviar mensaje a Kapi">{pending ? '…' : '↑'}</button></form>
+          <form className={s.form} onSubmit={send}><input ref={messageInput} aria-label={`Mensaje para ${companion.name}`} placeholder={pending ? `${companion.name} está pensando…` : `Escríbele a ${companion.name}…`} maxLength={1000} value={input} onChange={e => setInput(e.target.value)} /><button type="submit" disabled={pending || !input.trim()} aria-label={`Enviar mensaje a ${companion.name}`}>{pending ? '…' : '↑'}</button></form>
         </>}
       </div>
     </section>}
     {target && !moving && !layout.actor && <button className={s.restore} onClick={dismiss}>Cerrar guía de Kapi</button>}
-    {!target && !controls && <button ref={controlsTrigger} className={s.controlsTrigger} style={position.x < viewport.width / 2 ? { left: 'auto', right: 12 } : undefined} aria-label="Abrir controles de Kapi" onClick={openControls}>⚙ <span>Controles de Kapi</span></button>}
-    {controls && <aside className={s.panel} data-kapi-panel role="dialog" aria-label="Controles de Kapi" style={{ maxHeight: Math.max(130,viewport.height - bottomSpace(viewport) - 80) }}>
-      <header className={s.heading}><div><strong>Controles de Kapi</strong>{import.meta.env.DEV && <small>Prueba local</small>}</div><button ref={panelClose} aria-label="Cerrar controles de Kapi" onClick={closeControls}>×</button></header>
+    {!target && !controls && !handoff && <button ref={controlsTrigger} className={s.controlsTrigger} style={position.x < viewport.width / 2 ? { left: 'auto', right: 12 } : undefined} aria-label={`Abrir controles de ${companion.name}`} onClick={openControls}>⚙ <span>Controles de {companion.name}</span></button>}
+    {controls && <aside className={s.panel} data-kapi-panel role="dialog" aria-label={`Controles de ${companion.name}`} style={{ maxHeight: Math.max(130,viewport.height - bottomSpace(viewport) - 80) }}>
+      <header className={s.heading}><div><strong>Controles de {companion.name}</strong>{import.meta.env.DEV && <small>Prueba local</small>}</div><button ref={panelClose} aria-label={`Cerrar controles de ${companion.name}`} onClick={closeControls}>×</button></header>
       <div className={s.panelContent}>
         <div className={s.motionControls}>
-          <div className={s.directionPad} role="group" aria-label="Mover a Kapi">
+          <div className={s.directionPad} role="group" aria-label={`Mover a ${companion.name}`}>
             <button aria-label="Caminar hacia arriba" onClick={() => stepVertical('up')}>↑</button>
             <button aria-label="Caminar a la izquierda" onClick={() => startWalk({ x: point.current.x - 220, y: point.current.y })}>←</button>
             <button aria-label="Caminar hacia abajo" onClick={() => stepVertical('down')}>↓</button>

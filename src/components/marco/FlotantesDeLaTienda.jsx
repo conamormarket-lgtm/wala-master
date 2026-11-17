@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PilaFlotante, BotonWhatsApp, PildoraRecompensa } from '../../componentes/kit/piezas/Flotantes';
 import useWhatsAppDeLaRuta from './useWhatsAppDeLaRuta';
 import useKapiPreview from '../kapi-local/useKapiPreview';
+import useCompanionProfiles from '../kapi-local/useCompanionProfiles';
 import { isKapiPublicRoute } from '../kapi-local/model.mjs';
 import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { abrirAvisoBienvenida } from './BienvenidaDeTienda';
@@ -47,7 +48,9 @@ const pildoraOculta = () => {
 export default function FlotantesDeLaTienda() {
   const { pathname } = useLocation();
   const kapiPreview = useKapiPreview();
-  const kapiActive = kapiPreview || (!import.meta.env.DEV && isKapiPublicRoute(pathname));
+  const profiles = useCompanionProfiles();
+  const brandRoute = profiles.some(profile => profile.id !== 'kapi' && profile.byRoute && profile.route === pathname);
+  const kapiActive = profiles.length > 0 && (kapiPreview || (!import.meta.env.DEV && (isKapiPublicRoute(pathname) || brandRoute)) || (import.meta.env.DEV && brandRoute));
   const { user, userProfile } = useAuth();
   const whatsapp = useWhatsAppDeLaRuta();
   const [sinPildora, setSinPildora] = useState(pildoraOculta);
@@ -101,7 +104,7 @@ export default function FlotantesDeLaTienda() {
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
       <Suspense fallback={null}><Kapi onOpenChange={setPetOpen} /></Suspense>
-      {kapiActive && <Suspense fallback={null}><KapiLocal suspended={petOpen} /></Suspense>}
+      {kapiActive && <Suspense fallback={null}><KapiLocal profiles={profiles} suspended={petOpen} /></Suspense>}
     </PilaFlotante>
   );
 }
