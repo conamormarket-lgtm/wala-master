@@ -1,4 +1,5 @@
 import React, { useId, useState } from 'react';
+import { navigationGuide } from './navigationGuide.mjs';
 import { motion } from 'framer-motion';
 import { Home, ShoppingBag, Brush, Gamepad2, User } from 'lucide-react';
 import { Contador } from './Etiquetas';
@@ -42,7 +43,7 @@ export function BarraInferior({ items = TABS, activo, usuario, carrito = 0, onNa
   const actual = activo === undefined ? propio : activo;
   const etiqueta = useTexto('Navegación principal');
   return (
-    <nav className={s.barra} aria-label={etiqueta}>
+    <nav className={s.barra} aria-label={etiqueta} data-kapi-guide-nav>
       {items.map(({ id, texto, url, Icono, destacado }) => {
         const esActivo = actual === id;
         const conAvatar = id === 'cuenta' && usuario;
@@ -50,6 +51,7 @@ export function BarraInferior({ items = TABS, activo, usuario, carrito = 0, onNa
           <Enlace
             key={id}
             to={url}
+            data-kapi-guide={navigationGuide({ url })}
             className={[s.tab, esActivo && s.tabActivo, destacado && s.tabDestacado].filter(Boolean).join(' ')}
             aria-current={esActivo ? 'page' : undefined}
             onClick={(e) => {

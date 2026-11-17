@@ -53,15 +53,19 @@ export function placeCompanion({ viewport, actor, bubble, preferred, target = nu
   const obstruction = rect => avoid.reduce((total, item) => total
     + Math.max(0, Math.min(rect.right, item.right + 6) - Math.max(rect.left, item.left - 6))
     * Math.max(0, Math.min(rect.bottom, item.bottom + 6) - Math.max(rect.top, item.top - 6)), 0);
-  const candidates = [];
-  for (const x of new Set(xs)) for (const y of new Set(ys)) {
-    const point = clampActor({ x, y });
+  // Many off-stage coordinates collapse to the same edge. Deduplicate after
+  // clamping and keep only the best result; don't sort thousands of duplicates.
+  let best = null;
+  const consider = candidate => { if (!best || candidate.score < best.score) best = candidate; };
+  for (const x of new Set(xs.map(x => clamp(x, bounds.left, bounds.right - actor.width))))
+    for (const y of new Set(ys.map(y => clamp(y, bounds.top, bounds.bottom - actor.height)))) {
+    const point = { x, y };
     const body = rectAt(point.x, point.y, actor.width, actor.height);
     if (body.right > bounds.right || body.bottom > bounds.bottom || intersects(body, target, 12) || blocksContent(body)) continue;
     // During guidance proximity wins; previous position only breaks close ties.
     const distance = proximity(body) + Math.hypot(point.x - desired.x, point.y - desired.y) * (target && nearTarget ? .015 : 1)
       + (target ? 0 : obstruction(body) * 8);
-    if (!bubble) { candidates.push({ actor: body, bubble: null, score: distance }); continue; }
+    if (!bubble) { consider({ actor: body, bubble: null, score: distance }); continue; }
     if (bubble.width > bounds.right - bounds.left || bubble.height > bounds.bottom - bounds.top) continue;
     const options = [
       [point.x + actor.width / 2 - bubble.width / 2, point.y - bubble.height - gap, 'bottom'],
@@ -76,11 +80,10 @@ export function placeCompanion({ viewport, actor, bubble, preferred, target = nu
       const horizontal = side === 'bottom' || side === 'top';
       const tail = horizontal ? clamp(point.x + actor.width / 2 - speech.left, 20, speech.width - 20)
         : clamp(point.y + actor.height / 2 - speech.top, 20, speech.height - 20);
-      candidates.push({ actor: body, bubble: speech, side, tail, score: distance + (target ? 0 : obstruction(speech) * 8) + index * (target ? .5 : 8) });
+      consider({ actor: body, bubble: speech, side, tail, score: distance + (target ? 0 : obstruction(speech) * 8) + index * (target ? .5 : 8) });
     });
   }
-  candidates.sort((a, b) => a.score - b.score);
-  if (candidates.length) return candidates[0];
+  if (best) return best;
   if (bubble) return placeCompanion({ viewport, actor, bubble: null, preferred, target, avoid, bottomInset, nearTarget });
   return { actor: null, bubble: null };
 }
@@ -111,10 +114,10 @@ export function walkingRoute(from, to, actor, target, bounds, avoid = []) {
 }
 
 export const GUIDES = [
-  { id: 'search', label: 'Buscar', selectors: ['input[placeholder="Buscar productos, marcas y categorías"]', 'input[type="search"]'], text: 'Busca productos, marcas y categorías aquí.' },
-  { id: 'store', label: 'Tienda', selectors: ['a[href="/tienda"]'], text: 'Explora el catálogo desde este acceso.' },
-  { id: 'create', label: 'Crear', selectors: ['a[href="/personalizar"]'], text: 'Aquí puedes personalizar algo a tu estilo.' },
-  { id: 'cart', label: 'Carrito', selectors: ['a[href="/carrito"]'], text: 'Revisa aquí lo que elegiste antes de continuar.' },
+  { id: 'search', label: 'Buscar', selectors: ['[data-kapi-guide="search"] input'], text: 'Busca productos, marcas y categorías aquí.' },
+  { id: 'store', label: 'Tienda', selectors: ['[data-kapi-guide="store"]'], text: 'Explora el catálogo desde este acceso.' },
+  { id: 'create', label: 'Crear', selectors: ['[data-kapi-guide="create"]'], text: 'Aquí puedes personalizar algo a tu estilo.' },
+  { id: 'cart', label: 'Carrito', selectors: ['[data-kapi-guide="cart"]'], text: 'Revisa aquí lo que elegiste antes de continuar.' },
 ];
 
 export function replyTo(input) {

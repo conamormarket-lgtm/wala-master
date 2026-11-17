@@ -45,3 +45,11 @@ npm run build
 Para retirar la interfaz, revertir el commit de activación en `master` y verificar el despliegue. Para detener también el consumo del endpoint, deshabilitar o eliminar únicamente `kapiAssistant`; no revocar una clave compartida con otras aplicaciones sin revisar sus usos. Conservar las reglas que protegen `kapi_server`.
 
 Validación previa a publicación: 51 pruebas correctas y build de Vercel completo. Backend desplegado y comprobado con búsqueda real de “espada voladora” y continuación sobre la ficha: ambas HTTP 200, con token cifrado. Origen ajeno y lectura pública de `kapi_server`: HTTP 403. Las reglas activas se cotejaron con las del repositorio antes y después del despliegue.
+
+## Corrección de scroll y navegación
+
+Kapi permanece anclado al hacer scroll, también con el globo cerrado. La guía oculta su señalamiento mientras se desplaza un contenedor que mueve el destino, y recalcula una vez tras 180 ms sin desplazamiento. El scroll interno de la conversación y los carruseles ajenos no provocan recolocación. Se retiró `flushSync` del scroll y los eventos de visual viewport sin cambio de geometría no reinician animaciones.
+
+El cálculo descarta coordenadas duplicadas tras ajustarlas al viewport y selecciona el mejor resultado sin ordenar todas las alternativas. Las mediciones de contenido se detienen en 64 elementos visibles y excluyen los slides fuera del ancho de pantalla. En una muestra de la portada, la mediana del cálculo pasó de 2,44 ms a 0,62 ms; es una medida del algoritmo, no de la velocidad total de la web.
+
+La cabecera y barra móvil identifican sus controles con `data-kapi-guide`. El menú administrable usa IDs generados, por lo que las anclas se asignan por destino/tipo de menú. La guía de Tienda apunta al control de navegación, no a anuncios ni enlaces del pie. Regresiones de scroll y navegación: `scripts/test/kapiScroll.test.mjs` (cuatro casos); suite completa: 55 pruebas.

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal, flushSync } from 'react-dom';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { actorSize, placeCompanion, stageBounds, walkingRoute, GUIDES } from './model.mjs';
 import { askKapi, localGesture } from './chatClient.mjs';
 import { localProductPath, productIdFromPath, readConversation, saveConversation } from './session.mjs';
+import { createScrollGate, sameViewport, scrollMovesTarget } from './scrollLayout.mjs';
 import s from './KapiLocal.module.css';
 
 const BASE = import.meta.env.DEV ? '/output/kapi-local' : '/assets/kapi/companion-v1';
@@ -30,11 +31,17 @@ const readingAreas = view => {
   if (clip) return [clip]; // Mobile product reader has a dedicated scroll region.
   const productReader = document.body.dataset.kapiProductReader === 'true' && document.getElementById('main-content-area');
   if (productReader) return [productReader.getBoundingClientRect()];
-  return [...(root?.querySelectorAll('h1, h2, h3, p, a, button, input, select, textarea, [role="button"], [data-kapi-important]') || [])]
-    .filter(el => !el.closest('[data-kapi-local]'))
-    .map(el => el.getBoundingClientRect())
-    .filter(r => r.width > 0 && r.height > 0 && r.bottom > view.top && r.top < view.top + view.height)
-    .slice(0, 64);
+  const areas = [];
+  for (const el of root?.querySelectorAll('h1, h2, h3, p, a, button, input, select, textarea, [role="button"], [data-kapi-important]') || []) {
+    if (el.closest('[data-kapi-local]')) continue;
+    const r = el.getBoundingClientRect();
+    // Off-screen carousel slides are not obstacles. Stop reading layout after
+    // enough visible content has been collected, rather than measuring it all.
+    if (r.width > 0 && r.height > 0 && r.bottom > view.top && r.top < view.top + view.height
+      && r.right > view.left && r.left < view.left + view.width) areas.push(r);
+    if (areas.length === 64) break;
+  }
+  return areas;
 };
 const abortError = () => new DOMException('Cancelled', 'AbortError');
 const wait = (ms, signal) => new Promise((resolve, reject) => {
@@ -77,6 +84,7 @@ export default function KapiLocal() {
   const [tour, setTour] = useState(null);
   const [target, setTarget] = useState(null);
   const [highlight, setHighlight] = useState(null);
+  const [guideScrolling, setGuideScrolling] = useState(false);
   const [layout, setLayout] = useState({ actor: null, bubble: null });
   const [busy, setBusy] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -252,12 +260,22 @@ export default function KapiLocal() {
     setTravel(0); setMoving(false);
   }, [freeze, moveTo, show]);
 
-  // Measure the actual message (including keyboard/text zoom) and protect both
-  // the target and the bottom navigation. Recompute on scroll, resize and reflow.
+  // Give a bottom-nav explanation room on small screens without covering the
+  // brand cards above it. Restore the page as soon as the guide closes.
+  useLayoutEffect(() => {
+    if (target?.closest('[data-kapi-guide-nav]') && mode === 'hint' && !hidden) document.body.dataset.kapiNavGuide = 'true';
+    else delete document.body.dataset.kapiNavGuide;
+    return () => { delete document.body.dataset.kapiNavGuide; };
+  }, [target, mode, hidden]);
+
+  // Keep the companion anchored while browsing. Only a guide follows a page
+  // target, and only after scrolling ends; the hot scroll path measures nothing.
   useLayoutEffect(() => {
     if (hidden) return;
-    let frame;
+    let frame, scrollGate;
+    setGuideScrolling(false);
     const arrange = () => {
+      if (scrollGate?.active) return;
       const view = viewportNow(), body = actorSize(view.width);
       const protectedRect = target?.isConnected ? target.getBoundingClientRect() : null;
       const visibleTarget = protectedRect && protectedRect.bottom > view.top && protectedRect.top < view.top + view.height;
@@ -268,7 +286,7 @@ export default function KapiLocal() {
       const next = placeCompanion({
         viewport: view, actor: body, bubble,
         preferred: point.current, target: visibleTarget ? protectedRect : null,
-        avoid: readingAreas(view), bottomInset: bottomSpace(view),
+        avoid: mode === 'none' && !target ? [] : readingAreas(view), bottomInset: bottomSpace(view),
       });
       if (target && !visibleTarget) next.bubble = null;
       if (visibleTarget && next.actor) setDirection((protectedRect.left + protectedRect.right) / 2 < next.actor.x + body.width / 2 ? -1 : 1);
@@ -277,37 +295,62 @@ export default function KapiLocal() {
         moveTo({ x: next.actor.x, y: next.actor.y });
       }
     };
-    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(arrange); };
-    const onScroll = () => {
-      if (!target) { schedule(); return; }
-      // Commit the protected layout in the scroll event. Deferring it to another
-      // frame lets the page text scroll underneath a stationary character.
+    const schedule = () => {
+      if (scrollGate?.active) return;
+      cancelAnimationFrame(frame); frame = requestAnimationFrame(arrange);
+    };
+    scrollGate = createScrollGate({ onStart: () => {
       cancelAnimationFrame(frame);
-      flushSync(() => {
-        if (latest.current.moving && latest.current.animation === 'walk') {
-          operation.current?.abort(); freeze(); setMoving(false); setBusy(false);
-          setSprite({ name: 'point', src: latest.current.manifest?.point.hold || POINT_HOLD, phase: 'hold' });
-        }
-        arrange();
+      setGuideScrolling(true);
+    }, onEnd: () => {
+      // Cancel a walk whose original destination moved, then place the held
+      // pointing pose against the current target in the same render.
+      if (latest.current.moving && latest.current.animation === 'walk') {
+        operation.current?.abort(); freeze();
+        latest.current.moving = false;
+        setMoving(false); setBusy(false);
+        setSprite({ name: 'point', src: latest.current.manifest?.point.hold || POINT_HOLD, phase: 'hold' });
+      }
+      frame = requestAnimationFrame(() => {
+        arrange(); setGuideScrolling(false);
       });
+    } });
+    const onScroll = event => {
+      // Ignore the conversation, controls and unrelated carousels. They do not
+      // move the highlighted target, and must not move Kapi either.
+      if (scrollMovesTarget(event.target, target, document, window)) scrollGate.scroll();
     };
     arrange();
     const observer = new ResizeObserver(schedule);
     if (bubbleElement.current) observer.observe(bubbleElement.current);
     if (target) observer.observe(target);
-    if (document.getElementById('root')) observer.observe(document.getElementById('root'));
-    window.addEventListener('scroll', onScroll, true);
-    return () => { observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll, true); };
-  }, [viewport, mode, text, error, products, pending, target, tour, moving, hidden, controls, bubbleWidth, moveTo, freeze, pathname]);
+    if (currentProductId && mode === 'chat' && document.getElementById('root')) observer.observe(document.getElementById('root'));
+    if (target) window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    return () => { scrollGate.dispose(); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll, true); };
+  }, [viewport, mode, text, error, products, pending, target, tour, moving, hidden, controls, bubbleWidth, moveTo, freeze, pathname, currentProductId]);
 
   useEffect(() => { if (manifest) run(signal => play('wave', signal)); }, [manifest, run, play]);
 
   useEffect(() => {
-    const resize = () => { setViewport(viewportNow()); run(async () => {}, false, restingPose()); };
+    let frame;
+    const resize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const next = viewportNow();
+        if (sameViewport(latest.current.viewport, next)) return;
+        setViewport(next);
+        // Keyboard/rotation may interrupt a walk, but ordinary scroll must not
+        // restart an animation or create/decode a fresh image URL.
+        if (latest.current.moving) {
+          run(async () => {}, false, restingPose());
+        }
+      });
+    };
     window.addEventListener('resize', resize);
     window.visualViewport?.addEventListener('resize', resize);
     window.visualViewport?.addEventListener('scroll', resize);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('resize', resize);
       window.visualViewport?.removeEventListener('resize', resize);
       window.visualViewport?.removeEventListener('scroll', resize);
@@ -521,17 +564,17 @@ export default function KapiLocal() {
     setHidden(false); setMode('hint'); setText(INTRO); moveTo(homePoint(viewportNow())); run(signal => play('wave', signal));
   }}>Mostrar a Kapi</button>, document.body);
 
-  const bubbleVisible = Boolean(layout.bubble && !moving && !controls && mode !== 'none');
+  const bubbleVisible = Boolean(layout.bubble && !moving && !controls && mode !== 'none' && !guideScrolling);
   // Keep both rendered rectangles from the same layout while stationary;
   // async gesture completion must not briefly desynchronize them during scroll.
   const drawPoint = !moving && layout.actor ? layout.actor : position;
   return createPortal(<div className={s.layer} data-kapi-local data-kapi-product-chat={Boolean(currentProductId && mode === 'chat')}>
-    {highlight && <div className={s.highlight} style={highlight} data-kapi-highlight aria-hidden="true" />}
+    {highlight && !guideScrolling && <div className={s.highlight} style={highlight} data-kapi-highlight aria-hidden="true" />}
     <div ref={actor} data-kapi-actor className={s.actor} style={{
       width: size.width, height: size.height,
       transform: 'translate3d(' + drawPoint.x + 'px,' + drawPoint.y + 'px,0)',
       transition: travel ? 'transform ' + travel + 'ms linear' : 'none',
-      visibility: relocating || (!layout.actor && !moving) ? 'hidden' : 'visible',
+      visibility: guideScrolling || relocating || (!layout.actor && !moving) ? 'hidden' : 'visible',
     }}>
       <button className={s.character} aria-label="Hablar con Kapi" aria-expanded={mode === 'chat'} onClick={openChat}>
         <img className={s.sprite} style={{ width: size.image, height: size.image, left: (size.width - size.image) / 2, top: size.imageTop, transform: 'scaleX(' + direction + ')' }} src={sprite.src} alt="" draggable="false" data-animation={sprite.name} data-pose-phase={sprite.phase || 'animation'} />
@@ -586,6 +629,7 @@ export default function KapiLocal() {
         </>}
       </div>
     </section>}
+    {target && !moving && !layout.actor && <button className={s.restore} onClick={dismiss}>Cerrar guía de Kapi</button>}
     {!target && !controls && <button ref={controlsTrigger} className={s.controlsTrigger} style={position.x < viewport.width / 2 ? { left: 'auto', right: 12 } : undefined} aria-label="Abrir controles de Kapi" onClick={openControls}>⚙ <span>Controles de Kapi</span></button>}
     {controls && <aside className={s.panel} data-kapi-panel role="dialog" aria-label="Controles de Kapi" style={{ maxHeight: Math.max(130,viewport.height - bottomSpace(viewport) - 80) }}>
       <header className={s.heading}><div><strong>Controles de Kapi</strong>{import.meta.env.DEV && <small>Prueba local</small>}</div><button ref={panelClose} aria-label="Cerrar controles de Kapi" onClick={closeControls}>×</button></header>
