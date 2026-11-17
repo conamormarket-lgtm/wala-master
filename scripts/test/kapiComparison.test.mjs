@@ -70,9 +70,24 @@ test('comparison retains the previous budget, and clears it only through the exp
   assert.equal(third.comparison.budget, null);
 });
 
-test('comparison rejects unknown IDs rather than comparing hallucinated recommendations', async () => {
-  const { assistant } = harness([compareCall()]);
-  await assert.rejects(assistant.chat({ message: 'Compáralos.' }, new AbortController().signal), error => error.code === 'invalid_tool');
+test('comparison rejects unknown IDs and allows a bounded conversational recovery', async () => {
+  let reads=0;
+  const { assistant, requests } = harness([compareCall(), final(reply({product_ids:[],message:'Primero necesitamos elegir opciones del catálogo.'}))],async()=>{reads++;throw Error('Unverified ID must not be read');});
+  const result=await assistant.chat({ message: 'Compáralos.' }, new AbortController().signal);
+  assert.equal(reads,0);assert.deepEqual(result.products,[]);assert.equal(result.comparison,null);
+  assert.match(requests[1].input.find(item=>item.type==='function_call_output').output,/invalid_tool_arguments/);
+});
+
+test('a current product supplies an exact remaining budget without a fabricated comparison', async () => {
+  const id='00000000-0000-4000-8000-000000000000'; let context;
+  const assistant=createAssistant({getKey:async()=>'test-only',semanticSearch:false,
+    initialSession:{id,session:{messages:[],knownIds:['basic'],budget:100,at:Date.now()}},
+    catalog:{get:async()=>products[0],status:()=>({})},fetchImpl:async(_url,options)=>{
+      context=JSON.parse(JSON.parse(options.body).input.find(item=>item.role==='developer').content.split(': ').slice(1).join(': '));
+      return Response.json(final(reply({product_ids:[],message:'Te quedarían S/45.10 del presupuesto de S/100.'})));
+    }});
+  const result=await assistant.chat({message:'¿Cuánto me quedaría?',sessionId:id,currentProductId:'basic'},new AbortController().signal);
+  assert.equal(context.budget,100);assert.equal(context.remainingBudget,45.1);assert.equal(result.comparison,null);
 });
 
 test('price changes after comparison remove the stale conclusion and over-budget cards', async () => {
