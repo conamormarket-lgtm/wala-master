@@ -1,0 +1,86 @@
+.composicion { container-type: inline-size; width: 100%; color: var(--color-text); }
+.cabecera { margin-bottom: 2rem; text-align: center; }
+.cabecera > span { display: block; margin-bottom: 0.6rem; color: var(--primary-color); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.cabecera h2 { margin: 0; font-family: var(--fuente-marca); font-size: clamp(1.7rem, 4cqi, 2.6rem); line-height: 1.2; overflow-wrap: anywhere; }
+.bloques { display: grid; gap: 2rem; }
+.bloque { position: relative; width: 100%; margin-inline: auto; border-radius: 12px; }
+.normal { max-width: 960px; }
+.narrow { max-width: 680px; }
+.wide { max-width: 100%; }
+.soft { background: var(--color-surface, #fff); border: 1px solid var(--color-border); padding: 1.25rem; }
+.contenido { display: grid; gap: 1.5rem; min-width: 0; }
+.dividido { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: clamp(1.5rem, 4cqi, 3.5rem); }
+.invertido .medios { order: 1; }
+.galeria { display: grid; grid-template-columns: repeat(var(--columnas), minmax(0, 1fr)); align-items: start; gap: 1rem; }
+.medios { min-width: 0; container-type: inline-size; }
+.media { min-width: 0; margin: 0; }
+.media img, .media video { display: block; width: 100%; height: auto; aspect-ratio: var(--proporcion, auto); object-fit: var(--ajuste, contain); border-radius: 10px; background: #f6f5f8; }
+.media video { background: #201b28; min-height: var(--altura-minima-video, 160px); }
+.media figcaption { margin-top: 0.65rem; font-size: 0.82rem; line-height: 1.5; color: var(--color-text-muted); overflow-wrap: anywhere; }
+.texto { min-width: 0; overflow-wrap: anywhere; }
+.texto h3 { font-family: var(--fuente-marca); font-size: clamp(1.4rem, 3cqi, 2.1rem); line-height: 1.2; margin: 0 0 1rem; }
+.texto p { margin: 0; white-space: pre-wrap; line-height: 1.8; color: var(--color-text-muted); }
+.editable { border: 1px dashed var(--color-border); padding: 2.5rem 0.8rem 0.8rem; }
+.seleccionado { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.editar { position: absolute; left: 0.6rem; top: 0.4rem; padding: 0.3rem 0.6rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; font: inherit; font-size: 0.75rem; color: var(--primary-color); cursor: pointer; }
+.pendiente { padding: 2rem 1rem; margin: 0; text-align: center; color: var(--color-text-muted); font-size: 0.9rem; background: var(--color-surface); }
+@container (max-width: 620px) {
+  .dividido { grid-template-columns: minmax(0, 1fr); }
+  .invertido .medios { order: 0; }
+  .galeria { grid-template-columns: repeat(var(--columnas-movil), minmax(0, 1fr)); gap: 0.65rem; }
+}
+.mosaico { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: stretch; }
+.mosaico .media:first-child { grid-row: span 2; }
+.mosaico .media { display: flex; flex-direction: column; }
+.mosaico .media img, .mosaico .media video { flex: 1; min-height: 0; max-height: 700px; aspect-ratio: auto; object-fit: var(--ajuste, cover); }
+.mosaico .media:not(:first-child) img, .mosaico .media:not(:first-child) video { max-height: 330px; }
+.carrusel { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - (var(--columnas) - 1) * 1rem) / var(--columnas)); gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; padding-bottom: 0.7rem; }
+.carrusel .media { scroll-snap-align: start; }
+.navegacion { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-block: 0.75rem; font-size: 0.8rem; }
+.navegacion > span { margin-right: auto; color: var(--color-text-muted); }
+.navegacion button, .ampliar { border: 1px solid var(--color-border, #ddd); border-radius: 7px; background: var(--color-surface, white); color: var(--color-text); padding: 0.6rem 0.8rem; min-height: 40px; cursor: pointer; font: inherit; font-size: 0.8rem; }
+.navegacion button:disabled { opacity: 0.4; }
+.ampliar { margin-top: 0.5rem; align-self: start; }
+.ampliado { --proporcion: auto; --ajuste: contain; }
+.ampliado img, .ampliado video { max-height: 65vh; object-fit: contain; }
+@container (max-width: 620px) {
+  .carrusel { grid-auto-columns: calc((100% - 0.65rem * var(--columnas-movil)) / var(--columnas-movil) - 1.5rem); }
+  .mosaico { grid-template-columns: repeat(var(--columnas-movil), minmax(0, 1fr)); gap: 0.6rem; }
+  .mosaico .media:first-child { grid-row: auto; grid-column: 1 / -1; }
+  .mosaico .media img, .mosaico .media video { aspect-ratio: 1; }
+}
+
+.mosaicoLibre { display: grid; grid-template-columns: repeat(var(--columnas), minmax(0, 1fr)); grid-auto-rows: var(--fila-mosaico, 200px); gap: 0.75rem; }
+.mosaicoLibre .media { grid-column: var(--cell-column); grid-row: var(--cell-row); display: flex; flex-direction: column; min-height: 0; }
+.mosaicoLibre .media img, .mosaicoLibre .media video { flex: 1; min-height: 0; height: 0; aspect-ratio: auto; object-fit: var(--ajuste, cover); }
+.mosaicoLibre .media figcaption { max-height: 3em; overflow: auto; flex-shrink: 0; }
+.mosaicoLibre .ampliar { flex-shrink: 0; }
+@container (max-width: 620px) {
+  .mosaicoLibre { grid-template-columns: repeat(var(--columnas-movil), minmax(0, 1fr)); grid-auto-rows: 180px; gap: 0.6rem; }
+  .mosaicoLibre .media { grid-column: var(--cell-mobile-column); grid-row: var(--cell-mobile-row); }
+}
+
+/* Proportional cells follow the grid width. Existing mosaics keep manual
+   heights unless the editor explicitly selects proportional sizing. */
+.mosaicoProporcional { --columnas-activas: var(--columnas); --separacion: 0.75rem; grid-auto-rows: calc((100cqi - (var(--columnas-activas) - 1) * var(--separacion)) / var(--columnas-activas) * var(--alto-celda)); }
+.mosaicoProporcional .media { position: relative; border-radius: 10px; overflow: hidden; }
+.mosaicoProporcional .media img, .mosaicoProporcional .media video { position: absolute; inset: 0; width: 100%; height: 100%; flex: none; }
+.mosaicoProporcional .ampliar { position: absolute; top: 0.5rem; right: 0.5rem; margin: 0; background: var(--color-surface, white); }
+.mosaicoProporcional .media figcaption { position: absolute; bottom: 0; inset-inline: 0; margin: 0; padding: 0.5rem 0.75rem; background: var(--color-surface, white); color: var(--color-text); }
+.mosaicoProporcional .media:has(video) figcaption { bottom: 4rem; }
+@container (max-width: 620px) {
+  .mosaicoProporcional { --columnas-activas: var(--columnas-movil); --separacion: 0.6rem; }
+}
+
+/* Mixed ratios keep their actual frame height instead of being letterboxed
+   inside a shared row. ResizeObserver reserves pixel rows for each figure. */
+.mosaicoMixto { --columnas-activas: var(--columnas); --separacion: 0.75rem; --fila-activa: var(--fila-mosaico, 200px); display: grid; grid-template-columns: repeat(var(--columnas-activas), minmax(0, 1fr)); grid-auto-rows: 1px; column-gap: var(--separacion); row-gap: 0; align-items: start; }
+.mosaicoMixto.heredaProporcion { --fila-activa: calc((100cqi - (var(--columnas-activas) - 1) * var(--separacion)) / var(--columnas-activas) * var(--alto-celda)); }
+.mosaicoMixto .media { --alto-activo: var(--cell-height); --altura-heredada: calc(var(--fila-activa) * var(--alto-activo) + var(--separacion) * (var(--alto-activo) - 1)); grid-column: var(--cell-column); grid-row: span var(--filas-necesarias, 1); min-height: 0; }
+.marcoMixto { position: relative; width: 100%; min-width: 0; border-radius: 10px; overflow: hidden; background: #f6f5f8; }
+.marcoMixto img, .marcoMixto video { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: auto; object-fit: var(--ajuste, contain); }
+.marcoMixto .ampliar { position: absolute; top: 0.5rem; right: 0.5rem; margin: 0; }
+@container (max-width: 620px) {
+  .mosaicoMixto { --columnas-activas: var(--columnas-movil); --separacion: 0.6rem; --fila-activa: 180px; }
+  .mosaicoMixto .media { --alto-activo: var(--cell-mobile-height); grid-column: var(--cell-mobile-column); }
+}

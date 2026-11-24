@@ -1,8 +1,16 @@
-import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from './firebase/observed.js';
+import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc, getAggregateFromServer, count, average } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { uploadFile } from './firebase/storage';
 
 const REVIEWS_COLLECTION = 'product_reviews';
+
+/** El resumen de cabecera no descarga comentarios ni fotografías. */
+export const getProductReviewSummary = async productId => {
+  const q = query(collection(db, REVIEWS_COLLECTION), where('productId', '==', productId));
+  const snapshot = await getAggregateFromServer(q, { total: count(), promedio: average('rating') });
+  const data = snapshot.data();
+  return { total: Math.max(0, Number(data.total) || 0), promedio: Math.max(0, Math.min(5, Number(data.promedio) || 0)) };
+};
 
 /**
  * Agrega una nueva reseña a un producto.

@@ -171,7 +171,7 @@ export default function Resumen() {
         value: pedidos,
         format: fmtInt,
         accent: '#0E7F57',
-        info: 'Pedidos enviados desde la tienda o la app, aunque todavía no estén pagados.',
+        info: 'Histórico registrado por el navegador. Los periodos anteriores pueden incluir solicitudes sin pago; la nueva medición del servidor aparece en Pedidos con pago confirmado.',
         ...delta(pedidos, anterior?.pedidos?.total),
       },
       {
@@ -254,6 +254,15 @@ export default function Resumen() {
         </p>
       )}
       <OtrosCobros cobros={data?.otrosCobros} />
+      <Tarjeta id="ficha-conversion" titulo="De la ficha al pedido pagado">
+        {data?.productFunnelDays ? <>
+          <KpiRow items={[
+            ['productViews', 'Vistas de producto'], ['videoPlays', 'Vídeos reproducidos'], ['faqOpens', 'Preguntas abiertas'], ['helpClicks', 'Consultas por WhatsApp'],
+            ['editorOpens', 'Personalizaciones iniciadas'], ['editorSaves', 'Diseños guardados'], ['adds', 'Agregados al carrito'], ['checkouts', 'Inicios de checkout'], ['requests', 'Solicitudes por WhatsApp'], ['confirmedOrders', 'Pedidos con pago confirmado'], ['whatsappPaid', 'Confirmados desde WhatsApp'],
+          ].map(([key, label]) => ({ label, value: data.productFunnel?.[key] || 0, format: fmtInt, accent: '#6D28D9' }))} />
+          <p className={styles.nota}>Actividad del periodo, no personas únicas ni una tasa de conversión por cliente. Las solicitudes no son pagos. La confirmación requiere un cobro de pasarela o un adelanto registrado en un pedido aprobado del ERP; se cuenta una vez por pedido. Disponible desde la publicación de esta medición. El resumen de hoy se actualiza cada 30 minutos.</p>
+        </> : <Vacio>Este periodo aún no tiene la nueva medición de fichas. Se mostrará al actualizar el resumen diario.</Vacio>}
+      </Tarjeta>
       {sinVentasTodavia && (
         <p className={styles.nota}>
           Los pedidos y las ventas de este periodo todavía no están sumados. Se cuentan desde el 24/10/2026;

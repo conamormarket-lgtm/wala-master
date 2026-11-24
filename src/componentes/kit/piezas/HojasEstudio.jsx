@@ -17,7 +17,7 @@ export function HojasEstudio({
   urlLogin, urlRegistro, motivoLogin,
 }) {
   // Los títulos y los textos del campo van en español: HojaInferior y Campo los traducen.
-  const tituloLogin = motivoLogin === 'guardar' ? 'Inicia sesión para guardar' : 'Inicia sesión para continuar';
+  const tituloLogin = motivoLogin === 'guardar' ? 'Inicia sesión para guardar' : motivoLogin === 'image' ? 'Inicia sesión para añadir tu imagen' : 'Inicia sesión para continuar';
   return (
     <>
       <HojaInferior abierta={pidiendoTalla} onCerrar={onCerrarTalla} titulo="Elige la talla"

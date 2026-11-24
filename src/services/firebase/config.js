@@ -95,7 +95,7 @@ if (USE_EMULATORS) {
     // esperando ("client is offline"). Solo en desarrollo.
     let hostFirestore = 'localhost';
     try { hostFirestore = localStorage.getItem('wala_emulador_host') || 'localhost'; } catch { /* sin localStorage */ }
-    connectFirestoreEmulator(db, hostFirestore, 8080);
+    connectFirestoreEmulator(db, hostFirestore, Number(import.meta.env.VITE_FIRESTORE_EMULATOR_PORT) || 8080);
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
     try { connectFunctionsEmulator(getFunctions(app), 'localhost', 5001); } catch (e) { /* functions opcional */ }
     console.info('[Wala] EMULADORES de Firebase activos (proyecto demo-wala) — datos locales, sin tocar producción.');

@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { PaginaProducto, fichaProductoDesde, opinionesDesde, tarjetaDesdeProducto } from './kit';
+import { normalizeDetailComposition } from '../utils/productDetails.mjs';
+import { rememberProduct } from '../utils/recentProducts.mjs';
 import FICHAS from './demo/producto.json';
 import TIENDA from './demo/tienda.json';
 import INICIO from './demo/inicio.json';
@@ -62,7 +64,7 @@ const opinionesDe = (p) => OPINIONES_EJEMPLO.map((o) => ({
   imageUrls: o.foto ? [p.images?.[0] || p.mainImage].filter(Boolean) : [],
 }));
 
-export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = [], marcas = [], carrito = 0, onCarrito, onAgregar, toast, onIrA }) {
+export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = [], marcas = [], carrito = 0, onCarrito, onAgregar, toast, onIrA, detallesLocales }) {
   const id = ruta.split('?')[0].split('/')[2];
   const crudo = TODOS.get(id) || TODOS.get(ABRIR_PRODUCTO[0][1].split('/')[2]);
   const p = {
@@ -70,6 +72,9 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
     ...(estados.includes('agotado') && { inStock: 0 }),
     ...((estados.includes('personalizable') || estados.includes('yoryo')) && { customizable: true }),
   };
+  const [recientesIds, setRecientesIds] = useState([]);
+  useEffect(() => { try { setRecientesIds(rememberProduct(id, window.localStorage)); } catch { /* Navegación sin storage. */ } }, [id]);
+  const composicion = detallesLocales?.composicion ?? normalizeDetailComposition(p.detailComposition);
   const catalogo = { marcas, categorias: TIENDA.categorias };
   // "Combo: prendas cargando": las prendas todavía no llegan (como en la tienda al entrar).
   const subproductos = estados.includes('piezasCargando') ? {} : Object.fromEntries((p.comboItems || []).map((it) => [it.productId, TODOS.get(it.productId)]).filter(([, x]) => x));
@@ -78,9 +83,11 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
   const opiniones = useMemo(() => (estados.includes('opinionesCargando')
     ? { ...opinionesDesde([]), cargando: true }
     : opinionesDesde(estados.includes('sinOpiniones') ? [] : resenas, { uid: sesion ? 'yo' : undefined })), [resenas, estados, sesion]);
-  const relacionadosCrudos = useMemo(() => [...TODOS.values()]
-    .filter((x) => x.id !== p.id && x.visible !== false && !x.esPrendaBase && (x.categories || []).some((c) => (p.categories || []).includes(c)))
-    .slice(0, 12), [p.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const relacionadosCrudos = (() => {
+    const ids = composicion?.commerce?.relatedIds || [];
+    const candidates = ids.length ? ids.map(id => TODOS.get(id)).filter(Boolean) : [...TODOS.values()].filter(x => !x.esPrendaBase && (x.categories || []).some(c => (p.categories || []).includes(c)));
+    return candidates.filter(x => x.id !== p.id && x.visible !== false).slice(0, 12);
+  })();
   const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2200 });
 
   const describir = ({ variante, opcion, piezas }) => [
@@ -103,6 +110,9 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
       key={`${id}-${estados.join()}`}
       estado={estado}
       {...ficha}
+      composicionDetalles={composicion || ficha.composicionDetalles}
+      recientes={recientesIds.filter(x => x !== id).map(x => TODOS.get(x)).filter(Boolean).map(x => tarjetaDesdeProducto(x, catalogo))}
+      editorDetalles={detallesLocales?.editor}
       opiniones={opiniones}
       sesion={sesion}
       carrito={carrito}

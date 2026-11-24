@@ -22,10 +22,10 @@ import s from './Ficha.module.css';
  * información a la derecha; en el celular, una debajo de la otra.
  *  - galeria: nodo (GaleriaProducto) · children: la información
  */
-export function MarcoFicha({ galeria, children, componente }) {
+export function MarcoFicha({ galeria, children, componente, editorial = false }) {
   return (
-    <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2.5rem' }}>
-      <div className={s.ficha} data-componente={componente}>
+    <BloqueSeccion className={editorial ? s.seccionEditorial : undefined} pegado={editorial} ajustes={{ paddingTop: editorial ? 'var(--ficha-espacio-arriba, 1.5rem)' : '1.5rem', paddingBottom: '2.5rem' }}>
+      <div className={[s.ficha, editorial && s.editorial].filter(Boolean).join(' ')} data-componente={componente}>
         <div className={s.columnaGaleria}>{galeria}</div>
         <section className={s.info}>{children}</section>
       </div>
@@ -96,7 +96,7 @@ export function ConfianzaCompra() {
  *    (los relacionados, el pie): cuando asoma, la barra se va para no
  *    taparlo · imagen, nombre, detalle ("Perla · M"), precio · children: el botón
  */
-export function BarraCompra({ mirar, hasta, imagen, nombre, detalle, precio, children }) {
+export function BarraCompra({ mirar, hasta, imagen, nombre, detalle, precio, children, movil = false }) {
   const [ver, setVer] = useState(false);
   useEffect(() => {
     const el = mirar?.current;
@@ -129,8 +129,8 @@ export function BarraCompra({ mirar, hasta, imagen, nombre, detalle, precio, chi
     };
   }, [mirar, hasta]);
   return (
-    <div className={s.barraAncla} data-componente="BarraCompra">
-      <div className={[s.barraCompra, ver && s.barraVisible].filter(Boolean).join(' ')} aria-hidden={!ver}>
+    <div className={[s.barraAncla, movil && s.barraMovil].filter(Boolean).join(' ')} data-componente="BarraCompra">
+      <div className={[s.barraCompra, ver && s.barraVisible].filter(Boolean).join(' ')} aria-hidden={!ver} inert={!ver ? '' : undefined}>
         <FotoProducto className={s.barraFoto} src={imagen} relleno="6%" />
         <div className={s.barraTexto}>
           <strong>{nombre}</strong>

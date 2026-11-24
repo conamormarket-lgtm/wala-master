@@ -16,7 +16,7 @@ import s from './Acordeon.module.css';
  *  - variante: 'tarjetas' (por defecto: cada pregunta en su tarjeta, FAQ) |
  *    'lista' (filas compactas separadas por una línea: filtros, detalles).
  */
-export default function Acordeon({ items = [], abiertoInicial = false, multiple = false, variante = 'tarjetas' }) {
+export default function Acordeon({ items = [], abiertoInicial = false, multiple = false, variante = 'tarjetas', onAbrir }) {
   const uid = useId();
   // Sin id, cada item usa p0, p1… (abajo): el primero también.
   const inicial = abiertoInicial === true ? [items[0]?.id ?? 'p0'] : [].concat(abiertoInicial || []);
@@ -40,7 +40,7 @@ export default function Acordeon({ items = [], abiertoInicial = false, multiple 
                 id={`${uid}-b-${i}`}
                 aria-expanded={abierto}
                 aria-controls={`${uid}-r-${i}`}
-                onClick={() => alternar(id)}
+                onClick={() => { if (!abierto) onAbrir?.(id); alternar(id); }}
               >
                 <span className={s.pregunta}>{typeof it.question === 'string' ? <Texto>{it.question}</Texto> : it.question}</span>
                 {it.extra}

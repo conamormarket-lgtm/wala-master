@@ -695,6 +695,8 @@ function reboteDesdeVisitas(visitas) {
 }
 
 function combineDailyDocs(docs, dayList) {
+  const productFunnel = {};
+  let productFunnelDays = 0;
   // --- contadores aditivos {total,app,web} ---
   const pageViews = emptyTAW();
   const events = emptyTAW();
@@ -789,6 +791,7 @@ function combineDailyDocs(docs, dayList) {
 
   docs.forEach((doc) => {
     if (!doc) return;
+    if (doc.productFunnel) { productFunnelDays += 1; Object.entries(doc.productFunnel).forEach(([key, value]) => { productFunnel[key] = (productFunnel[key] || 0) + safeNumber(value); }); }
     addTAW(pageViews, doc.pageViews);
     addTAW(events, doc.events);
     addTAW(sessions, doc.sessions);
@@ -1091,6 +1094,7 @@ function combineDailyDocs(docs, dayList) {
     ...resultadosRango,
     // Metadato para diagnóstico/UX (no lo consumen los charts).
     pageViews,
+    productFunnel, productFunnelDays,
     __source: 'analytics_daily',
   };
 }

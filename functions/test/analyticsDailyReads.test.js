@@ -48,7 +48,8 @@ test("daily aggregation starts both reads together and preserves persisted metri
   const events = [{ id: "event", type: "page_view", path: "/", clientType: "WEB", sessionId: "session" }];
   const sessions = [{ id: "session", clientType: "WEB", uid: "user", startedAtClientMs: 1 }];
   const pending = api.procesarDia(date);
-  assert.deepEqual(reads.map(r => r.name), ["analytics_events", "analytics_sessions"]);
+  assert.deepEqual(reads.map(r => r.name), ["analytics_events", "analytics_sessions", "analytics_verified_orders"]);
+  reads[2].resolve(snapshot([]));
   reads[1].resolve(snapshot(sessions));
   reads[0].resolve(snapshot(events));
   await pending;
@@ -58,6 +59,7 @@ test("daily aggregation starts both reads together and preserves persisted metri
     ...api.buildDailyExtras(v.events, v.representantes),
     ...resumenVisitas(v.visitas),
     ...buildResultadosDelDia(events),
+    productFunnel: require('../productFunnelLogic').productFunnel(events, []),
     personasIds: { app: [], web: ["user"] },
     traficoReal: { version: 2, sesionesRegistradas: 1, sesionesBot: 0, sesionesAdmin: 0, eventos: 0, dwellRecortados: 0, sinPaginas: 0, unidas: 0 },
     generatedAt: "SERVER_TIME" };

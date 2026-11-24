@@ -426,6 +426,7 @@ service cloud.firestore {
     // Agregado diario pre-computado (CF aggregateAnalyticsDaily escribe con Admin
     // SDK y bypassa rules); el dashboard admin lo lee directo. Sin esta regla,
     // desplegar rules mataría en silencio la vía barata del dashboard (P1).
+    match /analytics_verified_orders/{id} { allow read: if notSupervision() && isAdmin(); allow write: if false; }
     match /analytics_daily/{id} { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
 
     // ── Ingestión pública controlada ─────────────────────────────────────────────
@@ -541,7 +542,7 @@ service cloud.firestore {
     function esSoloWala(c) {
       return c in [
         'activeChallenge', 'adminRoles', 'adminUsers', 'analytics_daily', 'analytics_events',
-        'analytics_global_summary', 'analytics_kapi', 'analytics_sessions', 'analytics_user_summary',
+        'analytics_verified_orders', 'analytics_global_summary', 'analytics_kapi', 'analytics_sessions', 'analytics_user_summary',
         'beneficios', 'blueprints', 'bolitasConfig', 'bolitasJugadores', 'bolitasPatrocinios',
         'bolitasPremios', 'bolitasProgreso', 'bolitasRetos', 'bolitasSemanas', 'bolitasStats',
         'challengeEvidences', 'chancesAjustes', 'characters',

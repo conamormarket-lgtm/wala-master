@@ -16,6 +16,8 @@ export const ANALYTICS_EVENT_TYPES = {
   ADD_TO_CART: 'add_to_cart',
   CHECKOUT_START: 'checkout_start',
   PURCHASE_COMPLETE: 'purchase_complete',
+  ORDER_REQUESTED: 'order_requested',
+  PRODUCT_INTERACTION: 'product_interaction',
   PRODUCT_VIEW: 'product_view',
   SEARCH_QUERY: 'search_query',
   SCROLL_DEPTH: 'scroll_depth',

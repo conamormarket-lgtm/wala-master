@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Paintbrush, ArrowRight, Share2, RotateCcw, PencilLine, Store } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
+import { Cantidad } from '../Formulario';
 import Carrusel from '../Carrusel';
 import TarjetaProducto from '../TarjetaProducto';
 import { Enlace } from '../Enlace';
@@ -13,6 +14,10 @@ import { IconoWala } from '../IconosWala';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
+import { BeneficiosProducto, InformacionCompra } from '../piezas/InformacionCompra';
+import { HistoriaProducto } from '../piezas/HistoriaProducto';
+import { normalizeProductCommerce } from '../../../utils/productCommerce.mjs';
+import { DetallesProducto } from '../piezas/DetallesProducto';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra, useAgregado, IconoAgregar } from '../piezas/Ficha';
 import { OpcionesProducto, tallasDe, tallasDePieza, faltaTalla, verVariantes } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
@@ -110,14 +115,17 @@ const galeriaCombo = (combo, piezas, colores) => {
  *  - estado: 'cargando' | 'error' | 'noDisponible' · onReintentar · urlTienda
  */
 export function PaginaProducto({
-  producto = {}, opciones = {}, varianteInicial, fotos = {}, opiniones = {}, onOpinar, onUtil,
+  producto = {}, opciones = {}, varianteInicial, fotos = {}, videos = [], opiniones = {}, onOpinar, onUtil,
   relacionados = [], onAgregarRelacionado, onAgregar, onComprar, onPersonalizar, onCompartir, onVariante,
   carrito = 0, urlPagar = '/checkout', onPagarCarrito, sesion = false, urlLogin = '/login',
   estado, onReintentar, urlTienda = '/tienda',
   textoPersonalizar = 'Personalizar', piezasCargando = false, regalo, fuentes, tarjeta: Tarjeta, onVerAbajo,
+  composicionDetalles, editorDetalles, whatsapp, recientes = [], onInteraccion,
 }) {
   // tallaUnica: el combo lleva una talla para todas (lo elige el admin).
   const { variantes = [], opciones: tallasBase = [], etiquetaOpcion = 'Talla', piezas = [], tallaUnica = false } = opciones;
+  const comercio = normalizeProductCommerce(composicionDetalles?.commerce);
+  const individual = !fotos.combo && !producto.combo && !piezas.length && !piezasCargando;
   const [varId, setVarId] = useState(varianteInicial ?? variantes[0]?.id);
   const [opcion, setOpcion] = useState(null);
   const [colores, setColores] = useState(() => Object.fromEntries(piezas.map((p, i) => [i, p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre])));
@@ -177,15 +185,21 @@ export function PaginaProducto({
   const textoCargandoPiezas = useTexto('Cargando las prendas del combo');
   const textoCargandoOpiniones = useTexto('Cargando las opiniones');
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
+  const imagenesVariantes = useMemo(() => Object.fromEntries(variantes.map((v) => {
+    // Una variante sin foto propia muestra su color, nunca la foto de otro color.
+    const imagen = v.imagen ? { url: v.imagen } : null;
+    const copia = imagen && fuentes ? fuentes(imagen.url) : null;
+    return [v.id, imagen ? { ...imagen, url: copia?.src || imagen.url, srcSet: copia?.srcSet } : null];
+  })), [variantes, fuentes]);
   const galeria = useMemo(() => {
     const lista = fotos.combo ? galeriaCombo(fotos.combo, piezas, colores) : (variante && fotos[variante.id]) || fotos.base || [];
     // Las copias de cada foto (si la tienda las da): la galería baja solo la que hace falta.
-    if (!fuentes) return lista;
-    return lista.map((f) => {
+    const imagenes = !fuentes ? lista : lista.map((f) => {
       const { src, srcSet } = fuentes(f.url) || {};
       return { ...f, url: src || f.url, srcSet };
     });
-  }, [fotos, piezas, colores, variante, fuentes]);
+    return [...imagenes, ...videos];
+  }, [fotos, piezas, colores, variante, fuentes, videos]);
   useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // La más útil (con al menos un voto) va primero, destacada.
@@ -246,6 +260,7 @@ export function PaginaProducto({
   // así que el botón principal es "Personalízalo" y no hay carrito ni
   // "Comprar ahora" (la talla se elige en el estudio, al agregarla).
   const solo = Boolean(producto.soloPersonalizar && onPersonalizar);
+  const principal = solo ? 'personalize' : comercio.primaryAction === 'personalize' && !(producto.personalizable && onPersonalizar) ? 'add' : comercio.primaryAction;
   const botonAgregar = (props) => (solo ? (
     <Boton
       tamano="lg"
@@ -259,6 +274,7 @@ export function PaginaProducto({
   ) : (
     <Boton
       tamano="lg"
+      variante={principal === 'add' ? 'primario' : 'contorno'}
       icono={<IconoAgregar agregado={agregado} />}
       disabled={producto.agotado}
       cargando={cargando === 'agregar'}
@@ -278,10 +294,11 @@ export function PaginaProducto({
 
   const conFiltro = filtro ? resto.filter((o) => o.puntuacion === filtro) : resto;
   const conFotos = (opiniones.lista || []).flatMap((o) => o.fotos).slice(0, 12);
+  const Contenedor = individual ? 'div' : React.Fragment;
 
   return (
-    <>
-      <MarcoFicha componente="PaginaProducto" galeria={<GaleriaProducto key={variante?.id || 'base'} imagenes={galeria} nombre={nombre} salto={salto} />}>
+    <Contenedor {...(individual ? { className: s.individual, onPlayCapture: e => { if (e.target.tagName === 'VIDEO' && !e.target.autoplay && !e.target.closest('[data-componente="EditorDetallesProducto"]')) onInteraccion?.('video_play', e.target.closest('[data-bloque-detalle]')?.dataset.bloqueDetalle || 'gallery'); } } : {})}>
+      <MarcoFicha editorial={individual} componente="PaginaProducto" galeria={<GaleriaProducto editorial={individual} key={variante?.id || 'base'} imagenes={galeria} nombre={nombre} salto={salto} />}>
         {/* Migas traduce cada miga: el nombre va sin traducir. */}
         <Migas items={[{ texto: 'Inicio', url: '/' }, producto.categoria && { texto: producto.categoria.nombre, url: producto.categoria.url }, { texto: producto.nombre }].filter(Boolean)} />
 
@@ -298,7 +315,7 @@ export function PaginaProducto({
               <Boton variante="contorno" tamano="sm" soloIcono aria-label={textoCompartir} title={textoCompartir} icono={<Share2 aria-hidden="true" />} onClick={onCompartir} />
             )}
           </div>
-          {opiniones.total > 0 && (
+          {comercio.showReviews && opiniones.total > 0 && (
             <Enlace to="#opiniones" className={s.puntaje}>
               <Estrellas valor={opiniones.promedio} tamano={15} />
               <strong>{opiniones.promedio.toFixed(1)}</strong>
@@ -307,7 +324,8 @@ export function PaginaProducto({
           )}
         </div>
 
-        <PrecioFicha precio={producto.precio} precioAntes={producto.precioAntes} />
+        <BeneficiosProducto config={comercio} />
+        <PrecioFicha precio={producto.precio} precioAntes={producto.precioAntes} nota={comercio.priceNote} />
         {quedan > 0 && <p className={s.quedan}><Texto>{quedan === 1 ? '¡Queda 1!' : `¡Quedan ${quedan}!`}</Texto></p>}
 
         {producto.combo?.length > 0 && (
@@ -339,6 +357,7 @@ export function PaginaProducto({
         )}
         <OpcionesProducto
           variantes={variantes}
+          imagenesVariantes={individual ? imagenesVariantes : undefined}
           varId={variante?.id}
           onVariante={(id) => {
             setVarId(id);
@@ -365,7 +384,7 @@ export function PaginaProducto({
           tallasPiezas={tallas}
           onTallaPieza={(i, t) => setTallas((x) => ({ ...x, [i]: t }))}
           cantidad={cantidad}
-          onCantidad={producto.agotado || producto.soloPersonalizar ? undefined : setCantidad}
+          onCantidad={individual || producto.agotado || producto.soloPersonalizar ? undefined : setCantidad}
           falta={falta}
         />
         </div>
@@ -379,21 +398,31 @@ export function PaginaProducto({
 
         {/* En el celular, agregar y personalizar quedan pegados abajo. */}
         <div ref={compraRef} className={s.compra} data-compra-fija="">
-          {botonAgregar({ bloque: true })}
+          {individual ? <div className={s.compraPrincipal}>
+            {individual && !producto.agotado && !solo && (
+              <div className={s.cantidadCompra}>
+                <span><Texto>Cantidad</Texto></span>
+                <Cantidad valor={cantidad} onChange={setCantidad} max={10} />
+              </div>
+            )}
+            {botonAgregar({ bloque: true })}
+          </div> : botonAgregar({ bloque: true })}
           {!solo && producto.personalizable && onPersonalizar && (
-            <Boton variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
+            <Boton variante={principal === 'personalize' ? 'primario' : 'contorno'} tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
           )}
         </div>
         {!producto.agotado && !solo && (
-          <Boton bloque tamano="lg" variante="secundario" cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Comprar ahora</Texto></Boton>
+          <Boton bloque tamano="lg" variante={principal === 'buy' ? 'primario' : 'secundario'} cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Comprar ahora</Texto></Boton>
         )}
         {carrito > 0 && (
           <Enlace to={urlPagar} className={s.pagarCarrito} onClick={onPagarCarrito ? (e) => { e.preventDefault(); onPagarCarrito(); } : undefined}><Texto>Ir a pagar mi carrito</Texto> ({carrito})</Enlace>
         )}
 
-        <ConfianzaCompra />
+        <InformacionCompra config={comercio} subtotal={producto.precio * cantidad} personalizable={producto.personalizable} whatsapp={whatsapp} onHelp={() => onInteraccion?.('help_click')} />
+        {comercio.showTrust && <ConfianzaCompra />}
 
-        {descripcion && (
+        {individual && (composicionDetalles ? composicionDetalles.visible : descripcion) && <Enlace to="#detalles-producto" className={s.verDetalles}><Texto>Ver todos los detalles</Texto><ArrowRight aria-hidden="true" /></Enlace>}
+        {!individual && descripcion && (
           <Acordeon
             variante="lista"
             abiertoInicial="descripcion"
@@ -402,8 +431,14 @@ export function PaginaProducto({
         )}
       </MarcoFicha>
 
-      <BloqueSeccion ajustes={{ paddingTop: '0.5rem', paddingBottom: '2rem' }}>
-        <section ref={opinionesRef} id="opiniones" className={s.opiniones} data-componente="OpinionesProducto">
+      {individual && <DetallesProducto onInteraccion={onInteraccion} productoId={producto.id} nombre={nombre} descripcion={descripcion} imagenes={galeria} videos={videos} categoria={producto.categoria} personalizable={producto.personalizable} soloPersonalizar={solo} composicion={composicionDetalles} editor={editorDetalles} biblioteca={[
+        ...new Map(Object.entries(fotos).filter(([k]) => k !== 'combo').flatMap(([, lista]) => Array.isArray(lista) ? lista : []).filter(f => f.url && !f.juntas).map(f => [f.url, { url: f.url, type: 'image', alt: f.nombre || nombre, caption: '' }])).values(),
+        ...videos.map(v => ({ url: v.url, type: 'video', alt: v.nombre || nombre, caption: '' })),
+      ]} />}
+
+      <div ref={opinionesRef} aria-hidden="true" />
+      {comercio.showReviews && <BloqueSeccion ajustes={{ paddingTop: '0.5rem', paddingBottom: '2rem' }}>
+        <section id="opiniones" className={s.opiniones} data-componente="OpinionesProducto">
           <TituloSeccion titulo="Opiniones" subtitulo={opiniones.total ? 'Lo que dicen quienes ya lo tienen.' : undefined} />
           <div className={s.opinionesCuerpo}>
             <ResumenOpiniones
@@ -458,14 +493,14 @@ export function PaginaProducto({
             </div>
           </div>
         </section>
-      </BloqueSeccion>
+      </BloqueSeccion>}
 
       {/* Desde aquí (los relacionados y el pie) la barra de compra ya no se muestra. */}
       <div ref={finRef} aria-hidden="true" />
-      {relacionados.length > 0 && (
+      {comercio.showRelated && relacionados.length > 0 && (
         <BloqueSeccion ajustes={{ paddingTop: '0.5rem', paddingBottom: '2.5rem' }}>
           <div data-componente="Carrusel · TarjetaProducto">
-            <TituloSeccion titulo="También te puede gustar" />
+            <TituloSeccion titulo={comercio.relatedTitle} />
             <Carrusel visibles={{ escritorio: 5, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta="También te puede gustar">
               {relacionados.map((p, i) => (Tarjeta
                 ? <Tarjeta key={p.id || p.url || i} producto={p} indice={i} />
@@ -475,15 +510,17 @@ export function PaginaProducto({
         </BloqueSeccion>
       )}
 
-      {!producto.agotado && (
-        <BarraCompra mirar={compraRef} hasta={finRef} imagen={galeria[0]?.url} nombre={nombre} detalle={<Texto>{detalle}</Texto>} precio={producto.precio}>
-          {botonAgregar({ tamano: 'md' })}
+      {comercio.showRecent && recientes.length > 0 && <BloqueSeccion><TituloSeccion titulo={comercio.recentTitle} /><Carrusel visibles={{ escritorio: 5, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={comercio.recentTitle}>{recientes.map((p, i) => Tarjeta ? <Tarjeta key={p.id} producto={p} indice={i} /> : <TarjetaProducto key={p.id || p.url} {...p} />)}</Carrusel></BloqueSeccion>}
+      {individual && composicionDetalles?.visible && <HistoriaProducto key={`${producto.id}:${comercio.storyMediaId}`} composicion={composicionDetalles} resolverMedia={editorDetalles?.resolverMedia} />}
+      {!producto.agotado && comercio.showSticky && (
+        <BarraCompra movil={individual} mirar={compraRef} hasta={finRef} imagen={galeria.find((f) => f.tipo !== 'video')?.url} nombre={nombre} detalle={<Texto>{detalle}</Texto>} precio={producto.precio}>
+          {principal === 'buy' && !solo ? <Boton cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)}><Texto>Comprar ahora</Texto></Boton> : principal === 'personalize' && !solo ? <Boton onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton> : botonAgregar({ tamano: 'md' })}
         </BarraCompra>
       )}
 
       <HojaInferior abierta={Boolean(fotoCliente)} onCerrar={() => setFotoCliente(null)} titulo="Foto de un cliente">
         {fotoCliente && <img className={s.fotoGrande} {...atributosDeFoto(fotoCliente, '100vw')} alt="" />}
       </HojaInferior>
-    </>
+    </Contenedor>
   );
 }

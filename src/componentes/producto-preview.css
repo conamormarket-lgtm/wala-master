@@ -1,0 +1,6 @@
+.preview-producto-controles { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.6rem 1.5rem; padding: 0.7rem 1rem; background: #241435; color: #fff; font: 12px/1.5 Poppins, sans-serif; }
+.preview-producto-controles label { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.preview-producto-controles select { max-width: min(360px, 70vw); min-height: 32px; padding: 0.3rem; border: 1px solid #ffffff55; border-radius: 5px; background: #fff; color: #241435; font: inherit; }
+.preview-producto-controles button, .preview-producto-formulario > button { min-height: 38px; padding: 0.5rem 0.8rem; border: 1px solid #ffffff55; border-radius: 6px; color: #241435; background: #fff; font: inherit; cursor: pointer; }
+.preview-producto-formulario > button { border-color: var(--color-border); margin: 1rem 0.5rem 0 0; }
+.preview-producto-formulario > button[type='submit'] { color: white; background: var(--primary-color); }

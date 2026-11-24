@@ -1,0 +1,8 @@
+.historia { position: fixed; left: 1rem; bottom: 1rem; width: 112px; z-index: 25; }
+.abrir { position: relative; display: grid; align-items: end; width: 100%; min-height: 145px; padding: 0; overflow: hidden; border: 2px solid white; border-radius: 12px; background: #241d2f; color: white; box-shadow: 0 4px 18px #0003; cursor: pointer; }
+.abrir img { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: cover; }
+.abrir span { position: relative; display: grid; justify-items: center; gap: 0.4rem; font-size: 0.7rem; padding: 1.5rem 0.4rem 0.6rem; background: linear-gradient(transparent, #000a); }
+.cerrar { position: absolute; top: -12px; right: -12px; z-index: 1; width: 32px; height: 32px; border: 1px solid #ddd; border-radius: 50%; background: white; display: grid; place-items: center; cursor: pointer; }
+.video video { max-height: 70vh; object-fit: contain; }
+:global(body:has([data-componente='EditorDetallesProducto'])) .historia { display: none; }
+@media (max-width: 768px) { .historia { bottom: calc(110px + env(safe-area-inset-bottom)); left: 0.6rem; width: 80px; } .abrir { min-height: 105px; } }

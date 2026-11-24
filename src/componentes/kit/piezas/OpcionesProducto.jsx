@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { SelectorTalla, SelectorColor, Cantidad } from '../Formulario';
 import { Texto } from '../Traduccion';
 import s from './OpcionesProducto.module.css';
@@ -11,7 +11,8 @@ import s from './OpcionesProducto.module.css';
  * tienda; los datos salen de adaptadores.opcionesDeProducto):
  *
  *  - variantes: [{ id, nombre, colorHex?, claro?, opciones?: string[] }]. Si
- *    todas tienen color van como muestras (círculos de color, nunca la foto);
+ *    todas tienen color van como muestras; con imagenesVariantes, la ficha
+ *    individual usa tarjetas con foto propia o una muestra de color;
  *    si no, como botones con el nombre ("Feliz", "Clásico"…). Una sola
  *    variante solo se muestra si tiene tallas y color (como la tienda).
  *    varId · onVariante(id)
@@ -34,7 +35,9 @@ import s from './OpcionesProducto.module.css';
 export function OpcionesProducto({
   variantes = [], varId, onVariante, opciones = [], etiquetaOpcion = 'Talla', agotadas = [], opcion, onOpcion, notaOpcion,
   piezas = [], colores = {}, onColorPieza, tallasPiezas = {}, onTallaPieza, tallaUnica = false, cantidad, onCantidad, maxCantidad = 10, onGuia, falta = false,
+  imagenesVariantes,
 }) {
+  const grupoVariantes = useId();
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
   const lista = tallasDe({ variante, opciones, piezas, colores });
   const conColor = conMuestras(variantes);
@@ -80,7 +83,24 @@ export function OpcionesProducto({
         );
       })}
 
-      {verVariantes(variantes) && (conColor ? (
+      {verVariantes(variantes) && (imagenesVariantes ? (
+        <fieldset className={s.variantesFoto}>
+          <legend><Texto>{conColor ? 'Color' : 'Modelo'}</Texto>: <strong><Texto>{variante?.nombre}</Texto></strong></legend>
+          <div className={s.fotosOpciones}>
+            {variantes.map((v) => (
+              <label key={v.id} className={s.fotoOpcion}>
+                <input type="radio" name={grupoVariantes} value={v.id} checked={v.id === variante?.id} onChange={() => onVariante?.(v.id)} />
+                <span className={s.fotoOpcionMarco}>
+                  {imagenesVariantes[v.id]
+                    ? <img src={imagenesVariantes[v.id].url} srcSet={imagenesVariantes[v.id].srcSet} sizes="80px" alt="" loading="lazy" />
+                    : <span className={s.muestraAlternativa} style={{ backgroundColor: v.colorHex || 'var(--color-border)' }} />}
+                </span>
+                <span className={s.fotoOpcionNombre}><Texto>{v.nombre}</Texto></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : conColor ? (
         <SelectorColor
           colores={variantes.map((v) => ({ nombre: v.nombre, hex: v.colorHex, claro: v.claro }))}
           valor={variante?.nombre}

@@ -6,10 +6,10 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { useCart } from '../../contexts/CartContext';
 import { linkProducto } from '../../services/referrals';
 import { getBrands } from '../../services/brands';
-import { getProductsByCategory, variantesDeImagen } from '../../services/products';
-import { addReview, getProductReviews, toggleHelpfulVote } from '../../services/reviews';
+import { getProductsByCategory, getVisibleProductsByIds, variantesDeImagen, updateProductDetails } from '../../services/products';
+import { addReview, getProductReviews, getProductReviewSummary, toggleHelpfulVote } from '../../services/reviews';
 import { getCustomerCustomProductsByUser } from '../../services/customerCustomProducts';
-import { trackProductView } from '../../services/analytics/tracker';
+import { trackProductView, trackProductInteraction } from '../../services/analytics/tracker';
 import { recordProductClick, recordVariantViewTime } from '../../utils/productVariantBehavior';
 import { isComboProduct } from '../../utils/comboProductUtils';
 import { toDirectImageUrl } from '../../utils/imageUrl';
@@ -22,6 +22,9 @@ import { fichaProductoDesde, opinionesDesde, rutaPersonalizar } from '../../comp
 import TarjetaDeProducto from './TarjetaDeProducto';
 import usePiezasDelCombo from './usePiezasDelCombo';
 import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
+import useWhatsAppDeLaRuta from '../marco/useWhatsAppDeLaRuta';
+import { normalizeProductCommerce } from '../../utils/productCommerce.mjs';
+import { rememberProduct } from '../../utils/recentProducts.mjs';
 import useLoViejo from '../../hooks/useLoViejo';
 import { leerPersonalizarEn } from '../../utils/personalizarEn';
 
@@ -61,14 +64,35 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   const location = useLocation();
   const queryClient = useQueryClient();
   const { addToCart, items: cartItems = [], selectAllItems } = useCart();
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
   const toast = useGlobalToast();
   const conCuenta = tieneCuenta(user);
   const id = product?.id;
   const esCombo = isComboProduct(product);
+  const whatsapp = useWhatsAppDeLaRuta();
+  const comercio = normalizeProductCommerce(product?.detailComposition?.commerce);
+  const [recentIds, setRecentIds] = useState([]);
+  useEffect(() => {
+    setAbajo(false);
+    if (id && !cargando && !noDisponible && !error) {
+      try { setRecentIds(rememberProduct(id, window.localStorage)); } catch { setRecentIds([]); }
+    }
+  }, [id, cargando, noDisponible, error]);
   // Lo de abajo se pide recién cuando se acerca (onVerAbajo).
   const [abajo, setAbajo] = useState(false);
   const verAbajo = useCallback(() => setAbajo(true), []);
+  const guardarDetalles = async (composition) => {
+    if (!isAdmin) throw new Error('Solo un administrador puede editar esta sección.');
+    const saved = await updateProductDetails(id, composition);
+    queryClient.setQueryData(['product', id], old => old ? { ...old, detailComposition: saved } : old);
+    await queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'none' });
+    toast.success('Composición guardada.');
+  };
+  const subirDetalle = async (file, options) => {
+    if (!isAdmin) throw new Error('Solo un administrador puede subir archivos.');
+    const { uploadProductDetailMedia } = await import('../../services/productDetailUpload');
+    return uploadProductDetailMedia(file, id, options);
+  };
 
   const { data: marcas } = useQuery({
     queryKey: ['brands'],
@@ -152,22 +176,30 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   guardarRef.current = guardarVista;
   useEffect(() => () => guardarRef.current(), []);
 
-  // ── Opiniones (al acercarse) ──
+  // El resumen se pide al abrir; comentarios/fotos solo al acercarse a la sección.
   const { data: resenas } = useQuery({
     queryKey: ['product-reviews', id],
     queryFn: () => getProductReviews(id),
-    enabled: abajo && Boolean(id),
+    enabled: abajo && comercio.showReviews && Boolean(id),
     staleTime: 60_000,
   });
+  const { data: resumenResenas } = useQuery({
+    queryKey: ['product-review-summary', id],
+    queryFn: () => getProductReviewSummary(id),
+    enabled: comercio.showReviews && Boolean(id) && !cargando && !noDisponible && !resenas,
+    staleTime: 300_000,
+    retry: false,
+  });
   const opiniones = useMemo(
-    () => ({ ...opinionesDesde(resenas || [], { uid: user?.uid }), cargando: !resenas }),
-    [resenas, user?.uid],
+    () => ({ ...opinionesDesde(resenas || [], { uid: user?.uid }), ...(!resenas && resumenResenas ? resumenResenas : {}), cargando: !resenas }),
+    [resenas, resumenResenas, user?.uid],
   );
   const alOpinar = async ({ puntuacion, texto, fotos }) => {
     const { success, error: err, id: rid, data } = await addReview(id, user, puntuacion, texto, fotos);
     if (!success || !data) throw new Error(err || 'No pudimos publicar tu opinión. Inténtalo de nuevo.');
     // addReview devuelve el id aparte: sin él, la opinión nueva no se podía marcar útil.
     queryClient.setQueryData(['product-reviews', id], (antes) => [{ id: rid, ...data }, ...(antes || [])]);
+    queryClient.invalidateQueries({ queryKey: ['product-review-summary', id], refetchType: 'none' });
     toast.success('¡Gracias por tu reseña!');
   };
   const alUtil = async (rid) => {
@@ -184,12 +216,18 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // ── También te puede gustar (al acercarse): misma categoría y marca ──
   const categoriaRelacionada = product?.categories?.[0] || '';
   const { data: relacionados } = useQuery({
-    queryKey: ['related-products', categoriaRelacionada, product?.brandId || null, id],
+    queryKey: ['related-products', categoriaRelacionada, product?.brandId || null, id, comercio.relatedIds],
     queryFn: async () => {
-      const { data } = await getProductsByCategory(categoriaRelacionada, product?.brandId || null);
+      const { data } = comercio.relatedIds.length ? await getVisibleProductsByIds(comercio.relatedIds) : await getProductsByCategory(categoriaRelacionada, product?.brandId || null);
       return (data || []).filter((p) => p.id !== id).slice(0, 12);
     },
-    enabled: abajo && Boolean(categoriaRelacionada) && Boolean(id),
+    enabled: abajo && comercio.showRelated && (Boolean(categoriaRelacionada) || comercio.relatedIds.length > 0) && Boolean(id),
+    staleTime: 300_000,
+  });
+  const { data: recientes } = useQuery({
+    queryKey: ['recent-products', id, recentIds],
+    queryFn: async () => (await getVisibleProductsByIds(recentIds.filter(x => x !== id))).data,
+    enabled: abajo && comercio.showRecent && recentIds.length > 0,
     staleTime: 300_000,
   });
   // La tarjeta de la tienda (corazón, "Agregar rápido", la impresión, las copias de la foto).
@@ -318,6 +356,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
       <PaginaProducto
         key={id}
         {...ficha}
+        editorDetalles={isAdmin ? { guardar: guardarDetalles, subir: subirDetalle } : undefined}
         producto={{ ...ficha.producto, personalizable: esDeCrear || Boolean(enCrear) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
         fuentes={fuentes}
         piezasCargando={esCombo && !comboPedido}
@@ -326,6 +365,9 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
         onUtil={alUtil}
         onVerAbajo={verAbajo}
         relacionados={relacionados || []}
+        recientes={recientes || []}
+        whatsapp={whatsapp}
+        onInteraccion={(action, targetId) => trackProductInteraction({ productId: id, action, targetId }, { uid: user?.uid }).catch(() => {})}
         tarjeta={Tarjeta}
         onAgregar={alAgregar}
         onComprar={alComprar}

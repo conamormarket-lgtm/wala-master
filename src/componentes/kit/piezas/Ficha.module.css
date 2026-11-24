@@ -5,6 +5,27 @@
   gap: 1.5rem;
 }
 
+/* La ficha individual da más espacio a la fotografía y al contenido de compra. */
+.editorial { gap: 1.5rem; }
+.editorial .info { gap: 1.25rem; }
+.editorial .migas { font-size: 0.75rem; line-height: 1.5; }
+.editorial .migas .actual { display: none; }
+.editorial .migas > span:nth-last-child(2) { display: none; }
+.editorial .precio { font-size: 2.1rem; }
+.editorial .confianza { border-block-style: solid; padding-block: 1.25rem; }
+
+@media (min-width: 900px) {
+  .editorial.ficha { grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); gap: clamp(2rem, 4vw, 4.5rem); }
+  .editorial .columnaGaleria { top: calc(clamp(60px, var(--altura-cabecera, 72px), 150px) + 1rem); }
+  .editorial .info { padding-block: 0.5rem; }
+}
+
+@media (max-width: 899px) {
+  .seccionEditorial { --ficha-espacio-arriba: 1rem; }
+  .editorial .columnaGaleria { margin-inline: calc(-1 * var(--page-padding-movil, 1rem)); }
+  .editorial .info { gap: 1.15rem; }
+}
+
 .columnaGaleria {
   min-width: 0;
 }
@@ -260,6 +281,18 @@
   width: 52px;
   height: 52px;
   border-radius: 6px 14px 14px 14px;
+}
+
+@media (max-width: 899px) {
+  .barraMovil { display: block; }
+  .barraMovil .barraCompra { bottom: var(--alto-barra-inferior, calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px))); width: 100%; padding: 0.65rem 1rem; border-radius: 0; gap: 0.65rem; }
+  .barraMovil .barraFoto { display: none; }
+  .barraMovil .barraTexto { max-width: 38%; }
+  .barraMovil .barraTexto strong { font-size: 0.73rem; }
+  .barraMovil .barraTexto span { font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .barraMovil .barraPrecio { font-size: 0.95rem; }
+  .barraMovil .barraCompra > button { flex: 1; padding-inline: 0.65rem; font-size: 0.75rem; min-width: 0; }
+  .barraMovil .barraCompra > button svg { display: none; }
 }
 
 .barraTexto {

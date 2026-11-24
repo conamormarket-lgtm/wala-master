@@ -13,7 +13,7 @@ import { detectCountry } from '../../services/geo';
 import { getFx, penToUsd, penToLocal } from '../../services/fx';
 import { obtenerDirecciones, agregarDireccion, actualizarDireccion } from '../../services/direcciones';
 import { misTarjetas } from '../../services/tarjetasGuardadas';
-import { trackCheckoutStart, trackPurchaseComplete } from '../../services/analytics/tracker';
+import { trackCheckoutStart, trackPurchaseComplete, trackOrderRequested } from '../../services/analytics/tracker';
 import {
   armarPedidoWeb, armarWhatsapp, aplicarEfectosDeCompra, completarPerfilDesdeCheckout, formatDeliveryDate, businessDaysUntil,
 } from '../../services/pedidoCheckout';
@@ -228,13 +228,16 @@ export default function CheckoutDeTienda() {
       currency: 'PEN',
     }, analyticsUserCtx).catch(() => {});
   }, [items.length]); // eslint-disable-line react-hooks/exhaustive-deps
-  const compraRef = useRef(false);
-  const emitirCompra = useCallback((metodo, datos) => {
-    if (compraRef.current || !datos) return;
-    compraRef.current = true;
+  const compraRef = useRef(new Set());
+  const emitirCompra = useCallback((metodo, datos, pedidoWebId) => {
+    if (!datos) return;
+    const clave = `${metodo === 'whatsapp' ? 'solicitud' : 'pago'}:${pedidoWebId || datos.checkoutIntentId || datos.id || ''}`;
+    if (compraRef.current.has(clave)) return;
+    compraRef.current.add(clave);
     const snapshot = datos.selectedItemsSnapshot || [];
-    trackPurchaseComplete({
-      orderId: datos.id || null,
+    const registrar = metodo === 'whatsapp' ? trackOrderRequested : trackPurchaseComplete;
+    registrar({
+      orderId: pedidoWebId || datos.id || null,
       total: datos.montoDeuda,
       totalCents: Math.round((datos.montoDeuda || 0) * 100),
       itemsCount: snapshot.reduce((acc, i) => acc + (i.quantity || 1), 0),
@@ -397,10 +400,13 @@ export default function CheckoutDeTienda() {
   /* ── Después de comprar ── */
   const efectosRef = useRef(false);
   const aplicarEfectos = async (pedidoWebId, metodo, datos) => {
-    if (efectosRef.current || !datos) return;
-    efectosRef.current = true;
-    await aplicarEfectosDeCompra({ datos, pedidoWebId, user, freezeMonedas, toast });
-    emitirCompra(metodo, datos);
+    if (!datos) return;
+    if (!efectosRef.current) {
+      efectosRef.current = true;
+      await aplicarEfectosDeCompra({ datos, pedidoWebId, user, freezeMonedas, toast });
+    }
+    // Una solicitud WhatsApp previa no debe ocultar un pago posterior por pasarela.
+    emitirCompra(metodo, datos, pedidoWebId);
   };
 
   // El pedido por WhatsApp lo crea el servidor desde la intención ya validada (una sola vez).

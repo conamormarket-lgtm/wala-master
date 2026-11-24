@@ -4,6 +4,483 @@
   "description": "Estructura de un producto en la colección products con soporte V2 para Mockups y Galerías por Variante.",
   "type": "object",
   "properties": {
+    "detailComposition": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Ficha de venta configurable desde crear/editar producto y desde la ficha pública con sesión admin. Ausente mantiene los detalles anteriores.",
+      "required": [
+        "version",
+        "blocks"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "heading": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "eyebrow": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "blocks": {
+          "type": "array",
+          "maxItems": 24,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "media"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "text",
+                  "image",
+                  "video",
+                  "gallery",
+                  "split",
+                  "mosaic",
+                  "carousel"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "side": {
+                "enum": [
+                  "left",
+                  "right"
+                ]
+              },
+              "width": {
+                "enum": [
+                  "wide",
+                  "normal",
+                  "narrow"
+                ]
+              },
+              "columns": {
+                "enum": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ]
+              },
+              "mobileColumns": {
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              "ratio": {
+                "enum": [
+                  "auto",
+                  "square",
+                  "portrait",
+                  "portrait34",
+                  "landscape",
+                  "story"
+                ]
+              },
+              "fit": {
+                "enum": [
+                  "contain",
+                  "cover"
+                ]
+              },
+              "align": {
+                "enum": [
+                  "left",
+                  "center"
+                ]
+              },
+              "background": {
+                "enum": [
+                  "plain",
+                  "soft"
+                ]
+              },
+              "media": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "type",
+                    "url"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "image",
+                        "video"
+                      ]
+                    },
+                    "url": {
+                      "type": "string",
+                      "pattern": "^https://"
+                    },
+                    "alt": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "caption": {
+                      "type": "string",
+                      "maxLength": 400
+                    },
+                    "poster": {
+                      "type": "string",
+                      "description": "URL HTTPS de portada de vídeo."
+                    },
+                    "autoPlay": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Reproducción automática del vídeo; al activarla se inicia sin sonido."
+                    },
+                    "muted": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Iniciar sin sonido; siempre true cuando autoPlay está activado."
+                    },
+                    "loop": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Repetir el vídeo al terminar."
+                    },
+                    "ratio": {
+                      "enum": [
+                        "inherit",
+                        "auto",
+                        "square",
+                        "portrait",
+                        "portrait34",
+                        "landscape",
+                        "story"
+                      ],
+                      "default": "inherit",
+                      "description": "Proporción propia del archivo; inherit conserva la del bloque y auto usa sus dimensiones originales."
+                    },
+                    "fit": {
+                      "enum": [
+                        "inherit",
+                        "contain",
+                        "cover"
+                      ],
+                      "default": "inherit",
+                      "description": "Ajuste propio: heredar, mostrar completo o rellenar y recortar."
+                    },
+                    "cell": {
+                      "type": "object",
+                      "properties": {
+                        "width": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        },
+                        "height": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 4
+                        },
+                        "column": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 6
+                        },
+                        "mobileWidth": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2
+                        },
+                        "mobileHeight": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "mosaicLayout": {
+                "enum": [
+                  "classic",
+                  "flexible"
+                ]
+              },
+              "mosaicSizing": {
+                "enum": [
+                  "manual",
+                  "proportional"
+                ]
+              },
+              "rowHeight": {
+                "type": "number",
+                "minimum": 80,
+                "maximum": 400
+              }
+            }
+          }
+        },
+        "commerce": {
+          "type": "object",
+          "description": "Contenido comercial; no modifica precios, reglas de envío ni métodos de pago.",
+          "properties": {
+            "subtitle": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "priceNote": {
+              "type": "string",
+              "maxLength": 400
+            },
+            "personalizationNote": {
+              "type": "string",
+              "maxLength": 800
+            },
+            "paymentNote": {
+              "type": "string",
+              "maxLength": 800
+            },
+            "delivery": {
+              "type": "string",
+              "maxLength": 1200
+            },
+            "warranty": {
+              "type": "string",
+              "maxLength": 1200
+            },
+            "policyUrl": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "faqTitle": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "relatedTitle": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "recentTitle": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "helpLabel": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "storyMediaId": {
+              "type": "string",
+              "maxLength": 181
+            },
+            "showShippingRate": {
+              "type": "boolean"
+            },
+            "showHelp": {
+              "type": "boolean"
+            },
+            "showReviews": {
+              "type": "boolean"
+            },
+            "showRelated": {
+              "type": "boolean"
+            },
+            "showRecent": {
+              "type": "boolean"
+            },
+            "showTrust": {
+              "type": "boolean"
+            },
+            "showSticky": {
+              "type": "boolean"
+            },
+            "highlights": {
+              "type": "array",
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "text"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                }
+              }
+            },
+            "steps": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "text"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                }
+              }
+            },
+            "specifications": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "label",
+                  "value"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                }
+              }
+            },
+            "faqs": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "question",
+                  "answer"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "question": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "answer": {
+                    "type": "string",
+                    "maxLength": 2400
+                  }
+                }
+              }
+            },
+            "faqMode": {
+              "enum": [
+                "default",
+                "custom",
+                "hidden"
+              ]
+            },
+            "relatedIds": {
+              "type": "array",
+              "maxItems": 12,
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "collection": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "image": {
+                  "type": "string"
+                }
+              }
+            },
+            "primaryAction": {
+              "enum": [
+                "add",
+                "buy",
+                "personalize"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "videos": {
+      "type": "array",
+      "description": "Vídeos generales de la ficha individual, separados de las imágenes de catálogo. El editor admite hasta cinco MP4/WebM de 100 MB cada uno.",
+      "items": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          }
+        }
+      }
+    },
     "name": {
       "type": "string",
       "description": "Nombre público del producto."
@@ -29,9 +506,14 @@
       "description": "Referencia a la colección tienda_brands."
     },
     "category": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "id": { "type": "string" }
+        "id": {
+          "type": "string"
+        }
       }
     },
     "collections": {
@@ -39,7 +521,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" }
+          "id": {
+            "type": "string"
+          }
         }
       }
     },
@@ -49,7 +533,9 @@
     },
     "images": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Galería global de imágenes (usualmente de la variante principal para hover global)."
     },
     "isV2": {
@@ -66,12 +552,23 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "description": "ID único de la variante." },
-          "name": { "type": "string", "description": "Nombre de la variante, ej. 'Rojo'." },
-          "imageUrl": { "type": "string", "description": "Imagen frontal generada con el mockup para este color en específico." },
+          "id": {
+            "type": "string",
+            "description": "ID único de la variante."
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre de la variante, ej. 'Rojo'."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Imagen frontal generada con el mockup para este color en específico."
+          },
           "images": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Galería de imágenes específica de ESTE color (usada para el efecto Hover cuando se selecciona)."
           },
           "sizes": {
@@ -80,8 +577,14 @@
             "items": {
               "type": "object",
               "properties": {
-                "size": { "type": "string", "description": "Nombre de la talla, ej. 'S', 'M'." },
-                "stock": { "type": "number", "description": "Cantidad de unidades en inventario." }
+                "size": {
+                  "type": "string",
+                  "description": "Nombre de la talla, ej. 'S', 'M'."
+                },
+                "stock": {
+                  "type": "number",
+                  "description": "Cantidad de unidades en inventario."
+                }
               }
             }
           }
@@ -89,5 +592,9 @@
       }
     }
   },
-  "required": ["name", "price", "isV2"]
+  "required": [
+    "name",
+    "price",
+    "isV2"
+  ]
 }

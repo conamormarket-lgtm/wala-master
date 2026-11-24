@@ -9,6 +9,8 @@
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
 import { getFallbackHex } from '../../utils/colors';
 import { fotosGenerales } from '../../utils/fotosDeColor';
+import { productVideoSlides } from '../../utils/productVideos.mjs';
+import { normalizeDetailComposition } from '../../utils/productDetails.mjs';
 import { proximaOcurrencia, textoFechaEvento } from '../../utils/fechaEvento.mjs';
 import { hoyLocal } from '../../utils/fechasFestivas.mjs';
 import {
@@ -1252,6 +1254,8 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
     // La variante que el admin marcó como principal (la tienda hoy abre siempre la primera).
     varianteInicial: (variantesDe(p).find((v) => String(v.id) === String(p.defaultVariantId)) || variantesDe(p)[0])?.id,
     fotos,
+    videos: productVideoSlides(p.videos),
+    composicionDetalles: normalizeDetailComposition(p.detailComposition),
   };
 }
 

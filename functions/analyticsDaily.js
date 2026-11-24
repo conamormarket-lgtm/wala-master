@@ -26,6 +26,7 @@ const {
   filtrarTraficoReal, sesionesFaltantes, idsAdminDelDia, armarVisitas, resumenVisitas,
 } = require("./analyticsTraficoReal");
 
+const { productFunnel } = require('./productFunnelLogic');
 const db = admin.firestore();
 
 const EVENTS_COLLECTION = "analytics_events";
@@ -440,9 +441,10 @@ async function procesarDia(dayKey) {
   const { startMs, endMs } = limaDayRange(dayKey);
 
   // Consultas independientes: misma ventana y paginación, sin espera en serie.
-  const [eventosCrudos, sesionesCrudas] = await Promise.all([
+  const [eventosCrudos, sesionesCrudas, pagosConfirmados] = await Promise.all([
     fetchAllPaged(EVENTS_COLLECTION, "clientTsMs", startMs, endMs),
     fetchAllPaged(SESSIONS_COLLECTION, "startedAtClientMs", startMs, endMs),
+    fetchAllPaged("analytics_verified_orders", "confirmedAtMs", startMs, endMs),
   ]);
 
   // Solo tráfico real: sin bots, sin el admin y con las permanencias recortadas
@@ -477,6 +479,7 @@ async function procesarDia(dayKey) {
   // el tráfico real completo, no solo lo que entró a una visita, para no
   // perder un pedido o un carrito de una sesión que empezó el día anterior.
   Object.assign(doc, buildResultadosDelDia(filtrado.events));
+  doc.productFunnel = productFunnel(filtrado.events, pagosConfirmados);
   // Quiénes visitaron (id del dispositivo o cuenta), por app/web: el panel une
   // los de varios días para contar PERSONAS ÚNICAS del rango, no sumar días.
   const personasIds = { app: new Set(), web: new Set() };

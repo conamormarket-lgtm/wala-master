@@ -37,6 +37,13 @@ async function cargarLector() {
 const plano = (x) => JSON.parse(JSON.stringify(x));
 const taw = (total, app = 0) => ({ total, app, web: total - app });
 
+test('combina la nueva medición sin presentar días antiguos como medidos', async () => {
+  const combine = await cargarLector();
+  const result = combine([{ day: '2026-11-21' }, { day: '2026-11-22', productFunnel: { requests: 3, confirmedOrders: 1 } }, { day: '2026-11-23', productFunnel: { requests: 2, confirmedOrders: 2, videoPlays: 8 } }], []);
+  assert.equal(result.productFunnelDays, 2);
+  assert.deepEqual(plano(result.productFunnel), { requests: 5, confirmedOrders: 3, videoPlays: 8 });
+});
+
 const dia1 = {
   day: '2026-10-24',
   visitas: { total: taw(10, 2), conInteraccion: taw(4, 1), paginas: taw(30), dwellMs: taw(0), pedidos: taw(1) },

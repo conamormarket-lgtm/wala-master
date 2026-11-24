@@ -1,5 +1,45 @@
 # La ficha de un producto (`/producto/:id`)
 
+**Vista local del rediseño — 2026-11-23:** `npm run dev` →
+`/producto-preview.html`. Esta entrada solo funciona en desarrollo, no
+requiere Firebase y usa los productos guardados en `demo/producto.json`.
+Permite cambiar de producto y probar disponibilidad, talla, cantidad y un
+carrito temporal. No genera pedidos ni pagos; no muestra opiniones ficticias.
+
+Los productos individuales usan una composición inspirada en la ficha de
+Novaris: galería grande, dos columnas en escritorio, tarjetas de variante
+con su foto propia (muestra de color cuando falta), cantidad junto a Agregar,
+descripción visual, vídeos si existen, preguntas frecuentes y barra de compra
+también en móvil. La barra aparece cuando la compra principal queda arriba
+y desaparece antes de los relacionados. `DetallesProducto` reutiliza la
+descripción y los medios del catálogo, sin añadir garantías ni promociones.
+Los combos, Crear y Agregar rápido mantienen sus selectores y distribución.
+El controlador real sigue gestionando carrito, checkout y personalización.
+
+**Editor de «Todos los detalles» — 2026-11-23:** en la propia ficha, los
+administradores tienen «Editar composición». Admite texto, foto, vídeo,
+foto/vídeo junto a texto y galerías mixtas. Se pueden subir archivos, elegir
+medios del producto o usar enlaces HTTPS, reordenar/duplicar/eliminar bloques
+y medios, ajustar ancho, posición, proporción, recorte, fondo, alineación y
+columnas distintas para móvil. Hay vista previa de escritorio/móvil,
+deshacer/rehacer y confirmación al cancelar cambios. Un borrador de la sesión
+permite recuperar una edición interrumpida.
+
+`detailComposition` (versión 1) se normaliza en `productDetails.mjs`, atraviesa
+servicio → adaptador → ficha → `ComposicionDetalles`. `updateProductDetails`
+escribe únicamente ese campo y `updatedAt`; conserva el resto del producto.
+El permiso de edición usa `isAdmin` y las reglas existentes de
+`productos_wala` exigen administrador. Las subidas viven en
+`products/{id}/details/`; quitar un bloque no borra archivos compartidos.
+Una composición oculta o vacía se respeta, sin regenerar automáticamente
+los bloques anteriores. Sin composición se mantiene la presentación previa.
+
+En `/producto-preview.html`, el mismo editor guarda por producto en IndexedDB
+(composición y archivos), sin Firestore. Recargar conserva los cambios y los
+vídeos locales; sus identificadores `local:` no se aceptan en producción.
+Fotos: JPG/PNG/WebP/GIF hasta 20 MB. Vídeos: MP4/WebM hasta 100 MB. Máximo
+24 bloques y 12 medios por galería. Los vídeos no se reproducen solos.
+
 Cómo verla en vivo: `npm run dev` → http://localhost:3000/componentes.html →
 **Páginas** → **Tienda de prueba** → **Un producto**. También se abre desde
 **cualquier tarjeta** de la Tienda de prueba (inicio, tienda, buscar,
@@ -90,8 +130,9 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   variantes no tienen color) y la talla con su nombre (`sizeLabel`: Talla,
   Medida…). **Lo elegido viaja**: el aro del color y el fondo violeta de la
   talla se deslizan de la opción anterior a la nueva (con resorte; sin
-  movimiento si se pide reducirlo). **Las muestras son siempre de color**,
-  nunca la foto de la variante (se probó el 2026-10-16 y se veía mal). Si a
+  movimiento si se pide reducirlo). **Las muestras de combos y Agregar rápido
+  son de color**; desde el rediseño local del 2026-11-23, la ficha individual
+  usa fotos propias con selección nativa por teclado. Si a
   una variante le falta `colorHex`, el color sale del nombre
   (`getFallbackHex`: "Negro", "Celeste"…); solo sin color pasa a botones
   "Modelo". **Una sola variante con tallas** muestra igual su color
@@ -365,3 +406,36 @@ fotos en una opinión (sin emulador de Storage) y la app Android.
 - Borrar lo viejo cuando lleve un tiempo en producción (ELIMINAR.md, paso 6).
 - La ficha no pone título ni descripción propios para buscadores (tampoco la
   vieja).
+
+## Ficha de venta configurable (local, 23 de noviembre de 2026)
+
+`AdminProductoFormV2` ofrece **Ficha de venta** en productos individuales, nuevos y existentes, incluyendo prendas de Crear que también se venden en tienda. `ProductSalesEditor` integra el mismo editor que aparece al administrador en la ficha pública. En el formulario, todos sus cambios se guardan con **Guardar Producto / Guardar Cambios**; en la ficha, se usa **Guardar composición**. No cambia precios ni reglas de cobro.
+
+Se persiste en `detailComposition` (versión 1 compatible):
+
+- `commerce`: subtítulo, hasta seis beneficios, nota de precio, acción principal (agregar/comprar/personalizar), explicación de personalización, pasos/condiciones de pago, plazos, garantía, enlace de condiciones, tarifa estándar tomada de `constants/envio`, especificaciones y FAQ propias/por defecto/ocultas.
+- Colección o alternativa destacada con imagen y enlace; visibilidad de opiniones, recomendaciones automáticas o selección de hasta doce IDs, historial reciente local (máximo doce, treinta días), WhatsApp contextual, distintivos y barra de compra. WhatsApp hereda la configuración existente de producto/marca y respeta su interruptor.
+- Bloques de foto, vídeo, texto, foto/vídeo con texto, galería, mosaico y carrusel. Ordenar, duplicar, cambiar tipo, ajustar columnas, proporciones y encuadre, subtítulos, portadas subidas o HTTPS. El mosaico clásico conserva la primera imagen grande y los medios apilados; el flexible permite dimensiones y columna inicial por pieza, con ajustes independientes para móvil.
+- `commerce.storyMediaId` referencia `blockId:mediaId` de un vídeo para la historia flotante opcional. Se elimina la referencia al quitar su medio. Sin autoplay, puede cerrarse. Ampliar abre foto/vídeo en la hoja accesible; cerrar desmonta el vídeo. Fotos y vídeos pueden formar una presentación de empaque o ejemplos de diseño/resultado con títulos y pies propios.
+
+Al editar en admin se conserva el borrador general existente. Al editar desde la ficha se conserva la recuperación por sesión, deshacer/rehacer y la vista móvil. Las subidas impiden guardar mientras están pendientes; los bloques incompletos y enlaces inseguros se rechazan. Los productos anteriores mantienen su presentación; ocultar o vaciar campos no recupera contenido viejo. No se incorporaron garantías, materiales, capacidades, descuentos, reseñas ni plazos de Novaris.
+
+Las estrellas de cabecera usan un agregado de Firestore (`count`/`average`) sin descargar reseñas completas. Comentarios, fotos y relacionados siguen cargándose al acercarse a la sección. Las recomendaciones por IDs y los recientes consultan como máximo doce IDs publicados y excluyen ocultos, eliminados o reemplazados.
+
+Analítica: `product_interaction` distingue reproducción, FAQ y ayuda con IDs (sin texto de mensajes ni URL de archivos). Los eventos de abrir/guardar personalizador ya existían. El checkout emite `order_requested` al crear una solicitud WhatsApp y `purchase_complete` tras la pasarela confirmada, con el ID real del pedido. La conciliación de pagos y el informe se completaron en el cierre local descrito debajo; su activación en producción depende de publicar los triggers y las reglas. No se reescribió el histórico.
+
+Vista local: `producto-preview.html?producto=yoryo-crear-billetera`. Incluye billetera real de catálogo con textos de muestra, dos bloques y el botón **Probar formulario de producto**, que utiliza `ProductSalesEditor` con almacenamiento local. Las pruebas no escriben Firestore/Storage de producción. Por solicitud del usuario, el navegador conserva un vídeo de muestra de accesorios junto a las fotos: tres columnas en escritorio y dos en móvil.
+
+Validación: modelo/renderizado, creación/edición, borrado/ocultación, selección pública por IDs, agregados de opiniones y separación de eventos; comprobación visual de escritorio y móvil y compilación en modo preview. El formulario administrativo también se comprobó creando y editando productos con fotos y vídeos en los emuladores reales de Auth, Firestore y Storage. La vuelta del personalizador tras iniciar sesión conservó texto, color e imagen pendiente; el carrito conservó la creación y su variante. Véase `docs/wala/FICHA_PRODUCTO_VALIDACION_20261123.md`. La publicación quedó aplazada por indicación del usuario; el build de producción requiere las claves públicas de pagos ausentes del checkout local.
+
+
+### Cierre local de la ficha (23/11/2026)
+
+- Recomendados: búsqueda por nombre con miniaturas, orden y eliminación. Se conservan IDs en el contrato de datos, sin exigir escribirlos.
+- Colección: subir una imagen o elegir una foto del producto; URL opcional en controles avanzados.
+- Mosaico `mosaicLayout: flexible`: 1–6 columnas, fila de 80–400 px y `media[].cell` con `width`, `height`, `column` (0 = automática), `mobileWidth`, `mobileHeight`. El motor distribuye las filas sin superposiciones. `classic` conserva las composiciones anteriores. Las piezas pueden reordenarse; no admite estilos arbitrarios.
+- Proporción del mosaico: `mosaicSizing: proportional` adapta la altura de las celdas al ancho disponible mediante `ratio` (incluye `portrait34`, 3:4). Sin este campo se mantienen las alturas manuales anteriores. Los mosaicos nuevos empiezan en vertical 3:4 y ajuste completo; el editor permite elegir otra proporción o volver a altura manual. La billetera de ejemplo usa tres fotos verticales en escritorio y una columna en móvil.
+- Cada `media[]` admite `ratio` (`inherit`, `auto`, `square`, `portrait34`, `portrait`, `story`, `landscape`) y `fit` (`inherit`, `contain`, `cover`). Los archivos anteriores heredan. En Walá: **Ficha de venta → Fotos y vídeos → archivo → Proporción/Ajuste de este archivo**. Una proporción propia determina su altura; el ancho y la columna siguen configurables y el alto manual reaparece al heredar. Los mosaicos con formatos mixtos reservan la altura real de cada pieza y su pie, sin superposiciones; las demás piezas conservan sus opciones. `auto` usa dimensiones originales y solicita metadatos del vídeo. La vista ampliada siempre muestra el archivo completo.
+- Los vídeos admiten `autoPlay`, `muted` y `loop`, configurables por archivo en el mismo editor compartido de creación/edición. Los tres valores son booleanos y por defecto están desactivados. `autoPlay` fuerza `muted: true` al iniciar; el visitante conserva controles para pausar o activar sonido. Varios clips automáticos silenciosos pueden coexistir. Al ampliar se pausa el mosaico de origen y al cerrar se reanudan sus clips automáticos. Si el navegador impide el inicio automático, sigue disponible el botón nativo de reproducción. Los inicios automáticos no generan la interacción manual `video_play`.
+- Personalización: vuelve al mismo producto, color, talla, zona y diseño tras identificarse. Recuerda si se intentaba añadir imagen, guardar o comprar; el cliente continúa con un botón. La imagen arrastrada o pegada se conserva en IndexedDB durante un máximo lógico de 24 horas y se elimina al usarla o empezar de nuevo.
+- Medición: `product_interaction` registra vídeo, FAQ y ayuda; `order_requested` es una solicitud sin pago. `analytics_verified_orders` es una colección que solo escribe el servidor, con una confirmación por pedido entre checkout y ERP. El resumen añade `productFunnel`; no representa una cohorte ni personas únicas. Las confirmaciones empiezan al publicar los triggers y no reconstruyen el pasado. El resumen de hoy se recalcula cada 30 minutos.

@@ -1,3 +1,4 @@
+import { rememberPersonalizationAction, readPersonalizationAction, clearPersonalizationAction, savePendingImage, readPendingImage, clearPendingImage } from '../../utils/personalizationReturn.mjs';
 import { firmaDiseno, firmaBorrador, capasParaGuardar, archivosVigentes } from '../../pages/Crear/estadoEstudio';
 import { capasEnOtraPrenda } from '../../pages/Crear/zonasEquivalentes';
 import { generarArchivosCreacion } from '../../pages/Crear/generarArchivosCreacion';
@@ -321,6 +322,10 @@ const EstudioDeTienda = () => {
   // Otras piezas iguales del combo que llevan un diseño distinto a este.
   const otrasConOtroDiseno = otrasMismaPrenda.filter((p) => p.designId && p.designId !== designId);
   const [pedirLogin, setPedirLogin] = useState(false);
+  const [continuarAccion, setContinuarAccion] = useState(null);
+  const [retomando, setRetomando] = useState(false);
+  const retomandoRef = useRef(false);
+  const [motivoLogin, setMotivoLogin] = useState('save');
   // La talla se elige al agregar al carrito (el estudio es solo para el diseño).
   const [pidiendoTalla, setPidiendoTalla] = useState(false);
   const [tallaCompra, setTallaCompra] = useState('');
@@ -897,6 +902,8 @@ const EstudioDeTienda = () => {
             borradorSesionRef.current = JSON.parse(sessionStorage.getItem(claveBorrador(id)) || 'null');
           } else {
             sessionStorage.removeItem(claveBorrador(id));
+            clearPersonalizationAction(id);
+            clearPendingImage(id).catch(() => {});
           }
         } catch { /* sin borrador */ }
       }
@@ -956,13 +963,21 @@ const EstudioDeTienda = () => {
   // El borrador es solo para un diseño nuevo sin guardar: una creación ya
   // guardada vive en la cuenta y no debe reaparecer al abrir la plantilla.
   const guardarBorrador = useCallback(() => {
-    if (designId) return;
+    if (designId) return true;
     try {
       sessionStorage.setItem(claveBorrador(id), JSON.stringify({
         vistaId, zonaId, colorId, talla, capasPorZona: capasParaGuardar(capasRef.current),
       }));
-    } catch { /* almacenamiento lleno o bloqueado */ }
+      return true;
+    } catch { return false; }
   }, [id, designId, vistaId, zonaId, colorId, talla]);
+
+  useEffect(() => {
+    if (listo && user) {
+      setPedirLogin(false);
+      setContinuarAccion(readPersonalizationAction(id));
+    }
+  }, [id, listo, user]);
 
   // Borrador de la pestaña: recargar o ir a iniciar sesión no borra el diseño.
   useEffect(() => {
@@ -2020,6 +2035,7 @@ const EstudioDeTienda = () => {
     if (soloPlantillasRef.current) return;
     if (!user) {
       guardarBorrador();
+      rememberPersonalizationAction(id, 'image'); setMotivoLogin('image');
       setPedirLogin(true);
       return;
     }
@@ -2038,6 +2054,9 @@ const EstudioDeTienda = () => {
     if (!zona) return;
     if (!user) {
       guardarBorrador();
+      try { await savePendingImage(id, archivo); }
+      catch (e) { toast.error(e.message || 'No pudimos conservar la imagen. Vuelve a elegirla después de iniciar sesión.'); return; }
+      rememberPersonalizationAction(id, 'image'); setMotivoLogin('image');
       setPedirLogin(true);
       return;
     }
@@ -2064,6 +2083,7 @@ const EstudioDeTienda = () => {
       } finally {
         setSubiendo((n) => n - 1);
       }
+      return true;
     } catch (err) {
       toast.error(err?.message || 'No pudimos subir tu imagen.');
       if (capaId) modificarCapas(destino.id, (capas) => capas.filter((c) => c.id !== capaId), true);
@@ -2731,8 +2751,8 @@ const EstudioDeTienda = () => {
 
   // ── Guardar y comprar ────────────────────────────────────────────────────
   const irAAcceso = (ruta) => {
-    guardarBorrador();
-    try { sessionStorage.setItem(claveVolver(id), '1'); } catch { /* almacenamiento bloqueado */ }
+    if (!guardarBorrador()) { toast.error('No pudimos conservar tu diseño en este navegador. Libera espacio antes de iniciar sesión.'); return; }
+    try { sessionStorage.setItem(claveVolver(id), '1'); } catch { toast.error('Activa el almacenamiento del navegador para conservar tu diseño.'); return; }
     navigate(ruta + '?redirect=' + encodeURIComponent(location.pathname + location.search), { state: { from: location.pathname + location.search } });
   };
   const irALogin = () => irAAcceso('/login');
@@ -2782,7 +2802,7 @@ const EstudioDeTienda = () => {
     });
   };
 
-  const validar = () => {
+  const validar = (action = 'save') => {
     if (borrador) {
       toast.info('Es un borrador: publícala para poder comprarla.');
       return false;
@@ -2793,6 +2813,7 @@ const EstudioDeTienda = () => {
     }
     if (!user) {
       guardarBorrador();
+      rememberPersonalizationAction(id, action); setMotivoLogin(action);
       setPedirLogin(true);
       return false;
     }
@@ -3236,7 +3257,7 @@ const EstudioDeTienda = () => {
    * pide aquí (ya marcada si la creación la recuerda) y no en el panel.
    */
   const agregarAlCarrito = () => {
-    if (agotado || !validar()) return;
+    if (agotado || !validar('cart')) return;
     if (tallas.length) {
       setTallaCompra(tallas.includes(talla) ? talla : '');
       setPidiendoTalla(true);
@@ -3253,7 +3274,7 @@ const EstudioDeTienda = () => {
   // usa directo como onClick.
   const usarEnCombo = async (irA) => {
     const destino = () => (typeof irA === 'function' ? irA() : urlCombo());
-    if (agotado || operacionRef.current || !validar()) return;
+    if (agotado || operacionRef.current || !validar('cart')) return;
     operacionRef.current = true;
     setProcesando('Preparando tu creación…');
     try {
@@ -3283,7 +3304,7 @@ const EstudioDeTienda = () => {
   };
 
   const comprar = async (tallaElegida) => {
-    if (agotado || operacionRef.current || !validar()) return;
+    if (agotado || operacionRef.current || !validar('cart')) return;
     operacionRef.current = true;
     setPidiendoTalla(false);
     setProcesando('Preparando tu creación…');
@@ -3711,6 +3732,19 @@ const EstudioDeTienda = () => {
       panelRef={panelRef} panelContenidoRef={panelScrollRef}
       avisos={(
         <>
+          {continuarAccion && user && <Aviso compacto tipo="info" accion={<Boton variante="fantasma" tamano="sm" cargando={retomando} disabled={subiendo > 0 || Boolean(procesando)} onClick={async () => {
+            if (retomandoRef.current) return;
+            retomandoRef.current = true; setRetomando(true);
+            try {
+              const action = continuarAccion;
+              if (action === 'image') {
+                try { const file = await readPendingImage(id); if (file) { if (!(await subirArchivo(file))) return; await clearPendingImage(id); } else elegirImagen(); }
+                catch { toast.error('Vuelve a elegir la imagen para continuar.'); elegirImagen(); }
+              } else if (action === 'cart') { if (enCombo) usarEnCombo(); else agregarAlCarrito(); }
+              else guardar();
+              clearPersonalizationAction(id); setContinuarAccion(null);
+            } finally { retomandoRef.current = false; setRetomando(false); }
+          }}><Texto>{continuarAccion === 'image' ? 'Continuar con mi imagen' : continuarAccion === 'cart' ? 'Continuar mi compra' : 'Guardar mi diseño'}</Texto></Boton>}><Texto>Tu diseño y tus opciones siguen aquí. Continúa donde lo dejaste.</Texto></Aviso>}
           {designId && <EstadoEdicion esBorrador={esBorrador} estadoBorrador={estadoBorrador || 'guardado'}
             nombre={nombre} hayCambios={hayCambios} onEmpezarNuevo={empezarNuevo}
             onRenombrar={async (nuevo) => {
@@ -3888,7 +3922,7 @@ const EstudioDeTienda = () => {
         guardando={dialogoGuardar} onCerrarGuardar={() => setDialogoGuardar(false)}
         nombre={nombreEditado} onNombre={setNombreEditado} onGuardar={() => confirmarGuardar()} miniatura={miniaturaGuardar}
         guardada={guardada} onCerrarGuardada={() => setGuardada(null)} urlCombo={enCombo ? urlCombo() : undefined}
-        login={pedirLogin} onCerrarLogin={() => setPedirLogin(false)} onLogin={irALogin} onRegistro={() => irAAcceso('/registro')}
+        login={pedirLogin} motivoLogin={motivoLogin === 'save' ? 'guardar' : motivoLogin} onCerrarLogin={() => setPedirLogin(false)} onLogin={irALogin} onRegistro={() => irAAcceso('/registro')}
       />
       <HojaInferior abierta={verAtajos} onCerrar={() => setVerAtajos(false)} titulo={<Texto>Atajos de teclado</Texto>}>
         <AtajosEstudio lados={cfg.vistas.map((v) => v.nombre)} />

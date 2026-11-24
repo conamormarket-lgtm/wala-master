@@ -10241,3 +10241,7 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
     return { cancelled: true };
   } catch (error) { throw mobileCheckoutError(error); }
 });
+
+// Confirmaciones de pago de Walá, separadas de la actividad del navegador.
+exports.recordCheckoutPaymentAnalytics = require('./productFunnel').recordCheckoutPaymentAnalytics;
+exports.recordErpPaymentAnalytics = require('./productFunnel').recordErpPaymentAnalytics;

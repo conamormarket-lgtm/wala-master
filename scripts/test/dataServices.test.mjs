@@ -6,7 +6,7 @@ import vm from 'node:vm';
 
 // Carga los servicios reales con un SDK simulado. No usa credenciales ni red.
 async function loadService(file, mocks, globals = {}) {
-  const context = vm.createContext({ console, ...globals });
+  const context = vm.createContext({ console, TextEncoder, URL, ...globals });
   const modules = new Map();
   async function load(id) {
     if (modules.has(id)) return modules.get(id);
@@ -47,6 +47,77 @@ async function loadService(file, mocks, globals = {}) {
 
 const unused = () => { throw Error('Unexpected SDK call'); };
 
+test('la subida de vídeos usa progreso, MIME y ruta propia; cancelar y fallar no publican URLs', async () => {
+  const calls = [];
+  let fail = false, downloads = 0;
+  const api = await loadService('src/services/productVideoUpload.js', {
+    './firebase/config': { obtenerStorage: async () => ({}) },
+    'firebase/storage': {
+      ref: (storage, path) => ({ path }),
+      uploadBytesResumable: (reference, file, metadata) => {
+        calls.push({ reference, file, metadata });
+        let reject;
+        return {
+          snapshot: { ref: reference },
+          cancel: () => reject(new Error('cancelled')),
+          on: (type, progress, error, complete) => {
+            reject = error;
+            queueMicrotask(() => {
+              progress({ bytesTransferred: 50, totalBytes: 100 });
+              if (fail) error(new Error('permission-denied'));
+              else complete();
+            });
+          },
+        };
+      },
+      getDownloadURL: async () => { downloads++; return 'https://example.test/upload.webm'; },
+    },
+  }, { crypto: { randomUUID: () => 'unique' } });
+  const progress = [];
+  const file = { name: 'Detalle.webm', type: '', size: 100 };
+  const result = await api.uploadProductVideo(file, 'product-1', { onProgress: p => progress.push(p) });
+  assert.equal(result.name, 'Detalle');
+  assert.equal(result.url, 'https://example.test/upload.webm');
+  assert.deepEqual(progress, [50]);
+  assert.equal(calls[0].reference.path, 'products/product-1/videos/unique.webm');
+  assert.equal(calls[0].metadata.contentType, 'video/webm');
+  const controller = new AbortController();
+  await assert.rejects(api.uploadProductVideo(file, 'product-1', { signal: controller.signal, onProgress: () => controller.abort() }), /cancelled/);
+  fail = true;
+  await assert.rejects(api.uploadProductVideo(file, 'product-1'), /permission-denied/);
+  assert.equal(downloads, 1);
+  await assert.rejects(api.uploadProductVideo(file, '../otro'), /identificar/);
+  await assert.rejects(api.uploadProductVideo({ ...file, size: 0 }, 'product-1'), /vacío/);
+  assert.equal(calls.length, 3);
+});
+
+test('los vídeos sobreviven creación, lectura y edición; omitir conserva y vaciar elimina', async () => {
+  const writes = [];
+  const api = await loadService('src/services/products.js', {
+    './firebase/firestore': {
+      getCollection: async () => ({ data: [], error: null }), getDocument: unused, getCollectionPaginated: unused,
+      createDocument: async (collection, payload) => { writes.push(payload); return { id: 'p' }; },
+      updateDocument: async (collection, id, payload) => { writes.push(payload); return {}; },
+      deleteDocument: unused, setDocument: unused,
+    },
+    'firebase/firestore': sdk,
+    './firebase/config': { db: {} },
+  }, { localStorage: { getItem: () => null, setItem() {}, removeItem() {} } });
+  const video = { url: 'https://example.test/video.mp4', name: 'Presentación' };
+  await api.createProduct({ name: 'Demo', videos: [video] });
+  assert.equal(writes[0].videos[0].url, video.url);
+  const saved = api.normalizeProductForRead({ id: 'p', ...writes[0] });
+  assert.equal(saved.videos[0].name, video.name);
+  assert.ok(saved.images.every(url => url !== video.url));
+  await api.updateProduct('p', { ...saved, videos: [{ ...video, name: 'Nuevo título' }] });
+  assert.equal(writes[1].videos[0].name, 'Nuevo título');
+  await api.updateProduct('p', { name: 'Sin cambiar vídeos' });
+  assert.equal(Object.hasOwn(writes[2], 'videos'), false);
+  await api.updateProduct('p', { name: 'Sin vídeos', videos: [] });
+  assert.equal(writes[3].videos.length, 0);
+  assert.equal(api.normalizeProductForRead({ name: 'Antiguo' }).videos.length, 0);
+});
+
 test('las creaciones del personalizador anterior conservan sus archivos en uso', async () => {
   const api = await loadService('src/services/designs.js', {
     './firebase/firestore': { getCollection: unused, getDocument: unused, updateDocument: unused, deleteDocument: unused, createDocument: unused },
@@ -68,6 +139,37 @@ const sdk = {
   startAfter: unused, serverTimestamp: unused, getFirestore: unused,
   connectFirestoreEmulator: unused, setLogLevel: () => {},
 };
+
+test('la composición se guarda como parche aislado, propaga fallos y sobrevive a una edición general', async () => {
+  const patches = [], fullWrites = [];
+  let fail = false;
+  const api = await loadService('src/services/products.js', {
+    './firebase/firestore': {
+      getCollection: async () => ({ data: [] }), getDocument: unused, getCollectionPaginated: unused,
+      createDocument: unused, updateDocument: async (collection, id, payload) => { fullWrites.push(payload); return {}; }, deleteDocument: unused, setDocument: unused,
+    },
+    'firebase/firestore': { ...sdk, doc: (db, collection, id) => ({ collection, id }), serverTimestamp: () => 'SERVER_TIME', updateDoc: async (ref, payload) => { if (fail) throw Error('Sin permiso'); patches.push({ ref, payload }); } },
+    './firebase/config': { db: {} },
+  }, { localStorage: { getItem: () => null, setItem() {}, removeItem() {} } });
+  const composition = { version: 1, visible: true, heading: 'Detalles', blocks: [{ id: 'a', kind: 'image', media: [{ id: 'foto', type: 'image', url: 'https://example.test/a.jpg', ratio: 'landscape', fit: 'cover' }] }] };
+  composition.blocks.push({ id: 'b', kind: 'video', media: [{ id: 'clip', type: 'video', url: 'https://example.test/clip.mp4', autoPlay: true, loop: true }] });
+  const saved = await api.updateProductDetails('p', composition);
+  assert.deepEqual(Object.keys(patches[0].payload).sort(), ['detailComposition', 'updatedAt']);
+  assert.equal(patches[0].ref.collection, 'productos_wala');
+  const product = api.normalizeProductForRead({ id: 'p', name: 'Nombre original', price: 120, inStock: 5, detailComposition: saved });
+  assert.equal(product.detailComposition.blocks[0].media[0].url, composition.blocks[0].media[0].url);
+  await api.updateProduct('p', { name: 'Solo metadatos', price: 120 });
+  assert.equal(Object.hasOwn(fullWrites[0], 'detailComposition'), false);
+  await api.updateProduct('p', { ...product, detailComposition: saved });
+  assert.equal(fullWrites[1].detailComposition.heading, 'Detalles');
+  assert.equal(fullWrites[1].detailComposition.blocks[0].media[0].ratio, 'landscape');
+  assert.equal(fullWrites[1].detailComposition.blocks[0].media[0].fit, 'cover');
+  for (const field of ['autoPlay', 'muted', 'loop']) assert.equal(fullWrites[1].detailComposition.blocks[1].media[0][field], true);
+  await assert.rejects(() => api.updateProductDetails('p', { version: 1, blocks: [{ kind: 'image', media: [{ type: 'image', url: 'blob:temporary' }] }] }), /HTTPS/);
+  fail = true;
+  await assert.rejects(() => api.updateProductDetails('p', composition), /Sin permiso/);
+  assert.equal(patches.length, 1);
+});
 
 async function productFixture() {
   const requests = [];
@@ -277,4 +379,75 @@ test('lazy editor waits for font-face registration before exposing the canvas mo
   releaseCss();
   assert.equal(await ready, module);
   assert.ok(elements.some(element => element.textContent?.includes('Editor Font')));
+});
+
+test('crear/editar ficha comercial pasa por Firestore real simulado: borrar y ocultar no resucita datos', async () => {
+  class FieldValue {} class Timestamp {} class DocumentReference {} class GeoPoint {}
+  const docs = new Map(), deleted = new FieldValue(); let counter = 0;
+  const sdkMock = { ...sdk, FieldValue, Timestamp, DocumentReference, GeoPoint,
+    deleteDoc: unused, deleteField: () => deleted, serverTimestamp: () => new Timestamp(),
+    doc: (_db, name, id) => ({ name, id }),
+    addDoc: async (ref, data) => { const id = `p${++counter}`; docs.set(id, data); return { id }; },
+    setDoc: async (ref, data) => { docs.set(ref.id, { ...docs.get(ref.id), ...data }); },
+    updateDoc: async (ref, data) => { const next = { ...docs.get(ref.id) }; for (const [k,v] of Object.entries(data)) { if (v === deleted) delete next[k]; else next[k] = v; } docs.set(ref.id, next); },
+    getDoc: async ref => ({ id: ref.id, exists: () => docs.has(ref.id), data: () => docs.get(ref.id) }),
+    getDocs: async () => ({ docs: [] }),
+  };
+  const api = await loadService('src/services/products.js', { 'firebase/firestore': sdkMock,
+    './firebase/config': { db: {}, getFirebaseConfigMessage: () => '' }, './config': { db: {}, getFirebaseConfigMessage: () => '' },
+  }, { setTimeout: () => 0, localStorage: { getItem: () => null, setItem() {}, removeItem() {} } });
+  const initial = { version: 1, blocks: [], commerce: { subtitle: 'Primero', faqMode: 'custom', faqs: [{ id: 'q', question: '¿Cómo?', answer: 'Así.' }], showHelp: true } };
+  const created = await api.createProduct({ name: 'Billetera', price: 120, detailComposition: initial }, 'new-wallet');
+  assert.equal(created.id, 'new-wallet');
+  const first = (await api.getProduct('new-wallet')).data;
+  assert.equal(first.detailComposition.commerce.subtitle, 'Primero');
+  await api.updateProduct('new-wallet', { name: 'Billetera', price: 120, detailComposition: { ...first.detailComposition, visible: false, commerce: { ...first.detailComposition.commerce, subtitle: '', faqMode: 'hidden', faqs: [], showHelp: false, showReviews: false } } });
+  const saved = (await api.getProduct('new-wallet')).data;
+  assert.equal(saved.detailComposition.visible, false); assert.equal(saved.detailComposition.commerce.subtitle, '');
+  assert.equal(saved.detailComposition.commerce.showHelp, false); assert.equal(saved.detailComposition.commerce.showReviews, false);
+  assert.equal(saved.detailComposition.commerce.faqs.length, 0); assert.equal(saved.price, 120);
+  const withoutId = await api.createProduct({ name: 'Otro', price: 90, detailComposition: saved.detailComposition });
+  assert.equal(docs.get(withoutId.id).detailComposition.visible, false);
+  await assert.rejects(() => api.updateProduct('new-wallet', { detailComposition: { version: 1, blocks: [], commerce: { faqMode: 'custom', faqs: [] } } }), /pregunta/);
+});
+
+test('recomendaciones por IDs no recuperan el catálogo completo y excluyen ocultos/eliminados', async () => {
+  const { api, requests } = await productFixture();
+  const pending = api.getVisibleProductsByIds(['b', 'a', 'a', 'hidden', 'deleted', '../invalid']);
+  assert.equal(requests.length, 1); assert.equal(requests[0].args[1][0].field, '__name__');
+  requests[0].resolve({ data: [{ id: 'a', visible: true }, { id: 'b', visible: true }, { id: 'hidden', visible: false }, { id: 'deleted', deleted: true }] });
+  assert.deepEqual(Array.from((await pending).data, p => p.id), ['b', 'a']);
+  await api.getVisibleProductsByIds([]); assert.equal(requests.length, 1);
+});
+
+test('analítica distingue solicitud y pago y limita las interacciones a IDs públicos', async () => {
+  const writes = [];
+  const localStorage = { getItem: key => key === 'pc_analytics_anonymous_id' ? 'anon' : null, setItem() {} };
+  const window = { location: { hostname: 'wala.pe', pathname: '/checkout' }, navigator: { userAgent: 'Mozilla/5.0' }, localStorage, sessionStorage: { getItem: () => 'session', setItem() {} } };
+  const api = await loadService('src/services/analytics/tracker.js', {
+    '../firebase/firestore': { createDocument: async (name, payload) => { writes.push({ name, payload }); return { id: 'event' }; }, updateDocument: unused },
+    './ua': { parseUserAgent: unused }, '../geo': { detectCountry: unused, getCachedCountry: unused },
+  }, { window, localStorage });
+  await api.trackOrderRequested({ orderId: 'wa-1', method: 'whatsapp', totalCents: 12000 });
+  await api.trackPurchaseComplete({ orderId: 'paid-1', method: 'culqi', totalCents: 12000 });
+  await api.trackProductInteraction({ productId: 'p', action: 'faq_open', targetId: 'faq-1', message: 'No se debe enviar' });
+  await api.trackProductInteraction({ productId: 'p', action: 'unknown' });
+  assert.deepEqual(writes.map(x => x.payload.type), ['order_requested', 'purchase_complete', 'product_interaction']);
+  assert.equal(writes[0].payload.eventData.orderId, 'wa-1');
+  assert.deepEqual(Object.keys(writes[2].payload.eventData).sort(), ['action', 'productId', 'targetId']);
+  window.location.hostname = '127.0.0.1'; await api.trackOrderRequested({}); await api.trackProductInteraction({ productId: 'p', action: 'help_click' });
+  assert.equal(writes.length, 3);
+});
+
+test('el resumen de opiniones consulta agregados sin descargar comentarios ni fotos', async () => {
+  const calls = [];
+  const api = await loadService('src/services/reviews.js', {
+    './firebase/observed.js': { ...sdk, count: () => 'COUNT', average: field => ({ average: field }), arrayUnion: unused, arrayRemove: unused,
+      getAggregateFromServer: async (q, spec) => { calls.push({ q, spec }); return { data: () => ({ total: 8, promedio: 4.5 }) }; },
+    }, './firebase/config': { db: {} }, './firebase/storage': { uploadFile: unused },
+  });
+  const summary = await api.getProductReviewSummary('wallet');
+  assert.equal(summary.total, 8); assert.equal(summary.promedio, 4.5);
+  assert.equal(calls[0].q.name, 'product_reviews'); assert.equal(calls[0].q.constraints[0].value, 'wallet');
+  assert.equal(calls[0].spec.total, 'COUNT'); assert.equal(calls[0].spec.promedio.average, 'rating');
 });

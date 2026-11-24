@@ -5,6 +5,28 @@
   gap: 0.75rem;
 }
 
+.editorial .marco { aspect-ratio: 4 / 5; border: 0; border-radius: 12px; background: #f7f7f9; }
+.editorial .lado { max-width: calc(100% - 28px); white-space: normal; font-weight: 600; }
+.editorial .miniaturaNombre { display: none; }
+.controles { display: flex; justify-content: center; align-items: center; gap: 1rem; font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--color-text-muted); }
+.controles button { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--color-text); cursor: pointer; }
+.controles button:disabled { opacity: 0.3; cursor: default; }
+.controles button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+.controles button:hover:not(:disabled) { background: var(--primary-light); }
+.controles svg { width: 18px; height: 18px; }
+
+@media (min-width: 900px) {
+  .editorial.conMiniaturas .controles { grid-column: 2; }
+  .editorial .marco { width: 100%; aspect-ratio: 1; }
+}
+@media (max-width: 899px) {
+  .editorial { gap: 0; }
+  .editorial .marco { border-radius: 0; }
+  .editorial .miniaturas { display: none; }
+  .editorial .foto { transform: none !important; }
+  .editorial .marco { cursor: auto; }
+}
+
 /* La foto grande: escenario claro, esquina de etiqueta y el lado en una píldora. */
 .marco {
   position: relative;
@@ -120,7 +142,7 @@
   transform: scale(1.35);
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
   .pista {
     display: inline-flex;
   }
@@ -176,6 +198,17 @@
   aspect-ratio: 1 / 1;
   object-fit: contain;
   mix-blend-mode: multiply;
+}
+
+.miniaturaVideo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  color: #ede9fe;
+  background: #302044;
+  padding-bottom: 12px;
+  box-sizing: border-box;
 }
 
 .miniaturaNombre {

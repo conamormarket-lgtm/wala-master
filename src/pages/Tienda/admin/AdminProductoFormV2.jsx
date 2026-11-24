@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useLoViejo from '../../../hooks/useLoViejo';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +28,11 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import styles from './AdminProductoFormV2.module.css';
 import { PUBLICOS, EDADES } from '../../../utils/giftRecommender.mjs';
+import ProductVideosEditor from './ProductVideosEditor';
+import { normalizeProductVideos } from '../../../utils/productVideos.mjs';
+
+import { normalizeDetailComposition, validateDetailComposition } from '../../../utils/productDetails.mjs';
+const ProductSalesEditor = lazy(() => import('./ProductSalesEditor'));
 
 const Size = Quill.import('attributors/style/size');
 Size.whitelist = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
@@ -117,6 +122,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
   const [form, setForm] = useState({
     name: '',
+    videos: [],
+    detailComposition: null,
     description: '',
     price: '',
     salePrice: '',
@@ -164,6 +171,9 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [designUrlInput, setDesignUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [detailsUploading, setDetailsUploading] = useState(false);
+  const [salesVisited, setSalesVisited] = useState(false);
 
   // Editor inline de encuadre (crop no destructivo) de la portada de la variante activa.
   const [cropEditing, setCropEditing] = useState(false);
@@ -282,6 +292,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
       const newForm = {
         name: productData.name || '',
+        videos: normalizeProductVideos(productData.videos),
+        detailComposition: normalizeDetailComposition(productData.detailComposition),
         description: productData.description || '',
         price: productData.price || '',
         salePrice: productData.salePrice || '',
@@ -701,6 +713,11 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (detailsUploading || videoUploading || uploading || saveMutation.isPending) return;
+    if (form.detailComposition) {
+      const invalid = validateDetailComposition(form.detailComposition);
+      if (invalid) { cambiarPestana('ficha'); alert(invalid); return; }
+    }
     if (!form.name.trim() || (!form.isComboProduct && form.variants.length === 0)) return;
     // Antes esto no se validaba: se podía guardar un "combo" con 0 productos
     // agregados y quedaba visible/comprable en la tienda sin mostrar nada al
@@ -780,6 +797,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
       const payload = {
         name: form.name,
         description: form.description,
+        videos: normalizeProductVideos(form.videos),
+        detailComposition: normalizeDetailComposition(form.detailComposition),
         price: Number(form.price) || 0,
         salePrice: Number(form.salePrice) || 0,
         inStock: esPrenda && form.inStock === '' ? null : Number(form.inStock) || 0,
@@ -833,8 +852,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   const esPersonalizable = form.esPrendaBase && !form.isComboProduct;
   const nPlantillas = leerPlantillas(form.prendaBase?.plantillas).length;
   const PESTANAS = esPersonalizable
-    ? [['general', 'General'], ['colores', 'Colores y fotos'], ['diseno', 'Diseño'], ['plantillas', `Plantillas (${nPlantillas})`], ['donde', 'Dónde se ve']]
-    : [['general', 'General'], ['colores', form.isComboProduct ? 'Piezas del combo' : 'Colores y tallas'], ['donde', 'Dónde se ve']];
+    ? [['general', 'General'], ['colores', 'Colores, fotos y vídeos'], ['diseno', 'Diseño'], ['plantillas', `Plantillas (${nPlantillas})`], ...(!form.isComboProduct ? [['ficha', 'Ficha de venta']] : []), ['donde', 'Dónde se ve']]
+    : [['general', 'General'], ['colores', form.isComboProduct ? 'Piezas y vídeos' : 'Colores, tallas y vídeos'], ...(!form.isComboProduct ? [['ficha', 'Ficha de venta']] : []), ['donde', 'Dónde se ve']];
   const pestanaActual = PESTANAS.some(([k]) => k === pestana) ? pestana : 'general';
   // La clase que esconde lo que no es de la pestaña abierta (no se desmonta:
   // así no se pierde lo que se está editando).
@@ -962,7 +981,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         </div>
       )}
 
-      <form className={styles.contentGrid} onSubmit={handleSubmit} onInvalidCapture={() => cambiarPestana('general')}>
+      <form className={styles.contentGrid} onSubmit={handleSubmit} onInvalidCapture={e => cambiarPestana(e.target.closest('[data-componente="EditorDetallesProducto"]') ? 'ficha' : 'general')}>
         <div className={styles.pestanas} role="tablist" aria-label="Partes del producto">
           {PESTANAS.map(([clave, texto]) => (
             <button
@@ -1746,7 +1765,21 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
               <PersonalizacionPrenda {...propsPrenda} seccion="colores" />
             </div>
           )}
+          <ProductVideosEditor
+            videos={form.videos || []}
+            productId={draftId}
+            disabled={uploading || saveMutation.isPending}
+            onBusyChange={setVideoUploading}
+            onChange={(videos) => setForm((f) => ({ ...f, videos }))}
+            onUploaded={(video) => setForm((f) => ({ ...f, videos: [...(f.videos || []), video] }))}
+          />
           </div>
+
+          {!form.isComboProduct && <div className={fuera('ficha')}>
+            <h2 className={styles.cardTitle}>Ficha de venta</h2>
+            <p className={styles.cardSubtitle}>Configura lo que verá el cliente: beneficios, entrega, preguntas y composición de fotos y vídeos. Se guarda junto con el producto.</p>
+            {(pestanaActual === 'ficha' || salesVisited) && <Suspense fallback={<p>Abriendo editor de ficha…</p>}><ProductSalesEditor key={draftId} form={form} productId={draftId} onMount={() => setSalesVisited(true)} onChange={detailComposition => setForm(f => ({ ...f, detailComposition }))} onBusyChange={setDetailsUploading} /></Suspense>}
+          </div>}
 
           {esPersonalizable && (
             <div className={`${styles.card}${fuera('diseno')}`}>
@@ -1865,7 +1898,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
             <Button
               type="submit"
               className={styles.saveBtn}
-              disabled={uploading || saveMutation.isPending}
+              disabled={uploading || videoUploading || detailsUploading || saveMutation.isPending}
             >
               {uploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               {uploading ? <span key="uploading">Procesando...</span> : <span key="default">{isNew ? (esModoPrenda ? 'Guardar prenda' : 'Guardar Producto (Oficial)') : 'Guardar Cambios'}</span>}

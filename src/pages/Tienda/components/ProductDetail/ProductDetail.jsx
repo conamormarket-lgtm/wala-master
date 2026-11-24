@@ -23,6 +23,8 @@ const YoryoPersonalizadoCliente = lazy(() => withEditorFonts(import('../../../..
 import HistorialPersonalizacionesModal from '../../../../components/YoryoPersonalizadoCliente/HistorialPersonalizacionesModal';
 import { getCustomerCustomProductsByUser } from '../../../../services/customerCustomProducts';
 import ProductReviews from '../ProductReviews';
+import { GaleriaProducto } from '../../../../componentes/kit/piezas/GaleriaProducto';
+import { productVideoSlides } from '../../../../utils/productVideos.mjs';
 import { Truck, RefreshCw, ShieldCheck, Share2, Check, Gift } from 'lucide-react';
 import styles from './ProductDetail.module.css';
 
@@ -585,11 +587,19 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             una foto por pieza (buildImages). Los colores por pieza se eligen
             en el panel de info (ver más abajo), no acá. */}
         <div className={styles.galleryCol}>
-          <Gallery
+          {product.videos?.length ? <GaleriaProducto
+            key={selectedVariant?.id || 'base'}
+            nombre={product.name}
+            imagenes={[
+              ...images.map((img) => ({ url: img.url, nombre: img.label || '' })),
+              ...productVideoSlides(product.videos),
+            ]}
+            salto={{ indice: imgIdx, vez: imgIdx }}
+          /> : <Gallery
             images={images}
             activeIdx={imgIdx}
             setActiveIdx={setImgIdx}
-          />
+          />}
         </div>
 
         {/* ── Info ── */}

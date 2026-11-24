@@ -369,12 +369,14 @@ export async function trackCheckoutStart(checkoutInfo = {}, userCtx = {}) {
   });
 }
 
-export async function trackPurchaseComplete(orderInfo = {}, userCtx = {}) {
+export const trackPurchaseComplete = (orderInfo = {}, userCtx = {}) => trackCheckoutResult(ANALYTICS_EVENT_TYPES.PURCHASE_COMPLETE, orderInfo, userCtx);
+export const trackOrderRequested = (orderInfo = {}, userCtx = {}) => trackCheckoutResult(ANALYTICS_EVENT_TYPES.ORDER_REQUESTED, orderInfo, userCtx);
+async function trackCheckoutResult(type, orderInfo, userCtx) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || '/checkout/success');
   await registrarEvento({
-    type: ANALYTICS_EVENT_TYPES.PURCHASE_COMPLETE,
+    type,
     path: window.location.pathname || '/checkout/success',
     uid: userCtx?.uid || null,
     email: userCtx?.email || null,
@@ -385,6 +387,15 @@ export async function trackPurchaseComplete(orderInfo = {}, userCtx = {}) {
     clientType: getClientType(),
     eventData: orderInfo // Expected: { orderId, totalCents, currency }
   });
+}
+
+/** Solo IDs y acciones: no almacena textos de preguntas, mensajes ni URLs de archivos. */
+export async function trackProductInteraction({ productId, action, targetId = '' }, userCtx = {}) {
+  if (!debeRegistrarAnalitica() || !['video_play', 'faq_open', 'help_click'].includes(action)) return;
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await registrarEvento({ type: ANALYTICS_EVENT_TYPES.PRODUCT_INTERACTION, path: window.location.pathname,
+    anonymousId: getAnonymousId(), sessionId, uid: userCtx.uid || null, clientTsMs: Date.now(), clientType: getClientType(),
+    eventData: { productId, action, targetId: String(targetId).slice(0, 160) } });
 }
 
 export async function trackProductView(productInfo = {}, userCtx = {}) {

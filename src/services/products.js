@@ -6,6 +6,8 @@ import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import { createInFlightReads } from './shared/inFlightReads.mjs';
 import { leerPersonalizarEn } from '../utils/personalizarEn';
 import { esProductoDeTienda } from '../utils/enTienda.mjs';
+import { normalizeProductVideos } from '../utils/productVideos.mjs';
+import { normalizeDetailComposition, validateDetailComposition } from '../utils/productDetails.mjs';
 
 const COLLECTION = 'productos_wala';
 const productReads = createInFlightReads();
@@ -173,6 +175,16 @@ export const getProducts = async (filters = [], orderBy = null, limitCount = nul
 };
 
 export const getCachedProducts = () => readCache(CACHE_KEYS.products);
+
+/** Hasta 12 productos publicados, en el orden editorial o del historial local. */
+export const getVisibleProductsByIds = async (ids = []) => {
+  const unique = [...new Set(ids.filter(id => typeof id === 'string' && /^[\w-]{1,150}$/.test(id)))].slice(0, 12);
+  if (!unique.length) return { data: [], error: null };
+  const result = await getProducts([{ field: '__name__', operator: 'in', value: unique }]);
+  if (result.error) return result;
+  const byId = new Map(result.data.map(p => [p.id, p]));
+  return { data: unique.flatMap(id => byId.has(id) ? [byId.get(id)] : []), error: null };
+};
 
 /**
  * Normaliza un item de variante (nuevo modelo)
@@ -416,6 +428,8 @@ export function normalizeProductForRead(doc) {
     behaviorImpressionsThreshold,
     images,
     imagesByColor,
+    videos: normalizeProductVideos(doc.videos),
+    detailComposition: normalizeDetailComposition(doc.detailComposition),
     isComboProduct,
     ...(comboLayout && { comboLayout }),
     comboItems,
@@ -833,6 +847,17 @@ export const updateProduct = async (id, data) => {
   }
 
   return result;
+};
+
+/** El editor de la ficha solo escribe su composición; conserva precio, stock y variantes. */
+export const updateProductDetails = async (id, composition) => {
+  if (!/^[\w-]+$/.test(id || '')) throw new Error('No se pudo identificar el producto.');
+  const invalid = validateDetailComposition(composition);
+  if (invalid) throw new Error(invalid);
+  const detailComposition = normalizeDetailComposition(composition);
+  await updateDoc(doc(db, COLLECTION, id), { detailComposition, updatedAt: serverTimestamp() });
+  clearProductCaches();
+  return detailComposition;
 };
 
 /**
@@ -1284,6 +1309,10 @@ function camposRecomendacion(data) {
 }
 
 function normalizeProductPayload(data) {
+  if (data.detailComposition != null) {
+    const invalid = validateDetailComposition(data.detailComposition);
+    if (invalid) throw new Error(invalid);
+  }
   const customizationViews = Array.isArray(data.customizationViews)
     ? data.customizationViews.map(normalizeCustomizationView).filter(Boolean)
     : [];
@@ -1398,6 +1427,9 @@ function normalizeProductPayload(data) {
     salePrice: finalSalePrice,
     images: images.length ? images : [],
     imagesByColor: Object.keys(imagesByColor).length ? imagesByColor : {},
+    // Omitir conserva los vídeos; [] los quita al guardar explícitamente.
+    ...(data.videos !== undefined && { videos: normalizeProductVideos(data.videos) }),
+    ...(data.detailComposition !== undefined && { detailComposition: normalizeDetailComposition(data.detailComposition) }),
     description: (data.description ?? '').toString(),
     // null = sin límite (una prenda de Crear sin stock cargado): borra el campo.
     inStock: data.inStock === null ? null : typeof data.inStock === 'number' ? data.inStock : parseInt(data.inStock, 10) || 0,

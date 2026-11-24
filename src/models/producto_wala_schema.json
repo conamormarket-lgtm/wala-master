@@ -6,6 +6,14 @@
   "vendor": "Wala",
   "productType": "Apparel",
   "description": "<p>Descripción enriquecida en HTML generada por el editor Quill...</p>",
+  "detailComposition": {
+    "version": 1,
+    "visible": true,
+    "heading": "Todos los detalles",
+    "eyebrow": "Conoce el producto",
+    "commerce": { "subtitle": "", "highlights": [], "priceNote": "", "personalizationNote": "", "paymentNote": "", "steps": [], "specifications": [], "delivery": "", "warranty": "", "policyUrl": "", "showShippingRate": false, "faqMode": "default", "faqs": [], "collection": { "enabled": false }, "showReviews": true, "showRelated": true, "relatedIds": [], "showRecent": false, "showHelp": true, "showTrust": true, "showSticky": true, "storyMediaId": "" },
+    "blocks": [{ "id": "detalle-1", "kind": "split", "title": "Diseñado para acompañarte", "text": "Texto del producto", "width": "wide", "side": "left", "columns": 2, "mobileColumns": 1, "mosaicLayout": "classic", "rowHeight": 200, "ratio": "auto", "fit": "contain", "align": "left", "background": "plain", "media": [{ "id": "foto-1", "type": "image", "url": "https://example.com/detalle.webp", "alt": "Detalle del producto", "caption": "", "ratio": "inherit", "fit": "inherit" }] }]
+  },
   
   "price": 120.00,
   "salePrice": 99.90,
@@ -26,6 +34,9 @@
   "characters": [],
   
   "mainImage": "https://firebasestorage.googleapis.com/.../main_image.jpg",
+  "videos": [
+    { "url": "https://firebasestorage.googleapis.com/.../presentacion.mp4", "name": "Conoce el producto" }
+  ],
   "mainSizes": ["S", "M", "L", "XL"],
   
   "hasVariants": true,
