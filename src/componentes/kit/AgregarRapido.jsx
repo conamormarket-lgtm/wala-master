@@ -109,7 +109,7 @@ export default function AgregarRapido({
       pie={(
         <div className={s.pie}>
           {personalizable && (
-            <Boton variante="contorno" icono={<Wand2 aria-hidden="true" />} onClick={() => onPersonalizar?.(eleccion)}>
+            <Boton accion="personalizar" variante="contorno" icono={<Wand2 aria-hidden="true" />} onClick={() => onPersonalizar?.(eleccion)}>
               <Texto>Personalizar</Texto>
             </Boton>
           )}

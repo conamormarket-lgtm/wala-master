@@ -18,6 +18,8 @@ export function normalizeProductCommerce(value = {}, { allowLocal = false } = {}
     priceNote: text(v.priceNote), personalizationNote: text(v.personalizationNote, 800),
     paymentNote: text(v.paymentNote, 800), steps: rows(v.steps, 5, ['text']),
     specifications: rows(v.specifications, 16, ['label', 'value']),
+    information: text(v.information, 1200), informationTitle: text(v.informationTitle, 120) || 'Características',
+    warrantyTitle: text(v.warrantyTitle, 120) || 'Garantía y cambios', deliveryTitle: text(v.deliveryTitle, 120) || 'Tiempo de entrega',
     delivery: text(v.delivery, 1200), warranty: text(v.warranty, 1200), policyUrl: commerceLink(v.policyUrl),
     showShippingRate: v.showShippingRate === true,
     faqMode: ['default', 'custom', 'hidden'].includes(v.faqMode) ? v.faqMode : 'default',

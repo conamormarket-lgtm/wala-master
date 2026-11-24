@@ -168,14 +168,14 @@ export function FilaPiezaCombo({
             {color?.nombre && <span className={s.piezaDatos}><span className={s.piezaColor} style={{ background: color.fondo }} aria-hidden="true" /> <Texto>{color.nombre}</Texto></span>}
             <p className={s.piezaAyuda}><Texto>Llévala tal cual o cámbiale el nombre, la foto o lo que quieras.</Texto></p>
             <div className={s.piezaAcciones}>
-              <Boton to={urlDisenar} state={estadoEnlaces} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Personalizar</Texto></Boton>
+              <Boton accion="personalizar" to={urlDisenar} state={estadoEnlaces} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Personalizar</Texto></Boton>
             </div>
           </>
         ) : (
           <>
             <p className={s.piezaAyuda}><Texto>Ponle tu imagen o tu frase.</Texto></p>
             <div className={s.piezaAcciones}>
-              <Boton to={urlDisenar} state={estadoEnlaces} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Diseñar</Texto></Boton>
+              <Boton accion="personalizar" to={urlDisenar} state={estadoEnlaces} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Diseñar</Texto></Boton>
               {copiarDe && <Boton to={copiarDe.url} state={estadoEnlaces} tamano="sm" variante="contorno" icono={<Copy aria-hidden="true" />}><Texto>{`Copiar de la prenda ${copiarDe.numero}`}</Texto></Boton>}
               {onMisCreaciones && <Boton tamano="sm" variante="fantasma" icono={<Images aria-hidden="true" />} onClick={onMisCreaciones}><Texto>Mis creaciones</Texto></Boton>}
             </div>

@@ -523,6 +523,7 @@ export function PaginaFichaProducto({
         <div hidden={pestana !== 'videos'} className={s.pestana}>
           {editorVideos({
             videos: datos.videos || [],
+            variants: datos.variantes || [],
             disabled: guardando,
             onBusyChange: setSubiendoVideos,
             onChange: (videos) => cambiar('videos', videos),

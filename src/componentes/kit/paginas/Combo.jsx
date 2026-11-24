@@ -171,7 +171,7 @@ export function PaginaCombo({
         <Aviso
           tipo="info"
           icono={<Sparkles aria-hidden="true" />}
-          accion={<Boton to={plantilla.urlPersonalizar} state={estadoEnlaces} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Personalizar</Texto></Boton>}
+          accion={<Boton accion="personalizar" to={plantilla.urlPersonalizar} state={estadoEnlaces} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Personalizar</Texto></Boton>}
         >
           <TextoResaltado resaltar={[plantilla.nombre]}>{`Partes de ${plantilla.nombre}. Elige la talla y agrégalo al carrito tal cual, o personaliza cada prenda.`}</TextoResaltado>
         </Aviso>

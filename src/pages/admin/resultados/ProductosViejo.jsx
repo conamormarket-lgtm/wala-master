@@ -1,3 +1,4 @@
+import { IconoWhatsApp } from '../../../componentes/kit/IconoWhatsApp';
 import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -188,7 +189,7 @@ export default function ProductosViejo() {
                         <span>{p?.name || 'Producto'} · {fmtDuration(l.dwellMs)} · {fmtFecha(l.ultimaMs)}</span>
                       </div>
                       {url ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" className={styles.whatsapp}>WhatsApp</a>
+                        <a data-accion="whatsapp" href={url} target="_blank" rel="noopener noreferrer" className={styles.whatsapp}><IconoWhatsApp /> WhatsApp</a>
                       ) : (
                         <span className={styles.sinBoton}>
                           {cargandoPerfiles ? '…' : !telefono ? 'Sin teléfono' : !permiso ? 'No aceptó WhatsApp' : '—'}

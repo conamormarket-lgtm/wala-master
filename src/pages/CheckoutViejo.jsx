@@ -1,3 +1,4 @@
+import { IconoWhatsApp } from '../componentes/kit/IconoWhatsApp';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
@@ -235,6 +236,7 @@ const CheckoutViejo = () => {
           {groups.map((g, i) => (
             <Boton
               key={i}
+              accion="whatsapp"
               variante="contorno"
               bloque
               icono={<MessageCircle aria-hidden="true" />}
@@ -269,6 +271,7 @@ const CheckoutViejo = () => {
     return (
       <button
         type="button"
+        data-accion="whatsapp"
         className={styles.waButton}
         disabled={processing}
         onClick={async () => {
@@ -281,7 +284,7 @@ const CheckoutViejo = () => {
       >
         {processing && !recalculando
           ? <><span className={styles.spinnerVerde} aria-hidden="true" /> Creando tu pedido…</>
-          : <><MessageCircle size={19} aria-hidden="true" /> {label}</>}
+          : <><IconoWhatsApp /> {label}</>}
       </button>
     );
   };

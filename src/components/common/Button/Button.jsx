@@ -1,10 +1,12 @@
 import React from 'react';
 import styles from './Button.module.css';
+import '../../../styles/actionButtons.css';
 import { T } from '../../../i18n/useTranslatedText';
 
 const Button = ({
   children,
   variant = 'primary',
+  accion,
   size = 'medium',
   fullWidth = false,
   disabled = false,
@@ -26,6 +28,7 @@ const Button = ({
   return (
     <button
       className={classes}
+      data-accion={accion}
       onClick={onClick}
       disabled={disabled || loading}
       type={type}

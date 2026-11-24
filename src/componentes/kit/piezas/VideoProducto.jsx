@@ -4,7 +4,7 @@ import { Texto, useTexto } from '../Traduccion';
 import s from './VideoProducto.module.css';
 
 /** Montar solo el vídeo elegido: al cambiar de lámina se detiene y libera. */
-export function VideoProducto({ url, nombre, portada }) {
+export function VideoProducto({ url, nombre, portada, autoPlay = false, muted = false, loop = false }) {
   const [error, setError] = useState(false);
   const [preparado, setPreparado] = useState(false);
   const [iniciado, setIniciado] = useState(false);
@@ -42,6 +42,10 @@ export function VideoProducto({ url, nombre, portada }) {
       <video
         ref={player}
         src={url}
+        poster={portada || undefined}
+        autoPlay={autoPlay}
+        muted={autoPlay || muted}
+        loop={loop}
         className={s.video}
         controls
         playsInline
@@ -53,9 +57,8 @@ export function VideoProducto({ url, nombre, portada }) {
         onPlay={alReproducir}
         onError={() => setError(true)}
       />
-      {!preparado && !iniciado && !error && (
+      {!preparado && !iniciado && !error && !portada && (
         <div className={s.cargando}>
-          {portada && <img src={portada} className={s.portada} alt="" />}
           <span role="status"><Texto>Cargando vista previa…</Texto></span>
         </div>
       )}

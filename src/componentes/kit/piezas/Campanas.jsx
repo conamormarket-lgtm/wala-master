@@ -1,5 +1,7 @@
+import { IconoWhatsApp } from '../IconoWhatsApp';
+import { buttonAction } from '../../../utils/buttonAction.mjs';
 import React, { useState } from 'react';
-import { X, Music2, MessageCircle, Link2, ChevronRight, ShoppingBag, Ticket, Mail, Phone, Palette, Gift, Play } from 'lucide-react';
+import { X, Music2, Link2, ChevronRight, ShoppingBag, Ticket, Mail, Phone, Palette, Gift, Play } from 'lucide-react';
 import Boton from '../Boton';
 import { IconoWala } from '../IconosWala';
 import { Trazo } from '../Marca';
@@ -74,7 +76,7 @@ const Facebook = (props) => (
   </svg>
 );
 
-const ICONOS_RED = { instagram: Instagram, facebook: Facebook, tiktok: Music2, whatsapp: MessageCircle, custom: Link2 };
+const ICONOS_RED = { instagram: Instagram, facebook: Facebook, tiktok: Music2, whatsapp: IconoWhatsApp, custom: Link2 };
 
 /**
  * Las redes de una página de enlaces, en círculos (íconos de línea, sin emojis).
@@ -100,7 +102,7 @@ export function RedesEnlaces({ redes = [], onClic }) {
 /** El ícono de un botón según a dónde lleva (cuando no tiene miniatura). */
 export function iconoDeEnlace(url = '') {
   const u = String(url || '').toLowerCase();
-  if (/wa\.me|whatsapp/.test(u)) return MessageCircle;
+  if (buttonAction(undefined, url) === 'whatsapp') return IconoWhatsApp;
   if (/instagram/.test(u)) return Instagram;
   if (/tiktok/.test(u)) return Music2;
   if (/facebook|fb\.com/.test(u)) return Facebook;
@@ -125,7 +127,7 @@ export function BotonEnlace({ titulo, url, imagen, estilo, onClic }) {
   const [rota, setRota] = useState(false);
   const Icono = iconoDeEnlace(url);
   return (
-    <Enlace to={url} className={s.botonEnlace} style={estilo} onClick={onClic} data-componente="BotonEnlace">
+    <Enlace to={url} data-accion={buttonAction(undefined, url)} className={s.botonEnlace} style={estilo} onClick={onClic} data-componente="BotonEnlace">
       {imagen && !rota
         ? <img {...atributosDeFoto(imagen, '96px')} alt="" className={s.botonImagen} onError={siFallaDeVerdad(() => setRota(true))} />
         : <span className={s.botonIcono} aria-hidden="true"><Icono /></span>}

@@ -66,7 +66,7 @@ export function MedioDetalle({ media, resolverMedia = url => url, onAmpliar, sty
               {videoState === 'error' && <a href={url} target="_blank" rel="noopener noreferrer"><Texto>Abrir vídeo</Texto></a>}
             </div>}
           </>
-          : <img src={url} alt={media.alt || ''} loading="lazy" decoding="async" onLoad={readDimensions} />;
+          : <picture><source media="(max-width: 620px)" srcSet={media.mobileUrl ? resolverMedia(media.mobileUrl) : undefined} /><img src={url} alt={media.alt || ''} loading="lazy" decoding="async" onLoad={readDimensions} /></picture>;
   const expand = onAmpliar && <button type="button" className={s.ampliar} onClick={onAmpliar} aria-label={`Ampliar ${media.alt || (media.type === 'video' ? 'vídeo' : 'foto')}`}><Texto>Ampliar</Texto> ↗</button>;
   const frameStyle = hasOwnMediaRatio(media)
     ? { aspectRatio: original ? naturalRatio || (media.type === 'video' ? 16 / 9 : 3 / 4) : 1 / MOSAIC_ROW_RATIOS[media.ratio] }
@@ -102,7 +102,7 @@ function MediosBloque({ bloque: b, resolverMedia }) {
   </div>;
 }
 
-export function ComposicionDetalles({ composicion, resolverMedia, onSeleccionar, seleccionado, mostrarOculta = false }) {
+export function ComposicionDetalles({ composicion, resolverMedia, onSeleccionar, seleccionado, mostrarOculta = false, vistaMovil = false }) {
   if (!composicion || (!composicion.visible && !mostrarOculta)) return null;
   return (
     <div className={s.composicion} data-componente="ComposicionDetalles">
@@ -115,7 +115,7 @@ export function ComposicionDetalles({ composicion, resolverMedia, onSeleccionar,
           <div key={b.id} className={[s.bloque, s[b.width], s[b.background], onSeleccionar && s.editable, seleccionado === b.id && s.seleccionado].filter(Boolean).join(' ')} data-bloque-detalle={b.id}>
             {onSeleccionar && <button type="button" className={s.editar} onClick={() => onSeleccionar(b.id)}>Editar bloque {i + 1}</button>}
             <div className={[s.contenido, b.kind === 'split' && s.dividido, b.side === 'right' && s.invertido].filter(Boolean).join(' ')} style={{ '--fila-mosaico': `${b.rowHeight || 200}px`, '--alto-celda': MOSAIC_ROW_RATIOS[b.ratio] || 1, '--columnas': b.columns, '--columnas-movil': b.mobileColumns, '--proporcion': { auto: 'auto', square: '1', portrait: '4 / 5', portrait34: '3 / 4', landscape: '16 / 9', story: '9 / 16' }[b.ratio], '--ajuste': b.fit, textAlign: b.align }}>
-              {b.media.length > 0 && <MediosBloque bloque={b} resolverMedia={resolverMedia} />}
+              {b.media.length > 0 && <MediosBloque bloque={vistaMovil ? { ...b, media: b.media.map(m => m.type === 'image' && m.mobileUrl ? { ...m, url: m.mobileUrl } : m) } : b} resolverMedia={resolverMedia} />}
               {(b.title || b.text) && <div className={s.texto}>
                 {b.title && <h3><Texto>{b.title}</Texto></h3>}
                 {b.text && <p><Texto>{b.text}</Texto></p>}

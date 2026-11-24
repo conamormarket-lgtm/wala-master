@@ -3,12 +3,16 @@ import { Loader2 } from 'lucide-react';
 import { Enlace } from './Enlace';
 import { Texto } from './Traduccion';
 import s from './Boton.module.css';
+import { buttonAction } from '../../utils/buttonAction.mjs';
+import { IconoWhatsApp } from './IconoWhatsApp';
+import '../../styles/actionButtons.css';
 
 /**
- * Botón de Walá. Violeta liso (sin degradado) con brillo que lo cruza al pasar
- * el ratón y una onda donde se toca (también en móvil). 44px de alto táctil.
+ * Botón de Walá. Violeta por defecto, con estilos compartidos para las
+ * acciones de personalizar y WhatsApp. Onda táctil y 44px de alto mínimo.
  *
  *  - variante: 'primario' | 'secundario' | 'contorno' | 'fantasma' | 'peligro'
+ *  - accion: 'personalizar' | 'whatsapp' · estilo común de esas acciones
  *  - tamano: 'sm' | 'md' | 'lg'
  *  - to: si se pasa, es un enlace (usa el router de la app vía <Enlace>)
  *  - icono / iconoFin: nodos a izquierda / derecha (la flecha final se desliza)
@@ -20,6 +24,7 @@ import s from './Boton.module.css';
  */
 const Boton = forwardRef(function Boton({
   variante = 'primario',
+  accion,
   tamano = 'md',
   to,
   icono,
@@ -39,6 +44,8 @@ const Boton = forwardRef(function Boton({
 }, ref) {
   const [ondas, setOndas] = useState([]);
   const inactivo = disabled || cargando;
+  const accionVisual = buttonAction(accion, to);
+  const iconoAccion = accionVisual === 'whatsapp' ? <IconoWhatsApp /> : icono;
 
   const tocar = (e) => {
     onPointerDown?.(e);
@@ -75,7 +82,7 @@ const Boton = forwardRef(function Boton({
         ))}
       </span>
       <span className={s.contenido}>
-        {cargando ? <Loader2 className={s.spin} aria-hidden="true" /> : icono && <span className={s.icono}>{icono}</span>}
+        {cargando ? <Loader2 className={s.spin} aria-hidden="true" /> : iconoAccion && <span className={s.icono}>{iconoAccion}</span>}
         {/* Un texto suelto se traduce aquí; lo que ya viene armado (<Texto>, íconos) pasa igual. */}
         {children != null && <span className={s.texto}><Texto>{children}</Texto></span>}
         {!cargando && iconoFin && <span className={s.iconoFin}>{iconoFin}</span>}
@@ -93,6 +100,7 @@ const Boton = forwardRef(function Boton({
         ref={ref}
         to={to}
         className={cls}
+        data-accion={accionVisual}
         aria-disabled={inactivo || undefined}
         aria-busy={cargando || undefined}
         onPointerDown={tocar}
@@ -109,6 +117,7 @@ const Boton = forwardRef(function Boton({
       ref={ref}
       type={type}
       className={cls}
+      data-accion={accionVisual}
       disabled={inactivo}
       aria-busy={cargando || undefined}
       onPointerDown={tocar}

@@ -102,7 +102,7 @@ export function TarjetaEnvio({ pedido: p, detalle }) {
       </div>
 
       <footer className={s.acciones}>
-        <Boton tamano="sm" variante="primario" icono={<MessageCircle aria-hidden="true" />} to={wa || undefined} disabled={!wa}>
+        <Boton accion="whatsapp" tamano="sm" variante="primario" icono={<MessageCircle aria-hidden="true" />} to={wa || undefined} disabled={!wa}>
           WhatsApp
         </Boton>
         {detalle && <Boton tamano="sm" variante="secundario" to={detalle}>Ver detalle</Boton>}

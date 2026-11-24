@@ -134,4 +134,5 @@ releases/
 .wala-kapi.env*
 output/kapi-local/build-check/
 output/imagegen/
+output/product-media/
 output/kapi-local/companion-config-preview.*

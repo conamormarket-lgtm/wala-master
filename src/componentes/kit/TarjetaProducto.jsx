@@ -367,7 +367,8 @@ export default function TarjetaProducto({
         ) : sinAccion ? null : (
           <button
             type="button"
-            className={[s.agregar, agregado && s.agregarOk].filter(Boolean).join(' ')}
+            data-accion={accion === 'crear' ? 'personalizar' : undefined}
+              className={[s.agregar, agregado && s.agregarOk].filter(Boolean).join(' ')}
             onClick={agregar}
             aria-label={agregado ? t.agregadoAria : `${t.aria} ${nombre}`}
           >

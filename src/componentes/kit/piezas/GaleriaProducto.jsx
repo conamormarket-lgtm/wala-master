@@ -115,7 +115,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
                   de ese recorte para que al viajar no se vea cortado. */}
               <span className={s.miniaturaFoto}>
                 {img.tipo === 'video'
-                  ? <MiniaturaVideo url={img.url} />
+                  ? <MiniaturaVideo url={img.url} poster={img.poster} />
                   : img.juntas
                   ? <Juntas fotos={img.juntas} />
                   : <img src={img.url} srcSet={img.srcSet} sizes={img.srcSet ? SIZES_MINIATURA : undefined} alt="" loading="lazy" decoding="async" draggable={false} className={img.atenuada ? s.atenuada : undefined} style={conRelleno(img)} />}
@@ -141,7 +141,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
           {imagenes.map((img, i) => (
             <div key={`${img.url}-${i}`} className={s.lamina} aria-hidden={i !== sel || undefined}>
               {img.tipo === 'video' ? (
-                i === sel ? <VideoProducto key={img.url} url={img.url} portada={imagenes.find((f) => f.tipo !== 'video' && !f.juntas)?.url} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
+                i === sel ? <VideoProducto key={img.url} url={img.url} portada={img.poster || imagenes.find((f) => f.tipo !== 'video' && !f.juntas)?.url} autoPlay={img.autoPlay} muted={img.muted} loop={img.loop} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
               ) : img.juntas ? <Juntas fotos={img.juntas} grande /> : (
               // El nombre del producto llega traducido; el de la foto se traduce aquí.
               <Traducido texto={img.nombre}>{(lado) => (
@@ -185,7 +185,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
 const conRelleno = (img) => (img.relleno ? { boxSizing: 'border-box', padding: img.relleno } : undefined);
 
 /** Un fotograma también en la miniatura, sin controles, sonido ni reproducción. */
-function MiniaturaVideo({ url }) {
+function MiniaturaVideo({ url, poster }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -203,7 +203,7 @@ function MiniaturaVideo({ url }) {
   }, []);
   return (
     <span className={s.miniaturaVideo}>
-      <video
+      {poster ? <img src={poster} alt="" loading="lazy" decoding="async" /> : <video
         ref={ref}
         data-video-miniatura=""
         src={visible ? url : undefined}
@@ -216,7 +216,7 @@ function MiniaturaVideo({ url }) {
           const video = event.currentTarget;
           if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = Math.min(0.1, video.duration / 2);
         }}
-      />
+      />}
       <span className={s.miniaturaVideoIcono}><Play aria-hidden="true" /></span>
     </span>
   );

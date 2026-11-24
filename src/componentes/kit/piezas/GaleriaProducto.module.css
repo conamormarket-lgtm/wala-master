@@ -209,7 +209,7 @@
   background: #302044;
 }
 
-.miniaturaVideo video {
+.miniaturaVideo video, .miniaturaVideo img {
   position: absolute;
   inset: 0;
   display: block;

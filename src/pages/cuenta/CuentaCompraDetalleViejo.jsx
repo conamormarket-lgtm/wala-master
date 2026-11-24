@@ -1,3 +1,4 @@
+import { IconoWhatsApp } from '../../componentes/kit/IconoWhatsApp';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -746,12 +747,13 @@ const CuentaCompraDetalleViejo = () => {
               brandsConNumero.map((b) => (
                 <a
                   key={b.id}
+                  data-accion="whatsapp"
                   href={b.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`${styles.btnSolido} ${styles.btnSolidoFull}`}
                 >
-                  Consultar a {b.name} por WhatsApp
+                  <IconoWhatsApp /> Consultar a {b.name} por WhatsApp
                 </a>
               ))
             ) : (
@@ -760,21 +762,23 @@ const CuentaCompraDetalleViejo = () => {
                 if (!waLink) {
                   return (
                     <span
+                      data-accion="whatsapp"
                       className={`${styles.btnSolido} ${styles.btnSolidoFull} ${styles.btnSolidoDisabled}`}
                       aria-disabled="true"
                     >
-                      Consultar estado de mi pedido
+                      <IconoWhatsApp /> Consultar estado de mi pedido
                     </span>
                   );
                 }
                 return (
                   <a
+                    data-accion="whatsapp"
                     href={waLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`${styles.btnSolido} ${styles.btnSolidoFull}`}
                   >
-                    Consultar estado de mi pedido
+                    <IconoWhatsApp /> Consultar estado de mi pedido
                   </a>
                 );
               })()

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { normalizeProductVideos, validateProductVideo, MAX_PRODUCT_VIDEO_BYTES } from '../../src/utils/productVideos.mjs';
+import { normalizeProductVideos, validateProductVideo, MAX_PRODUCT_VIDEO_BYTES, galleryWithProductVideos } from '../../src/utils/productVideos.mjs';
 
 let server, fichaProductoDesde, tarjetaDesdeProducto, GaleriaProducto, PaginaProducto, fichaDesdeProducto, fichaAProducto;
 before(async () => {
@@ -16,6 +16,35 @@ before(async () => {
 after(async () => { await server?.close(); });
 const render = (Component, props) => renderToStaticMarkup(React.createElement(Component, props));
 const video = { url: 'https://example.test/demo.mp4?alt=media', name: 'Cómo se ve' };
+
+test('guarda color, posición, portada y reproducción a través del editor y la ficha', () => {
+  const value = { ...video, variantId: 'blue', afterImage: 1, poster: 'https://example.test/poster.webp', autoPlay: true, muted: false, loop: true };
+  const expected = { ...value, muted: true };
+  const saved = normalizeProductVideos(fichaAProducto(fichaDesdeProducto({ videos: [value] })).videos);
+  assert.deepEqual(saved, [expected]);
+  const slide = fichaProductoDesde({ videos: saved }).videos[0];
+  assert.equal(slide.variantId, 'blue');
+  const html = render(GaleriaProducto, { imagenes: [slide], nombre: 'Demo' });
+  assert.match(html, /poster="https:\/\/example.test\/poster.webp"/);
+  assert.match(html, /autoplay=""/);
+  assert.match(html, /loop=""/);
+});
+
+test('al cambiar de color solo mezcla sus vídeos y los comunes, conservando orden', () => {
+  const photos = [{ id: 'a' }, { id: 'b' }];
+  const videos = [{ id: 'common' }, { id: 'blue', variantId: 'blue', afterImage: 1 }, { id: 'red', variantId: 'red', afterImage: 0 }, { id: 'tail', variantId: 'blue', afterImage: 20 }];
+  assert.deepEqual(galleryWithProductVideos(photos, videos, 'blue').map(x => x.id), ['a', 'blue', 'b', 'tail', 'common']);
+  assert.deepEqual(galleryWithProductVideos(photos, videos, 'red').map(x => x.id), ['red', 'a', 'b', 'common']);
+  assert.deepEqual(galleryWithProductVideos([], videos, 'blue').map(x => x.id), ['blue', 'tail', 'common']);
+  assert.deepEqual(photos, [{ id: 'a' }, { id: 'b' }]);
+});
+
+test('los archivos de vista previa se aceptan solo en modo local explícito', () => {
+  const value = { url: '/output/product-media/consul/videos/G-AZ-01.mp4', poster: 'local:poster' };
+  assert.deepEqual(normalizeProductVideos([value]), []);
+  assert.equal(normalizeProductVideos([value], { allowLocal: true })[0].poster, value.poster);
+  assert.deepEqual(normalizeProductVideos([{ url: '/output/product-media/../secret.mp4' }, { url: 'blob:temp' }], { allowLocal: true }), []);
+});
 
 test('el editor actual conserva los vídeos al reabrir, guardar borradores y quitar el último', () => {
   const initial = fichaDesdeProducto({ name: 'Demo', videos: [video] });
@@ -70,7 +99,8 @@ test('la galería monta miniaturas sin controles y un solo reproductor para el v
   assert.match(html, /playsinline=""/);
   assert.match(html, /preload="metadata"/);
   assert.match(html, /aria-label="Reproducir Producto · Cómo se ve"/);
-  assert.match(html, /Cargando vista previa/);
+  assert.match(html, /poster="\/foto.jpg"/);
+  assert.doesNotMatch(html, /Cargando vista previa/);
   assert.match(html, /aria-label="Producto · Cómo se ve"/);
   assert.doesNotMatch(html, /autoplay|Pasa el cursor|src="https:\/\/example.test\/dos.webm"/i);
 });

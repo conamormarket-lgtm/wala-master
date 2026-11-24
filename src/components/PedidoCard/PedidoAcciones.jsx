@@ -1,3 +1,4 @@
+import { IconoWhatsApp } from '../../componentes/kit/IconoWhatsApp';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -300,6 +301,7 @@ const PedidoAcciones = ({ pedido, estado }) => {
 
                 <div style={{ marginTop: '0.5rem' }}>
                   <button
+                    data-accion="whatsapp"
                     className={styles.waBoton}
                     onClick={enviarComprobanteWA}
                     disabled={!configPagos.whatsapp_pagos}
@@ -309,7 +311,7 @@ const PedidoAcciones = ({ pedido, estado }) => {
                         : { padding: '0.75rem', fontSize: '0.9rem' }
                     }
                   >
-                    🚀 Enviar comprobante
+                    <IconoWhatsApp /> Enviar comprobante
                   </button>
                 </div>
               </div>

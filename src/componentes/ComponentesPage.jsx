@@ -639,7 +639,7 @@ function Contenido({ tema, cambiarTema }) {
           <Panel titulo="Variantes">
             <div className={s.fila}>
               <Boton icono={<ShoppingBag aria-hidden="true" />}>Agregar al carrito</Boton>
-              <Boton variante="secundario" icono={<Wand2 aria-hidden="true" />}>Personalizar</Boton>
+              <Boton accion="personalizar" variante="secundario" icono={<Wand2 aria-hidden="true" />}>Personalizar</Boton>
               <Boton variante="contorno">Ver detalles</Boton>
               <Boton variante="fantasma" iconoFin={<ArrowRight aria-hidden="true" />}>Ver todo</Boton>
               <Boton variante="peligro" icono={<Trash2 aria-hidden="true" />}>Eliminar</Boton>
@@ -1016,7 +1016,7 @@ function Contenido({ tema, cambiarTema }) {
             </Panel>
             <Panel retraso={0.08}>
               <EstadoVacio imagen="/assets/kapi/3d/kapi-feliz.webp" titulo="Aún no tienes pedidos" texto="Diseña algo único: Walito te ayuda paso a paso.">
-                <Boton variante="secundario" icono={<Wand2 aria-hidden="true" />}>Crear mi diseño</Boton>
+                <Boton accion="personalizar" variante="secundario" icono={<Wand2 aria-hidden="true" />}>Crear mi diseño</Boton>
               </EstadoVacio>
             </Panel>
           </div>

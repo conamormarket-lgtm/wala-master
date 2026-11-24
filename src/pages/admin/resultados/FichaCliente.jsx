@@ -1,3 +1,4 @@
+import { IconoWhatsApp } from '../../../componentes/kit/IconoWhatsApp';
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserFicha } from '../../../services/adminUserInsights';
@@ -105,7 +106,7 @@ export default function FichaCliente({ uid, email }) {
           </span>
         </div>
         {urlEscribir && (
-          <a href={urlEscribir} target="_blank" rel="noopener noreferrer" className={styles.whatsapp}>Escribir por WhatsApp</a>
+          <a data-accion="whatsapp" href={urlEscribir} target="_blank" rel="noopener noreferrer" className={styles.whatsapp}><IconoWhatsApp /> Escribir por WhatsApp</a>
         )}
       </div>
 

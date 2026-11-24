@@ -578,6 +578,7 @@ export function PaginaCheckout({
                         {pago.marcas.map((m) => (
                           <Boton
                             key={m.id}
+                            accion="whatsapp"
                             variante={enviadas.includes(m.id) ? 'fantasma' : 'contorno'}
                             icono={<MessageCircle aria-hidden="true" />}
                             cargando={ocupado === `marca-${m.id}`}
@@ -590,7 +591,7 @@ export function PaginaCheckout({
                       <Boton bloque disabled={!enviadas.length} onClick={() => { setPedido((p) => ({ ...p, metodo: 'marcas' })); setPaso(2); }}><Texto>Listo, ya envié mis pedidos</Texto></Boton>
                     </>
                   ) : (
-                    <Boton bloque variante="secundario" tamano="lg" icono={<MessageCircle aria-hidden="true" />} cargando={ocupado === 'whatsapp'} onClick={() => pagar('whatsapp', pago.onWhatsApp)}>
+                    <Boton accion="whatsapp" bloque variante="secundario" tamano="lg" icono={<MessageCircle aria-hidden="true" />} cargando={ocupado === 'whatsapp'} onClick={() => pagar('whatsapp', pago.onWhatsApp)}>
                       <Texto>{ocupado === 'whatsapp' ? 'Creando tu pedido…' : 'Continuar por WhatsApp'}</Texto>
                     </Boton>
                   )}

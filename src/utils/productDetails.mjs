@@ -1,4 +1,4 @@
-import { isEmulatorDetailUrl } from './detailMediaEnvironment.mjs';
+import { isEmulatorDetailUrl, isLocalProductMediaUrl } from './detailMediaEnvironment.mjs';
 import { mosaicCell, MEDIA_RATIO_OPTIONS, MEDIA_FIT_OPTIONS } from './productMosaic.mjs';
 import { productVideoType, validateProductVideo } from './productVideos.mjs';
 import { normalizeProductCommerce, validateProductCommerce } from './productCommerce.mjs';
@@ -16,7 +16,7 @@ export function detailMediaUrl(value, { allowLocal = false } = {}) {
   if (typeof value !== 'string') return '';
   const url = value.trim();
   if (isEmulatorDetailUrl(url)) return url;
-  if (allowLocal && /^local:[\w-]{1,90}$/.test(url)) return url;
+  if (allowLocal && isLocalProductMediaUrl(url)) return url;
   try { const u = new URL(url); return u.protocol === 'https:' && !u.username && !u.password && url.length <= 4096 ? u.href : ''; } catch { return ''; }
 }
 
@@ -36,7 +36,7 @@ export function normalizeDetailComposition(value, options = {}) {
       if (!url || kind === 'text') return [];
       const type = choice(m.type, ['image', 'video'], 'image');
       if ((kind === 'image' && type !== 'image') || (kind === 'video' && type !== 'video')) return [];
-      return [{ id: identifier(m.id, `media-${index}`), type, url, alt: text(m.alt, 240), caption: text(m.caption, 400), poster: type === 'video' ? detailMediaUrl(m.poster, options) : '', ...(type === 'video' && detailVideoPlayback(m)), ratio: choice(m.ratio, MEDIA_RATIO_OPTIONS, 'inherit'), fit: choice(m.fit, MEDIA_FIT_OPTIONS, 'inherit'), ...(b.mosaicLayout === 'flexible' && { cell: mosaicCell(m.cell, columns, Number(b.mobileColumns) === 2 ? 2 : 1) }) }];
+      return [{ id: identifier(m.id, `media-${index}`), type, url, ...(type === 'image' && detailMediaUrl(m.mobileUrl, options) && { mobileUrl: detailMediaUrl(m.mobileUrl, options) }), alt: text(m.alt, 240), caption: text(m.caption, 400), poster: type === 'video' ? detailMediaUrl(m.poster, options) : '', ...(type === 'video' && detailVideoPlayback(m)), ratio: choice(m.ratio, MEDIA_RATIO_OPTIONS, 'inherit'), fit: choice(m.fit, MEDIA_FIT_OPTIONS, 'inherit'), ...(b.mosaicLayout === 'flexible' && { cell: mosaicCell(m.cell, columns, Number(b.mobileColumns) === 2 ? 2 : 1) }) }];
     });
     return { id, kind, title: text(b.title, 200), text: text(b.text, 12000), media,
       side: choice(b.side, ['left', 'right'], 'left'), width: choice(b.width, ['wide', 'normal', 'narrow'], 'wide'),
@@ -71,6 +71,7 @@ export function validateDetailComposition(value, options = {}) {
         if (m.type === 'video' && ['autoPlay', 'muted', 'loop'].some(field => m[field] != null && typeof m[field] !== 'boolean')) return prefix + 'las opciones de reproducción del vídeo deben estar activadas o desactivadas.';
         if (!detailMediaUrl(m.url, options)) return prefix + 'usa un archivo subido o una URL HTTPS válida.';
         if (m.poster && !detailMediaUrl(m.poster, options)) return prefix + 'la portada del vídeo necesita una imagen subida o una URL HTTPS.';
+        if (m.mobileUrl && (m.type !== 'image' || !detailMediaUrl(m.mobileUrl, options))) return prefix + 'la versión móvil necesita una imagen subida o una URL HTTPS.';
         if (!['image', 'video'].includes(m.type) || (['image', 'video'].includes(b.kind) && m.type !== b.kind)) return prefix + 'el tipo de archivo no corresponde al bloque.';
       }
     }

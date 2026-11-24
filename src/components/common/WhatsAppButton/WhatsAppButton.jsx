@@ -211,6 +211,7 @@ const WhatsAppButton = () => {
 
   return (
     <a
+      data-accion="whatsapp"
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"

@@ -4,3 +4,8 @@
 .preview-producto-controles button, .preview-producto-formulario > button { min-height: 38px; padding: 0.5rem 0.8rem; border: 1px solid #ffffff55; border-radius: 6px; color: #241435; background: #fff; font: inherit; cursor: pointer; }
 .preview-producto-formulario > button { border-color: var(--color-border); margin: 1rem 0.5rem 0 0; }
 .preview-producto-formulario > button[type='submit'] { color: white; background: var(--primary-color); }
+.preview-producto-formulario { padding: clamp(16px, 3vw, 40px); max-width: 1500px; margin: auto; }
+.preview-producto-formulario [hidden] { display: none !important; }
+.preview-producto-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 24px 0; }
+.preview-producto-tabs button, .preview-producto-formulario > section > label > select { padding: 10px 16px; font: inherit; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer; }
+.preview-producto-tabs button[aria-pressed='true'] { background: var(--primary-color); color: #fff; }

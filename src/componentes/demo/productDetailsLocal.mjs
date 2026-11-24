@@ -1,4 +1,5 @@
 import { detailMediaType, normalizeDetailComposition, validateDetailComposition, validateDetailFile } from '../../utils/productDetails.mjs';
+import { normalizeProductVideos } from '../../utils/productVideos.mjs';
 
 let opening;
 function database() {
@@ -23,8 +24,22 @@ const done = tx => new Promise((resolve, reject) => {
 export async function readLocalProductDetails(productId) {
   const db = await database();
   const tx = db.transaction(['compositions', 'assets'], 'readonly');
-  const [composition, assets] = await Promise.all([read(tx.objectStore('compositions').get(productId)), read(tx.objectStore('assets').index('productId').getAll(productId))]);
-  return { composition: normalizeDetailComposition(composition, { allowLocal: true }), assets };
+  const [composition, assets, product] = await Promise.all([read(tx.objectStore('compositions').get(productId)), read(tx.objectStore('assets').index('productId').getAll(productId)), read(tx.objectStore('compositions').get(`product:${productId}`))]);
+  return { composition: normalizeDetailComposition(composition, { allowLocal: true }), assets, product };
+}
+
+export async function saveLocalProductPreview(productId, value) {
+  const invalid = validateDetailComposition(value.detailComposition, { allowLocal: true });
+  if (invalid) throw new Error(invalid);
+  const composition = normalizeDetailComposition(value.detailComposition, { allowLocal: true });
+  const product = { variants: value.variants, videos: normalizeProductVideos(value.videos, { allowLocal: true }) };
+  const db = await database();
+  const tx = db.transaction('compositions', 'readwrite');
+  const completed = done(tx);
+  tx.objectStore('compositions').put(composition, productId);
+  tx.objectStore('compositions').put(product, `product:${productId}`);
+  await completed;
+  return { composition, product };
 }
 
 export async function saveLocalProductDetails(productId, value) {

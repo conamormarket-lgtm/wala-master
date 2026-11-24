@@ -71,6 +71,19 @@ before(async () => {
 after(async () => server?.close());
 const render = (Component, props) => renderToStaticMarkup(React.createElement(Component, props));
 
+test('conserva la alternativa móvil al guardar y la entrega como picture responsive', () => {
+  const raw = composition();
+  raw.blocks[0].media[0].mobileUrl = 'https://example.test/vertical.webp';
+  const value = normalizeDetailComposition(JSON.parse(JSON.stringify(raw)));
+  assert.equal(validateDetailComposition(value), null);
+  assert.equal(value.blocks[0].media[0].mobileUrl, raw.blocks[0].media[0].mobileUrl);
+  const html = render(ComposicionDetalles, { composicion: value });
+  assert.match(html, /<source media="\(max-width: 620px\)" srcSet="https:\/\/example.test\/vertical.webp"/);
+  raw.blocks[0].media[0].mobileUrl = 'javascript:alert(1)';
+  assert.ok(validateDetailComposition(raw));
+  assert.equal(normalizeDetailComposition(raw).blocks[0].media[0].mobileUrl, undefined);
+});
+
 test('mapea la composición del producto y muestra medios mixtos sin autoplay ni HTML ejecutable', () => {
   const value = composition();
   const ficha = fichaProductoDesde({ id: 'p', detailComposition: value });
@@ -124,7 +137,7 @@ test('ficha comercial: conserva campos, desactiva secciones y valida preguntas/e
   const value = normalizeDetailComposition({ ...composition(), commerce: c });
   assert.deepEqual(normalizeDetailComposition(JSON.parse(JSON.stringify(value))), value);
   const html = render(DetallesProducto, { composicion: value });
-  assert.match(html, /Características del producto|Cónsul/); assert.match(html, /¿Se personaliza\?/); assert.match(html, /Más regalos/);
+  assert.match(html, /¿Se personaliza\?/); assert.match(html, /Más regalos/);
   assert.doesNotMatch(html, /¿Cómo elijo mi producto\?/);
   const hidden = render(DetallesProducto, { composicion: { ...value, commerce: { ...c, faqMode: 'hidden', collection: { enabled: false } } } });
   assert.doesNotMatch(hidden, /¿Se personaliza\?|Más regalos/);
@@ -161,4 +174,18 @@ test('la tarifa informativa usa la misma regla del checkout y no promete entrega
   assert.match(render(InformacionCompra, { config: c, subtotal: 201 }), /gratis para este subtotal/);
   assert.doesNotMatch(render(InformacionCompra, { config: {} }), /Entrega|Garantía|90 días|24 horas/);
   assert.doesNotMatch(render(InformacionCompra, { config: { showHelp: false }, whatsapp: { numero: '51999999999' } }), /wa.me/);
+});
+
+test('información, garantía y entrega se guardan y aparecen como desplegables accesibles sin duplicar características', async () => {
+  const { InformacionCompra } = await server.ssrLoadModule('/src/componentes/kit/piezas/InformacionCompra.jsx');
+  const config = normalizeProductCommerce({ informationTitle: 'Conoce el producto', information: 'Información\npor producto', warrantyTitle: 'Nuestra garantía', warranty: 'Condiciones de este producto.', deliveryTitle: 'Cuándo llega', delivery: 'Consulta el plazo al comprar.', policyUrl: '/terminos-y-condiciones', specifications: [{ id: 'modelo', label: 'Modelo', value: 'Cónsul' }] });
+  const compositionSaved = normalizeDetailComposition(JSON.parse(JSON.stringify({ ...composition(), commerce: config })));
+  assert.deepEqual(compositionSaved.commerce, config);
+  const html = render(InformacionCompra, { config: compositionSaved.commerce });
+  assert.equal((html.match(/aria-expanded="false"/g) || []).length, 3);
+  assert.equal((html.match(/role="region"/g) || []).length, 3);
+  for (const text of ['Conoce el producto', 'Nuestra garantía', 'Cuándo llega', 'Cónsul', 'Condiciones de este producto.', 'Consultar condiciones']) assert.ok(html.includes(text));
+  assert.match(html, /href="\/terminos-y-condiciones"/);
+  assert.doesNotMatch(render(DetallesProducto, { composicion: compositionSaved }), /Cónsul/);
+  assert.doesNotMatch(render(InformacionCompra, { config: {} }), /aria-expanded|Garantía|Tiempo de entrega/);
 });

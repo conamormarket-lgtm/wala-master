@@ -6,7 +6,7 @@ import { Texto } from '../Traduccion';
 import { Enlace } from '../Enlace';
 import { VideoProducto } from './VideoProducto';
 import { ComposicionDetalles } from './ComposicionDetalles';
-import { EspecificacionesProducto, ColeccionDestacadaProducto } from './InformacionCompra';
+import { ColeccionDestacadaProducto } from './InformacionCompra';
 import { normalizeProductCommerce } from '../../../utils/productCommerce.mjs';
 import { initialDetailComposition } from '../../../utils/productDetails.mjs';
 import s from './DetallesProducto.module.css';
@@ -32,7 +32,6 @@ export function DetallesProducto({ productoId, nombre, descripcion, imagenes = [
         <span>{composicion ? 'Ficha de venta de este producto' : 'Configura beneficios, condiciones, fotos, vídeos y preguntas'}</span>
         <button type="button" onClick={() => setEditando(true)}>Editar composición</button>
       </div></BloqueSeccion>}
-      {!editando && c.specifications.length > 0 && <BloqueSeccion><EspecificacionesProducto config={c} /></BloqueSeccion>}
       {editando && editor?.guardar ? <BloqueSeccion id="detalles-producto" className={s.seccion}>
         <Suspense fallback={<p role="status">Abriendo editor…</p>}>
           <EditorDetallesProducto inicial={composicion || initialDetailComposition({ descripcion, imagenes, videos })} productoId={productoId} biblioteca={biblioteca} onGuardar={editor.guardar} onSubir={editor.subir} onCerrar={() => setEditando(false)} local={editor.local} resolverMedia={editor.resolverMedia} />

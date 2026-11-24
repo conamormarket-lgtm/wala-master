@@ -243,6 +243,7 @@ function TarjetaPedido({ pedido }) {
           as="a"
           variant={waUrl ? 'primary' : 'glass'}
           size="sm"
+          accion="whatsapp"
           href={waUrl || undefined}
           target="_blank"
           rel="noopener noreferrer"

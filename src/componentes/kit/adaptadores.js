@@ -1216,7 +1216,7 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta, noDis
  * elegido de cada prenda; si ese color no tiene foto (o la prenda no tiene
  * colores), van las de la prenda (general).
  */
-export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } = {}) {
+export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {}, allowLocalMedia = false } = {}) {
   const { marcas = [], categorias = [] } = catalogo;
   const m = p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
   const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
@@ -1273,8 +1273,8 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
     // La variante que el admin marcó como principal (la tienda hoy abre siempre la primera).
     varianteInicial: (variantesDe(p).find((v) => String(v.id) === String(p.defaultVariantId)) || variantesDe(p)[0])?.id,
     fotos,
-    videos: productVideoSlides(p.videos),
-    composicionDetalles: normalizeDetailComposition(p.detailComposition),
+    videos: productVideoSlides(p.videos, { allowLocal: allowLocalMedia }),
+    composicionDetalles: normalizeDetailComposition(p.detailComposition, { allowLocal: allowLocalMedia }),
   };
 }
 

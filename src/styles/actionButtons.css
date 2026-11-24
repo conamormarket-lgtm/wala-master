@@ -1,0 +1,56 @@
+/* Semantic actions shared by the kit, legacy views and configurable CTAs.
+   These colors take precedence over each page's generic button variant. */
+:root {
+  --action-personalize-border: conic-gradient(from 270deg, #10c84b, #0086ff, #5c22ff, #ff4534, #f4dc00, #10c84b);
+  --action-whatsapp-text: #12823b;
+  --action-whatsapp-border: #25d366;
+  --action-whatsapp-hover: #edfdf3;
+}
+
+[data-theme='dark'] {
+  --action-whatsapp-text: #25d366;
+  --action-whatsapp-hover: #153628;
+}
+
+[data-accion='personalizar'] {
+  --b-texto: var(--color-text, #151525);
+  --b-onda: rgba(124, 58, 237, 0.14);
+  border: 3px solid transparent !important;
+  background: linear-gradient(var(--color-surface, #fff), var(--color-surface, #fff)) padding-box, var(--action-personalize-border) border-box !important;
+  color: var(--color-text, #151525) !important;
+}
+
+[data-accion='whatsapp'] {
+  --b-texto: var(--action-whatsapp-text);
+  --b-onda: rgba(37, 211, 102, 0.16);
+  border: 2px solid var(--action-whatsapp-border) !important;
+  background: var(--color-surface, #fff) !important;
+  color: var(--action-whatsapp-text) !important;
+}
+
+[data-accion='whatsapp'] svg,
+[data-accion='personalizar'] svg { color: inherit; }
+
+@media (hover: hover) {
+  [data-accion='whatsapp']:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--action-whatsapp-hover) !important;
+  }
+  [data-accion='personalizar']:hover:not(:disabled):not([aria-disabled='true']) {
+    box-shadow: 0 4px 16px -7px rgba(92, 34, 255, 0.55);
+  }
+}
+
+[data-accion]:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 3px;
+}
+[data-accion='whatsapp']:focus-visible { outline-color: var(--action-whatsapp-text); }
+[data-accion]:disabled, [data-accion][aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+
+@media (forced-colors: active) {
+  [data-accion='personalizar'], [data-accion='whatsapp'] {
+    border-color: ButtonText !important;
+    background: ButtonFace !important;
+    color: ButtonText !important;
+  }
+}

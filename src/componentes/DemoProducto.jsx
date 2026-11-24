@@ -64,9 +64,9 @@ const opinionesDe = (p) => OPINIONES_EJEMPLO.map((o) => ({
   imageUrls: o.foto ? [p.images?.[0] || p.mainImage].filter(Boolean) : [],
 }));
 
-export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = [], marcas = [], carrito = 0, onCarrito, onAgregar, toast, onIrA, detallesLocales }) {
+export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = [], marcas = [], carrito = 0, onCarrito, onAgregar, toast, onIrA, detallesLocales, productoLocal, whatsapp }) {
   const id = ruta.split('?')[0].split('/')[2];
-  const crudo = TODOS.get(id) || TODOS.get(ABRIR_PRODUCTO[0][1].split('/')[2]);
+  const crudo = productoLocal?.id === id ? productoLocal : TODOS.get(id) || TODOS.get(ABRIR_PRODUCTO[0][1].split('/')[2]);
   const p = {
     ...crudo,
     ...(estados.includes('agotado') && { inStock: 0 }),
@@ -74,11 +74,17 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
   };
   const [recientesIds, setRecientesIds] = useState([]);
   useEffect(() => { try { setRecientesIds(rememberProduct(id, window.localStorage)); } catch { /* Navegación sin storage. */ } }, [id]);
-  const composicion = detallesLocales?.composicion ?? normalizeDetailComposition(p.detailComposition);
+  const composicion = detallesLocales?.composicion ?? normalizeDetailComposition(p.detailComposition, { allowLocal: Boolean(productoLocal) });
   const catalogo = { marcas, categorias: TIENDA.categorias };
   // "Combo: prendas cargando": las prendas todavía no llegan (como en la tienda al entrar).
   const subproductos = estados.includes('piezasCargando') ? {} : Object.fromEntries((p.comboItems || []).map((it) => [it.productId, TODOS.get(it.productId)]).filter(([, x]) => x));
-  const fichaBase = fichaProductoDesde(p, { catalogo, subproductos });
+  const fichaBase = fichaProductoDesde(p, { catalogo, subproductos, allowLocalMedia: Boolean(productoLocal) });
+  if (detallesLocales?.editor) {
+    const resolve = detallesLocales.editor.resolverMedia;
+    Object.keys(fichaBase.fotos).filter(k => k !== 'combo').forEach(k => { fichaBase.fotos[k] = fichaBase.fotos[k].map(f => ({ ...f, url: resolve(f.url) })); });
+    fichaBase.videos = fichaBase.videos.map(v => ({ ...v, url: resolve(v.url), poster: resolve(v.poster) }));
+    fichaBase.opciones.variantes = fichaBase.opciones.variantes.map(v => ({ ...v, imagen: resolve(v.imagen) }));
+  }
   // Como FichaDeProducto: el botón Personalizar sale con "Se personaliza en" (o el Yoryo de antes).
   const ficha = p.customizable ? { ...fichaBase, producto: { ...fichaBase.producto, personalizable: true } } : fichaBase;
   const [resenas, setResenas] = useState(() => opinionesDe(p));
@@ -98,7 +104,7 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
   ].filter(Boolean).join(' · ');
   const agregar = async (e) => {
     await espera(500);
-    onCarrito?.({ id: `${p.id}-${Date.now()}`, imagen: ficha.fotos.base[0]?.url, nombre: p.name, precio: ficha.producto.precio, precioAntes: ficha.producto.precioAntes, cantidad: e.cantidad, variante: describir(e), url: `/producto/${p.id}` });
+    onCarrito?.({ id: `${p.id}-${Date.now()}`, imagen: ficha.fotos[e.variante?.id]?.[0]?.url || ficha.fotos.base[0]?.url, nombre: p.name, precio: ficha.producto.precio, precioAntes: ficha.producto.precioAntes, cantidad: e.cantidad, variante: describir(e), url: `/producto/${p.id}` });
     avisar('¡Agregado al carrito!', `${p.name}${describir(e) ? ` · ${describir(e)}` : ''} × ${e.cantidad}`);
   };
 
@@ -118,6 +124,7 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
       opiniones={opiniones}
       sesion={sesion}
       carrito={carrito}
+      whatsapp={whatsapp}
       relacionados={relacionadosCrudos.map((x) => tarjetaDesdeProducto(x, { catalogo }))}
       onAgregarRelacionado={(i) => onAgregar?.(relacionadosCrudos[i])}
       onAgregar={agregar}

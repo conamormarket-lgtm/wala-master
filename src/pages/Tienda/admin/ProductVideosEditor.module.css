@@ -6,6 +6,8 @@
 .preview { aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; }
 .name { display: grid; gap: 0.35rem; margin-top: 0.75rem; font-size: 0.8rem; }
 .name input { min-width: 0; width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; }
+.name select { min-width: 0; width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: inherit; }
+.check { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.8rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 .editor button { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.5rem 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; color: #374151; background: #fff; cursor: pointer; }
 .editor button:disabled { opacity: 0.4; cursor: default; }

@@ -1766,6 +1766,7 @@ const AdminProductoFormV2Viejo = ({ modo = 'producto' }) => {
           )}
           <ProductVideosEditor
             videos={form.videos || []}
+            variants={form.variants || []}
             productId={draftId}
             disabled={uploading || saveMutation.isPending}
             onBusyChange={setVideoUploading}

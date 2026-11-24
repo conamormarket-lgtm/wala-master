@@ -282,7 +282,7 @@ export function PaginaDetallePedido({
             <TarjetaCuenta icono={<MessageCircle />} tono="menta" titulo={<Texto>¿Dudas con tu pedido?</Texto>} subtitulo={<Texto>Te respondemos por WhatsApp.</Texto>}>
               <div className={s.whatsapp}>
                 {/* Sin número, el botón se ve apagado (como antes). */}
-                {whatsapp.map((w) => <Boton key={w.url || w.texto} to={w.url || undefined} disabled={!w.url} variante="contorno" bloque icono={<MessageCircle aria-hidden="true" />}><Texto>{w.texto}</Texto></Boton>)}
+                {whatsapp.map((w) => <Boton accion="whatsapp" key={w.url || w.texto} to={w.url || undefined} disabled={!w.url} variante="contorno" bloque icono={<MessageCircle aria-hidden="true" />}><Texto>{w.texto}</Texto></Boton>)}
               </div>
             </TarjetaCuenta>
           )}

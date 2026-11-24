@@ -1,3 +1,4 @@
+import { IconoWhatsApp } from '../../../componentes/kit/IconoWhatsApp';
 import React from 'react';
 import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeCarrito } from '../../../utils/whatsappLink';
 import styles from './ContactoCarrito.module.css';
@@ -19,12 +20,13 @@ export default function ContactoCarrito({ cart, perfil, cargando, claseNota = st
   const nombre = perfil?.displayName || cart.displayName;
   return (
     <a
+      data-accion="whatsapp"
       href={urlWhatsApp(telefono, mensajeCarrito(nombre))}
       target="_blank"
       rel="noopener noreferrer"
       className={styles.boton}
     >
-      WhatsApp
+      <IconoWhatsApp /> WhatsApp
     </a>
   );
 }

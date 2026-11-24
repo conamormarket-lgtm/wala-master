@@ -41,6 +41,31 @@ function setup(t, options = {}, video = new Video()) {
   return { video, controller, states };
 }
 
+test('los reels automáticos se pausan fuera de pantalla y se reanudan al entrar', t => {
+  const video = new Video();
+  video.poster = '/poster.webp';
+  video.rect.top = 900;
+  let callback, disconnected = false;
+  video.ownerDocument.defaultView.IntersectionObserver = class {
+    constructor(fn) { callback = fn; }
+    observe(target) { assert.equal(target, video); }
+    disconnect() { disconnected = true; }
+  };
+  const { controller } = setup(t, { autoPlay: true, muted: true }, video);
+  assert.equal(video.plays, 0);
+  callback([{ target: video, isIntersecting: true }]);
+  assert.equal(video.paused, false);
+  callback([{ target: video, isIntersecting: false }]);
+  assert.equal(video.paused, true);
+  video.emit('play');
+  assert.equal(video.paused, true);
+  callback([{ target: video, isIntersecting: true }]);
+  assert.equal(video.plays, 2);
+  controller.dispose();
+  assert.equal(disconnected, true);
+  assert.equal(video.paused, true);
+});
+
 test('prepara un fotograma sin poster, sin reproducir ni emitir audio; luego empieza desde cero', async t => {
   const { video, states } = setup(t);
   video.metadata();

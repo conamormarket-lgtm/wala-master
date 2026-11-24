@@ -14,6 +14,7 @@
 .galeria { display: grid; grid-template-columns: repeat(var(--columnas), minmax(0, 1fr)); align-items: start; gap: 1rem; }
 .medios { min-width: 0; container-type: inline-size; }
 .media { position: relative; min-width: 0; margin: 0; }
+.media picture { display: contents; }
 .media img, .media video { display: block; width: 100%; height: auto; aspect-ratio: var(--proporcion, auto); object-fit: var(--ajuste, contain); border-radius: 10px; background: #f6f5f8; }
 .media video { background: #201b28; min-height: var(--altura-minima-video, 160px); }
 .estadoVideo, .recuperarVideo { position: absolute; z-index: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: calc(100% - 1.5rem); padding: 0.65rem; border-radius: 8px; background: #201b28e8; color: white; font-size: 0.8rem; text-align: center; }

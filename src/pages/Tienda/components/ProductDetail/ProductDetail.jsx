@@ -805,11 +805,11 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               <button className={styles.btnPrimary} disabled>{t('card.agotado', 'Agotado')}</button>
             )}
             {product.YoryoPersonalizado ? (
-              <button className={styles.btnOutline} onClick={handleYoryoPersonalizableClick}>
+              <button data-accion="personalizar" className={styles.btnOutline} onClick={handleYoryoPersonalizableClick}>
                 {t('card.personalizable', 'Personalizable')}
               </button>
             ) : product.customizable && (
-              <button className={styles.btnOutline} onClick={handlePersonalize}>
+              <button data-accion="personalizar" className={styles.btnOutline} onClick={handlePersonalize}>
                 {t('card.personalizar', 'Personalizar')}
               </button>
             )}

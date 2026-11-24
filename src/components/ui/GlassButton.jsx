@@ -1,6 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import styles from './GlassButton.module.css';
+import { buttonAction } from '../../utils/buttonAction.mjs';
+import { IconoWhatsApp } from '../../componentes/kit/IconoWhatsApp';
+import '../../styles/actionButtons.css';
 
 /**
  * GlassButton — botón premium del sistema de diseño "Aurora Violeta Serena".
@@ -26,6 +29,7 @@ import styles from './GlassButton.module.css';
 const GlassButton = React.forwardRef(function GlassButton(
   {
     variant = 'primary',
+    accion,
     size = 'md',
     loading = false,
     icon,
@@ -40,6 +44,8 @@ const GlassButton = React.forwardRef(function GlassButton(
   },
   ref,
 ) {
+  const accionVisual = buttonAction(accion, rest.href || rest.to);
+  const actionIcon = accionVisual === 'whatsapp' ? <IconoWhatsApp /> : icon;
   // Helper de clases estándar del sistema: condicionales + className al final.
   const classes = [
     styles.button,
@@ -70,6 +76,7 @@ const GlassButton = React.forwardRef(function GlassButton(
     <MotionComp
       ref={ref}
       className={classes}
+      data-accion={accionVisual}
       type={isNativeButton ? type || 'button' : type}
       aria-busy={loading || undefined}
       whileHover={interactive ? { y: -2 } : undefined}
@@ -85,9 +92,9 @@ const GlassButton = React.forwardRef(function GlassButton(
           // Spinner inline: NO reemplaza a los children, los acompaña.
           <span className={styles.spinner} aria-hidden="true" />
         )}
-        {icon && (
+        {actionIcon && (
           <span className={styles.icon} aria-hidden="true">
-            {icon}
+            {actionIcon}
           </span>
         )}
         {children != null && <span className={styles.label}>{children}</span>}

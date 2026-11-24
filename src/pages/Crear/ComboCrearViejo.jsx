@@ -605,7 +605,7 @@ const ComboCrearPage = () => {
           <div className={styles.plantillaAviso}>
             <Sparkles size={16} aria-hidden="true" />
             <span>Partes de <strong>{plantillaCombo.nombre}</strong>. Elige la talla y agrégalo al carrito tal cual, o personaliza cada prenda.</span>
-            <Link to={urlPlantilla(pendientePlantilla.i)} state={estadoEstudio} className={styles.principal}>
+            <Link data-accion="personalizar" to={urlPlantilla(pendientePlantilla.i)} state={estadoEstudio} className={styles.principal}>
               <Paintbrush size={15} aria-hidden="true" /> Personalizar
             </Link>
           </div>
@@ -719,7 +719,7 @@ const ComboCrearPage = () => {
                         {color?.nombre && <span className={styles.filaDatos}><PuntosColor colores={[color]} /> {color.nombre}</span>}
                         <p className={styles.ayuda}>Llévala tal cual o cámbiale el nombre, la foto o lo que quieras.</p>
                         <div className={styles.acciones}>
-                          <Link to={urlPlantilla(p.i)} state={estadoEstudio} className={styles.principal}>
+                          <Link data-accion="personalizar" to={urlPlantilla(p.i)} state={estadoEstudio} className={styles.principal}>
                             <Paintbrush size={15} aria-hidden="true" /> Personalizar
                           </Link>
                         </div>

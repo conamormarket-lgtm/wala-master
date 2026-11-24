@@ -3,6 +3,7 @@
 export function prepareDetailVideo(video, { autoPlay, muted, enabled = true, onState }) {
   let disposed = false, frame = null, timer = null, previewTime = null, recovered = false, needsGesture = false;
   const hasFrameCallback = typeof video.requestVideoFrameCallback === 'function';
+  let observer = null, inViewport = true;
   const state = value => { if (!disposed) onState(value); };
   const clearWatch = () => {
     clearTimeout(timer);
@@ -63,7 +64,10 @@ export function prepareDetailVideo(video, { autoPlay, muted, enabled = true, onS
     if (hasFrameCallback) watchPlayback(); else loaded();
   };
   const failed = () => { clearWatch(); state('error'); };
-  const start = () => { recovered = false; needsGesture = false; };
+  const start = () => {
+    recovered = false; needsGesture = false;
+    if (observer && (!inViewport || video.ownerDocument?.visibilityState === 'hidden')) video.pause();
+  };
   const listeners = { loadedmetadata: metadata, loadeddata: loaded, seeked: loaded, play: start, playing, error: failed };
   for (const [event, listener] of Object.entries(listeners)) video.addEventListener(event, listener);
   video.muted = muted;
@@ -87,7 +91,25 @@ export function prepareDetailVideo(video, { autoPlay, muted, enabled = true, onS
     });
     return pending;
   };
-  if (autoPlay && enabled) play();
+  const syncVisibility = () => {
+    if (disposed) return;
+    if (inViewport && video.ownerDocument?.visibilityState !== 'hidden') {
+      if (video.paused) play();
+    } else video.pause();
+  };
+  // A reel outside the viewport (including a clipped carousel item) keeps its
+  // poster without decoding continuously. Resume only when it becomes visible.
+  const Observer = video.ownerDocument?.defaultView?.IntersectionObserver;
+  if (autoPlay && enabled && Observer) {
+    inViewport = visible();
+    observer = new Observer(entries => {
+      const entry = entries.find(entry => entry.target === video);
+      if (entry) { inViewport = entry.isIntersecting; syncVisibility(); }
+    }, { threshold: 0.01 });
+    observer.observe(video);
+    video.ownerDocument.addEventListener?.('visibilitychange', syncVisibility);
+    syncVisibility();
+  } else if (autoPlay && enabled) play();
   if (video.readyState >= 1) metadata();
   if (video.readyState >= 2) loaded();
   return {
@@ -99,6 +121,8 @@ export function prepareDetailVideo(video, { autoPlay, muted, enabled = true, onS
     },
     dispose() {
       disposed = true;
+      observer?.disconnect();
+      video.ownerDocument?.removeEventListener?.('visibilitychange', syncVisibility);
       clearWatch();
       for (const [event, listener] of Object.entries(listeners)) video.removeEventListener(event, listener);
       video.pause();

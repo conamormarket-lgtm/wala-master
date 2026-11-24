@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { readLocalProductDetails, saveLocalProductDetails, uploadLocalDetailMedia } from './productDetailsLocal.mjs';
+import { readLocalProductDetails, saveLocalProductDetails, saveLocalProductPreview, uploadLocalDetailMedia } from './productDetailsLocal.mjs';
 
 export function useLocalProductDetails(productId) {
   const [state, setState] = useState({ productId: null, composition: null, ready: false, error: '' });
@@ -10,10 +10,10 @@ export function useLocalProductDetails(productId) {
     let cancelled = false;
     const liveUrls = urls.current;
     setState({ productId, composition: null, ready: false, error: '' });
-    readLocalProductDetails(productId).then(({ composition, assets }) => {
+    readLocalProductDetails(productId).then(({ composition, assets, product }) => {
       if (cancelled || current !== generation.current) return;
       assets.forEach(asset => liveUrls.set(`local:${asset.id}`, URL.createObjectURL(asset.blob)));
-      setState({ productId, composition, ready: true, error: '' });
+      setState({ productId, composition, product, ready: true, error: '' });
     }).catch(e => { if (!cancelled && current === generation.current) setState({ productId, composition: null, ready: false, error: e.message }); });
     return () => { cancelled = true; generation.current += 1; liveUrls.forEach(url => URL.revokeObjectURL(url)); liveUrls.clear(); };
   }, [productId]);
@@ -29,9 +29,15 @@ export function useLocalProductDetails(productId) {
     setState(old => ({ ...old }));
     return media;
   };
+  const guardarProducto = async value => {
+    const result = await saveLocalProductPreview(productId, value);
+    setState(old => old.productId === productId ? { ...old, ...result } : old);
+  };
   return {
     composicion: state.productId === productId ? state.composition : null,
     error: state.error,
-    editor: state.ready && state.productId === productId ? { local: true, guardar, subir, resolverMedia: url => url.startsWith('local:') ? urls.current.get(url) : url } : undefined,
+    producto: state.productId === productId ? state.product : null,
+    guardarProducto,
+    editor: state.ready && state.productId === productId ? { local: true, guardar, subir, resolverMedia: url => url?.startsWith('local:') ? urls.current.get(url) : url, originalMedia: url => [...urls.current].find(([, blob]) => blob === url)?.[0] || url } : undefined,
   };
 }

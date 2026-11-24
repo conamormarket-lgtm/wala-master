@@ -17,6 +17,7 @@ import { GaleriaProducto } from '../piezas/GaleriaProducto';
 import { BeneficiosProducto, InformacionCompra } from '../piezas/InformacionCompra';
 import { HistoriaProducto } from '../piezas/HistoriaProducto';
 import { normalizeProductCommerce } from '../../../utils/productCommerce.mjs';
+import { galleryWithProductVideos } from '../../../utils/productVideos.mjs';
 import { DetallesProducto } from '../piezas/DetallesProducto';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra, useAgregado, IconoAgregar } from '../piezas/Ficha';
 import { OpcionesProducto, tallasDe, tallasDePieza, faltaTalla, verVariantes } from '../piezas/OpcionesProducto';
@@ -198,7 +199,7 @@ export function PaginaProducto({
       const { src, srcSet } = fuentes(f.url) || {};
       return { ...f, url: src || f.url, srcSet };
     });
-    return [...imagenes, ...videos];
+    return galleryWithProductVideos(imagenes, videos, variante?.id);
   }, [fotos, piezas, colores, variante, fuentes, videos]);
   useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -263,6 +264,7 @@ export function PaginaProducto({
   const principal = solo ? 'personalize' : comercio.primaryAction === 'personalize' && !(producto.personalizable && onPersonalizar) ? 'add' : comercio.primaryAction;
   const botonAgregar = (props) => (solo ? (
     <Boton
+      accion="personalizar"
       tamano="lg"
       icono={<Paintbrush aria-hidden="true" />}
       disabled={producto.agotado}
@@ -410,11 +412,11 @@ export function PaginaProducto({
             {botonAgregar({ bloque: true })}
           </div> : botonAgregar({ bloque: true })}
           {!solo && producto.personalizable && onPersonalizar && (
-            <Boton className={s.personalizarFijo} variante={principal === 'personalize' ? 'primario' : 'contorno'} tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
+            <Boton accion="personalizar" className={s.personalizarFijo} variante={principal === 'personalize' ? 'primario' : 'contorno'} tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
           )}
         </div>
         {!solo && producto.personalizable && onPersonalizar && (
-          <Boton className={s.personalizarSuelto} bloque variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
+          <Boton accion="personalizar" className={s.personalizarSuelto} bloque variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
         )}
         {!producto.agotado && !solo && (
           <Boton bloque tamano="lg" variante={principal === 'buy' ? 'primario' : 'secundario'} cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Comprar ahora</Texto></Boton>
@@ -519,7 +521,7 @@ export function PaginaProducto({
       {individual && composicionDetalles?.visible && <HistoriaProducto key={`${producto.id}:${comercio.storyMediaId}`} composicion={composicionDetalles} resolverMedia={editorDetalles?.resolverMedia} />}
       {!producto.agotado && comercio.showSticky && (
         <BarraCompra movil={individual} mirar={compraRef} hasta={finRef} imagen={galeria.find((f) => f.tipo !== 'video')?.url} nombre={nombre} detalle={<Texto>{detalle}</Texto>} precio={producto.precio}>
-          {principal === 'buy' && !solo ? <Boton cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)}><Texto>Comprar ahora</Texto></Boton> : principal === 'personalize' && !solo ? <Boton onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton> : botonAgregar({ tamano: 'md' })}
+          {principal === 'buy' && !solo ? <Boton cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)}><Texto>Comprar ahora</Texto></Boton> : principal === 'personalize' && !solo ? <Boton accion="personalizar" onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton> : botonAgregar({ tamano: 'md' })}
         </BarraCompra>
       )}
 

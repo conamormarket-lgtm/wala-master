@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, Copy, Trash2, Undo2, Redo2, Save, Image, Video, Col
 import { useBorrador } from '../editor/useBorrador';
 import { useConfirmar } from '../Feedback';
 import EditorInformacionCompra from './EditorInformacionCompra';
-import { BeneficiosProducto, InformacionCompra, EspecificacionesProducto, ColeccionDestacadaProducto } from './InformacionCompra';
+import { BeneficiosProducto, InformacionCompra, ColeccionDestacadaProducto } from './InformacionCompra';
 import { ComposicionDetalles } from './ComposicionDetalles';
 import { MAX_DETAIL_BLOCKS, MAX_DETAIL_MEDIA, MULTI_DETAIL_KINDS, DETAIL_MEDIA_ACCEPT, newDetailBlock, moveDetailItem, normalizeDetailComposition, validateDetailComposition, validateDetailFile, detailMediaType, detailMediaUrl } from '../../../utils/productDetails.mjs';
 import { flexibleMosaic, mosaicCell, hasOwnMediaRatio } from '../../../utils/productMosaic.mjs';
@@ -94,17 +94,17 @@ export default function EditorDetallesProducto({ inicial, productoId, biblioteca
     } catch (e) { setError(current.signal.aborted ? 'Subida cancelada. Los archivos anteriores siguen en el borrador.' : e.message || 'No se pudo subir el archivo.'); }
     finally { controller.current = null; setSubida(null); }
   };
-  const uploadPoster = async (e, mediaId) => {
+  const uploadPoster = async (e, mediaId, field = 'poster') => {
     const file = e.target.files?.[0]; e.target.value = '';
     if (!file || controller.current || !block) return;
     const invalid = validateDetailFile(file);
-    if (invalid || detailMediaType(file) !== 'image') { setError(invalid || 'La portada debe ser una foto.'); return; }
+    if (invalid || detailMediaType(file) !== 'image') { setError(invalid || 'Elige una imagen.'); return; }
     const target = selected;
     const current = new AbortController(); controller.current = current;
     setError(''); setSubida({ name: file.name, percent: 0 });
     try {
       const poster = await onSubir(file, { signal: current.signal, onProgress: percent => setSubida({ name: file.name, percent }) });
-      if (!current.signal.aborted) cambiar(d => ({ ...d, blocks: d.blocks.map(b => b.id === target ? { ...b, media: b.media.map(m => m.id === mediaId ? { ...m, poster: poster.url } : m) } : b) }));
+      if (!current.signal.aborted) cambiar(d => ({ ...d, blocks: d.blocks.map(b => b.id === target ? { ...b, media: b.media.map(m => m.id === mediaId ? { ...m, [field]: poster.url } : m) } : b) }));
     } catch (e) { setError(current.signal.aborted ? 'Subida cancelada.' : e.message); }
     finally { controller.current = null; setSubida(null); }
   };
@@ -210,6 +210,14 @@ export default function EditorDetallesProducto({ inicial, productoId, biblioteca
               {block.media.map((m, i) => <details className={s.archivo} key={`${m.id}-${i}`} open={i === 0}>
                 <summary><strong>{m.type === 'video' ? 'Vídeo' : 'Foto'} {i + 1} · {m.alt || 'Editar archivo'}</strong></summary>
                 {m.type === 'image' && <img className={s.miniatura} src={resolverMedia ? resolverMedia(m.url) : m.url} alt={m.alt || ''} loading="lazy" />}
+                {m.type === 'image' && <>
+                  <Campo label="Reemplazar imagen"><input aria-label={`Reemplazar imagen ${i + 1}`} type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={!onSubir} onChange={e => uploadPoster(e, m.id, 'url')} /></Campo>
+                  <details><summary>Imagen alternativa para móvil</summary><small>Se muestra en pantallas de hasta 620 px. Sin alternativa se usa la misma imagen.</small>
+                    <Campo label="Enlace de la imagen móvil"><input aria-label={`Imagen móvil ${i + 1}`} value={m.mobileUrl || ''} onChange={e => update({ media: block.media.map((x, k) => k === i ? { ...x, mobileUrl: e.target.value } : x) }, `mobile-${i}`)} /></Campo>
+                    <Campo label="Subir imagen móvil"><input aria-label={`Subir imagen móvil ${i + 1}`} type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={!onSubir} onChange={e => uploadPoster(e, m.id, 'mobileUrl')} /></Campo>
+                    {m.mobileUrl && <><img className={s.miniatura} src={resolverMedia ? resolverMedia(m.mobileUrl) : m.mobileUrl} alt="Versión móvil" /><button type="button" onClick={() => update({ media: block.media.map((x, k) => k === i ? { ...x, mobileUrl: '' } : x) })}>Usar la misma imagen en móvil</button></>}
+                  </details>
+                </>}
                 <div>
                   <Campo label="Proporción de este archivo"><select aria-label={`Proporción del archivo ${i + 1}`} value={m.ratio || 'inherit'} onChange={e => update({ media: block.media.map((x, k) => k === i ? { ...x, ratio: e.target.value } : x) })}><option value="inherit">Heredar del bloque</option><option value="auto">Original del archivo</option><option value="square">Cuadrada 1:1</option><option value="portrait34">Vertical 3:4</option><option value="portrait">Vertical 4:5</option><option value="story">Vertical 9:16</option><option value="landscape">Horizontal 16:9</option></select></Campo>
                   <Campo label="Ajuste de este archivo"><select aria-label={`Ajuste del archivo ${i + 1}`} value={m.fit || 'inherit'} onChange={e => update({ media: block.media.map((x, k) => k === i ? { ...x, fit: e.target.value } : x) })}><option value="inherit">Heredar del bloque</option><option value="contain">Mostrar completo</option><option value="cover">Rellenar y recortar</option></select></Campo>
@@ -232,7 +240,7 @@ export default function EditorDetallesProducto({ inicial, productoId, biblioteca
               </details>)}
               <Campo label={MULTI_DETAIL_KINDS.includes(block.kind) ? 'Subir archivos' : 'Subir o reemplazar archivo'}><input aria-label="Subir archivos" type="file" accept={block.kind === 'image' ? 'image/jpeg,image/png,image/webp,image/gif' : block.kind === 'video' ? 'video/mp4,video/webm' : DETAIL_MEDIA_ACCEPT} multiple={MULTI_DETAIL_KINDS.includes(block.kind)} onChange={upload} disabled={!onSubir || (MULTI_DETAIL_KINDS.includes(block.kind) && block.media.length >= MAX_DETAIL_MEDIA)} /></Campo>
               <small>Fotos hasta 20 MB · Vídeos MP4/WebM hasta 100 MB. {!MULTI_DETAIL_KINDS.includes(block.kind) && 'Elegir otro archivo reemplaza el actual.'}</small>
-              <details><summary>Elegir del producto</summary><div className={s.biblioteca}>{biblioteca.filter(m => accepts(m.type)).map((m, i) => <button type="button" key={m.url} disabled={MULTI_DETAIL_KINDS.includes(block.kind) && block.media.length >= MAX_DETAIL_MEDIA} aria-label={`Usar ${m.type === 'video' ? 'vídeo' : 'foto'} del producto ${i + 1}`} onClick={() => attach({ ...m, id: crypto.randomUUID() })}>{m.type === 'image' ? <img src={m.url} alt="" loading="lazy" /> : <Video />}<span>{m.alt || `Archivo ${i + 1}`}</span></button>)}</div></details>
+              <details><summary>Elegir del producto</summary><div className={s.biblioteca}>{biblioteca.filter(m => accepts(m.type)).map((m, i) => <button type="button" key={m.url} disabled={MULTI_DETAIL_KINDS.includes(block.kind) && block.media.length >= MAX_DETAIL_MEDIA} aria-label={`Usar ${m.type === 'video' ? 'vídeo' : 'foto'} del producto ${i + 1}`} onClick={() => attach({ ...m, id: crypto.randomUUID() })}>{m.type === 'image' ? <img src={resolverMedia ? resolverMedia(m.url) : m.url} alt="" loading="lazy" /> : <Video />}<span>{m.alt || `Archivo ${i + 1}`}</span></button>)}</div></details>
               <details><summary>Usar un enlace HTTPS</summary>
                 {!['image', 'video'].includes(block.kind) && <Campo label="Tipo de enlace"><select aria-label="Tipo de enlace" value={tipoUrl} onChange={e => setTipoUrl(e.target.value)}><option value="image">Foto</option><option value="video">Vídeo MP4/WebM</option></select></Campo>}
                 <Campo label="URL del archivo"><input aria-label="URL del archivo" type="url" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://…" /></Campo>
@@ -247,8 +255,8 @@ export default function EditorDetallesProducto({ inicial, productoId, biblioteca
           {!draft.visible && <p className={s.aviso}>La sección está oculta para los visitantes.</p>}
           {!draft.blocks.length && <p className={s.aviso}>Añade tu primer bloque desde el panel.</p>}
           <div className={movil ? s.movil : undefined}>
-            {tab === 'venta' && <><BeneficiosProducto config={draft.commerce} /><InformacionCompra config={draft.commerce} personalizable /><EspecificacionesProducto config={draft.commerce} /><ColeccionDestacadaProducto resolverMedia={resolverMedia} config={draft.commerce} />{draft.commerce?.faqMode === 'custom' && <div className={s.aviso}><h3>{draft.commerce.faqTitle}</h3>{draft.commerce.faqs.map(q => <div key={q.id}><strong>{q.question}</strong><p>{q.answer}</p></div>)}</div>}<p className={s.aviso}>Las recomendaciones, opiniones y WhatsApp aparecen en la ficha cuando tienen datos disponibles.</p></>}
-            <ComposicionDetalles composicion={draft} resolverMedia={resolverMedia} seleccionado={soloVista ? null : selected} onSeleccionar={soloVista || busy ? undefined : id => { setSelected(id); setTab('medios'); }} mostrarOculta />
+            {tab === 'venta' && <><BeneficiosProducto config={draft.commerce} /><InformacionCompra config={draft.commerce} personalizable /><ColeccionDestacadaProducto resolverMedia={resolverMedia} config={draft.commerce} />{draft.commerce?.faqMode === 'custom' && <div className={s.aviso}><h3>{draft.commerce.faqTitle}</h3>{draft.commerce.faqs.map(q => <div key={q.id}><strong>{q.question}</strong><p>{q.answer}</p></div>)}</div>}<p className={s.aviso}>Las recomendaciones, opiniones y WhatsApp aparecen en la ficha cuando tienen datos disponibles.</p></>}
+            <ComposicionDetalles composicion={draft} resolverMedia={resolverMedia} vistaMovil={movil} seleccionado={soloVista ? null : selected} onSeleccionar={soloVista || busy ? undefined : id => { setSelected(id); setTab('medios'); }} mostrarOculta />
           </div>
         </div>
       </div>
