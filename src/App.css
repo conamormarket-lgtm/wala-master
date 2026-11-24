@@ -6,6 +6,9 @@
   width: 100%;
 }
 
+/* The product landing has no header, including while its data loads. */
+.App.product-landing { --header-height: 0px; }
+
 #main-content-area {
   flex: 1;
   width: 100%;

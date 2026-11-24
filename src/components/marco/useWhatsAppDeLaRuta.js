@@ -6,6 +6,7 @@ import { getProduct } from '../../services/products';
 import { getBrands } from '../../services/brands';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { numeroWhatsApp } from '../../componentes/kit/adaptadores';
+import { productRoute } from '../../utils/productRoute.mjs';
 
 /*
  * El WhatsApp flotante de cada página: { numero, mensaje } o null si en esta
@@ -92,8 +93,8 @@ export default function useWhatsAppDeLaRuta() {
     enabled: Boolean(seMuestra),
   });
 
-  const enFicha = pathname.startsWith('/producto/');
-  const productoId = enFicha ? pathname.split('/producto/')[1]?.split('?')[0] : null;
+  const productoId = productRoute(pathname)?.id || null;
+  const enFicha = Boolean(productoId);
   const { data: producto } = useQuery({
     queryKey: ['product', productoId],
     queryFn: async () => {

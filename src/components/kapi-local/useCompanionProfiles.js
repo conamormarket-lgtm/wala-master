@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { KAPI_PROFILE } from './companions.mjs';
-export default function useCompanionProfiles() {
+export default function useCompanionProfiles({ enabled = true } = {}) {
   const query = useQuery({ queryKey: ['companion-profiles'], staleTime: 60000, refetchOnWindowFocus: true,
+    enabled,
     queryFn: async () => {
       const response = await fetch('/__kapi/companions');
       if (!response.ok) throw Error('Mascots unavailable');

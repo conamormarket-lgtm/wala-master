@@ -10,6 +10,7 @@ import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { abrirAvisoBienvenida } from './BienvenidaDeTienda';
 import { tiempoRestante } from '../../utils/primeraCompra';
 import { esRutaDeJuego } from './modoJuego';
+import { isProductLandingPath } from '../../utils/productRoute.mjs';
 
 // Walito (con su ventana, el reto y el recorrido) llega en su propio archivo,
 // como antes: no hace falta para ver la página.
@@ -47,10 +48,11 @@ const pildoraOculta = () => {
  */
 export default function FlotantesDeLaTienda() {
   const { pathname } = useLocation();
+  const landingProducto = isProductLandingPath(pathname);
   const kapiPreview = useKapiPreview();
-  const profiles = useCompanionProfiles();
+  const profiles = useCompanionProfiles({ enabled: !landingProducto });
   const brandRoute = profiles.some(profile => profile.id !== 'kapi' && profile.byRoute && profile.route === pathname);
-  const kapiActive = profiles.length > 0 && (kapiPreview || (!import.meta.env.DEV && (isKapiPublicRoute(pathname) || brandRoute)) || (import.meta.env.DEV && brandRoute));
+  const kapiActive = !landingProducto && profiles.length > 0 && (kapiPreview || (!import.meta.env.DEV && (isKapiPublicRoute(pathname) || brandRoute)) || (import.meta.env.DEV && brandRoute));
   const { user, userProfile } = useAuth();
   const whatsapp = useWhatsAppDeLaRuta();
   const [sinPildora, setSinPildora] = useState(pildoraOculta);
@@ -103,7 +105,7 @@ export default function FlotantesDeLaTienda() {
       )}
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
-      <Suspense fallback={null}><Kapi onOpenChange={setPetOpen} /></Suspense>
+      {!landingProducto && <Suspense fallback={null}><Kapi onOpenChange={setPetOpen} /></Suspense>}
       {kapiActive && <Suspense fallback={null}><KapiLocal profiles={profiles} suspended={petOpen} /></Suspense>}
     </PilaFlotante>
   );

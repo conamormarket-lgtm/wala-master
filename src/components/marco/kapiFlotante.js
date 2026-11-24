@@ -1,11 +1,14 @@
+import { isProductLandingPath } from '../../utils/productRoute.mjs';
+
 /*
  * Dónde NO flota Walito (el botón de la esquina, components/marco/Walito.jsx).
  * Lo comparten Walito y el pie (PieDeTienda): un solo Walito a la vista, así que
  * el pie lo asoma solo cuando el de la esquina no está.
  */
 export const sinKapiFlotante = (pathname) =>
+  isProductLandingPath(pathname)
   // El estudio es una herramienta: sin flotantes.
-  pathname.startsWith('/crear/')
+  || pathname.startsWith('/crear/')
   // Al abrir un regalo, el Walito del sobre es el único a la vista.
   || pathname.startsWith('/regalo/')
   // En el acceso, el Walito del panel de la marca es el único (la cuenta recién

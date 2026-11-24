@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, useLocation, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useProduct } from '../hooks/useProducts';
 import useLoViejo from '../hooks/useLoViejo';
@@ -8,6 +8,7 @@ import FichaDeProducto from '../components/producto/FichaDeProducto';
 import { leerPersonalizarEn } from '../utils/personalizarEn';
 import { esProductoDeTienda } from '../utils/enTienda.mjs';
 import useKapiPreview from '../components/kapi-local/useKapiPreview';
+import { replacementProductLocation } from '../utils/productRoute.mjs';
 
 const KapiProductPage = import.meta.env.DEV ? lazy(() => import('../components/kapi-local/KapiProductPage')) : null;
 
@@ -16,6 +17,7 @@ const ProductDetail = lazy(() => import('./Tienda/components/ProductDetail'));
 
 const ProductPage = () => {
   const { id } = useParams();
+  const location = useLocation();
   // Paso 6 de la migración: la ficha del kit. fichaVieja vuelve a ProductDetail.
   const fichaVieja = useLoViejo('ficha');
   const { data: product, isLoading, error, refetch } = useProduct(id);
@@ -39,7 +41,7 @@ const ProductPage = () => {
   // Un producto de la tienda que pasó a su prenda de Crear, que también se
   // vende tal cual (la billetera de Yoryo): una sola ficha, la de la prenda.
   if (/^[A-Za-z0-9_-]{1,64}$/.test(String(product?.reemplazadoPor || ''))) {
-    return <Navigate to={`/producto/${product.reemplazadoPor}`} replace />;
+    return <Navigate to={replacementProductLocation(product.reemplazadoPor, location)} replace />;
   }
 
   // El recordatorio "¡Sigue disponible!" ya no lo arma el navegador mientras

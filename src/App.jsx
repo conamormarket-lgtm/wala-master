@@ -55,6 +55,7 @@ import CabeceraDeTienda from './components/marco/CabeceraDeTienda';
 import BarraInferiorDeTienda from './components/marco/BarraInferiorDeTienda';
 import { esRutaDeJuego } from './components/marco/modoJuego';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
+import { PRODUCT_ROUTE, PRODUCT_LANDING_ROUTE, isProductLandingPath } from './utils/productRoute.mjs';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
 // Se montan en el mismo sitio de siempre, pero su código llega en paralelo
@@ -293,6 +294,7 @@ export const queryClient = new QueryClient({
 
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
+  const landingProducto = isProductLandingPath(location.pathname);
   const { isEditModeActive } = useVisualEditor();
   // Páginas que van solas, sin la cabecera, el pie ni los flotantes: la landing
   // de Regalos con amor y el Link en bio (/l/:slug, la página de la bio de las
@@ -324,7 +326,7 @@ const GlobalLayout = ({ children }) => {
 
   // Los minijuegos, a pantalla completa en el celular (marco/modoJuego.js).
   return (
-    <div className={esRutaDeJuego(location.pathname) ? 'App modo-juego' : 'App'}>
+    <div className={['App', esRutaDeJuego(location.pathname) && 'modo-juego', landingProducto && 'product-landing'].filter(Boolean).join(' ')}>
       {rastreoCalor}
       <AvisoDelSistema />
       <NavProgressBar />
@@ -351,7 +353,7 @@ const GlobalLayout = ({ children }) => {
           de visibilidad — solo que ahora hace portal hacia acá. */}
       <div id="app-top-banner-slot" />
 
-      <CabeceraDeTienda />
+      {!landingProducto && <CabeceraDeTienda />}
 
       <main id="main-content-area">
         {children}
@@ -440,7 +442,8 @@ function App() {
                                     }
                                   />
 
-                                  <Route path="/producto/:id" element={<ProductPage />} />
+                                  <Route path={PRODUCT_ROUTE} element={<ProductPage />} />
+                                  <Route path={PRODUCT_LANDING_ROUTE} element={<ProductPage />} />
                                   <Route path="/personalizar" element={<PersonalizarPage />} />
                                   <Route path="/crear/:id" element={<CrearStudioPage />} />
                                   <Route path="/combo/:id" element={<ComboCrearPage />} />
