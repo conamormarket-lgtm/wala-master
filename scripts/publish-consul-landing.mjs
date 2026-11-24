@@ -48,7 +48,8 @@ export function publicationPatch(source) {
 }
 
 async function main() {
-  const apply = process.argv.includes('--apply');
+  const uploadOnly = process.argv.includes('--upload-only');
+  const apply = process.argv.includes('--apply') || uploadOnly;
   let auth;
   try { auth = require('firebase-tools/lib/auth.js'); }
   catch { auth = require(path.join(process.env.APPDATA, 'npm/node_modules/firebase-tools/lib/auth.js')); }
@@ -118,6 +119,7 @@ async function main() {
   const query = new URLSearchParams({ 'currentDocument.updateTime': original.updateTime });
   Object.keys(fields).forEach(k => query.append('updateMask.fieldPaths', k));
   await fs.writeFile(path.join(output, 'published-patch.json'), JSON.stringify(ready, null, 2));
+  if (uploadOnly) { console.log('Medios listos. El producto todavía no se ha modificado.'); return; }
   const response = await authorized(`${documentUrl}?${query}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
   if (!response.ok) throw Error(`No se guardó el producto: HTTP ${response.status}. Si hubo una edición concurrente, vuelve a revisar antes de reintentar.`);
   const result = await response.json();
@@ -126,7 +128,7 @@ async function main() {
   if (!verification.ok) throw Error(`No se pudo verificar el producto: HTTP ${verification.status}`);
   const after = await verification.json();
   for (const [key, value] of Object.entries(fields)) {
-    if (!isDeepStrictEqual(after.fields[key], value)) throw Error(`El campo publicado no coincide: ${key}`);
+    if (!isDeepStrictEqual(decode(after.fields[key]), decode(value))) throw Error(`El campo publicado no coincide: ${key}`);
   }
   for (const [key, value] of Object.entries(original.fields)) {
     if (!Object.hasOwn(fields, key) && !isDeepStrictEqual(after.fields[key], value)) throw Error(`Revisar campo no editado: ${key}`);
