@@ -360,7 +360,7 @@ const GlobalLayout = ({ children }) => {
       </main>
 
       <Suspense fallback={null}><Footer /></Suspense>
-      <BarraInferiorDeTienda />
+      {!landingProducto && <BarraInferiorDeTienda />}
 
       <FlotantesDeLaTienda />
 

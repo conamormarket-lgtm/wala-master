@@ -6,8 +6,11 @@
   width: 100%;
 }
 
-/* The product landing has no header, including while its data loads. */
-.App.product-landing { --header-height: 0px; }
+/* Product landings have no store navigation, including while data loads. */
+.App.product-landing {
+  --header-height: 0px;
+  --bottom-nav-height: 0px;
+}
 
 #main-content-area {
   flex: 1;
@@ -43,6 +46,9 @@
 @media (max-width: 768px) {
   #main-content-area {
     padding-bottom: calc(72px + var(--safe-bottom, 0px));
+  }
+  .App.product-landing #main-content-area {
+    padding-bottom: 0;
   }
 }
 
