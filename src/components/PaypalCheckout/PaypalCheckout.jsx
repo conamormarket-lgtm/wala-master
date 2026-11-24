@@ -40,6 +40,7 @@ const PaypalCheckout = ({
   soloBotones = false,
   onProcesando,
   onError: onErrorPagina,
+  functionsClient,
 }) => {
   const [error, setErrorPropio] = useState(null);
   const [isProcessing, setProcesandoPropio] = useState(false);
@@ -79,7 +80,7 @@ const PaypalCheckout = ({
   const targetWebOrderIdRef = webOrderId || pedido.id;
 
   const createOrder = () => {
-    const createSecure = httpsCallable(getFunctions(), 'createPaypalOrderSecure');
+    const createSecure = httpsCallable(functionsClient || getFunctions(), 'createPaypalOrderSecure');
     return createSecure({ pedidoId: targetWebOrderIdRef })
       .then((res) => {
         const orderID = res && res.data && res.data.orderID;
@@ -106,7 +107,7 @@ const PaypalCheckout = ({
       setIsProcessing(true);
       // La captura y la marca de pagado las hace el servidor; el navegador solo
       // confía en lo que devuelve.
-      const captureSecure = httpsCallable(getFunctions(), 'capturePaypalOrderSecure');
+      const captureSecure = httpsCallable(functionsClient || getFunctions(), 'capturePaypalOrderSecure');
       const res = await captureSecure({ orderID: data.orderID, pedidoId: targetWebOrderIdRef });
       const cap = res && res.data;
       if (!cap || cap.success !== true || cap.status !== 'COMPLETED') {

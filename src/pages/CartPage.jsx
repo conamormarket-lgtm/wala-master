@@ -1,4 +1,6 @@
 import React, { lazy, Suspense } from 'react';
+import { useLocation } from 'react-router-dom';
+import { productoLandingDeCompra } from '../utils/checkoutOrigin.mjs';
 import { useCart } from '../contexts/CartContext';
 import useLoViejo from '../hooks/useLoViejo';
 import CarritoDeTienda from '../components/carrito/CarritoDeTienda';
@@ -15,8 +17,9 @@ const CartPage = () => {
   const { isEmpty } = useCart();
   // Paso 6 de la migración: el carrito del kit. carritoViejo vuelve a Cart.jsx.
   const carritoViejo = useLoViejo('carrito');
+  const location = useLocation();
 
-  if (!carritoViejo) return <CarritoDeTienda />;
+  if (!carritoViejo || productoLandingDeCompra(location)) return <CarritoDeTienda />;
 
   return (
     <div className={styles.container}>

@@ -122,7 +122,8 @@ const textoInvitacion = ({ nombre, aceptada }) => {
  *    bienvenida (piezas/Bienvenida): monedas y cupones en pausa, el saldo paga
  *    productos hasta `tope`; invitador: { nombre, premio, genera, motivo, falta }
  *    (props de AvisoInvitador: si la compra le da el premio a quien invitó)
- *  - Para pagar hace falta una cuenta: sin sesión se llena todo, pero el botón
+ *  - permitirInvitado: las landings permiten pagar sin cuenta. En las otras rutas
+ *    sin sesión se llena todo, pero el botón
  *    es "Inicia sesión para pagar" · onEntrar(ruta, datos): guardar lo llenado
  *    antes de ir a urlLogin o urlRegistro (al volver, llega en `inicial`)
  *  - urlCarrito, urlTienda, urlPedidos, urlLogin, urlRegistro · estado: 'cargando'
@@ -130,7 +131,7 @@ const textoInvitacion = ({ nombre, aceptada }) => {
  *    carrito vacío; la tienda avisa si hay productos pero ninguno elegido)
  */
 export function PaginaCheckout({
-  items = [], incompletos = [], sesion = false, perfil = {}, direcciones = [], lugares = {}, paises, reglas = 'cuenta',
+  items = [], incompletos = [], sesion = false, permitirInvitado = false, perfil = {}, direcciones = [], lugares = {}, paises, reglas = 'cuenta',
   inicial = {}, paisSugerido,
   envio: reglaEnvio = { costo: 15, gratisDesde: 200 }, monedas = {}, onCupon, onPreparar, pago = {},
   listo, onListo, onPaso,
@@ -243,7 +244,7 @@ export function PaginaCheckout({
 
   const continuar = async (e) => {
     e.preventDefault();
-    if (!sesion) return;
+    if (!sesion && !permitirInvitado) return;
     const encontrados = modo === 'formulario' ? validarDireccion(form, { reglas }) : {};
     if (pedirCorreo && !correoValido(correo)) encontrados.correo = correo ? 'Escribe un correo válido.' : 'Escribe tu correo para enviarte el pedido.';
     if (regalo.activo && !regalo.destinatario.trim()) encontrados.regalo_destinatario = 'Escribe para quién es.';
@@ -337,7 +338,7 @@ export function PaginaCheckout({
             </Texto>
           </p>
           <div className={s.listoBotones}>
-            <Boton to={urlPedidos} icono={<Package aria-hidden="true" />}><Texto>Ver mi pedido</Texto></Boton>
+            {sesion && <Boton to={urlPedidos} icono={<Package aria-hidden="true" />}><Texto>Ver mi pedido</Texto></Boton>}
             <Boton to={urlTienda} variante="contorno"><Texto>Seguir comprando</Texto></Boton>
           </div>
         </div>
@@ -373,13 +374,13 @@ export function PaginaCheckout({
               total={cuentas.total}
               abierto={resumenAbierto}
               onAlternar={() => setResumenAbierto((a) => !a)}
-              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarEnPago('monedas'), cargando: monedas.cargando || Boolean(bienvenida?.cargando), sesion, urlLogin, bloqueado: Boolean(ocupado), enPausa: Boolean(bienvenida?.enPausa) }}
+              monedas={!sesion && permitirInvitado ? undefined : { saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarEnPago('monedas'), cargando: monedas.cargando || Boolean(bienvenida?.cargando), sesion, urlLogin, bloqueado: Boolean(ocupado), enPausa: Boolean(bienvenida?.enPausa) }}
               saldoBienvenida={bienvenida?.enPausa && bienvenida.saldo > 0 ? {
                 saldo: bienvenida.saldo, maximo: cuentas.maximoSaldo, usar: usarSaldo, venceMs: bienvenida.venceMs,
                 onUsar: paso === 0 ? setUsarSaldo : cambiarEnPago('saldo'), bloqueado: Boolean(ocupado),
               } : undefined}
               /* Ya en el pago, el cupón queda como se preparó (para cambiarlo, "Cambiar el envío"). */
-              cupones={bienvenida?.cargando ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true } : onCupon && (paso === 0 || cupon) ? {
+              cupones={!sesion && permitirInvitado ? undefined : bienvenida?.cargando ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true } : onCupon && (paso === 0 || cupon) ? {
                 aplicado: cupon,
                 onAplicar: async (c) => setCupon(await onCupon(c, { subtotal: cuentas.subtotal, subtotalProductos: cuentas.subtotal, envio: cuentas.envioBase })),
                 onQuitar: paso === 0 ? () => setCupon(null) : undefined,
@@ -511,7 +512,7 @@ export function PaginaCheckout({
 
                 {error && <Aviso tipo="error" compacto>{error}</Aviso>}
 
-                {!sesion && (
+                {!sesion && !permitirInvitado && (
                   <p className={s.entrar} role="note">
                     <strong><Texto>Para pagar necesitas tu cuenta.</Texto></strong> <Texto>Así tu pedido queda en «Mis pedidos» y puedes usar tus monedas. Lo que ya llenaste se guarda.</Texto>{' '}
                     <Enlace to={urlRegistro} onClick={() => onEntrar?.(urlRegistro, { direccion: form, correo, regalo })}><Texto>¿No tienes cuenta? Créala aquí</Texto></Enlace>
@@ -519,7 +520,7 @@ export function PaginaCheckout({
                 )}
                 <div className={s.botones}>
                   <Boton to={urlCarrito} variante="fantasma" icono={<ArrowLeft aria-hidden="true" />}><Texto>Volver al carrito</Texto></Boton>
-                  {sesion ? (
+                  {sesion || permitirInvitado ? (
                     <Boton type="submit" tamano="lg" cargando={ocupado === 'preparar'} iconoFin={<ArrowRight aria-hidden="true" />}>
                       <Texto>{ocupado === 'preparar' ? 'Preparando tu pago…' : 'Continuar al pago'}</Texto>
                     </Boton>
@@ -539,34 +540,8 @@ export function PaginaCheckout({
                   <button type="button" className={s.volverLista} onClick={() => { setPaso(0); setError(''); }}><ArrowLeft aria-hidden="true" /> <Texto>Cambiar el envío</Texto></button>
                 </div>
 
-                {fuera ? (
-                  <>
-                    <Aviso tipo="info" compacto icono={<Globe2 aria-hidden="true" />}>Envíos internacionales: la entrega demora de 7 a 30 días hábiles.</Aviso>
-                    <MetodoPago destacado icono={<Globe2 aria-hidden="true" />} titulo="PayPal" texto="Con tu cuenta de PayPal o con tarjeta, en dólares.">
-                      <PagoPaypal montoUsd={usd || 0} equivalente={local ? `≈ ${local}` : `≈ ${soles(cuentas.total)}`} botones={pago.botonesPaypal} procesando={pago.paypal?.procesando} error={pago.paypal?.error} onPagar={() => pagar('paypal', pago.onPaypal, usd)} />
-                    </MetodoPago>
-                  </>
-                ) : (
-                  <MetodoPago destacado icono={<CreditCard aria-hidden="true" />} titulo="Tarjeta de crédito o débito" texto="Visa, Mastercard, American Express o Diners. Tu pedido queda confirmado al instante.">
-                    {fallo && (
-                      <Aviso tipo="aviso" compacto titulo="No se completó el pago con tarjeta">Puedes intentarlo otra vez o pagar con Yape, Plin o transferencia por WhatsApp.</Aviso>
-                    )}
-                    {pago.botonTarjeta || (
-                      <PagoTarjeta
-                        monto={cuentas.total}
-                        onPagar={() => { setError(''); return pagar('tarjeta', pago.onTarjeta, cuentas.total, { guardar: guardarTarjeta }); }}
-                        tarjetas={pago.tarjetas}
-                        onPagarGuardada={pago.onTarjetaGuardada && ((id) => { setError(''); return pagar('tarjeta', pago.onTarjetaGuardada, id, cuentas.total); })}
-                        guardar={guardarTarjeta}
-                        onGuardar={pago.onGuardarTarjeta ? setGuardarTarjeta : undefined}
-                      />
-                    )}
-                  </MetodoPago>
-                )}
-
-                <p className={s.separador}><span><Texto>o</Texto></span></p>
-
                 <MetodoPago
+                  destacado
                   icono={<MessageCircle aria-hidden="true" />}
                   titulo={fuera ? 'Coordinar por WhatsApp' : 'Yape, Plin o transferencia'}
                   texto={fuera ? 'Un asesor recibe tu pedido y te indica cómo pagar desde tu país.' : 'Te atendemos por WhatsApp: un asesor recibe tu pedido y te indica cómo pagar.'}
@@ -596,6 +571,33 @@ export function PaginaCheckout({
                     </Boton>
                   )}
                 </MetodoPago>
+
+                <p className={s.separador}><span><Texto>o</Texto></span></p>
+
+                {fuera ? (
+                  <>
+                    <Aviso tipo="info" compacto icono={<Globe2 aria-hidden="true" />}>Envíos internacionales: la entrega demora de 7 a 30 días hábiles.</Aviso>
+                    <MetodoPago icono={<Globe2 aria-hidden="true" />} titulo="PayPal" texto="Con tu cuenta de PayPal o con tarjeta, en dólares.">
+                      <PagoPaypal montoUsd={usd || 0} equivalente={local ? `≈ ${local}` : `≈ ${soles(cuentas.total)}`} botones={pago.botonesPaypal} procesando={pago.paypal?.procesando} error={pago.paypal?.error} onPagar={() => pagar('paypal', pago.onPaypal, usd)} />
+                    </MetodoPago>
+                  </>
+                ) : (
+                  <MetodoPago icono={<CreditCard aria-hidden="true" />} titulo="Tarjeta de crédito o débito" texto="Visa, Mastercard, American Express o Diners. Tu pedido queda confirmado al instante.">
+                    {fallo && (
+                      <Aviso tipo="aviso" compacto titulo="No se completó el pago con tarjeta">Puedes intentarlo otra vez o pagar con Yape, Plin o transferencia por WhatsApp.</Aviso>
+                    )}
+                    {pago.botonTarjeta || (
+                      <PagoTarjeta
+                        monto={cuentas.total}
+                        onPagar={() => { setError(''); return pagar('tarjeta', pago.onTarjeta, cuentas.total, { guardar: guardarTarjeta }); }}
+                        tarjetas={pago.tarjetas}
+                        onPagarGuardada={pago.onTarjetaGuardada && ((id) => { setError(''); return pagar('tarjeta', pago.onTarjetaGuardada, id, cuentas.total); })}
+                        guardar={guardarTarjeta}
+                        onGuardar={pago.onGuardarTarjeta ? setGuardarTarjeta : undefined}
+                      />
+                    )}
+                  </MetodoPago>
+                )}
 
                 {error && <Aviso tipo="error" compacto>{error}</Aviso>}
                 <p className={s.pie}><Texto>Tu pedido se registra solo cuando el pago se aprueba o cuando lo envías por WhatsApp.</Texto></p>

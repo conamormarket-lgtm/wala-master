@@ -1,3 +1,4 @@
+import { rutaCompra } from '../../utils/checkoutOrigin.mjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -265,7 +266,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
     if (regaloActivo) {
       // Igual que "Regalar este" en la lista: el regalo va directo al carrito.
       toast.success('¡Regalo agregado! Podrás elegir dónde enviarlo en el Checkout.');
-      navigate('/carrito');
+      navigate(rutaCompra(location, '/carrito'));
     }
     return true;
   };
@@ -276,7 +277,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
     if (avisarComboCargando()) return false;
     const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccion, comboProd);
     addToCart(productoParaCarrito, variant, null, cantidad, combo, { selectOnly: true, silent: true });
-    navigate('/checkout');
+    navigate(rutaCompra(location));
     return true;
   };
 
@@ -284,7 +285,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   const alPagarCarrito = () => {
     if (!cartItems.length) { toast.error('Tu carrito está vacío. Agrega productos primero.'); return; }
     selectAllItems();
-    navigate('/checkout');
+    navigate(rutaCompra(location));
   };
 
   // ── Personalizar: el editor, o Yoryo ("Personalizable") ──
@@ -377,6 +378,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
         onCompartir={alCompartir}
         onVariante={alVariante}
         carrito={cartItems.length}
+        urlPagar={rutaCompra(location)}
         onPagarCarrito={alPagarCarrito}
         sesion={conCuenta}
         urlLogin={urlLogin(location.pathname)}
@@ -403,7 +405,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
                   const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccionYoryo.current || {}, comboProd);
                   addToCart(personalizado, variant, null, cantidad, combo);
                   toast.success('¡Diseño guardado y agregado al carrito!');
-                  navigate('/carrito');
+                  navigate(rutaCompra(location, '/carrito'));
                 }}
               />
             </Suspense>

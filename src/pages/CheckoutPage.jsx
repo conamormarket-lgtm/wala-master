@@ -1,4 +1,6 @@
 import React, { lazy, Suspense } from 'react';
+import { useLocation } from 'react-router-dom';
+import { productoLandingDeCompra } from '../utils/checkoutOrigin.mjs';
 import useLoViejo from '../hooks/useLoViejo';
 import CheckoutDeTienda from '../components/checkout/CheckoutDeTienda';
 
@@ -10,7 +12,8 @@ const CheckoutViejo = lazy(() => import('./CheckoutViejo'));
 // arman las dos con services/pedidoCheckout.js.
 const CheckoutPage = () => {
   const pagosViejo = useLoViejo('pagos');
-  if (!pagosViejo) return <CheckoutDeTienda />;
+  const location = useLocation();
+  if (!pagosViejo || productoLandingDeCompra(location)) return <CheckoutDeTienda />;
   return (
     <Suspense fallback={null}>
       <CheckoutViejo />

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { rutaCompra } from '../../utils/checkoutOrigin.mjs';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,6 +30,7 @@ import { itemCarritoDesde } from '../../componentes/kit/adaptadores';
  */
 export default function CarritoDeTienda() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const {
     items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart, actualizarPrecios,
@@ -144,7 +146,7 @@ export default function CarritoDeTienda() {
       onSeleccionarTodo={setAllItemsSelected}
       onQuitarSeleccionados={removeSelectedItems}
       onVaciar={clearCart}
-      onPagar={() => navigate('/checkout')}
+      onPagar={() => navigate(rutaCompra(location))}
       onSeguirComprando={() => navigate('/tienda')}
       pendiente={pendiente}
       metaEnvio={ENVIO_GRATIS_DESDE}

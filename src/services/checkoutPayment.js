@@ -6,8 +6,8 @@ import { leerReferidoGuardado } from './referrals';
  * únicamente permite que las pasarelas validen el monto y materialicen el pedido
  * después de confirmar el cobro.
  */
-export async function prepareCheckoutPayment(orderPayload) {
-  const prepare = httpsCallable(getFunctions(), 'prepareCheckoutPayment');
+export async function prepareCheckoutPayment(orderPayload, functionsClient = getFunctions()) {
+  const prepare = httpsCallable(functionsClient, 'prepareCheckoutPayment');
   // El enlace de referido que abrió este navegador (si sigue vigente). El
   // servidor lo valida y, si vale, lo deja en el pedido: así la compra queda
   // vinculada aunque se haga desde una landing o por WhatsApp.

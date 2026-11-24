@@ -1,3 +1,6 @@
+import { useLocation } from 'react-router-dom';
+import { productoLandingDeCompra, rutaCompra } from '../../utils/checkoutOrigin.mjs';
+import { funcionesCheckoutInvitado } from '../../services/checkoutGuest';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import usePrimeraCompra, { CLAVE_PRIMERA_COMPRA } from '../../hooks/usePrimeraCompra';
@@ -132,6 +135,9 @@ export default function CheckoutDeTienda() {
   const toast = useGlobalToast();
   const invitacion = useInvitacionReferido();
   const sesion = tieneCuenta(user);
+  const location = useLocation();
+  const permitirInvitado = Boolean(productoLandingDeCompra(location));
+  const functionsRef = useRef(null);
   const queryClient = useQueryClient();
   const { bienvenida: estadoBienvenida, cargando: cargandoEstadoBienvenida } = usePrimeraCompra();
 
@@ -342,6 +348,7 @@ export default function CheckoutDeTienda() {
 
   /* ── Preparar el pago (aún no hay pedido) ── */
   const alPreparar = async (datos) => {
+    if (!sesion && !permitirInvitado) throw new Error('Inicia sesión para pagar.');
     if (!elegidos.length) throw new Error('Selecciona al menos un producto para pagar.');
     const d = datos.direccion || {};
     const extranjero = esExtranjero(d.pais);
@@ -376,7 +383,9 @@ export default function CheckoutDeTienda() {
 
     let checkoutIntentId = null;
     try {
-      const prepared = await prepareCheckoutPayment(webOrderPayload);
+      const functionsClient = sesion ? getFunctions() : await funcionesCheckoutInvitado();
+      const prepared = await prepareCheckoutPayment(webOrderPayload, functionsClient);
+      functionsRef.current = functionsClient;
       checkoutIntentId = prepared.intentId;
     } catch (err) {
       console.warn('No se pudo preparar el pago:', err);
@@ -395,10 +404,10 @@ export default function CheckoutDeTienda() {
       address: values.address, district: values.district, city: values.city,
       department: values.city === 'Provincias' && !extranjero ? values.department : '',
       province: values.city === 'Provincias' || extranjero ? values.province : '',
-      email: values.email,
+      email: values.email, country: values.country,
     };
     try {
-      if (user?.uid) {
+      if (sesion && user?.uid) {
         localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, uid: user.uid }));
         if (datos.guardar) {
           const campos = { ...savedInfo, country: values.country };
@@ -406,11 +415,15 @@ export default function CheckoutDeTienda() {
             .then((lista) => setDirecciones(lista))
             .catch((e) => console.warn('No se pudo guardar la dirección:', e));
         }
+      } else if (datos.guardar) {
+        localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, recordar: true }));
+      } else {
+        localStorage.removeItem(DATOS_CHECKOUT_KEY);
       }
     } catch { /* sin localStorage (modo privado): no se recuerda */ }
 
     // Completa el perfil con lo que falte (por detrás).
-    if (user && updateUserProfile && !userProfile?._perfilNoCargado) {
+    if (sesion && user && updateUserProfile && !userProfile?._perfilNoCargado) {
       completarPerfilDesdeCheckout({ userProfile, updateUserProfile, values });
     }
 
@@ -434,9 +447,6 @@ export default function CheckoutDeTienda() {
       waGroups,
       esPeru,
       country: values.country,
-      // Vuelto a preparar porque cambiaron las monedas ya en el pago: la ventana de
-      // Culqi no se abre sola otra vez (ya se abrió al llegar al pago).
-      sinAbrir: datos.motivo === 'monedas',
     });
     return { numero: pseudoOrderId };
   };
@@ -460,7 +470,7 @@ export default function CheckoutDeTienda() {
     if (datos.pedidoWebId) return Promise.resolve(datos.pedidoWebId);
     if (!whatsappRef.current) {
       whatsappRef.current = (async () => {
-        const res = await httpsCallable(getFunctions(), 'crearSolicitudWhatsappSecure')({ intentId: datos.checkoutIntentId });
+        const res = await httpsCallable(functionsRef.current || getFunctions(), 'crearSolicitudWhatsappSecure')({ intentId: datos.checkoutIntentId });
         const id = res?.data?.id;
         if (!id) throw new Error('No se recibió el id del pedido.');
         setPreparado((p) => (p ? { ...p, pedidoWebId: id } : p));
@@ -507,7 +517,9 @@ export default function CheckoutDeTienda() {
     if (!datos) return;
     const pedidoWebId = resultado.pedidoWebId || datos.numeroPedido;
     if (!resultado.pedidoWebId) {
-      toast.info('Tu pago fue aprobado. Estamos registrando tu pedido: aparecerá en «Mis pedidos» en unos minutos.');
+      toast.info(sesion
+        ? 'Tu pago fue aprobado. Estamos registrando tu pedido: aparecerá en «Mis pedidos» en unos minutos.'
+        : `Tu pago fue aprobado. Conserva el código ${datos.numeroPedido} mientras terminamos de registrar tu pedido.`);
     }
     setPreparado((p) => (p ? { ...p, pedidoWebId } : p));
     await aplicarEfectos(pedidoWebId, metodo, datos);
@@ -599,7 +611,7 @@ export default function CheckoutDeTienda() {
     botonTarjeta: preparado.esPeru ? (
       <CulqiCustomCheckout
         pedido={preparado}
-        autoOpen={!preparado.sinAbrir && tarjetas !== null && !tarjetas.puede}
+        functionsClient={functionsRef.current}
         title="Compra en Walá"
         guardarTarjeta={Boolean(tarjetas?.puede) && guardarTarjeta}
         onSuccess={(r) => terminarPasarela('culqi', r)}
@@ -622,6 +634,7 @@ export default function CheckoutDeTienda() {
       <Suspense fallback={null}>
         <PaypalCheckout
           soloBotones
+          functionsClient={functionsRef.current}
           pedido={preparado}
           amountUsd={penToUsd(preparado.montoDeuda, fx)}
           webOrderId={preparado.checkoutIntentId}
@@ -645,6 +658,7 @@ export default function CheckoutDeTienda() {
       items={filas}
       incompletos={incompletos}
       sesion={sesion}
+      permitirInvitado={permitirInvitado}
       perfil={perfil}
       direcciones={(direcciones || []).map(direccionDesdeFirestore)}
       lugares={LUGARES}
@@ -663,8 +677,9 @@ export default function CheckoutDeTienda() {
       entrega={entrega}
       bienvenida={bienvenida}
       invitacion={invitacion ? { nombre: invitacion.nombre, aceptada: invitacion.tipo === 'invitacion' && invitacion.invitacion === 'aceptada' } : undefined}
-      urlLogin={urlLogin('/checkout')}
-      urlRegistro={`/registro?redirect=${encodeURIComponent('/checkout')}`}
+      urlCarrito={rutaCompra(location, '/carrito')}
+      urlLogin={urlLogin(rutaCompra(location))}
+      urlRegistro={`/registro?redirect=${encodeURIComponent(rutaCompra(location))}`}
       onEntrar={alEntrar}
       vacio={vacio}
     />

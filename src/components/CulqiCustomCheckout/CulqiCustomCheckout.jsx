@@ -82,7 +82,7 @@ const datosDelCobro = ({ cobro, enlace, pedido }) => {
 // guardarTarjeta: el servidor guarda la tarjeta de la ventana antes de cobrar
 // (se lee al cobrar, no recrea la ventana). renderBoton recibe además
 // pagarConGuardada(id): cobra con una tarjeta guardada, sin abrir la ventana.
-const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton, conYape = false, guardarTarjeta = false }) => {
+const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton, conYape = false, guardarTarjeta = false, functionsClient }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -211,7 +211,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
       let aprobado = false;
 
       try {
-        const functions = getFunctions();
+        const functions = functionsClient || getFunctions();
         const processCulqiPayment = httpsCallable(functions, 'processCulqiPayment');
         
         const result = await processCulqiPayment({
@@ -287,7 +287,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
     // Si estuvieran aquí, la instancia de Culqi se recrearía en cada render del
     // padre (arrows inline) y el modal "saltaría dos veces".
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, pedido, enlace, cobro, tituloModal, conYape]);
+  }, [isReady, pedido, enlace, cobro, tituloModal, conYape, functionsClient]);
 
   // Una tarjeta guardada: se cobra sin abrir la ventana de Culqi.
   const pagarConGuardada = async (tarjetaId) => {
