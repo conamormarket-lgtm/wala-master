@@ -262,6 +262,7 @@ export function PaginaProducto({
   // "Comprar ahora" (la talla se elige en el estudio, al agregarla).
   const solo = Boolean(producto.soloPersonalizar && onPersonalizar);
   const principal = solo ? 'personalize' : comercio.primaryAction === 'personalize' && !(producto.personalizable && onPersonalizar) ? 'add' : comercio.primaryAction;
+  const accionFija = solo ? 'personalize' : comercio.stickyAction === 'personalize' && !(producto.personalizable && onPersonalizar) ? 'buy' : comercio.stickyAction;
   const botonAgregar = (props) => (solo ? (
     <Boton
       accion="personalizar"
@@ -521,7 +522,7 @@ export function PaginaProducto({
       {individual && composicionDetalles?.visible && <HistoriaProducto key={`${producto.id}:${comercio.storyMediaId}`} composicion={composicionDetalles} resolverMedia={editorDetalles?.resolverMedia} />}
       {!producto.agotado && comercio.showSticky && (
         <BarraCompra movil={individual} mirar={compraRef} hasta={finRef} imagen={galeria.find((f) => f.tipo !== 'video')?.url} nombre={nombre} detalle={<Texto>{detalle}</Texto>} precio={producto.precio}>
-          {principal === 'buy' && !solo ? <Boton cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)}><Texto>Comprar ahora</Texto></Boton> : principal === 'personalize' && !solo ? <Boton accion="personalizar" onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton> : botonAgregar({ tamano: 'md' })}
+          {accionFija === 'buy' ? <Boton cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)}><Texto>Comprar ahora</Texto></Boton> : accionFija === 'personalize' && !solo ? <Boton accion="personalizar" onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton> : botonAgregar({ tamano: 'md' })}
         </BarraCompra>
       )}
 

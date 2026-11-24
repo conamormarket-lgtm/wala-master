@@ -14,6 +14,7 @@ export function normalizeProductCommerce(value = {}, { allowLocal = false } = {}
   const v = value && typeof value === 'object' ? value : {};
   return {
     primaryAction: ['add', 'buy', 'personalize'].includes(v.primaryAction) ? v.primaryAction : 'add',
+    stickyAction: ['add', 'buy', 'personalize'].includes(v.stickyAction) ? v.stickyAction : v.primaryAction === 'personalize' ? 'personalize' : 'buy',
     subtitle: text(v.subtitle, 240), highlights: rows(v.highlights, 6, ['text']),
     priceNote: text(v.priceNote), personalizationNote: text(v.personalizationNote, 800),
     paymentNote: text(v.paymentNote, 800), steps: rows(v.steps, 5, ['text']),

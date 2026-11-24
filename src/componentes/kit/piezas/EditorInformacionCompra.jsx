@@ -5,7 +5,7 @@ import SelectorProductosFicha from './SelectorProductosFicha';
 import s from './EditorDetallesProducto.module.css';
 
 export default function EditorInformacionCompra({ value, onChange, blocks = [], biblioteca = [], onSubirImagen, resolverMedia = url => url, local, productoId }) {
-  const defaults = normalizeProductCommerce();
+  const defaults = normalizeProductCommerce(value);
   const c = { ...defaults, ...value, collection: { ...defaults.collection, ...value?.collection } };
   const set = (key, val) => onChange({ ...c, [key]: val }, `commerce:${key}`);
   const field = (key, label, multiline = false) => <label className={s.campo}><span>{label}</span>{multiline
@@ -22,7 +22,9 @@ export default function EditorInformacionCompra({ value, onChange, blocks = [], 
     <details open><summary>Presentación y beneficios</summary>{field('subtitle', 'Frase debajo del nombre')}{list('highlights', 'Beneficio', [['text', 'Beneficio']], 6)}{field('priceNote', 'Nota junto al precio')}
       <small>Los importes se editan en General. Estos textos no cambian el precio cobrado.</small>
     </details>
-    <details><summary>Compra y personalización</summary><label className={s.campo}><span>Acción principal</span><select aria-label="Acción principal" value={c.primaryAction} onChange={e => set('primaryAction', e.target.value)}><option value="add">Agregar al carrito</option><option value="buy">Comprar ahora</option><option value="personalize">Personalizar (si está disponible)</option></select></label>{field('personalizationNote', 'Qué incluye la personalización', true)}{field('paymentNote', 'Condiciones de pago', true)}{list('steps', 'Paso', [['text', 'Paso de compra']], 5)}</details>
+    <details><summary>Compra y personalización</summary><label className={s.campo}><span>Acción principal</span><select aria-label="Acción principal" value={c.primaryAction} onChange={e => set('primaryAction', e.target.value)}><option value="add">Agregar al carrito</option><option value="buy">Comprar ahora</option><option value="personalize">Personalizar (si está disponible)</option></select></label>
+      <label className={s.campo}><span>Botón fijo al desplazarse</span><select aria-label="Botón fijo al desplazarse" value={c.stickyAction} onChange={e => set('stickyAction', e.target.value)}><option value="buy">Comprar ahora</option><option value="add">Agregar al carrito</option><option value="personalize">Personalizar (si está disponible)</option></select></label>
+      {field('personalizationNote', 'Qué incluye la personalización', true)}{field('paymentNote', 'Condiciones de pago', true)}{list('steps', 'Paso', [['text', 'Paso de compra']], 5)}</details>
     <details><summary>Entrega, garantía y ayuda</summary><p>Se muestran como desplegables junto a los botones de compra. Deja el contenido vacío para ocultar cada sección.</p>{field('deliveryTitle', 'Título de entrega')}{check('showShippingRate', 'Mostrar la tarifa estándar de Walá')}{field('delivery', 'Plazos y cobertura de entrega', true)}{field('warrantyTitle', 'Título de garantía')}{field('warranty', 'Garantía y cambios', true)}{field('policyUrl', 'Enlace a las condiciones')}
       <small>Indica condiciones vigentes para este producto. La tarifa se toma de Walá y la fecha final se confirma al pagar.</small>{check('showHelp', 'Mostrar consulta por WhatsApp')}{field('helpLabel', 'Texto del botón de ayuda')}<small>Usa el número y mensaje configurados en General o en la marca.</small>{check('showTrust', 'Mostrar distintivos generales de confianza')}{check('showSticky', 'Mostrar botón de compra fijo')}
     </details>

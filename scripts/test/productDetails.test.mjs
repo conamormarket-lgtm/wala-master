@@ -131,10 +131,19 @@ test('renderiza autoplay silencioso y bucle solo en los vídeos configurados', (
 
 test('ficha comercial: conserva campos, desactiva secciones y valida preguntas/enlaces sin inventar condiciones', () => {
   const legacy = normalizeProductCommerce();
+  assert.equal(legacy.primaryAction, 'add'); assert.equal(legacy.stickyAction, 'buy');
+  assert.equal(normalizeProductCommerce({ primaryAction: 'personalize' }).stickyAction, 'personalize');
+  assert.equal(normalizeProductCommerce({ primaryAction: 'buy', stickyAction: 'add' }).stickyAction, 'add');
+  assert.equal(normalizeProductCommerce({ stickyAction: 'invalid' }).stickyAction, 'buy');
   assert.equal(legacy.delivery, ''); assert.equal(legacy.warranty, ''); assert.equal(legacy.showShippingRate, false);
   const c = { ...legacy, subtitle: 'Tu billetera', highlights: [{ id: 'a', text: 'Elige tu color' }], specifications: [{ id: 's', label: 'Modelo', value: 'Cónsul' }], faqMode: 'custom', faqs: [{ id: 'f', question: '¿Se personaliza?', answer: 'Sí, desde Crear.' }], showReviews: false, showRelated: false, showRecent: true, showHelp: false, showSticky: false, collection: { enabled: true, title: 'Más regalos', href: '/tienda', label: 'Explorar', text: '', image: '' } };
   assert.equal(validateProductCommerce(c), null);
   const value = normalizeDetailComposition({ ...composition(), commerce: c });
+  for (const stickyAction of ['add', 'buy', 'personalize']) {
+    const saved = normalizeDetailComposition(JSON.parse(JSON.stringify({ ...value, commerce: { ...c, stickyAction } })));
+    assert.equal(saved.commerce.stickyAction, stickyAction);
+    assert.equal(saved.commerce.primaryAction, 'add');
+  }
   assert.deepEqual(normalizeDetailComposition(JSON.parse(JSON.stringify(value))), value);
   const html = render(DetallesProducto, { composicion: value });
   assert.match(html, /¿Se personaliza\?/); assert.match(html, /Más regalos/);

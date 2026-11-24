@@ -580,6 +580,9 @@
                 }
               }
             },
+            "stickyAction": {
+              "enum": ["add", "buy", "personalize"]
+            },
             "primaryAction": {
               "enum": [
                 "add",
