@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { rutaCompra, productoLandingDeCompra } from '../../src/utils/checkoutOrigin.mjs';
+import { rutaCompra, productoLandingDeCompra, isLandingCheckout } from '../../src/utils/checkoutOrigin.mjs';
 
 test('el origen landing sobrevive al checkout, al carrito y a una recarga', () => {
   const path = rutaCompra({ pathname: '/producto/billetera/landing/', search: '?utm_source=ig' });
   assert.equal(path, '/checkout?landing=billetera');
   const checkout = new URL(path, 'https://www.wala.pe');
   assert.equal(productoLandingDeCompra(checkout), 'billetera');
+  assert.equal(isLandingCheckout(checkout), true);
   const cart = new URL(rutaCompra(checkout, '/carrito'), checkout);
+  assert.equal(isLandingCheckout(cart), false);
   assert.equal(rutaCompra(cart), path);
 });
 
@@ -18,6 +20,7 @@ test('la ficha normal y los parámetros ajenos no habilitan el checkout invitado
   for (const path of ['/producto/billetera', '/tienda?landing=billetera', '/checkout', '/checkout?landing=', '/checkout?landing=a%2Fb']) {
     const loc = new URL(path, 'https://www.wala.pe');
     assert.equal(productoLandingDeCompra(loc), null);
+    assert.equal(isLandingCheckout(loc), false);
     assert.equal(rutaCompra(loc), '/checkout');
   }
 });

@@ -56,6 +56,7 @@ import BarraInferiorDeTienda from './components/marco/BarraInferiorDeTienda';
 import { esRutaDeJuego } from './components/marco/modoJuego';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 import { PRODUCT_ROUTE, PRODUCT_LANDING_ROUTE, isProductLandingPath } from './utils/productRoute.mjs';
+import { isLandingCheckout } from './utils/checkoutOrigin.mjs';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
 // Se montan en el mismo sitio de siempre, pero su código llega en paralelo
@@ -295,6 +296,8 @@ export const queryClient = new QueryClient({
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
   const landingProducto = isProductLandingPath(location.pathname);
+  const checkoutLanding = isLandingCheckout(location);
+  const sinNavegacion = landingProducto || checkoutLanding;
   const { isEditModeActive } = useVisualEditor();
   // Páginas que van solas, sin la cabecera, el pie ni los flotantes: la landing
   // de Regalos con amor y el Link en bio (/l/:slug, la página de la bio de las
@@ -326,7 +329,7 @@ const GlobalLayout = ({ children }) => {
 
   // Los minijuegos, a pantalla completa en el celular (marco/modoJuego.js).
   return (
-    <div className={['App', esRutaDeJuego(location.pathname) && 'modo-juego', landingProducto && 'product-landing'].filter(Boolean).join(' ')}>
+    <div className={['App', esRutaDeJuego(location.pathname) && 'modo-juego', sinNavegacion && 'product-landing'].filter(Boolean).join(' ')}>
       {rastreoCalor}
       <AvisoDelSistema />
       <NavProgressBar />
@@ -353,16 +356,16 @@ const GlobalLayout = ({ children }) => {
           de visibilidad — solo que ahora hace portal hacia acá. */}
       <div id="app-top-banner-slot" />
 
-      {!landingProducto && <CabeceraDeTienda />}
+      {!sinNavegacion && <CabeceraDeTienda />}
 
       <main id="main-content-area">
         {children}
       </main>
 
       <Suspense fallback={null}><Footer /></Suspense>
-      {!landingProducto && <BarraInferiorDeTienda />}
+      {!sinNavegacion && <BarraInferiorDeTienda />}
 
-      <FlotantesDeLaTienda />
+      {!checkoutLanding && <FlotantesDeLaTienda />}
 
       <Suspense fallback={null}><FirebaseWarning /></Suspense>
 

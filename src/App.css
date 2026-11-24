@@ -6,7 +6,7 @@
   width: 100%;
 }
 
-/* Product landings have no store navigation, including while data loads. */
+/* Product landings and their checkout have no navigation, even while loading. */
 .App.product-landing {
   --header-height: 0px;
   --bottom-nav-height: 0px;

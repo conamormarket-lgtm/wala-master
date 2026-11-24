@@ -14,3 +14,7 @@ export function rutaCompra(location, destino = '/checkout') {
   const id = productoLandingDeCompra(location);
   return id ? `${destino}?${new URLSearchParams({ landing: id })}` : destino;
 }
+
+export function isLandingCheckout(location = {}) {
+  return /^\/checkout\/?$/.test(location.pathname || '') && Boolean(productoLandingDeCompra(location));
+}
