@@ -351,7 +351,7 @@ export function BarraEnvioGratis({ actual, meta, compacta = false, estricto = fa
  */
 export function ResumenPedido({
   subtotal, descuento = 0, envio = 0, monedas = 0, saldoMonedas = 0, cupones, onPagar, bienvenida,
-  etiquetaSubtotal = 'Subtotal', textoBoton = 'Ir a pagar', deshabilitado = false, nota = 'Pago seguro con tarjeta, Yape, Plin o transferencia',
+  etiquetaSubtotal = 'Subtotal', textoBoton = 'Revisar datos de envío', deshabilitado = false, nota = 'Pago seguro con tarjeta, Yape, Plin o transferencia',
 }) {
   const etiquetaResumen = useTexto('Resumen del pedido');
   const tCupon = { ejemplo: useTexto(cupones ? 'Prueba WALA10' : undefined), nombre: useTexto(cupones ? 'Código de cupón' : undefined) };

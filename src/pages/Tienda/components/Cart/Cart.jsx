@@ -254,7 +254,7 @@ const Cart = () => {
                   ? 'Selecciona algún artículo'
                   : incompletosACobrar.length > 0
                     ? `Falta elegir ${faltanteTexto}`
-                    : `Proceder al Pago (${selectedCount})`}
+                    : 'Revisar datos de envío'}
             </Boton>
           </GlassCard>
         </div>

@@ -78,7 +78,7 @@ export function PaginaCarrito({
   const noEstanElegidos = elegidos.filter((it) => it.noDisponible);
   const textoFalta = faltan.length ? (new Set(faltan.map((it) => it.incompleto)).size > 1 ? 'color o talla' : faltan[0].incompleto) : '';
   const conArticulo = { color: 'el color', talla: 'la talla', personalización: 'la personalización' }[textoFalta] || 'el color o la talla';
-  let textoBoton = `Ir a pagar (${elegidos.length})`;
+  let textoBoton = 'Revisar datos de envío';
   if (pendiente) textoBoton = 'Esperando la confirmación…';
   else if (!elegidos.length) textoBoton = 'Elige algún producto';
   else if (noEstanElegidos.length) textoBoton = 'Quita lo que ya no está';

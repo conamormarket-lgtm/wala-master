@@ -50,7 +50,7 @@ Revisado el 2026-10-15 contra `src/pages/CartPage.jsx`,
   - "Subtotal (N productos)" de lo elegido, los descuentos de precio, el envío
     y el total.
   - Con monedas: "Tienes 43 monedas: podrás usarlas al pagar".
-  - El botón: "Ir a pagar (2)" o el motivo por el que no se puede.
+  - El botón: "Revisar datos de envío" o el motivo por el que no se puede.
   - Debajo: "Pago seguro con tarjeta, Yape, Plin o transferencia" (los medios
     de la tienda; `notaPago` lo cambia).
 - **También te puede gustar:** se pide cuando se acerca a la vista
@@ -117,7 +117,7 @@ Revisado el 2026-10-15 contra `src/pages/CartPage.jsx`,
 - Fotos con `srcset` (con copias de prueba: el emulador no tiene).
 - Recomendados: en el celular aparecen recién al bajar, con la tarjeta de la
   tienda y sin lo que está en el carrito.
-- "Ir a pagar" → `/checkout`; `carritoViejo` → la página vieja.
+- "Revisar datos de envío" → `/checkout`; `carritoViejo` → la página vieja.
 - 1366 y 390, claro y oscuro.
 
 No se probó: el pedido aprobado por el ERP (el escucha de `pedidos_web` es
