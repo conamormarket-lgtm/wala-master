@@ -3,6 +3,7 @@ import { Texto } from '../Traduccion';
 import { HojaInferior } from '../Feedback';
 import { mosaicStyle, MOSAIC_ROW_RATIOS, mediaAppearanceStyle, hasOwnMediaRatio } from '../../../utils/productMosaic.mjs';
 import { detailVideoPlayback, pauseCompetingDetailVideos } from '../../../utils/detailVideoPlayback.mjs';
+import { prepareDetailVideo } from '../../../utils/detailVideoPreview.mjs';
 import s from './ComposicionDetalles.module.css';
 
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
@@ -11,18 +12,19 @@ export function MedioDetalle({ media, resolverMedia = url => url, onAmpliar, sty
   const url = resolverMedia(media.url);
   const figure = useRef(null);
   const video = useRef(null);
+  const playback = useRef(null);
+  const [videoState, setVideoState] = useState('loading');
   const { autoPlay, muted, loop } = detailVideoPlayback(media);
   const [natural, setNatural] = useState(null);
   const original = media.ratio === 'auto';
   const naturalRatio = natural?.url === url ? natural.ratio : null;
   useEffect(() => {
     const el = video.current;
-    if (!el || !autoPlay || !playbackEnabled) return undefined;
-    // Also applies when the editor enables autoplay on an already loaded clip.
-    // If the browser declines, the native play control stays available.
-    el.play()?.catch(() => {});
-    return () => el.pause();
-  }, [autoPlay, playbackEnabled, url]);
+    if (!el) return undefined;
+    const controller = prepareDetailVideo(el, { autoPlay, muted, enabled: playbackEnabled, onState: setVideoState });
+    playback.current = controller;
+    return () => { controller.dispose(); playback.current = null; };
+  }, [autoPlay, muted, playbackEnabled, url]);
   const readDimensions = e => {
     if (!original) return;
     const el = e.currentTarget;
@@ -56,7 +58,14 @@ export function MedioDetalle({ media, resolverMedia = url => url, onAmpliar, sty
   }, [mixed, url]);
   const visual = !url ? <div className={s.pendiente}><Texto>Cargando archivo…</Texto></div>
         : media.type === 'video'
-          ? <video ref={video} key={url} src={url} poster={media.poster ? resolverMedia(media.poster) : undefined} controls playsInline autoPlay={autoPlay && playbackEnabled} muted={muted} loop={loop} preload={autoPlay || original ? 'metadata' : 'none'} onLoadedMetadata={readDimensions} aria-label={media.alt || 'Vídeo del producto'} onPlay={e => pauseCompetingDetailVideos(e.currentTarget)} />
+          ? <><video ref={video} key={url} src={url} poster={media.poster ? resolverMedia(media.poster) : undefined} controls playsInline autoPlay={autoPlay && playbackEnabled} muted={muted} loop={loop} preload="metadata" onLoadedMetadata={readDimensions} aria-label={media.alt || 'Vídeo del producto'} onPlay={e => pauseCompetingDetailVideos(e.currentTarget)} />
+            {videoState === 'loading' && <span className={s.estadoVideo} role="status"><Texto>Cargando vista previa…</Texto></span>}
+            {['manual', 'retry', 'error'].includes(videoState) && <div className={s.recuperarVideo}>
+              {videoState !== 'manual' && <span role="status"><Texto>No se pudo mostrar el vídeo.</Texto></span>}
+              <button type="button" onClick={() => playback.current?.retry()}><Texto>{videoState === 'manual' ? 'Reproducir vídeo' : 'Reintentar vídeo'}</Texto></button>
+              {videoState === 'error' && <a href={url} target="_blank" rel="noopener noreferrer"><Texto>Abrir vídeo</Texto></a>}
+            </div>}
+          </>
           : <img src={url} alt={media.alt || ''} loading="lazy" decoding="async" onLoad={readDimensions} />;
   const expand = onAmpliar && <button type="button" className={s.ampliar} onClick={onAmpliar} aria-label={`Ampliar ${media.alt || (media.type === 'video' ? 'vídeo' : 'foto')}`}><Texto>Ampliar</Texto> ↗</button>;
   const frameStyle = hasOwnMediaRatio(media)

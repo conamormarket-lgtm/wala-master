@@ -77,7 +77,7 @@ test('mapea la composición del producto y muestra medios mixtos sin autoplay ni
   assert.equal(ficha.composicionDetalles.blocks[1].media[1].type, 'video');
   const html = render(ComposicionDetalles, { composicion: ficha.composicionDetalles });
   assert.match(html, /controls=""/);
-  assert.match(html, /preload="none"/);
+  assert.match(html, /preload="metadata"/);
   assert.match(html, /--columnas-movil:2/);
   assert.match(html, /&lt;script&gt;/);
   assert.doesNotMatch(html, /<script|autoplay/);
