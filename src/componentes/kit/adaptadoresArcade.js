@@ -15,36 +15,38 @@ export const BANNERS_ARCADE = {
   kapi: foto('alimenta'),
   ruleta: foto('ruleta'),
   bolitas: foto('bolitas'),
+  pichanga: foto('pichanga'),
 };
 /* Un banner: { src, srcSet } o solo su URL. */
 const banner = (b) => (typeof b === 'string' ? { imagen: b } : { imagen: b?.src, srcSet: b?.srcSet });
 
 /**
- * Las cuatro tarjetas de la Zona Arcade (props de TarjetaJuego) y cuántos
+ * Las cinco tarjetas de la Zona Arcade (props de TarjetaJuego) y cuántos
  * juegos quedan hoy, con la misma lógica de MinijuegosPage. No decide nada:
  * el día lo dice el servidor (hora de Lima) y la página pasa lo que ya sabe.
  *  - sesion, cargando: sin sesión cada botón lleva a iniciar sesión; mientras
  *    se resuelve, botones "cargando" (que no se anuncie un juego ya hecho).
  *  - palabraHecha (wordle de hoy), kapiReclamado (lastKapiClaimDate === hoy),
  *    kapiDoble (multiplicador kapi_double_3d vigente), bolitasHechas
- *    (lastBallSortReward === hoy)
+ *    (lastBallSortReward === hoy), pichangaHecha (lastPichangaReward === hoy)
  *  - ruleta: { desbloqueada, girada, perdida, empezada, pendienteAnterior,
  *    dias } (getRuletaEligibility)
  *  - hasta: { manana, lunes } fechas ISO de la próxima medianoche de Lima y del
  *    lunes (para "Disponible de nuevo en…")
- *  - onAlimentar: abre la ventana de Kapi (la tienda dispara 'open-kapi-pet')
+ *  - onAlimentar: abre la ventana de Walito (la tienda dispara 'open-kapi-pet')
  */
 export function juegosDelArcade({
   sesion = false, cargando = false, palabraHecha: palabra = false, kapiReclamado: kapi = false, kapiDoble = false,
-  bolitasHechas: bolitas = false, ruleta: ruletaPerfil = {}, hasta = {}, onAlimentar, urlLogin = '/login', banners = BANNERS_ARCADE,
+  bolitasHechas: bolitas = false, pichangaHecha: pichanga = false, ruleta: ruletaPerfil = {}, hasta = {}, onAlimentar, urlLogin = '/login', banners = BANNERS_ARCADE,
 } = {}) {
   // Sin sesión no hay perfil: nada está hecho y la ruleta está en cero (como
   // la tienda con userProfile null).
   const palabraHecha = sesion && palabra;
   const kapiReclamado = sesion && kapi;
   const bolitasHechas = sesion && bolitas;
+  const pichangaHecha = sesion && pichanga;
   const ruleta = sesion ? ruletaPerfil : {};
-  const { desbloqueada = false, girada = false, perdida = false, empezada = false, pendienteAnterior = false } = ruleta;
+  const { desbloqueada = false, girada = false, perdida = false, empezada = false, pendienteAnterior = false, porDias = false, siempre = false } = ruleta;
   const dias = Math.max(0, Math.min(7, Number(ruleta.dias) || 0));
   const esperaDiaria = hasta.manana ? { hasta: hasta.manana, texto: 'Disponible de nuevo en' } : undefined;
   // Botón según la sesión: sin sesión todos llevan a entrar.
@@ -73,7 +75,7 @@ export function juegosDelArcade({
     {
       id: 'kapi',
       ...banner(banners.kapi),
-      titulo: 'Alimenta a Kapi',
+      titulo: 'Alimenta a Walito',
       descripcion: 'Reclama tu moneda gratis cada día para ahorrar en tus compras.',
       estado: kapiReclamado ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Disponible hoy', tono: 'aviso', punto: true },
       recompensa: { texto: kapiDoble ? '+2 monedas hoy' : '+1 moneda al día' },
@@ -86,15 +88,19 @@ export function juegosDelArcade({
     {
       id: 'ruleta',
       ...banner(banners.ruleta),
-      titulo: 'Ruleta Semanal',
-      descripcion: 'Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles.',
+      titulo: 'La Ruleta de Walito',
+      descripcion: siempre ? 'Un giro gratis cada semana para ganar monedas y cupones.'
+        : porDias ? 'Alimenta a Walito 7 días, cuando quieras, y gira la ruleta para ganar premios.' : 'Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles.',
       estado: desbloqueada ? { texto: 'Giro disponible', tono: 'violeta', punto: true }
         : girada ? { texto: 'Girada', tono: 'exito' }
           : perdida ? { texto: 'Semana perdida', tono: 'peligro' }
             : { texto: 'Bloqueada', tono: 'neutro' },
-      recompensa: { texto: 'Premio semanal', icono: 'regalo' },
-      racha: { dias, de: 7 },
-      nota: pendienteAnterior ? { tipo: 'buena', texto: '¡Tienes un giro pendiente de la semana pasada!' }
+      recompensa: { texto: porDias ? 'Premio cada 7 días' : 'Premio semanal', icono: 'regalo' },
+      // Una por semana sin condición: no hay días que contar.
+      racha: siempre ? undefined : { dias, de: 7 },
+      nota: siempre ? (girada ? { tipo: 'hecho', texto: 'Ya giraste esta semana. Vuelve el próximo lunes.' } : undefined)
+        : porDias ? (!desbloqueada ? { tipo: 'bloqueo', texto: `Llevas ${dias} de 7 días. No tienen que ser seguidos.` } : undefined)
+        : pendienteAnterior ? { tipo: 'buena', texto: '¡Tienes un giro pendiente de la semana pasada!' }
         : !desbloqueada ? {
           tipo: girada ? 'hecho' : 'bloqueo',
           texto: girada ? 'Ya giraste esta semana. Vuelve el próximo lunes.'
@@ -103,8 +109,9 @@ export function juegosDelArcade({
         } : undefined,
       // Bloqueada por la racha, lo que falta no es tiempo sino días.
       espera: girada ? (hasta.lunes ? { hasta: hasta.lunes, texto: 'Vuelve el lunes, en' } : undefined)
-        : !desbloqueada && !perdida && dias < 7
-          ? (empezada ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} de racha` : 'Alimenta a Kapi cada día para desbloquearla')
+        : !desbloqueada && !perdida && !siempre && dias < 7
+          ? (porDias ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} con Walito`
+            : empezada ? `Te falta${faltan === 1 ? '' : 'n'} ${faltan} ${faltan === 1 ? 'día' : 'días'} de racha` : 'Alimenta a Walito cada día para desbloquearla')
           : undefined,
       atenuada: !desbloqueada,
       bloqueada: !desbloqueada,
@@ -115,7 +122,7 @@ export function juegosDelArcade({
     {
       id: 'bolitas',
       ...banner(banners.bolitas),
-      titulo: 'Las Bolitas de Kapi',
+      titulo: 'Las Bolitas de Walito',
       descripcion: 'Ordena los colores en los tubos para ganar 2 monedas al día.',
       estado: bolitasHechas ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Disponible hoy', tono: 'violeta', punto: true },
       recompensa: { texto: '+2 monedas al día' },
@@ -127,10 +134,24 @@ export function juegosDelArcade({
         : bolitasHechas ? { tipo: 'hecho', texto: 'Completado — jugar igual', url: '/ball-sort' }
           : { tipo: 'jugar', texto: 'Jugar ahora', url: '/ball-sort' },
     },
+    {
+      id: 'pichanga',
+      ...banner(banners.pichanga),
+      titulo: 'La Pichanga de Walito',
+      descripcion: 'Fútbol de chapas: juega con el equipo de Walito, vence a Happy y gana 2 monedas al día.',
+      estado: pichangaHecha ? { texto: 'Hecho hoy', tono: 'exito' } : { texto: 'Nuevo', tono: 'violeta', punto: true },
+      recompensa: { texto: '+2 monedas al día' },
+      atenuada: pichangaHecha,
+      espera: pichangaHecha && sesion ? esperaDiaria : undefined,
+      // Como las bolitas: se juega sin cuenta y, ya cobrada, por diversión.
+      accion: cargando ? boton()
+        : pichangaHecha ? { tipo: 'hecho', texto: 'Completado — jugar igual', url: '/pichanga' }
+          : { tipo: 'jugar', texto: 'Jugar ahora', url: '/pichanga' },
+    },
   ];
 
   const listos = sesion && !cargando
-    ? (palabraHecha ? 0 : 1) + (kapiReclamado ? 0 : 1) + (desbloqueada ? 1 : 0) + (bolitasHechas ? 0 : 1)
+    ? (palabraHecha ? 0 : 1) + (kapiReclamado ? 0 : 1) + (desbloqueada ? 1 : 0) + (bolitasHechas ? 0 : 1) + (pichangaHecha ? 0 : 1)
     : 0;
   // Mientras se resuelve la sesión no se anuncia nada (ni "Hecho hoy" ni
   // "Disponible"): solo el botón cargando.

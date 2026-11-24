@@ -41,9 +41,32 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
     };
   }
 
-  // ¿Alguna vez le dio de comer a Kapi? Es lo único que separa a quien perdió la
+  // ¿Alguna vez le dio de comer a Walito? Es lo único que separa a quien perdió la
   // racha de quien todavía no la ha empezado.
   const haEmpezado = !!userProfile.lastKapiClaimDate;
+
+  // 7 días con Walito, cuando sea: la cuenta la lleva el servidor en
+  // weeklyClaimsData.ruleta (como mucho un giro guardado). No hay semana que
+  // perder ni "ya giraste esta semana": al girar, la cuenta vuelve a 0.
+  const cuenta = userProfile.weeklyClaimsData?.ruleta;
+  if (reglas?.modoDesbloqueo === 'dias7') {
+    if (cuenta) {
+      return {
+        isUnlocked: cuenta.listo === true,
+        days: cuenta.listo === true ? 7 : Math.max(0, Math.min(6, Number(cuenta.dias) || 0)),
+        hasLost: false, hasSpun: false, esPendienteAnterior: false, haEmpezado, porDias: true,
+      };
+    }
+    // Sin cuenta todavía (no alimentó a Walito desde el cambio): el servidor
+    // arranca con los días de esta semana y el giro que le dejaba la regla de
+    // antes. Se muestra eso mismo, ya con los textos de los 7 días.
+    const antes = getRuletaEligibility(userProfile, { ...reglas, modoDesbloqueo: 'racha7' });
+    return {
+      isUnlocked: antes.isUnlocked,
+      days: antes.isUnlocked ? 7 : Math.min(6, antes.days),
+      hasLost: false, hasSpun: false, esPendienteAnterior: false, haEmpezado, porDias: true,
+    };
+  }
 
   const currentWeekStart = limaWeekStartStr();
   // Semana de gracia: el giro ganado completando los 7 días sigue disponible
@@ -90,11 +113,11 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
   // Si la diferencia entre el día actual de la semana y los reclamados es >= 2, seguro perdió.
   // En modo campaña no hay racha que perder.
   //
-  // `haEmpezado` es la clave: quien nunca ha alimentado a Kapi no ha perdido
+  // `haEmpezado` es la clave: quien nunca ha alimentado a Walito no ha perdido
   // nada, simplemente acaba de llegar. Sin esto, una cuenta recién creada un
   // miércoles era recibida con un "Semana perdida ❌", que es cierto en la
   // aritmética y pésimo como primera impresión.
-  const hasLost = reglas?.modoDesbloqueo !== 'siempre' && haEmpezado
+  const hasLost = reglas?.modoDesbloqueo === 'racha7' && haEmpezado
     && (adjustedDay > daysCount + 1);
 
   return { isUnlocked, days: daysCount, hasLost, hasSpun, esPendienteAnterior, haEmpezado };
@@ -183,6 +206,10 @@ export const saveRuletaPrize = async (prizeData, id = null) => {
       hasta: p.hasta,
       stockTotal: p.stockTotal,
       maxPorUsuario: p.maxPorUsuario,
+      // Un cupón de una marca: solo descuenta sus productos (spinRuletaSecure
+      // lo copia al cupón). Antes no se guardaba y valía para toda la tienda.
+      brandId: p.brandId,
+      marcaNombre: p.marcaNombre,
 
       // Espejo para el cliente antiguo (se puede quitar cuando ya no haya
       // versiones viejas en circulación).

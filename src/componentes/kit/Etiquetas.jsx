@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, Gift, X } from 'lucide-react';
 import { useContador } from './Efectos';
 import { EtiquetaColgante } from './Marca';
 import { Texto, useTexto } from './Traduccion';
@@ -151,6 +151,26 @@ export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, cargando =
       <span className={s.saldoDestello} aria-hidden="true" />
       <Moneda tamano={20} />
       <span key={vuelo ? vuelo.llegado : 'quieto'} className={[s.saldoNumero, vuelo?.llegado && s.saldoSube].filter(Boolean).join(' ')}>{conSaldo ? miles(mostrado) : '–'}</span>
+    </button>
+  );
+});
+
+/**
+ * Saldo de bienvenida (cabecera, al lado de las monedas): el regalo y cuánto
+ * hay para la primera compra. Sin saldo todavía, invita a ganarlo ("Gana S/ 10").
+ * Al tocarlo, la tienda abre el aviso de la semana de bienvenida.
+ *  - saldo (S/) · premio (S/ por amigo) · onClick
+ */
+export const SaldoBienvenida = forwardRef(function SaldoBienvenida({ saldo = 0, premio = 10, ...rest }, ref) {
+  const conSaldo = saldo > 0;
+  const monto = conSaldo ? `S/ ${Number(saldo).toFixed(saldo % 1 ? 2 : 0)}` : `S/ ${premio}`;
+  const etiqueta = useTexto(conSaldo ? `Tienes S/ ${Number(saldo).toFixed(2)} de saldo de bienvenida` : `Tu semana de bienvenida: gana S/ ${premio} por cada amigo`);
+  return (
+    <button ref={ref} type="button" className={`${s.saldo} ${s.saldoBienvenida}`} aria-label={etiqueta} title={etiqueta} {...rest}>
+      <span className={s.saldoDestello} aria-hidden="true" />
+      <Gift aria-hidden="true" className={s.saldoRegalo} />
+      {/* "Gana" se esconde en pantallas chicas: la cabecera del celular va justa. */}
+      <span className={s.saldoNumero}>{!conSaldo && <span className={s.saldoGana}><Texto>Gana</Texto> </span>}{monto}</span>
     </button>
   );
 });

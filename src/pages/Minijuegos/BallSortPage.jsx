@@ -7,7 +7,7 @@ import BolitasDeTienda from '../../components/minijuegos/BolitasDeTienda';
 const BallSortViejo = lazy(() => import('./BallSortViejo'));
 
 /*
- * /ball-sort (Las Bolitas de Kapi). Paso 6 de la migración (JUEGOS.md): la
+ * /ball-sort (Las Bolitas de Walito). Paso 6 de la migración (JUEGOS.md): la
  * del kit por BolitasDeTienda, que se juega también sin cuenta. juegosViejo
  * (useLoViejo('juegos'): en Firestore `juegosViejo: true`; en localStorage,
  * "juegos") vuelve a la de antes, que sigue pidiendo cuenta.

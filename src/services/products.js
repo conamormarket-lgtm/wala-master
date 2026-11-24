@@ -780,6 +780,18 @@ export const getFeaturedProducts = async (brandId = null) => {
 
 export const getCachedFeaturedProducts = () => readCache(CACHE_KEYS.featured);
 
+/** Cuándo se guardó una caché (ms), para initialDataUpdatedAt: sin él React Query la daba por recién leída. */
+const cachedAtDe = (key) => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+    return parsed && Number.isFinite(parsed.cachedAt) ? parsed.cachedAt : undefined;
+  } catch (e) {
+    return undefined;
+  }
+};
+export const getCachedFeaturedProductsAt = () => cachedAtDe(CACHE_KEYS.featured);
+export const getCachedCategoriesAt = () => cachedAtDe(CACHE_KEYS.categories);
+
 export const clearProductCaches = () => {
   productCacheGeneration += 1;
   productReads.clear();
@@ -796,6 +808,10 @@ export const clearProductCaches = () => {
  */
 export const createProduct = async (data, explicitId = null) => {
   const payload = normalizeProductPayload(data);
+  // null = "sin valor" (p. ej. inStock vacío = sin límite). updateDocument lo
+  // convierte en deleteField, pero setDocument lo guardaría tal cual y el
+  // servidor lee Number(null) = 0: el producto nuevo saldría sin stock.
+  Object.keys(payload).forEach((k) => { if (payload[k] === null) delete payload[k]; });
   let result;
 
   if (explicitId) {
@@ -955,21 +971,64 @@ export const setProductBrand = async (id, brandId) => {
  * brandId/variants porque el historial de compras, la wishlist y la lista de
  * regalos siguen necesitando esos datos para pintar miniaturas y precios.
  *
- * La firma NO cambia (id) => {error}: los llamadores del admin siguen igual.
+ * Desde el 2026-11-04 es "mover a la papelera" (Productos › Papelera):
+ * papeleraDesde (ms) cuenta los DIAS_PAPELERA días tras los que la función
+ * vaciarPapeleraVieja lo borra de verdad, y visibleAntes deja restaurarlo
+ * como estaba (restaurarProducto). Borrar antes: borrarProductoParaSiempre.
  * Para el borrado FÍSICO antiguo (doc + Storage) existe deleteProductPermanently,
  * que NINGÚN llamador de UI usa por defecto.
  */
-export const deleteProduct = async (id) => {
+export const DIAS_PAPELERA = 30;
+
+export const deleteProduct = async (id, { visibleAntes } = {}) => {
+  const ahora = Date.now();
   const tombstone = {
     visible: false,
     deleted: true,
-    deletedAt: new Date().toISOString(),
+    deletedAt: new Date(ahora).toISOString(),
+    papeleraDesde: ahora,
+    ...(typeof visibleAntes === 'boolean' && { visibleAntes }),
     // Tombstone ligero: sin tokens el producto no vuelve a salir en la búsqueda.
     searchTokens: []
   };
   const result = await updateDocument(COLLECTION, id, tombstone);
   // Igual que updateProduct: si no se pudo guardar, que falle. Antes devolvía
   // { error } sin lanzar y el admin mostraba "Producto archivado" sin haberlo hecho.
+  if (result.error) throw new Error(result.error);
+  clearProductCaches();
+  return result;
+};
+
+/**
+ * Sacar un producto de la papelera: vuelve como estaba (visible si lo era al
+ * moverlo; los de antes de la papelera, ocultos) y con su búsqueda de nuevo.
+ * `producto` es el documento crudo (getProducts con includeHidden).
+ */
+export const restaurarProducto = async (producto = {}) => {
+  const result = await updateDocument(COLLECTION, producto.id, {
+    deleted: null,
+    deletedAt: null,
+    papeleraDesde: null,
+    visibleAntes: null,
+    // Un pack de Crear se ve por comboCrear.publicado (archivarComboCrear lo
+    // apaga); los demás, por visible.
+    ...(producto.esComboCrear === true
+      ? { 'comboCrear.publicado': producto.visibleAntes === true }
+      : { visible: producto.visibleAntes === true }),
+    searchTokens: buildSearchTokens(producto.name || '', producto.brandId || '', producto.productType || ''),
+  });
+  if (result.error) throw new Error(result.error);
+  clearProductCaches();
+  return result;
+};
+
+/**
+ * Borrar de la papelera para siempre: SOLO el documento. Las fotos quedan en
+ * Storage porque los pedidos guardan su dirección (sin ellas, los pedidos de
+ * antes se verían sin foto).
+ */
+export const borrarProductoParaSiempre = async (id) => {
+  const result = await deleteDocument(COLLECTION, id);
   if (result.error) throw new Error(result.error);
   clearProductCaches();
   return result;

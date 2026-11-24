@@ -10,7 +10,7 @@ import { empresa } from '../empresa';
 
 export const TERMINOS = {
   titulo: 'Términos y Condiciones',
-  actualizado: '7 de septiembre de 2026',
+  actualizado: '11 de noviembre de 2026',
   secciones: [
     {
       id: 'introduccion',
@@ -47,6 +47,12 @@ export const TERMINOS = {
       parrafos: ['Dado que nuestros productos son creados de manera 100% personalizada según tus especificaciones, no aceptamos devoluciones ni ofrecemos reembolsos por cambios de opinión o errores en la selección de talla/color por parte del cliente.'],
       // La excepción se destaca: es lo que el cliente necesita encontrar.
       destacado: 'Excepciones: Si el producto llega defectuoso, dañado o el estampado es claramente diferente al diseño final aprobado, te pedimos contactarnos en un plazo máximo de 7 días tras recibirlo para gestionar un reemplazo o reembolso.',
+    },
+    {
+      id: 'promociones',
+      titulo: 'Promociones',
+      parrafos: ['Las promociones (como "Tu primera compra puede salir gratis", con su saldo de bienvenida) tienen sus propias condiciones, vigencia y montos, publicados en su página. El saldo de una promoción no es dinero en efectivo: no se retira, no se transfiere y vence en la fecha indicada. Podemos anular beneficios obtenidos con cuentas falsas, repetidas o de la misma persona.'],
+      lista: [{ texto: 'Condiciones de la semana de bienvenida: wala.pe/bienvenida' }],
     },
     {
       id: 'propiedad',

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import useMonedasDelJuego from './useMonedasDelJuego';
 import {
-  claimBallSortReward, registrarPartidaBolitas, getRankingBolitas, leerProgresoBolitas, guardarProgresoBolitas, REWARD_AMOUNT,
+  claimBallSortReward, registrarPartidaBolitas, getRankingBolitas, getTopBolitas, leerProgresoBolitas, guardarProgresoBolitas, REWARD_AMOUNT,
   leerPatrocinioBolitas, leerMundosBolitas, contarClicBolitas,
 } from '../../services/firebase/ballSort';
 import { getBrands } from '../../services/brands';
@@ -16,7 +17,7 @@ import { PaginaBolitas, unirProgresos } from '../../componentes/kit/paginas/Boli
 import entregarMonedas from './entregarMonedas';
 
 /*
- * Las Bolitas de Kapi (/ball-sort) con el kit (paso 6, JUEGOS.md). La misma
+ * Las Bolitas de Walito (/ball-sort) con el kit (paso 6, JUEGOS.md). La misma
  * lógica que la página de antes:
  *  - el premio (+2) lo da el servidor una vez al día de Lima; "ya cobró hoy"
  *    sale del perfil (lastBallSortReward) o del modo diseño
@@ -50,7 +51,7 @@ import entregarMonedas from './entregarMonedas';
 
 const CLAVE_AYUDA = 'wala_bolitas_ayuda_vista';
 const CLAVE_PROGRESO = 'wala_bolitas_progreso';
-const JUEGO = { gameId: 'ball-sort', gameName: 'Las Bolitas de Kapi' };
+const JUEGO = { gameId: 'ball-sort', gameName: 'Las Bolitas de Walito' };
 const ESPERA_NUBE_MS = 3000; // si la cuenta tarda más, se juega con lo del aparato
 const GUARDAR_NUBE_MS = 1500; // se junta lo que cambia seguido en una sola escritura
 
@@ -99,6 +100,7 @@ const productosDeMarca = async (marcaId) => {
 
 export default function BolitasDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
+  const monedas = useMonedasDelJuego();
   const sesion = tieneCuenta(user);
   const uid = sesion ? user.uid : null;
   const forzar = diseno('bolitas');
@@ -109,6 +111,8 @@ export default function BolitasDeTienda() {
   const [progreso, setProgreso] = useState(null);
   const [ranking, setRanking] = useState(null);
   const [cargandoRanking, setCargandoRanking] = useState(false);
+  const [top, setTop] = useState(null);
+  const [cargandoTop, setCargandoTop] = useState(false);
   const [marcas, setMarcas] = useState({ marcasMundos: [], patrocinio: null });
   const pendiente = useRef(null);
 
@@ -182,8 +186,21 @@ export default function BolitasDeTienda() {
     }
   };
 
+  const pedirTop = async () => {
+    setCargandoTop(true);
+    try {
+      setTop(await getTopBolitas());
+    } catch {
+      setTop((antes) => antes || { top: [], yo: {} });
+    } finally {
+      setCargandoTop(false);
+    }
+  };
+
   const registrar = async (partida) => {
     const r = await registrarPartidaBolitas(partida);
+    // Subió su nivel más alto: puede cambiar de puesto en el top.
+    if (r.record) pedirTop();
     if (partida.modo === 'reto') {
       pedirRanking();
       // Un cupón menos para el resto (el contador del patrocinio).
@@ -220,6 +237,7 @@ export default function BolitasDeTienda() {
 
   return (
     <PaginaBolitas
+      monedas={monedas}
       // La página toma el progreso al montarse: se vuelve a montar cuando llega.
       key={`${uid || 'invitado'}-${progreso ? 'listo' : 'cargando'}`}
       estado={loading || !progreso ? 'cargando' : undefined}
@@ -235,6 +253,9 @@ export default function BolitasDeTienda() {
       ranking={ranking}
       cargandoRanking={cargandoRanking}
       onPedirRanking={pedirRanking}
+      top={top}
+      cargandoTop={cargandoTop}
+      onPedirTop={pedirTop}
       marcasMundos={marcas.marcasMundos}
       patrocinio={marcas.patrocinio}
       onPedirProductos={productosDeMarca}

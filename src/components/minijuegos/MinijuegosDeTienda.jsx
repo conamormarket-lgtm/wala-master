@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { getRuletaEligibility } from '../../services/firebase/ruleta';
+import { getRuletaConfig, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { recordMissionAction } from '../../services/loyalty';
 import { getMiPartidaDeHoy } from '../../services/wordle';
 import { limaTodayStr, msHastaMananaLima, msHastaLunesLima } from '../../utils/fechaLima';
@@ -13,16 +14,16 @@ import { juegosDelArcade } from '../../componentes/kit/adaptadoresArcade';
 
 /*
  * La Zona Arcade (/minijuegos) con el kit (paso 6, MINIJUEGOS.md):
- * PaginaMinijuegos con las cuatro tarjetas de juegosDelArcade. La misma
+ * PaginaMinijuegos con las cinco tarjetas de juegosDelArcade. La misma
  * lógica que MinijuegosPage:
- *  - el día lo decide la hora de Lima (limaTodayStr); la moneda de Kapi
+ *  - el día lo decide la hora de Lima (limaTodayStr); la moneda de Walito
  *    (lastKapiClaimDate), las bolitas (lastBallSortReward), el doble del reto
  *    semanal (kapi_double_3d vigente) y la ruleta (getRuletaEligibility)
  *    salen del perfil; la palabra, de getMiPartidaDeHoy
  *  - al entrar con sesión, la misión diaria visit_minijuegos
- *  - "Reclamar moneda" abre a Kapi (open-kapi-pet); ya reclamada, un toast
+ *  - "Reclamar moneda" abre a Walito (open-kapi-pet); ya reclamada, un toast
  *  - mientras se resuelve la sesión no se anuncia nada (botones cargando)
- *  - el modo diseño (?sesion=, ?moneda=, ?bolitas=, ?palabra=, ?ruleta=,
+ *  - el modo diseño (?sesion=, ?moneda=, ?bolitas=, ?pichanga=, ?palabra=, ?ruleta=,
  *    ?dias=, solo en local) cambia lo que se pinta, con su aviso
  * Diferente: la sesión anónima (la de algunas landings) no cuenta como
  * cuenta (tieneCuenta), como en el resto de la tienda.
@@ -41,6 +42,7 @@ export default function MinijuegosDeTienda() {
   const kapiDoble = userProfile?.activeMultiplier === 'kapi_double_3d'
     && Boolean(userProfile?.multiplierExpiresAt) && new Date(userProfile.multiplierExpiresAt) > new Date();
   const bolitasHechas = diseno('bolitas') ? diseno('bolitas') === 'completado' : userProfile?.lastBallSortReward === hoy;
+  const pichangaHecha = diseno('pichanga') ? diseno('pichanga') === 'completado' : userProfile?.lastPichangaReward === hoy;
 
   // La palabra: lo dice el servidor (wordle/{uid}_{fecha}), lo mismo que mira el juego.
   const [palabraHecha, setPalabraHecha] = useState(false);
@@ -58,7 +60,9 @@ export default function MinijuegosDeTienda() {
     if (tieneCuenta(user)) recordMissionAction('visit_minijuegos').catch(() => {});
   }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const elegibilidad = getRuletaEligibility(userProfile);
+  // Las reglas de la ruleta (cómo se gana el giro), las mismas que su página.
+  const { data: configRuleta, isLoading: cargandoRuleta } = useQuery({ queryKey: ['ruleta-config'], queryFn: getRuletaConfig, staleTime: 10 * 60 * 1000 });
+  const elegibilidad = getRuletaEligibility(userProfile, configRuleta?.reglas);
   const forzarRuleta = diseno('ruleta');
   const ruleta = forzarRuleta ? {
     desbloqueada: forzarRuleta === 'desbloqueada' || forzarRuleta === 'pendiente',
@@ -73,12 +77,14 @@ export default function MinijuegosDeTienda() {
     perdida: elegibilidad.hasLost,
     empezada: elegibilidad.haEmpezado,
     pendienteAnterior: elegibilidad.esPendienteAnterior,
+    porDias: Boolean(elegibilidad.porDias),
+    siempre: configRuleta?.reglas?.modoDesbloqueo === 'siempre',
     dias: disenoNum('dias', 0, 7) ?? elegibilidad.days,
   };
 
   const alimentar = () => {
     if (kapiReclamado) {
-      addToast('¡Ya alimentaste a Kapi hoy! Vuelve mañana por tu moneda.', 'info');
+      addToast('¡Ya alimentaste a Walito hoy! Vuelve mañana por tu moneda.', 'info');
       return;
     }
     window.dispatchEvent(new CustomEvent('open-kapi-pet'));
@@ -87,11 +93,13 @@ export default function MinijuegosDeTienda() {
   const ahora = Date.now();
   const { juegos, listos } = juegosDelArcade({
     sesion,
-    cargando,
+    // Hasta saber la regla de la ruleta, sus textos podrían ser de otra.
+    cargando: cargando || cargandoRuleta,
     palabraHecha,
     kapiReclamado,
     kapiDoble,
     bolitasHechas,
+    pichangaHecha,
     ruleta,
     hasta: {
       manana: new Date(ahora + msHastaMananaLima()).toISOString(),

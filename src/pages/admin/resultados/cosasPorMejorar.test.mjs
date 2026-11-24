@@ -17,9 +17,9 @@ test('producto muy visto y casi sin ventas, con su nombre del catálogo', () => 
       { productId: 'vaso', name: 'Vaso', total: 90 },
     ],
     topVendidos: [{ productId: 'taza', unidades: 1 }, { productId: 'polo', unidades: 12 }],
-    nombres: new Map([['taza', 'Taza Kapi']]),
+    nombres: new Map([['taza', 'Taza Walito']]),
   });
-  assert.deepEqual(avisos.map((a) => a.titulo), ['Taza Kapi: 210 vistas y 1 venta', 'Vaso: 90 vistas y 0 ventas']);
+  assert.deepEqual(avisos.map((a) => a.titulo), ['Taza Walito: 210 vistas y 1 venta', 'Vaso: 90 vistas y 0 ventas']);
   assert.ok(avisos.every((a) => a.nivel === 'alta' && a.destino === 'productos'));
 });
 

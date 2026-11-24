@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Copy, ArrowRight, Medal, Gem, CheckCircle2, Gift } from 'lucide-react';
+import { Check, Copy, ArrowRight, Medal, Gem, CheckCircle2, Gift, MessageCircle, Download } from 'lucide-react';
 import Boton from '../Boton';
 import { CostoMonedas, GananciaMonedas, Moneda } from '../Etiquetas';
 import { Sello } from '../Marca';
@@ -28,15 +28,18 @@ const miles = (n) => Number(n || 0).toLocaleString('es-PE');
  *  - onCanjear(): promesa; antes pide confirmar en la misma tarjeta
  *  - confirmando, onConfirmar(abierta): la confirmación controlada por la
  *    página (una sola abierta a la vez); sin ellas, la tarjeta la lleva sola
+ *  - obtenida: una recompensa de una sola vez (un pack de stickers, o una que
+ *    el admin marcó «Una vez por persona») que la persona ya canjeó: "Ya es
+ *    tuyo" (los stickers) o "Ya la canjeaste" y el enlace a urlObtenida
  */
-export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, costo = 0, saldo = 0, onCanjear, confirmando, onConfirmar }) {
+export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, costo = 0, saldo = 0, onCanjear, confirmando, onConfirmar, obtenida = false, stickers = false, urlObtenida = '/cuenta/cupones' }) {
   const [confirmarPropio, setConfirmarPropio] = useState(false);
   const controlada = confirmando !== undefined;
   const confirmar = controlada ? confirmando : confirmarPropio;
   const setConfirmar = (v) => (controlada ? onConfirmar?.(v) : setConfirmarPropio(v));
   const [canjeando, setCanjeando] = useState(false);
   const etiquetaCanjear = useTexto('Canjear');
-  const faltan = Math.max(0, costo - saldo);
+  const faltan = obtenida ? 0 : Math.max(0, costo - saldo);
   const canjear = async () => {
     setCanjeando(true);
     try { await onCanjear?.(); } finally { setCanjeando(false); setConfirmar(false); }
@@ -54,7 +57,12 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
         {descripcion && <p className={s.recompensaTexto}><Texto>{descripcion}</Texto></p>}
       </div>
       <div className={s.recompensaPie}>
-        {confirmar ? (
+        {obtenida ? (
+          <>
+            <span className={s.obtenida}><CheckCircle2 aria-hidden="true" /> <Texto>{stickers ? 'Ya es tuyo' : 'Ya la canjeaste'}</Texto></span>
+            <Boton to={urlObtenida} tamano="sm" variante="contorno" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver en Mis cupones</Texto></Boton>
+          </>
+        ) : confirmar ? (
           <div className={s.confirmar} role="group" aria-label={`${etiquetaCanjear} ${titulo}`}>
             <span className={s.confirmarTexto}><Texto>¿Canjear por</Texto> <Moneda /> <strong>{miles(costo)}</strong>?</span>
             <span className={s.confirmarBotones}>
@@ -78,8 +86,13 @@ export function TarjetaRecompensa({ titulo, descripcion, imagen, beneficio, cost
 }
 
 const ORIGENES = {
-  ruleta: { texto: 'Ruleta semanal', icono: 'estrella', clase: 'talonRuleta' },
+  ruleta: { texto: 'La Ruleta de Walito', icono: 'estrella', clase: 'talonRuleta' },
   recompensa: { texto: 'Catálogo de recompensas', icono: 'regalo', clase: 'talonCatalogo' },
+  nivel: { texto: 'Regalo de nivel', icono: 'estrella', clase: 'talonCatalogo' },
+  bolitas_reto: { texto: 'Reto de Las Bolitas', icono: 'destello', clase: 'talonBolitas' },
+  bolitas_semana: { texto: 'Ranking de Las Bolitas', icono: 'estrella', clase: 'talonRanking' },
+  pichanga_reto: { texto: 'Reto de La Pichanga', icono: 'destello', clase: 'talonBolitas' },
+  pichanga_mes: { texto: 'Goleadores de La Pichanga', icono: 'estrella', clase: 'talonRanking' },
 };
 const ESTADOS_CUPON = { activo: 'Disponible', usado: 'Usado', caducado: 'Vencido' };
 
@@ -88,12 +101,14 @@ const ESTADOS_CUPON = { activo: 'Disponible', usado: 'Usado', caducado: 'Vencido
  * talón dice de dónde salió (ruleta o catálogo); el código se copia con un
  * toque.
  *  - texto: lo que da ("10% en tu próxima compra") · codigo
- *  - origen: 'ruleta' | 'recompensa' (sin origen: catálogo, sin nombre)
+ *  - origen: 'ruleta' | 'recompensa' | 'nivel' | 'bolitas_reto' | 'bolitas_semana'
+ *    (sin origen: catálogo, sin nombre)
+ *  - marca: el nombre de la marca si el cupón solo vale en ella («Solo en …»)
  *  - estado: 'activo' | 'usado' | 'caducado' (estadoCupon de services/cupones)
  *  - vence: texto ya legible ("31 de octubre") · conAsesor: se canjea con un asesor
  *  - onCopiar(codigo): promesa o nada; si falla, la página avisa
  */
-export function TarjetaCupon({ texto, codigo, origen, estado = 'activo', vence, conAsesor = false, onCopiar }) {
+export function TarjetaCupon({ texto, codigo, origen, marca, estado = 'activo', vence, conAsesor = false, onCopiar }) {
   const [copiado, setCopiado] = useState(false);
   const reloj = useRef(null);
   useEffect(() => () => window.clearTimeout(reloj.current), []);
@@ -117,6 +132,7 @@ export function TarjetaCupon({ texto, codigo, origen, estado = 'activo', vence, 
         <p className={s.cuponMeta}>
           <span className={`${s.cuponEstado} ${s[`estado_${estado}`]}`}><Texto>{ESTADOS_CUPON[estado] || estado}</Texto></span>
           {origen && <span className={s.cuponOrigen}><Texto>{o.texto}</Texto></span>}
+          {marca && <span className={s.cuponMarca}><Texto>Solo en</Texto> {marca}</span>}
         </p>
         <h3 className={s.cuponTexto}><Texto>{texto}</Texto></h3>
         <div className={s.codigo}>
@@ -132,6 +148,52 @@ export function TarjetaCupon({ texto, codigo, origen, estado = 'activo', vence, 
           <p className={s.vence}><Texto>{estado === 'caducado' ? 'Venció el' : 'Válido hasta el'}</Texto> {vence}</p>
         )}
         {usable && conAsesor && <p className={s.vence}><Texto>Este cupón se canjea con un asesor.</Texto></p>}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Un pack de stickers de WhatsApp canjeado. Se añade desde la app de Android;
+ * en la web (o en una versión vieja de la app) lleva a Google Play.
+ *  - nombre · cantidad · muestras: [url] (unos cuantos stickers)
+ *  - modo: 'app' (se puede añadir aquí) | 'web' | 'actualizar' (app sin el botón)
+ *  - agregado: ya está en su WhatsApp · procesando · error: texto
+ *  - onAgregar() · urlPlayStore
+ */
+export function TarjetaStickers({ nombre, cantidad = 0, muestras = [], modo = 'web', agregado = false, procesando = false, error, onAgregar, urlPlayStore }) {
+  return (
+    <article className={s.stickers} data-componente="TarjetaStickers">
+      <div className={s.stickersMuestras} aria-hidden="true">
+        {muestras.slice(0, 4).map((src, i) => <img key={src} src={src} alt="" loading="lazy" style={{ '--i': i }} />)}
+      </div>
+      <div className={s.stickersCuerpo}>
+        <p className={s.cuponMeta}>
+          <span className={`${s.cuponEstado} ${s[agregado ? 'estado_usado' : 'estado_activo']}`}><Texto>{agregado ? 'En tu WhatsApp' : 'Tuyos'}</Texto></span>
+          <span className={s.cuponOrigen}><Texto>Stickers de WhatsApp</Texto></span>
+        </p>
+        <h3 className={s.cuponTexto}><Texto>{nombre}</Texto></h3>
+        <p className={s.vence}>
+          <Texto>
+            {modo === 'app'
+              ? (agregado ? `Ya están en tu WhatsApp. Si cambias de teléfono, vuelve a añadirlos desde aquí.` : `${cantidad} stickers para usar en tus chats.`)
+              : modo === 'actualizar'
+                ? 'Actualiza la app de Walá para añadirlos a WhatsApp.'
+                : 'Se añaden a WhatsApp desde la app de Walá para Android.'}
+          </Texto>
+        </p>
+        {error && <p className={s.stickersError} role="alert"><Texto>{error}</Texto></p>}
+        <div className={s.stickersAcciones}>
+          {modo === 'app' ? (
+            <Boton tamano="sm" variante={agregado ? 'contorno' : 'primario'} icono={<MessageCircle aria-hidden="true" />} cargando={procesando} onClick={onAgregar}>
+              <Texto>{agregado ? 'Añadir otra vez' : 'Añadir a WhatsApp'}</Texto>
+            </Boton>
+          ) : (
+            <Boton tamano="sm" icono={<Download aria-hidden="true" />} to={urlPlayStore} target="_blank" rel="noopener noreferrer">
+              <Texto>{modo === 'actualizar' ? 'Actualizar en Google Play' : 'Descargar en Google Play'}</Texto>
+            </Boton>
+          )}
+        </div>
       </div>
     </article>
   );
@@ -206,6 +268,7 @@ export function NivelCuenta({ xp = 0, niveles = NIVELES }) {
         </div>
         <p className={s.nivelFalta}>
           {siguiente ? <TextoResaltado resaltar={[`${miles(siguiente.min - xp)} XP`]}>{`Faltan ${miles(siguiente.min - xp)} XP para ${siguiente.nombre}`}</TextoResaltado> : <Texto>¡Nivel máximo alcanzado!</Texto>}
+          {siguiente?.regalo && <span className={s.nivelRegalo}><Gift aria-hidden="true" /> <Texto>Al llegar:</Texto> <strong><Texto>{siguiente.regalo}</Texto></strong></span>}
         </p>
       </div>
       <BarraProgreso
@@ -221,10 +284,12 @@ export function NivelCuenta({ xp = 0, niveles = NIVELES }) {
             <span className={s.escalonTextos}>
               <span><Texto>{n.nombre}</Texto></span>
               <small>{miles(n.min)} XP</small>
+              {n.regalo && <small className={s.escalonRegalo}><Texto>{n.regalo}</Texto></small>}
             </span>
           </li>
         ))}
       </ol>
+      <p className={s.nivelComo}><Texto>Cómo se gana XP: +10 al entrar a Misiones cada día, +5 por cada misión y +20 por cada pedido entregado. La XP no se gasta y el regalo de cada nivel llega una sola vez a «Mis cupones».</Texto></p>
     </section>
   );
 }

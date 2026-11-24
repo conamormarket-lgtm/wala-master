@@ -90,12 +90,16 @@ const alVolverGlobal = () => {
  * Con varios modales uno encima de otro, cierra solo el de encima.
  *  - bloqueado: mientras sea true (un pago o un guardado en curso), "atrás"
  *    no cierra ni sale de la pantalla: se vuelve a apilar el estado.
+ *  - alBloquear: lo que pasa si tocan "atrás" estando bloqueado (la hoja de
+ *    edición con cambios pregunta antes de salir)
  */
-export function useCerrarConAtras(activo, onCerrar, bloqueado = false) {
+export function useCerrarConAtras(activo, onCerrar, bloqueado = false, alBloquear) {
   const cerrar = useRef(onCerrar);
   cerrar.current = onCerrar;
   const bloqueadoRef = useRef(bloqueado);
   bloqueadoRef.current = bloqueado;
+  const alBloquearRef = useRef(alBloquear);
+  alBloquearRef.current = alBloquear;
   useEffect(() => {
     if (!activo) return undefined;
     let apilado = false;
@@ -103,6 +107,7 @@ export function useCerrarConAtras(activo, onCerrar, bloqueado = false) {
     const alVolver = () => {
       if (bloqueadoRef.current) {
         window.history.pushState({ walaModal: true }, '');
+        alBloquearRef.current?.();
         return;
       }
       porAtras = true;

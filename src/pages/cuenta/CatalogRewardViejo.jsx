@@ -150,11 +150,8 @@ const CatalogRewardViejo = () => {
 
                 <div className={styles.cardHeader}>
                   <h3 className={styles.rewardTitle}>{reward.title}</h3>
-                  {beneficio ? (
-                    <span className={styles.rewardValue}>{beneficio}</span>
-                  ) : reward.value && (
-                    <span className={styles.rewardValue}>{reward.value}</span>
-                  )}
+                  {/* reward.value es la nota interna del admin: no se muestra. */}
+                  {beneficio && <span className={styles.rewardValue}>{beneficio}</span>}
                 </div>
                 {reward.description && (
                   <p className={styles.rewardDesc}>{reward.description}</p>

@@ -19,6 +19,7 @@ import { Beneficio } from "./piezas/Beneficio";
 import { TarjetaTestimonio } from "./piezas/TarjetaTestimonio";
 import { LogoMarca } from "./piezas/LogoMarca";
 import { TarjetaCategoria } from "./piezas/TarjetaCategoria";
+import { TarjetaColeccion } from "./piezas/TarjetaColeccion";
 import { StockBajo } from "./piezas/BarraProgreso";
 import { TarjetaAyuda } from "./piezas/TarjetaAyuda";
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
@@ -429,7 +430,7 @@ export function Testimonios({ ajustes = {} }) {
 /* ── Preguntas frecuentes (faq_accordion) ───────────────── */
 /**
  * Preguntas en acordeón y, al lado (o debajo en el celular), la tarjeta de
- * ayuda con Kapi.
+ * ayuda con Walito.
  *  - contacto: URL para "Escríbenos" (en la tienda, el WhatsApp de la zona;
  *    llega por propsPara). Sin ella la tarjeta no lleva botón.
  */
@@ -447,7 +448,7 @@ export function PreguntasFrecuentes({ ajustes = {}, contacto, sinKapi = false })
       </div>
       <div className={s.faqAyuda}>
         <TarjetaAyuda
-          texto="Kapi y el equipo te responden rapidito."
+          texto="Walito y el equipo te responden rapidito."
           accion={contacto ? { texto: 'Escríbenos', url: contacto } : undefined}
           imagen={sinKapi ? null : undefined}
         />
@@ -559,6 +560,49 @@ export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '' 
   );
 }
 
+/* ── Colecciones con foto (collection_grid) ─────────────── */
+
+/**
+ * Las colecciones como banners anchos (TarjetaColeccion), a propósito
+ * distintas de GrillaCategorias: de 1 a 4 por fila (columns, 3 por defecto) y,
+ * en el celular, una fila que se desliza. Tocar una abre el catálogo
+ * filtrado por ella (?coleccion=, que TiendaPage ya aplica).
+ *  - categorias: las automáticas (categoriasDeGrilla con las colecciones y
+ *    p.collections; categoryId es el id de la colección), con sortMode y limit
+ *    como GrillaCategorias. Sin ellas, los items puestos a mano
+ *    ({ collectionId, name, imageUrl, backgroundColor }), todos.
+ *  - La foto es solo la de la colección: sin ella, el degradado de su color
+ *    (nunca la de un producto, que en un banner ancho se veía cortada).
+ *  - rutaCategoria: adónde lleva ('' = la misma página, o '/tienda')
+ */
+export function GrillaColecciones({ ajustes = {}, categorias, rutaCategoria = '' }) {
+  const auto = Boolean(categorias);
+  const base = auto ? [...categorias] : (ajustes.items || []).map((c) => ({ ...c, categoryId: c.collectionId || c.categoryId }));
+  if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
+  const lista = auto ? base.slice(0, Math.min(12, Math.max(2, Number(ajustes.limit) || 6))) : base;
+  if (!lista.length) return null;
+  const columnas = Math.min(4, Math.max(1, Number(ajustes.columns) || 3));
+  return (
+    <>
+      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      <ul className={s.colecciones} style={{ '--columnas': columnas }}>
+        {lista.map((c, k) => (
+          <li key={c.categoryId || c.name}>
+            <TarjetaColeccion
+              nombre={c.name}
+              imagen={c.imageUrl}
+              url={c.url || `${rutaCategoria}?coleccion=${encodeURIComponent(c.categoryId)}`}
+              cuenta={auto && ajustes.showProductCount ? c.cuenta : undefined}
+              fondo={c.backgroundColor || ajustes.tileBackgroundColor}
+              acento={acento(k)}
+            />
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 /* ── Registro: tipo de sección → componente ─────────────── */
 
 /**
@@ -580,6 +624,8 @@ export const REGISTRO_SECCIONES = {
   faq_accordion: { Componente: PreguntasFrecuentes, nombre: 'PreguntasFrecuentes' },
   marquee: { Componente: MarcasMarquesina, nombre: 'MarcasMarquesina' },
   category_grid: { Componente: GrillaCategorias, nombre: 'GrillaCategorias', categorias: true },
+  // `categorias` lleva aquí las colecciones automáticas (la misma forma que las categorías).
+  collection_grid: { Componente: GrillaColecciones, nombre: 'GrillaColecciones', categorias: true },
   header: { Componente: Encabezado, nombre: 'Encabezado' },
   text: { Componente: BloqueTexto, nombre: 'BloqueTexto' },
   image: { Componente: BloqueImagen, nombre: 'BloqueImagen' },

@@ -1,9 +1,9 @@
 export { default as Boton } from './Boton';
-export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMonedas, Contador } from './Etiquetas';
+export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMonedas, SaldoBienvenida, Contador } from './Etiquetas';
 export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoHex, Deslizador, normalizarHex } from './Formulario';
 export { default as ListaOpciones } from './ListaOpciones';
 export { PanelFlotante, enCelular } from './PanelFlotante';
-export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
+export { CampoFecha, CampoHora, Calendario, fechaEnTexto } from './Fecha';
 export { default as TarjetaProducto, TarjetaProductoEsqueleto, TarjetaDeCatalogo, soles } from './TarjetaProducto';
 export { Cabecera, Pestanas, Logo } from './Navegacion';
 export { BarraInferior } from './BarraInferior';
@@ -30,7 +30,7 @@ export { default as Acordeon } from './Acordeon';
 export { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 export {
   BarraAnuncios, HeroCarrusel, InsigniasConfianza, CarruselProductos, OfertaRelampago,
-  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones, SeccionDelKit,
+  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, GrillaColecciones, REGISTRO_SECCIONES, RenderSecciones, SeccionDelKit,
 } from './Secciones';
 export { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados, videoIncrustado } from './SeccionesContenido';
 export { BannerPrincipal, PortadaDeMarca, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';
@@ -75,3 +75,88 @@ export { PaginaSuscripciones, PaginaInvitacion, PaginaEnlaces } from './paginas/
 export { encuestaDesdeConfig } from './adaptadoresEncuesta';
 export { juegosDelArcade, BANNERS_ARCADE } from './adaptadoresArcade';
 export { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde } from './adaptadoresCrear';
+
+// Panel administrativo (guia/ADMIN.md): la tienda no importa este índice.
+export { MarcoAdmin, BarraInferiorAdmin, CabezaAdmin, SinPermiso, useMarcoAdmin } from './piezas/admin/Marco';
+export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote, CargarMas, ListaOrdenable, SelectorProductos, NumeroEnLinea } from './piezas/admin/Datos';
+export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, CampoColores, ElegirUno, ElegirMuestra, BarraGuardar, CampoLista } from './piezas/admin/Formularios';
+export { ICONOS_ADMIN, iconoAdmin } from './piezas/admin/iconosAdmin';
+export { PaginaInicioAdmin } from './paginas/admin/Inicio';
+export { PaginaListaAdmin } from './paginas/admin/Lista';
+export { PaginaCategorias } from './paginas/admin/Categorias';
+export { PaginaColecciones, PaginaAtributos, PaginaEnvios } from './paginas/admin/Catalogo';
+export { PaginaMarcas, PaginaProductosMarca } from './paginas/admin/Marcas';
+export { PaginaDestacados } from './paginas/admin/Destacados';
+export { PaginaProductos, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
+export { PaginaFichaProducto } from './paginas/admin/Ficha';
+export { PaginaPersonalizables, PaginaPacks } from './paginas/admin/Crear';
+export { PasoAdmin } from './piezas/admin/Pasos';
+export { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras } from './piezas/admin/Metricas';
+export { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from './piezas/admin/Resultados';
+export {
+  MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
+  PaginaDetalleTecnico, PANTALLAS_TECNICAS,
+} from './paginas/admin/Resultados';
+export { FichaCliente, ListaCumpleanos } from './piezas/admin/Clientes';
+export { PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS } from './paginas/admin/Tecnico';
+export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin, PaginaCanjesAdmin } from './paginas/admin/Fidelidad';
+export { PaginaFechasAdmin } from './paginas/admin/Fechas';
+export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
+export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, PaginaResenasProductos } from './paginas/admin/Encuestas';
+export { PaginaSorteosAdmin, PaginaSorteoAdmin, GanadoresSorteo, AjusteSorteo } from './paginas/admin/Sorteos';
+export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admin/Suscripciones';
+export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';
+export { PaginaPopupsAdmin } from './paginas/admin/Popups';
+export { PaginaLandingsAdmin } from './paginas/admin/Paginas';
+export { PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
+export { PaginaRuletaAdmin } from './paginas/admin/Ruleta';
+export { PaginaConfiguracionAdmin, PaginaBloqueosAdmin } from './paginas/admin/Configuracion';
+export { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from './paginas/admin/Ajustes';
+export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
+export { PaginaRecepcion } from './paginas/admin/Pedidos';
+export { PaginaPagos } from './paginas/admin/Pagos';
+export { PaginaReclamos } from './paginas/admin/Reclamos';
+export { GraficoTendencia } from './piezas/admin/Grafico';
+export { EditorZonas, ListaZonas, DisenoPrenda, ColoresPrenda, PlantillasPrenda, variantesCrudas } from './piezas/admin/Crear';
+export { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from './piezas/admin/Producto';
+export {
+  MENU_ADMIN, menuAdminPara, accesosAdminPara, puedeVer, esRutaActiva, opcionActiva,
+  categoriaDesdeFirestore, categoriaAFirestore, ordenConParte, marcaAdminDesdeFirestore, normalizarBusqueda, mismoNombre,
+  coleccionDesdeFirestore, coleccionAFirestore, ATRIBUTOS, usosDeAtributo, atributoDesdeFirestore, atributoAFirestore,
+  zonaDesdeFirestore, zonaAFirestore,
+  slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde, papeleraDesde, usosDeProductos, borrablesDePapelera, restaurablesDePapelera, textoSeBorra, DIAS_PAPELERA,
+  esDeLaTienda, piezasDeCombos, etiquetasDeProducto, rutaAdminDeProducto, estadoDeStock,
+  CUMPLIMIENTOS, fichaDesdeProducto, fichaAProducto, erroresDeFicha,
+  personalizableDesde, packDesdeFirestore, packAGuardar, erroresDePack, MODOS_TALLA_PACK, MIN_PIEZAS_PACK, MAX_PIEZAS_PACK,
+  ESTADOS_RECEPCION, FILTROS_RECEPCION, pedidoEnFiltro, textoDePedido, resumenRecepcion, direccionParaCopiar,
+  PERIODOS_PAGOS, rangoDePeriodo, enlaceEnFiltro, resumenEnlaces, serieDiariaEnlaces, duracionCorta, enlaceNuevo,
+  MENSAJE_PAGOS_POR_DEFECTO, configPagosDesde, configPagosAMensajes,
+  reclamoDesdeFirestore, respuestaDeReclamo, diasHabilesEntre, plazoDeReclamo, textoDeReclamo,
+  porCienVisitas, cambioPorcentual, cambioEnPuntos, cifrasDelResumen, otrosCobrosDe, serieDeVisitas, PERIODOS_RESULTADOS,
+  listasDeProductos, listasDeVisitantes, enDiasTexto, quienDelCarrito, cumpleanosDe, resumenDeFicha, listasDeFicha,
+  MAX_DIAS_RECONSTRUIR, ultimosDias, diasEntreClaves, tramosDeDias, ayudaDeRango, filasDeCalidad,
+  segunOrigen, traficoPorDia, seguimientoDePedidos, listasDePaginas, claveAnonimaCorta, listasDeUso, nombreDePais, listasDeNavegador,
+  ESTADOS_REFERIDO, ESTADOS_REFERENTE, referidoDesdeFirestore, resumenReferidos, referentesDesde, ESTADOS_CANJE, canjeDesde, canjesDesde, resumenCanjes, misionDesdeFirestore, misionAFirestore,
+  RECOMPENSAS_RETO, recompensaDeReto, ACCIONES_RETO, esRetoConEvidencia, textoAccionReto, retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde,
+  TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, erroresDeRecompensa,
+  semanasDelMes, mesVecino, fechaClienteDesde, cuandoFecha, FILTROS_FECHAS_CLIENTES, fechaEnVentana, paqueteDesdeFirestore, paqueteAFirestore,
+  paquetesDeFecha, cambiosAlElegir, siguienteElegido, estadoDePaquetes, diasDesdeTexto, idDeFestiva,
+  CATEGORIAS_NOTIF, GRUPOS_AVISOS, configNotificacionesDesde, configNotificacionesAFirestore, vistaPreviaAviso, conDato, SEGMENTOS_NOTIF,
+  ESTADOS_CAMPANA, tasaTexto, campanaDesde, ofertaAFirestore, ofertaDeProducto, programadaIso, erroresDeOferta, NOMBRES_AVISO, filaDeEstadistica,
+  TIPOS_PREGUNTA, preguntaNueva, separarPreguntas, conOpcion, OPCIONES_MEJORAR_ENTREGA, entregaPanelDesde, cambioEstrellas, estrellasTexto,
+  unidadDeRango, etiquetaDePeriodo, fechaDeDia, configConPregunta,
+  slugDeSorteo, ESTADOS_SORTEO, REQUISITOS_APP, sorteoDesdeFirestore, sorteoAFormulario, erroresDeSorteo, tipoDeSorteo, participanteDesde,
+  identificadorDe, erroresDeAjuste,
+  INTERVALOS_PLAN, mesesDeIntervalo, COLORES_CAMPANA, campanaSuscripcionDesde, campanaSuscripcionAFormulario, planNuevo, planConIntervalo,
+  erroresDeCampanaSuscripcion, textoDePlanes, ESTADOS_SUSCRIPTOR, suscriptorDesde, beneficioDesde, beneficioAFirestore, ganadorGaleriaDesde, ganadorGaleriaAFirestore,
+  DISENO_ENLACES, TIPOS_RED, disenoDeEnlaces, slugDeEnlace, paginaEnlacesDesde, paginaEnlacesAFirestore, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces,
+  cuandoPopup, erroresDePopup, pasosEmbudoPopup, slugDeLanding, landingDesde, erroresDeLanding, landingAFirestore,
+  palabraLimpia, palabraDiaDesde, palabrasConAutomaticas, bloqueoPalabra, erroresDePalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDeCupon, patrocinioDesde,
+  erroresDePatrocinio, premiosBolitasDesde, premiosBolitasAFirestore, nuevoPuesto, erroresDePremios, metricasBolitas,
+  DIAS_RULETA, textoDiasRuleta, TIPOS_PREMIO_RULETA, PREMIO_RULETA_CON_PRODUCTO, PREMIO_RULETA_CON_CUPON, premioRuletaAFormulario, premioRuletaAFirestore,
+  erroresDePremioRuleta, motivoRuletaHoy, ganadoRuletaDesde,
+  PERMISOS_ADMIN, adminDesdeFirestore, adminAFirestore, erroresDeAdmin, textoPermisos, PAGINAS_FIJAS, paginasBloqueables, conBloqueo,
+  textoConteoImagenes, textoResultadoImagenes, NOMBRES_IDIOMA, traduccionesPorIdioma,
+  MENSAJE_PEDIDO_POR_DEFECTO, SECCIONES_WHATSAPP, whatsappDesdeMensajes, whatsappAMensajes, telefonoEscrito, erroresDeWhatsApp, mensajePedidoDeEjemplo,
+  cambioDisenoDesde, conVersionActual, nombreDePaginaGuardada, movimientoInventarioDesde, textoCambioStock, textoStock, csvInventario,
+} from './adaptadoresAdmin';

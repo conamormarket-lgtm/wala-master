@@ -512,7 +512,7 @@ const WordleViejo = () => {
 
               <div className={styles.rankingDatos}>
                 <span className={styles.rankingNombre}>
-                  {p.displayName}
+                  {p.displayName || 'Anónimo'}
                   {user?.uid === p.id && <span className={styles.rankingTu}><T>Tú</T></span>}
                 </span>
                 <span className={styles.rankingMetricas}>

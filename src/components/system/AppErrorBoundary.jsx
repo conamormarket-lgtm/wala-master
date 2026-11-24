@@ -1,7 +1,6 @@
 import React from 'react';
 import { reportClientError } from '../../services/observability/errorReporter';
 import styles from './AppErrorBoundary.module.css';
-import { T } from '../../i18n/useTranslatedText';
 
 // ── Observabilidad (Fase 4): ErrorBoundary GLOBAL ─────────────────────────────
 // Captura errores de render en TODO el árbol principal, muestra un fallback
@@ -16,7 +15,7 @@ import { T } from '../../i18n/useTranslatedText';
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, message: '' };
     this.handleReload = this.handleReload.bind(this);
   }
 
@@ -31,7 +30,7 @@ class AppErrorBoundary extends React.Component {
     ) {
       return null;
     }
-    return { hasError: true };
+    return { hasError: true, message: msg };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -77,10 +76,19 @@ class AppErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className={styles.container} role="alert">
-          <h2 className={styles.title}><T>Algo salió mal</T></h2>
+          {/* Texto fijo: este aviso está por fuera de LanguageProvider (App.jsx);
+              con <T> fallaba él también y la página quedaba en blanco sin
+              registrar el error de verdad. */}
+          <h2 className={styles.title}>Algo salió mal</h2>
           <p className={styles.message}>
             Ocurrió un problema inesperado. Por favor, recarga la página para continuar.
           </p>
+          {/* El mensaje, para poder contarnos qué pasó (como ErrorBoundary). */}
+          {this.state.message && (
+            <p className={styles.message} style={{ fontSize: '0.8rem', opacity: 0.7 }} title={this.state.message}>
+              {this.state.message.length > 140 ? `${this.state.message.slice(0, 140)}…` : this.state.message}
+            </p>
+          )}
           <button type="button" className={styles.button} onClick={this.handleReload}>
             Recargar
           </button>

@@ -1,0 +1,275 @@
+/* ── D5 · Clientes y fidelidad ─────────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.codigo {
+  padding: 0.05rem 0.35rem;
+  border-radius: 6px;
+  background: var(--violet-50);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+/* Referidos: la hoja con las visitas de una persona. */
+.referente {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.visitas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.visita {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--color-surface);
+}
+
+.visita + .visita {
+  border-top: 1px solid var(--color-border);
+}
+
+.visitaQuien,
+.visitaPedido {
+  display: grid;
+  min-width: 0;
+}
+
+.visitaQuien strong {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.visitaPedido {
+  justify-items: end;
+  text-align: end;
+}
+
+@media (max-width: 560px) {
+  .visita {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .visitaPedido {
+    grid-column: 1;
+    justify-items: start;
+    text-align: start;
+  }
+}
+
+/* Recompensas: la fila de la lista para arrastrar, con las columnas de la tabla. */
+.filaRecompensa {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.4fr) 110px minmax(0, 1fr) 100px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Misiones: la misma fila, sin foto. */
+.filaMision {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 110px minmax(0, 1fr) 100px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.filaTextos {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.filaTextos strong {
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filaCuesta {
+  font-size: 0.9rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.filaDa {
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+/* En el celular: la foto a la izquierda y, en renglones, lo demás. */
+@container pagina-admin (max-width: 720px) {
+  .filaRecompensa {
+    grid-template-columns: 40px minmax(0, 1fr);
+    row-gap: 0.15rem;
+  }
+
+  .filaRecompensa > :first-child {
+    grid-row: 1 / span 4;
+    align-self: start;
+  }
+
+  .filaMision {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.15rem;
+  }
+
+  .filaMision .filaCuesta,
+  .filaMision .filaDa,
+  .filaMision .filaEstado {
+    grid-column: 1;
+  }
+
+  .filaCuesta,
+  .filaDa,
+  .filaEstado {
+    grid-column: 2;
+    font-size: 0.82rem;
+    text-align: left;
+  }
+}
+
+/* Canjes: la insignia con su fecha y los botones de la fila. */
+.canjeEstado {
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+}
+
+.canjeAcciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.revisar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.activo {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  max-width: 720px;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.activo h2 {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.activo > p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.datos {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+}
+
+.datos div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 8rem) minmax(0, 1fr);
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.datos dt {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.datos dd {
+  display: grid;
+  margin: 0;
+}
+
+:global([data-theme='dark']) .codigo {
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.producto {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.productoElegido {
+  font-size: 0.86rem;
+}
+
+.productoElegido:focus {
+  outline: none;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-hover);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.75rem;
+}
+
+.muestra {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: var(--violet-50);
+  font-size: 0.86rem;
+}
+
+.muestra span {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .muestra {
+  background: rgba(139, 92, 246, 0.12);
+}

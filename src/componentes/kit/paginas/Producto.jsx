@@ -396,7 +396,9 @@ export function PaginaProducto({
           </p>
         )}
 
-        {/* En el celular, agregar y personalizar quedan pegados abajo. */}
+        {/* En el celular, agregar y personalizar quedan pegados abajo. En uno
+            angosto no caben los dos: abajo solo agregar y personalizar va debajo
+            (el mismo botón dos veces; el CSS muestra uno). */}
         <div ref={compraRef} className={s.compra} data-compra-fija="">
           {individual ? <div className={s.compraPrincipal}>
             {individual && !producto.agotado && !solo && (
@@ -408,9 +410,12 @@ export function PaginaProducto({
             {botonAgregar({ bloque: true })}
           </div> : botonAgregar({ bloque: true })}
           {!solo && producto.personalizable && onPersonalizar && (
-            <Boton variante={principal === 'personalize' ? 'primario' : 'contorno'} tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
+            <Boton className={s.personalizarFijo} variante={principal === 'personalize' ? 'primario' : 'contorno'} tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
           )}
         </div>
+        {!solo && producto.personalizable && onPersonalizar && (
+          <Boton className={s.personalizarSuelto} bloque variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
+        )}
         {!producto.agotado && !solo && (
           <Boton bloque tamano="lg" variante={principal === 'buy' ? 'primario' : 'secundario'} cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Comprar ahora</Texto></Boton>
         )}

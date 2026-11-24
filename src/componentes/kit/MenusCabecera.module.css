@@ -1117,3 +1117,24 @@
   margin-left: auto;
   color: var(--primary-color);
 }
+
+/* MenuCuenta: el nivel de la cuenta, debajo del correo (lleva a Misiones). */
+.nivelChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  margin-top: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--primary-light, rgba(124, 58, 237, 0.1));
+  color: var(--primary-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.nivelChip svg {
+  width: 12px;
+  height: 12px;
+}

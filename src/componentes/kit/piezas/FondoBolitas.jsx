@@ -3,7 +3,7 @@ import { azar, semillaDe } from './bolitasMotor.mjs';
 import s from './FondoBolitas.module.css';
 
 /*
- * El fondo ilustrado de la mesa de Las Bolitas de Kapi: una escena por mundo
+ * El fondo ilustrado de la mesa de Las Bolitas de Walito: una escena por mundo
  * (la del nombre del mundo), el escenario del reto o los colores de una marca.
  * Son dibujos SVG quietos (nada se mueve: diseño animado pero liviano), sin
  * imágenes que bajar. Las flores, ventanas, estrellas… cambian de lugar con la

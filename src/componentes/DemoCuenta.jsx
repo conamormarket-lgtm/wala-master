@@ -8,6 +8,9 @@ import {
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
+import { TarjetaBorrarCuenta } from './kit/piezas/BorrarCuenta';
+import { TarjetaBienvenida, PopupBienvenida } from './kit/piezas/Bienvenida';
+import { SE_BORRA, SE_CONSERVA } from '../config/legales/eliminarCuenta';
 import CREAR from './demo/crear.json';
 import { leerPrendaBase } from '../utils/prendaBase';
 import { volarMonedasGanadas } from '../utils/animations';
@@ -301,6 +304,7 @@ export function CuentaDemo({
   const [cupones, setCupones] = useState(CUPONES);
   const [misiones, setMisiones] = useState(MISIONES);
   const [grupos, setGrupos] = useState(() => gruposReferidosDemo(fotos));
+  const [popupBienvenida, setPopupBienvenida] = useState(false);
   const recompensas = useMemo(() => recompensasDemo(fotos), [fotos]);
   const [creaciones, setCreaciones] = useState(() => creacionesDemo());
   const [comunidad, setComunidad] = useState({ d1: 'publicada' });
@@ -391,6 +395,11 @@ export function CuentaDemo({
           monto={pagar?.deuda || pagar?.total || 0}
           tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta o Yape</Boton>}
           urlAyuda={enlaceWhatsApp(empresa.whatsapp, `Hola, tengo un problema para pagar el saldo de mi pedido #${pagar?.codigo}.`)}
+          manual={{
+            yape: { numero: '987 654 321', nombre: 'Walá S.A.C.' },
+            plin: { numero: '987 654 321', nombre: 'Walá S.A.C.' },
+            urlComprobante: enlaceWhatsApp(empresa.whatsapp, `Hola, quiero pagar mi saldo pendiente del pedido *#${pagar?.codigo}*. Adjunto mi comprobante.`),
+          }}
         />
       </>
     );
@@ -482,6 +491,12 @@ export function CuentaDemo({
     pagina = (
       <PaginaCupones
         cupones={vacio ? [] : cupones}
+        stickers={vacio ? [] : [{
+          id: 'st-kapi', nombre: 'Walito de Walá', cantidad: 13, modo: 'web',
+          muestras: ['kapi_02.webp', 'kapi_03.webp', 'kapi_04.webp', 'kapi_12.webp'].map((f) => `/stickers/kapi/${f}`),
+        }]}
+        urlPlayStore="https://play.google.com/store/apps/details?id=com.wala.tienda"
+        onAgregarStickers={() => avisar('En la app', 'Abriría WhatsApp para añadir el pack', 'info')}
         cargando={cargando}
         error={conError}
         onReintentar={() => avisar('En la tienda', 'Volvería a pedir tus cupones', 'info')}
@@ -512,6 +527,26 @@ export function CuentaDemo({
   } else if (ruta === '/cuenta/referidos') {
     pagina = (
       <PaginaReferidos
+        // La semana de bienvenida (piezas/Bienvenida): saldo, reloj y cada amigo.
+        bienvenida={(
+          <>
+          <Boton variante="contorno" tamano="sm" onClick={() => setPopupBienvenida(true)}>Ver el aviso grande (popup)</Boton>
+          <PopupBienvenida abierta={popupBienvenida} onCerrar={() => setPopupBienvenida(false)} venceMs={Date.now() + (4 * 24 + 7) * 3600 * 1000} saldo={vacio ? 0 : 20} pendiente={vacio ? 0 : 10} onInvitar={() => setPopupBienvenida(false)} />
+          <TarjetaBienvenida
+            fase={{ estado: 'activa', venceMs: Date.now() + (4 * 24 + 7) * 3600 * 1000 }}
+            saldo={vacio ? 0 : 20}
+            pendiente={vacio ? 0 : 10}
+            premios={vacio ? [] : [
+              { id: 'a', nombre: 'Lucía', estado: 'disponible', monto: 10 },
+              { id: 'b', nombre: 'Diego', estado: 'disponible', monto: 10 },
+              { id: 'c', nombre: 'Carla', estado: 'pendiente', monto: 10 },
+              { id: 'd', nombre: 'Mateo', estado: 'no_elegible', monto: 0, motivo: 'Su compra en productos no llegó al mínimo.' },
+            ]}
+            enPausa
+            onInvitar={() => avisar('En el celular', 'Se abriría el menú de compartir del teléfono', 'info')}
+          />
+          </>
+        )}
         ranking={{ items: vacio ? [] : RANKING, cargando }}
         url="https://www.wala.pe/invitar/ISAAC7K"
         codigo="ISAAC7K"
@@ -608,6 +643,7 @@ export function CuentaDemo({
         idioma={idioma}
         onIdioma={(i) => { setIdioma(i); if (i !== 'es') avisar('Idioma', 'En la tienda, Walá se vería en ese idioma', 'info'); }}
         onCerrarSesion={onCerrarSesion}
+        borrarCuenta={<DemoBorrarCuenta avisar={avisar} />}
       />
     );
   } else {
@@ -1080,7 +1116,7 @@ const useFuentesEstudio = () => useEffect(() => {
   });
 }, []);
 
-/* "Subir imagen": las caras de Kapi hacen de fotos del cliente (con los
+/* "Subir imagen": las caras de Walito hacen de fotos del cliente (con los
    píxeles de una foto buena, una regular y una chica, para ver la calidad). */
 const SUBIDAS = [
   { src: '/assets/kapi/3d/kapi-feliz.webp', px: 1800 },
@@ -1088,7 +1124,7 @@ const SUBIDAS = [
   { src: '/assets/kapi/3d/kapi-triste.webp', px: 500 },
 ];
 
-/** Un diseño de ejemplo (Kapi en el pecho, una frase en la espalda) para editar o partir de él. */
+/** Un diseño de ejemplo (Walito en el pecho, una frase en la espalda) para editar o partir de él. */
 const disenoDeEjemplo = (prenda, texto) => {
   const pecho = prenda.vistas[0]?.zonas[0];
   const espalda = prenda.vistas[1]?.zonas[0];
@@ -1121,7 +1157,7 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
   const inicial = conDiseno ? {
     color: negro?.id,
     capas: disenoDeEjemplo(prenda, 'WALÁ CREW'),
-    nombre: modo === 'editar' ? (origen?.nombre || 'Mi polera de Kapi') : '',
+    nombre: modo === 'editar' ? (origen?.nombre || 'Mi polera de Walito') : '',
   } : {};
 
   let estado;
@@ -1167,6 +1203,40 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
       agotado={estados.includes('agotado')}
       borradorAdmin={estados.includes('borradorAdmin')}
       cargandoDiseno={estados.includes('cargandoDiseno')}
+    />
+  );
+}
+
+/**
+ * "Borrar mi cuenta" sin servidor: la primera revisión encuentra un pedido
+ * pendiente; "Revisar de nuevo" ya no, y abre la hoja para confirmar.
+ */
+function DemoBorrarCuenta({ avisar }) {
+  const [estado, setEstado] = useState('inicio');
+  const [vueltas, setVueltas] = useState(0);
+  const esperar = (ms) => new Promise((r) => { setTimeout(r, ms); });
+  const revisar = async () => {
+    setEstado('revisando');
+    await esperar(600);
+    setVueltas((v) => v + 1);
+    setEstado(vueltas === 0 ? 'pendientes' : 'listo');
+  };
+  return (
+    <TarjetaBorrarCuenta
+      seBorra={SE_BORRA}
+      seConserva={SE_CONSERVA}
+      estado={estado}
+      pendientes={[{ tipo: 'pedido', texto: 'Tu pedido #1234 todavía no se entrega.' }, { tipo: 'saldo', texto: 'El pedido #1198 tiene un saldo de S/ 45.00 por pagar.' }]}
+      metodos={{ contrasena: true, google: true }}
+      onRevisar={revisar}
+      onCancelar={() => setEstado('inicio')}
+      onBorrar={async ({ contrasena }) => {
+        await esperar(800);
+        if (contrasena && contrasena !== 'walá') throw new Error('La contraseña no es correcta.');
+        setEstado('inicio');
+        setVueltas(0);
+        avisar?.('Cuenta borrada', 'En la tienda se cierra la sesión y vuelve al inicio');
+      }}
     />
   );
 }

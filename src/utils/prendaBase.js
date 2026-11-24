@@ -701,3 +701,43 @@ export const vistasDeEjemplo = (origen) => [
     ],
   },
 ];
+
+/** Lo que se guarda en el producto (descarta lo que no sirve). */
+export const prendaBaseParaGuardar = (valor, variantes) => {
+  const ids = new Set((variantes || []).map((v) => v.id));
+  const colores = {};
+  Object.entries(valor?.colores || {}).forEach(([id, c]) => {
+    if (!ids.has(id)) return;
+    const fotos = Object.fromEntries(Object.entries(c?.fotos || {}).filter(([, url]) => url));
+    // Zonas propias del color, por vista (solo las vistas que tienen alguna).
+    const zonas = Object.fromEntries(Object.entries(c?.zonas || {})
+      .filter(([, lista]) => Array.isArray(lista) && lista.length)
+      .map(([vistaId, lista]) => [vistaId, lista.map(normalizarZona)]));
+    const conZonas = Object.keys(zonas).length > 0;
+    // Bicolor al revés: solo guarda de quién es espejo y su segundo tono (las
+    // fotos, zonas y patrón los toma del original al leerse).
+    if (c?.espejoDe && ids.has(c.espejoDe)) {
+      colores[id] = { espejoDe: c.espejoDe, ...(c.hex2 ? { hex2: c.hex2 } : {}), fotos: {} };
+      return;
+    }
+    if (c?.hex2 || Object.keys(fotos).length || conZonas) {
+      colores[id] = {
+        ...(c.hex2 ? { hex2: c.hex2 } : {}),
+        ...(c.hex2 && c.patron ? { patron: c.patron } : {}),
+        fotos,
+        ...(conZonas ? { zonas } : {}),
+      };
+    }
+  });
+  return {
+    vistas: (valor?.vistas || []).map(normalizarVista),
+    colores,
+    ...(leerTipo(valor?.tipo) !== 'prenda' && { tipo: leerTipo(valor.tipo) }),
+    ...(leerTecnica(valor?.tecnica) !== 'impresion' && { tecnica: leerTecnica(valor.tecnica) }),
+    ...(leerPlantillas(valor?.plantillas).length && { plantillas: leerPlantillas(valor.plantillas) }),
+    ...(valor?.soloPlantillas === true && { soloPlantillas: true }),
+    ...(valor?.portadaTienda === true && { portadaTienda: true }),
+    // Lo pone el botón de una vez de Yoryo (qué fotos para diseñar tiene): se conserva.
+    ...(typeof valor?.versionFotos === 'string' && valor.versionFotos && { versionFotos: valor.versionFotos }),
+  };
+};

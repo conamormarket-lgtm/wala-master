@@ -49,7 +49,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.35rem;
-  /* En angosto el título deja sitio a Kapi a la derecha. */
+  /* En angosto el título deja sitio a Walito a la derecha. */
   padding-right: 88px;
 }
 
@@ -117,7 +117,7 @@
   pointer-events: none;
 }
 
-/* Kapi se asoma un poco más al pasar por el panel: sube derecho, sin
+/* Walito se asoma un poco más al pasar por el panel: sube derecho, sin
    cambiar de giro (si gira, el corte del borde se inclina y su cara se tuerce). */
 @media (hover: hover) and (pointer: fine) {
   .panel:hover .kapi {

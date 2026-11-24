@@ -66,7 +66,7 @@ export function PaginaCreaciones({
           {Array.from({ length: 6 }, (_, k) => <li key={k}><EsqueletoCreacion /></li>)}
         </ul>
       ) : n === 0 ? (
-        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        // Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista).
         <EstadoVacio
           imagen={null}
           icono={<Sparkles />}
@@ -192,7 +192,7 @@ export function PaginaListaDeseos({
       {cargando ? (
         <ul className={s.rejillaProductos} aria-busy="true"><Esqueletos n={4} forma="producto" /></ul>
       ) : !hay ? (
-        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        // Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista).
         <EstadoVacio
           imagen={null}
           icono={<Heart />}
@@ -290,7 +290,7 @@ export function PaginaFechas({
       {cargando ? (
         <ul className={s.personas} aria-busy="true"><Esqueletos n={2} alto={360} /></ul>
       ) : personas.length === 0 ? (
-        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        // Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista).
         <EstadoVacio
           imagen={null}
           icono={<CalendarHeart />}

@@ -1,0 +1,44 @@
+[
+  {
+    "query": "Busco una espada que vuele, hasta 50 soles.",
+    "status": 200,
+    "pass": true,
+    "message": "¡Encontré una espada dron de juguete con luces LED y hélices protegidas, dentro de tu presupuesto!",
+    "products": [
+      {
+        "id": "YkAvod8hGPyRTFBuQtAR",
+        "name": "Espada dron de juguete con luces LED",
+        "price": 43.5
+      }
+    ],
+    "usage": {
+      "inputTokens": 6628,
+      "outputTokens": 158,
+      "embeddingTokens": 13
+    }
+  },
+  {
+    "query": "Pero la quiero sin luces.",
+    "status": 200,
+    "pass": true,
+    "message": "No encontré una espada que vuele y no tenga luces dentro de tu presupuesto de hasta 50 soles. ¿Qué prefieres cambiar: que vuele, que no tenga luces o el presupuesto?",
+    "products": [],
+    "usage": {
+      "inputTokens": 6706,
+      "outputTokens": 136,
+      "embeddingTokens": 24
+    }
+  },
+  {
+    "query": "Busco una espada voladora con cámara 4K y GPS.",
+    "status": 200,
+    "pass": true,
+    "message": "No encontré una espada voladora que reúna cámara 4K y GPS en el catálogo. ¿Qué característica te gustaría cambiar o dejar de lado?",
+    "products": [],
+    "usage": {
+      "inputTokens": 7109,
+      "outputTokens": 121,
+      "embeddingTokens": 16
+    }
+  }
+]

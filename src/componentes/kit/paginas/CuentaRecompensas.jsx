@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Gift, Ticket, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send } from 'lucide-react';
+import { Gift, Ticket, Sticker, History, ChevronDown, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send, Lock } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio } from '../Feedback';
 import { Moneda } from '../Etiquetas';
 import { IconoWala } from '../IconosWala';
 import { CabezaCuenta, TarjetaCuenta, Estadistica } from '../piezas/Cuenta';
-import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
+import { TarjetaRecompensa, TarjetaCupon, TarjetaStickers, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
+import { RetoSemanal } from '../piezas/RetoSemanal';
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
@@ -18,8 +19,8 @@ import s from './CuentaRecompensas.module.css';
  * Páginas del grupo Recompensas de la cuenta: catálogo, cupones, misiones y
  * referidos. Van dentro de MarcoCuenta. Lo que va al servidor (canjear,
  * completar, reclamar) entra como promesas; si falla, su mensaje se muestra
- * en la página. Los estados vacíos llevan un sello, no la cara de Kapi (en la
- * tienda ya está el flotante: un solo Kapi a la vista).
+ * en la página. Los estados vacíos llevan un sello, no la cara de Walito (en la
+ * tienda ya está el flotante: un solo Walito a la vista).
  */
 
 const miles = (n) => Number(n || 0).toLocaleString('es-PE');
@@ -49,14 +50,14 @@ function Esqueletos({ n = 3, alto = 220, forma = 'tarjeta' }) {
  *  - urlCupones
  * Una sola confirmación abierta a la vez (abrir otra cierra la anterior).
  */
-export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, error = false, onReintentar, onCanjear, urlCupones = '/cuenta/cupones' }) {
+export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, error = false, onReintentar, onCanjear, urlCupones = '/cuenta/cupones', enPausa = false }) {
   const [aviso, setAviso] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
   const canjear = (r) => async () => {
     setAviso(null);
     try {
       const res = await onCanjear?.(r.id);
-      setAviso({ tipo: 'exito', titulo: r.titulo, codigo: res?.codigo });
+      setAviso({ tipo: 'exito', titulo: r.titulo, codigo: res?.codigo, stickers: r.stickers });
     } catch (err) {
       setAviso({ tipo: 'error', titulo: 'No pudimos canjearla', texto: mensajeDe(err, 'Inténtalo de nuevo en unos minutos. Tus monedas no se gastaron.') });
     }
@@ -70,6 +71,7 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
         subtitulo={<Texto>Canjea tus monedas por descuentos y premios.</Texto>}
         accion={<p className={s.saldo}><Moneda tamano={22} /><TextoResaltado resaltar={[miles(saldo)]}>{`${miles(saldo)} monedas`}</TextoResaltado></p>}
       />
+      {enPausa && <Aviso tipo="info" compacto icono={<Lock aria-hidden="true" />}>Tus monedas están en pausa durante tu semana de bienvenida: las sigues ganando, pero se canjean después de tu primera compra o cuando termine tu plazo.</Aviso>}
       {aviso && (
         <Aviso
           tipo={aviso.tipo}
@@ -78,7 +80,8 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
           accion={aviso.tipo === 'exito' && <Boton to={urlCupones} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver mis cupones</Texto></Boton>}
         >
           {aviso.tipo === 'exito'
-            ? (aviso.codigo ? <TextoResaltado resaltar={[aviso.codigo]}>{`Tu código es ${aviso.codigo}. Lo tienes en Mis cupones.`}</TextoResaltado> : 'Ya está en Mis cupones.')
+            ? aviso.stickers ? 'Están en Mis cupones: añádelos a WhatsApp desde la app de Walá para Android.'
+            : (aviso.codigo ? <TextoResaltado resaltar={[aviso.codigo]}>{`Tu código es ${aviso.codigo}. Lo tienes en Mis cupones.`}</TextoResaltado> : 'Ya está en Mis cupones.')
             : aviso.texto}
         </Aviso>
       )}
@@ -112,15 +115,20 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
 /* ── Mis cupones (/cuenta/cupones) ──────────────────────── */
 
 /**
- * Mis cupones: los disponibles primero; el código se copia con un toque.
+ * Mis cupones, en tres partes: los stickers (tuyos para siempre), los cupones
+ * para usar y, plegados, los usados y vencidos (para que no tapen lo útil).
+ * El código se copia con un toque.
  *  - cupones: [{ id, texto, codigo, origen, estado, vence, conAsesor }]
  *    (cuponDesdeFirestore)
+ *  - stickers: [{ id, nombre, cantidad, muestras, modo, agregado, procesando, error }]
+ *    (packs de WhatsApp canjeados) · onAgregarStickers(id) · urlPlayStore
  *  - cargando · error · onReintentar · onCopiar(codigo): promesa
- *  - urlRuleta, urlCatalogo: salidas del estado vacío
+ *  - urlRuleta, urlCatalogo: de dónde salen más cupones
  */
-export function PaginaCupones({ cupones = [], cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo' }) {
-  const ordenados = useMemo(() => [...cupones].sort((a, b) => Number(b.estado === 'activo') - Number(a.estado === 'activo')), [cupones]);
-  const disponibles = cupones.filter((c) => c.estado === 'activo').length;
+export function PaginaCupones({ cupones = [], stickers = [], onAgregarStickers, urlPlayStore, cargando = false, error = false, onReintentar, onCopiar, urlRuleta = '/ruleta', urlCatalogo = '/cuenta/catalogo', enPausa = false }) {
+  const activos = useMemo(() => cupones.filter((c) => c.estado === 'activo'), [cupones]);
+  const pasados = useMemo(() => cupones.filter((c) => c.estado !== 'activo'), [cupones]);
+  const lista = (cs) => <ul className={s.cupones}>{cs.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}</ul>;
   return (
     <>
       <CabezaCuenta
@@ -129,24 +137,57 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
         titulo={<Texto>Mis cupones</Texto>}
         subtitulo={<Texto>Escribe el código en el carrito, en el paso de pago, para aplicar el descuento.</Texto>}
       />
-      {cupones.length > 0 && !cargando && (
-        <p className={s.cuenta}><TextoResaltado resaltar={[disponibles]}>{`${disponibles} ${disponibles === 1 ? 'disponible' : 'disponibles'} de ${cupones.length}`}</TextoResaltado></p>
-      )}
+      {enPausa && <Aviso tipo="info" compacto icono={<Lock aria-hidden="true" />}>Tus cupones están en pausa durante tu semana de bienvenida: se pueden usar después de tu primera compra o cuando termine tu plazo.</Aviso>}
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar tus cupones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
           Revisa tu conexión e inténtalo de nuevo.
         </Aviso>
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
-      ) : ordenados.length === 0 ? (
-        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.</Texto>}>
+      ) : cupones.length === 0 && stickers.length === 0 ? (
+        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en La Ruleta de Walito o canjeando tus monedas en el catálogo.</Texto>}>
           <Boton to={urlRuleta}><Texto>Ir a la ruleta</Texto></Boton>
           <Boton to={urlCatalogo} variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
         </EstadoVacio>
       ) : (
-        <ul className={s.cupones}>
-          {ordenados.map((c) => <li key={c.id}><TarjetaCupon {...c} onCopiar={onCopiar} /></li>)}
-        </ul>
+        <div className={s.secciones}>
+          {stickers.length > 0 && (
+            <section className={s.seccion}>
+              <CabezaCuenta nivel={2} icono={<Sticker />} tono="violeta" titulo={<Texto>Tus stickers</Texto>} subtitulo={<Texto>Son tuyos para siempre: se añaden a WhatsApp desde la app de Walá.</Texto>} />
+              <ul className={s.cupones}>
+                {stickers.map((st) => <li key={st.id}><TarjetaStickers {...st} urlPlayStore={urlPlayStore} onAgregar={() => onAgregarStickers?.(st.id)} /></li>)}
+              </ul>
+            </section>
+          )}
+          <section className={s.seccion}>
+            <CabezaCuenta
+              nivel={2}
+              icono={<Ticket />}
+              tono="oro"
+              titulo={<Texto>Para usar</Texto>}
+              subtitulo={<Texto>{activos.length ? `${activos.length} ${activos.length === 1 ? 'cupón disponible' : 'cupones disponibles'}` : 'No tienes cupones disponibles ahora.'}</Texto>}
+            />
+            {activos.length > 0 ? lista(activos) : (
+              <div className={s.sinCupones}>
+                <p><Texto>Gana más en La Ruleta de Walito o canjeando tus monedas en el catálogo.</Texto></p>
+                <span className={s.sinCuponesBotones}>
+                  <Boton to={urlRuleta} tamano="sm"><Texto>Ir a la ruleta</Texto></Boton>
+                  <Boton to={urlCatalogo} tamano="sm" variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
+                </span>
+              </div>
+            )}
+          </section>
+          {pasados.length > 0 && (
+            <details className={s.pasados}>
+              <summary>
+                <History aria-hidden="true" />
+                <TextoResaltado resaltar={[pasados.length]}>{`Usados y vencidos · ${pasados.length}`}</TextoResaltado>
+                <ChevronDown className={s.pasadosFlecha} aria-hidden="true" />
+              </summary>
+              {lista(pasados)}
+            </details>
+          )}
+        </div>
       )}
     </>
   );
@@ -165,9 +206,11 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
  *  - onCompletar(id): promesa → { recompensa } (completeMission); si falla,
  *    se muestra el mensaje del servidor (los de Firebase en crudo no)
  *  - urlCatalogo
+ *  - reto: props de RetoSemanal (retoDesdePerfil + onEnviar), o nada sin reto activo
  */
 export function PaginaMisiones({
   monedas = 0, xp = 0, niveles = NIVELES, racha = {}, misiones = [], fecha, cargando = false, error = false, onReintentar, onCompletar, urlCatalogo = '/cuenta/catalogo',
+  reto,
 }) {
   const [aviso, setAviso] = useState(null);
   const hechas = misiones.filter((m) => m.completada).length;
@@ -210,6 +253,12 @@ export function PaginaMisiones({
       </div>
       <NivelCuenta xp={xp} niveles={niveles} />
       {aviso && <Aviso tipo={aviso.tipo} onCerrar={() => setAviso(null)}>{aviso.texto}</Aviso>}
+      {reto && (
+        <>
+          <CabezaCuenta nivel={2} titulo={<Texto>Reto de la semana</Texto>} subtitulo={<Texto>Uno para todos, de lunes a lunes. También lo tienes en la ventana de Walito.</Texto>} />
+          <RetoSemanal {...reto} />
+        </>
+      )}
       <CabezaCuenta
         nivel={2}
         titulo={<Texto>Misiones de hoy</Texto>}
@@ -353,7 +402,7 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
  */
 export function PaginaReferidos({
   url, codigo, monedas = 0, resumen = {}, grupos = [], cargando = false, bono = 10, premio = 15,
-  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking, onVerAbajo,
+  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking, onVerAbajo, bienvenida,
 }) {
   const { entraron = 0, cuentasNuevas = 0, compras = 0, porReclamar = 0, ganadas = 0 } = resumen;
   const otros = grupos.filter((g) => g.tipo !== 'invitacion');
@@ -383,6 +432,8 @@ export function PaginaReferidos({
         titulo={<Texto>Invita y gana monedas</Texto>}
         subtitulo={<Texto>Cada moneda vale S/ 1 de descuento, y la ganas cuando el pedido se entrega.</Texto>}
       />
+      {/* La semana de bienvenida (piezas/Bienvenida: TarjetaBienvenida), si la cuenta la tiene. */}
+      {bienvenida}
       <div className={s.formas}>
         <FormaGanar icono="regalo" titulo="Invita a alguien nuevo">
           <TextoResaltado resaltar={[`${bono} monedas`, `${premio} monedas`]}>{`Con tu link crea su cuenta y recibe ${bono} monedas. Con su primera compra (tiene 30 días) tú ganas ${premio} monedas, o el 5 % / 10 % si es más.`}</TextoResaltado>

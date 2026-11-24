@@ -1,17 +1,20 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getBrands } from '../../services/brands';
-import { getCategories, getProductsByCategory } from '../../services/products';
+import { getCategories, getProduct, getProductsByCategory } from '../../services/products';
 import { catalogoPorId, idsDeItemsIncompletos, queLeFalta } from '../../utils/cartValidation';
+import { idsParaRevisar, motivoNoDisponible, preciosCambiados } from '../../utils/carritoDisponible.mjs';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import { tieneCuenta } from '../../utils/rutaPrivada';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../../constants/envio';
 import { fuentesDeImagen } from '../common/OptimizedImage/OptimizedImage';
 import TarjetaDeProducto from '../producto/TarjetaDeProducto';
 import { PaginaCarrito } from '../../componentes/kit/paginas/Carrito';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { itemCarritoDesde } from '../../componentes/kit/adaptadores';
 
 /**
@@ -28,8 +31,9 @@ export default function CarritoDeTienda() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
-    items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart,
+    items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart, actualizarPrecios,
   } = useCart();
+  const toast = useGlobalToast();
   const { user, userProfile } = useAuth();
   const [abajo, setAbajo] = useState(false);
   const verAbajo = useCallback(() => setAbajo(true), []);
@@ -38,12 +42,47 @@ export default function CarritoDeTienda() {
   const catalogo = useMemo(() => catalogoPorId(), [items]); // eslint-disable-line react-hooks/exhaustive-deps
   const incompletos = useMemo(() => idsDeItemsIncompletos(items, catalogo), [items, catalogo]);
 
+  // Lo que ya no se puede comprar (papelera, borrado, oculto, sin una prenda
+  // de su combo o pack): se lee cada producto del carrito (la misma caché que
+  // la ficha) y se avisa aquí, no recién al pagar. Un corte de red no marca nada.
+  const idsRevisar = useMemo(() => idsParaRevisar(items), [items]);
+  const revisados = useQueries({
+    queries: idsRevisar.map((id) => ({
+      queryKey: ['product', id],
+      staleTime: 60 * 1000,
+      retry: false,
+      queryFn: async () => {
+        const resultado = await getProduct(id);
+        if (resultado.error || !resultado.data) throw new Error(resultado.error || 'Producto no encontrado');
+        return resultado.data;
+      },
+    })),
+    combine: (consultas) => consultas.map((q) => (q.data ? q.data : /no encontrado/i.test(q.error?.message || '') ? null : undefined)),
+  });
+  const productosRevisados = useMemo(() => {
+    const m = new Map();
+    idsRevisar.forEach((id, i) => { if (revisados[i] !== undefined) m.set(id, revisados[i]); });
+    return m;
+  }, [idsRevisar, revisados]);
+
+  // Si el admin cambió un precio, la línea toma el nuevo y se avisa (antes el
+  // pago se rechazaba con "el precio cambió" y había que quitar el producto).
+  const cambiosDePrecio = useMemo(() => preciosCambiados(items, productosRevisados), [items, productosRevisados]);
+  useEffect(() => {
+    if (!cambiosDePrecio.length) return;
+    actualizarPrecios(cambiosDePrecio);
+    const c = cambiosDePrecio[0];
+    toast.info(cambiosDePrecio.length === 1
+      ? `El precio de ${c.nombre || 'un producto'} cambió a S/ ${c.price.toFixed(2)}. Ya está actualizado.`
+      : `Cambió el precio de ${cambiosDePrecio.length} productos. Ya están actualizados.`);
+  }, [cambiosDePrecio, actualizarPrecios, toast]);
+
   const filas = useMemo(() => items.map((item) => {
-    const fila = itemCarritoDesde(item, { catalogo, falta: incompletos.has(item.id) ? queLeFalta(item, catalogo) : undefined });
+    const fila = itemCarritoDesde(item, { catalogo, falta: incompletos.has(item.id) ? queLeFalta(item, catalogo) : undefined, noDisponible: motivoNoDisponible(item, productosRevisados) });
     // La foto en su tamaño (la fila mide 84px): las copias que guardó el carrito.
     const { src, srcSet } = fuentesDeImagen(toDirectImageUrl(fila.imagen), { variantes: fila.imagen === item.productImage ? item.productImageVariantes : undefined, sizes: '96px' });
     return { ...fila, imagen: src || fila.imagen, srcSet };
-  }), [items, catalogo, incompletos]);
+  }), [items, catalogo, incompletos, productosRevisados]);
 
   // Todas las líneas esperando la confirmación del pago por WhatsApp.
   const pendiente = items.length > 0 && items.every((i) => i.status === 'pending_confirmation')
@@ -88,12 +127,15 @@ export default function CarritoDeTienda() {
     enabled: abajo,
   });
   // La tarjeta de la tienda (corazón, "Agregar rápido", la impresión).
+  // Semana de bienvenida: las monedas no se usan y el saldo sí (al pagar).
+  const { bienvenida, cargando: cargandoBienvenida } = usePrimeraCompra();
   const Tarjeta = useMemo(() => function TarjetaRecomendada({ producto }) {
     return <TarjetaDeProducto product={producto} categories={categorias} />;
   }, [categorias]);
 
   return (
     <PaginaCarrito
+      bienvenida={cargandoBienvenida ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true, saldo: bienvenida.saldo } : undefined}
       items={filas}
       onCantidad={updateQuantity}
       onQuitar={removeFromCart}

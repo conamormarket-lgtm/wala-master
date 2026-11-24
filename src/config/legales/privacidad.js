@@ -10,7 +10,7 @@ import { empresa } from '../empresa';
 
 export const PRIVACIDAD = {
   titulo: 'Política de Privacidad',
-  actualizado: '8 de septiembre de 2026',
+  actualizado: '9 de noviembre de 2026',
   secciones: [
     {
       id: 'introduccion',
@@ -58,7 +58,9 @@ export const PRIVACIDAD = {
       titulo: 'Retención y Eliminación de Datos',
       parrafos: [
         'Usted tiene el derecho absoluto de acceder, rectificar o eliminar sus datos personales en cualquier momento.',
-        'Si desea eliminar su cuenta y borrar por completo su historial de pedidos, diseños guardados y monedas acumuladas, puede solicitarlo enviándonos un correo a nuestro equipo de soporte. Todo dato personal será eliminado de nuestros servidores, exceptuando aquellos documentos financieros que la ley nos obligue a conservar por periodos fiscales determinados.',
+        'Puede eliminar su cuenta en cualquier momento desde la aplicación o la web, en Mi cuenta › Ajustes › Borrar mi cuenta. Los pasos, qué se borra y qué se conserva están en wala.pe/eliminar-cuenta. Si no puede iniciar sesión, también puede solicitarlo enviándonos un correo a nuestro equipo de soporte desde el correo de su cuenta.',
+        'Al eliminar su cuenta se borran su perfil, sus direcciones, sus diseños guardados y archivos subidos, sus publicaciones y opiniones, sus monedas y cupones, sus tarjetas guardadas y su acceso. Todo dato personal será eliminado de nuestros servidores, exceptuando aquellos documentos financieros que la ley nos obligue a conservar por periodos fiscales determinados: sus pedidos y sus comprobantes y registros de pago, y los reclamos del Libro de Reclamaciones. Estos se conservan solo durante el plazo legal y para cumplir esas obligaciones.',
+        'Si tiene un pedido en curso, un saldo pendiente o una suscripción activa, deberá resolverlo antes de eliminar su cuenta.',
       ],
     },
     {

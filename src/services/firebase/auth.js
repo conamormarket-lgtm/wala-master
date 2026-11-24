@@ -8,6 +8,9 @@ import {
   getAdditionalUserInfo,
   signOut,
   onAuthStateChanged,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   updateProfile,
   sendEmailVerification,
   sendPasswordResetEmail as firebaseSendPasswordResetEmail
@@ -347,3 +350,62 @@ export const sendPasswordResetEmail = async (email) => {
   }
 };
 
+/**
+ * Cómo puede volver a entrar la cuenta actual: con contraseña, con Google o
+ * con las dos. Lo pide "Borrar mi cuenta" (el servidor exige haber entrado
+ * hace menos de 5 minutos).
+ */
+export const metodosDeEntrada = (user = auth?.currentUser) => {
+  const ids = (user?.providerData || []).map((p) => p?.providerId);
+  return { contrasena: ids.includes('password'), google: ids.includes('google.com') };
+};
+
+const MENSAJES_REAUTENTICAR = {
+  'auth/wrong-password': 'La contraseña no es correcta.',
+  'auth/invalid-credential': 'La contraseña no es correcta.',
+  'auth/invalid-login-credentials': 'La contraseña no es correcta.',
+  'auth/missing-password': 'Escribe tu contraseña.',
+  'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos y vuelve a probar.',
+  'auth/user-mismatch': 'Elige la misma cuenta de Google con la que entraste.',
+  'auth/popup-blocked': 'El navegador bloqueó la ventana de Google. Permítela y vuelve a probar.',
+  'auth/network-request-failed': 'Sin conexión. Revisa tu internet y vuelve a probar.',
+};
+
+/**
+ * Vuelve a entrar con la cuenta actual (contraseña o Google) sin cambiar de
+ * sesión: renueva la hora de inicio de sesión que piden las acciones
+ * delicadas. En Android/iOS (Capacitor), Google va por el plugin nativo, como
+ * signInWithGoogle. Devuelve { error, cancelado } (error en español).
+ *  - metodo: 'contrasena' | 'google' · contrasena: la de la cuenta
+ */
+export const volverAEntrar = async ({ metodo, contrasena } = {}) => {
+  const user = auth?.currentUser;
+  if (!user) return { error: 'Tu sesión se cerró. Vuelve a iniciar sesión.' };
+  try {
+    if (metodo === 'contrasena') {
+      if (!contrasena) return { error: MENSAJES_REAUTENTICAR['auth/missing-password'] };
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, contrasena));
+    } else if (isNativePlatform()) {
+      await GoogleAuth.initialize({
+        clientId: '572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+      const googleUser = await GoogleAuth.signIn();
+      await reauthenticateWithCredential(user, GoogleAuthProvider.credential(googleUser.authentication.idToken));
+    } else {
+      // Sin el permiso del cumpleaños: aquí solo se confirma quién es.
+      const proveedor = new GoogleAuthProvider();
+      proveedor.setCustomParameters({ prompt: 'select_account', login_hint: user.email || '' });
+      await reauthenticateWithPopup(user, proveedor, browserPopupRedirectResolver);
+    }
+    return { error: null };
+  } catch (error) {
+    const codigo = error?.code || '';
+    if (codigo === 'auth/popup-closed-by-user' || codigo === 'auth/cancelled-popup-request'
+      || error?.error === 'popup_closed_by_user' || error?.message === 'The user canceled the sign-in flow.') {
+      return { error: null, cancelado: true };
+    }
+    return { error: MENSAJES_REAUTENTICAR[codigo] || 'No pudimos confirmar que eres tú. Vuelve a probar.' };
+  }
+};

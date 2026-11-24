@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Share2, Gamepad2, LogIn, RotateCcw } from 'lucide-react';
+import { Share2, Gamepad2, LogIn, RotateCcw, History } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio } from '../Feedback';
 import { BloqueSeccion } from '../Seccion';
@@ -8,18 +8,19 @@ import CuentaRegresiva from '../CuentaRegresiva';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { CodigoCopiable } from '../piezas/Legales';
-import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
+import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
 import { RuedaRuleta, HistorialRuleta } from '../piezas/Ruleta';
 import { Texto, useTexto } from '../Traduccion';
 import { anguloDeParada } from '../../../utils/ruletaModel';
 import s from './Juegos.module.css';
 
-/* ── Ruleta Semanal (/ruleta) ───────────────────────────── */
+/* ── La Ruleta de Walito (/ruleta) ───────────────────────────── */
 
 const SIN_HISTORIAL = [];
 
 /**
- * La Ruleta Semanal: se gana un giro por semana con la racha de Kapi (7 días).
+ * La Ruleta de Walito: se gana un giro con 7 días alimentando a Walito (cuando
+ * sea, `dias7`; o de lunes a domingo, `racha7`) o uno por semana (`siempre`).
  * La racha se ve arriba de la rueda; el premio lo sortea el servidor y la
  * rueda para en su gajo (anguloDeParada).
  *  - premios: los de hoy, en el orden del servidor ({ id, nombre, etiqueta, color })
@@ -37,11 +38,12 @@ const SIN_HISTORIAL = [];
  *    (con onReintentar) · error: un aviso bajo la rueda
  *  - resultadoInicial: lo de onGirar, para abrir la hoja sin girar (el modo diseño)
  *  - ayudaVista · onAyudaVista · urlLogin · urlCupones
+ *  - monedas: { saldo, cargando } para la barra del juego en el celular (MarcoJuego)
  * Los textos pasan por la traducción.
  */
 export function PaginaRuleta({
   premios = [], tema = {}, reglas = {}, eleccion = {}, historial: historialInicial = SIN_HISTORIAL, hasta, onGirar, onParar, sesion = true,
-  estado, error: errorCarga, onReintentar, resultadoInicial = null, ayudaVista = true, onAyudaVista, urlLogin = '/login', urlCupones = '/cuenta/cupones',
+  estado, error: errorCarga, onReintentar, resultadoInicial = null, ayudaVista = true, onAyudaVista, urlLogin = '/login', urlCupones = '/cuenta/cupones', monedas,
 }) {
   const [rotacion, setRotacion] = useState(0);
   const [duracion, setDuracion] = useState(0);
@@ -53,11 +55,14 @@ export function PaginaRuleta({
   const [error, setError] = useState('');
   const [ayuda, setAyuda] = useState(!ayudaVista);
   const temporizador = useRef(null);
+  // El historial: en el celular va bajo la rueda y la barra baja hasta él.
+  const panelRef = useRef(null);
   useEffect(() => () => clearTimeout(temporizador.current), []);
   // El historial puede llegar después (o refrescarse): se toma mientras no se haya girado aquí.
   useEffect(() => { if (!ganado) setHistorial(historialInicial); }, [historialInicial]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const siempre = reglas.modoDesbloqueo === 'siempre';
+  const porDias = reglas.modoDesbloqueo === 'dias7';
   const { desbloqueada = false, girada: giradaAntes = false, perdida = false, pendienteAnterior = false } = eleccion;
   const dias = Math.max(0, Math.min(7, Number(eleccion.dias) || 0));
   const girada = giradaAntes || Boolean(ganado);
@@ -66,11 +71,11 @@ export function PaginaRuleta({
   const faltan = 7 - dias;
   let textoBoton = 'Girar la ruleta';
   if (girando) textoBoton = 'Girando…';
-  else if (girada) textoBoton = 'Ya giraste esta semana';
+  else if (girada) textoBoton = porDias ? 'Ya usaste tu giro' : 'Ya giraste esta semana';
   else if (!desbloqueada && perdida) textoBoton = 'Semana perdida';
   else if (!desbloqueada) textoBoton = `Bloqueada: te ${faltan === 1 ? 'falta 1 día' : `faltan ${faltan} días`}`;
   const t = {
-    compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en la Ruleta Semanal de Walá!` : undefined),
+    compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en La Ruleta de Walito de Walá!` : undefined),
     premio: useTexto(premio?.texto),
   };
 
@@ -81,11 +86,15 @@ export function PaginaRuleta({
       abierta={ayuda}
       onCerrar={() => { setAyuda(false); onAyudaVista?.(); }}
       boton="Entendido"
-      intro={siempre ? 'Un giro por semana, cortesía de la casa. Los premios cambian según el día.' : 'La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.'}
+      intro={siempre ? 'Un giro por semana, cortesía de la casa. Los premios cambian según el día.'
+        : porDias ? 'La ruleta no se juega: se gana. Es el premio por alimentar a Walito 7 días.'
+          : 'La ruleta no se juega: se gana. Es el premio de mantener tu racha con Walito toda la semana.'}
       pasos={siempre
         ? ['Tienes un giro cada semana, sin condiciones.', 'Al girar, se acaba hasta la semana siguiente.']
-        : ['Alimenta a Kapi todos los días, de lunes a domingo.', 'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.', 'Al completar los 7 días ganas un giro.', 'Un giro por semana: al girar, se acaba hasta la siguiente.']}
-      pie="Si ganas el giro y no lo usas, no lo pierdes: sigue disponible durante la semana siguiente. El premio lo decide el servidor y se acredita solo en tu cuenta."
+        : porDias
+          ? ['Cada día que alimentas a Walito suma 1.', 'No tienen que ser seguidos: los días que llevas no se pierden.', 'Al llegar a 7 ganas un giro.', 'Gíralo para empezar a sumar los próximos 7.']
+        : ['Alimenta a Walito todos los días, de lunes a domingo.', 'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.', 'Al completar los 7 días ganas un giro.', 'Un giro por semana: al girar, se acaba hasta la siguiente.']}
+      pie={porDias ? 'Tu giro no vence: te espera hasta que lo uses. El premio lo decide el servidor y se acredita solo en tu cuenta.' : 'Si ganas el giro y no lo usas, no lo pierdes: sigue disponible durante la semana siguiente. El premio lo decide el servidor y se acredita solo en tu cuenta.'}
     />
   );
 
@@ -93,7 +102,7 @@ export function PaginaRuleta({
     let vacio;
     if (!sesion) {
       vacio = (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Inicia sesión para girar la ruleta</Texto>} texto={<Texto>La ruleta es el premio de tu racha con Kapi: entra para ver cuántos días llevas.</Texto>}>
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Inicia sesión para girar la ruleta</Texto>} texto={<Texto>La ruleta es el premio de tus días con Walito: entra para ver cuántos llevas.</Texto>}>
           <Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
         </EstadoVacio>
       );
@@ -116,8 +125,8 @@ export function PaginaRuleta({
       );
     }
     return (
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Ruleta Semanal" onAyuda={() => setAyuda(true)} ancho="md">
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="La Ruleta de Walito" onAyuda={() => setAyuda(true)} ancho="md" monedas={monedas}>
           {vacio}
         </MarcoJuego>
         {ayudaNodo}
@@ -153,19 +162,24 @@ export function PaginaRuleta({
 
   return (
     <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Ruleta Semanal" onAyuda={() => setAyuda(true)}>
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="La Ruleta de Walito" onAyuda={() => setAyuda(true)} monedas={monedas}
+          acciones={<BotonIrAlPanel destino={panelRef} etiqueta="Ver tu historial" icono={<History aria-hidden="true" />} />}
+        >
           <div className={s.ruleta} data-componente="PaginaRuleta">
             <div className={s.zonaRueda}>
               {!siempre && (
                 <div className={s.racha}>
-                  <BarraProgreso pasos valor={dias} max={7} etiqueta={<Texto>Tu racha con Kapi</Texto>} />
+                  <BarraProgreso pasos valor={girada && porDias ? 0 : dias} max={7} etiqueta={<Texto>{porDias ? 'Tus días con Walito' : 'Tu racha con Walito'}</Texto>} />
                   <p className={s.rachaNota}>
                     <Texto>
-                      {girada ? 'Ya usaste el giro de esta semana.'
+                      {porDias ? (girada ? 'Ya usaste tu giro. Desde mañana, cada día con Walito suma para el próximo.'
+                        : desbloqueada ? '¡Juntaste los 7 días! Tu giro te espera.'
+                          : `Llevas ${dias} de 7 días. No tienen que ser seguidos.`)
+                        : girada ? 'Ya usaste el giro de esta semana.'
                         : desbloqueada ? (pendienteAnterior ? 'Este giro es el que ganaste la semana pasada. ¡Aprovéchalo!' : '¡Completaste la semana! Tu giro te espera.')
                           : perdida ? 'Perdiste un día esta semana. El lunes empieza otra.'
-                            : 'Alimenta a Kapi cada día: al séptimo, la ruleta se abre.'}
+                            : 'Alimenta a Walito cada día: al séptimo, la ruleta se abre.'}
                     </Texto>
                   </p>
                 </div>
@@ -176,10 +190,10 @@ export function PaginaRuleta({
                 <Boton tamano="lg" bloque brillo={desbloqueada && !girada && !girando} cargando={girando} disabled={!desbloqueada || girada || girando} onClick={girar}>
                   {textoBoton}
                 </Boton>
-                {girada && hasta && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Vuelve el lunes, en" textoFin="¡Ya empezó otra semana!" /></p>}
+                {girada && hasta && !porDias && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Vuelve el lunes, en" textoFin="¡Ya empezó otra semana!" /></p>}
               </div>
             </div>
-            <aside className={s.lado}>
+            <aside ref={panelRef} className={s.lado}>
               <HistorialRuleta historial={historial} urlCupones={urlCupones} />
             </aside>
           </div>

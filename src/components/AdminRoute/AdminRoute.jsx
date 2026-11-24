@@ -3,6 +3,8 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { IrALogin } from '../RutaPrivada/RutaPrivada';
 import { tieneCuenta } from '../../utils/rutaPrivada';
+import useLoViejo from '../../hooks/useLoViejo';
+import { CargandoPanel } from '../../componentes/kit/piezas/admin/CargandoPanel';
 
 /**
  * Ruta protegida: solo usuarios con rol admin pueden acceder (isAdmin viene de
@@ -13,8 +15,11 @@ import { tieneCuenta } from '../../utils/rutaPrivada';
  */
 const AdminRoute = () => {
   const { user, loading, isAdmin } = useAuth();
+  const adminViejo = useLoViejo('admin');
 
   if (loading) {
+    // La silueta del panel (D0); con adminViejo, el texto de antes.
+    if (!adminViejo) return <CargandoPanel />;
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <span>Verificando acceso...</span>

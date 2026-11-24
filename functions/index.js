@@ -28,21 +28,38 @@ const {
 } = require("./economyLogic");
 const {
   normalizarPremio, normalizarConfig, premioDisponible, premiosDeHoy,
-  sortearPremio, esCupon, textoPremio,
+  sortearPremio, esCupon, textoPremio, sumarDiaRuleta,
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
-const { totalEsperadoCheckout, toleranciaCheckout } = require("./checkoutTotals");
-const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
+const { totalEsperadoCheckout, toleranciaCheckout, repartoTopeCupon, monedasDeLinea, topeDeMarca } = require("./checkoutTotals");
+const primeraCompraLogic = require("./primeraCompraLogic");
+const niveles = require("./nivelesLogic");
+const popupsEmbudo = require("./popupsEmbudo");
+const { adminConPermiso } = require("./adminAuth");
+const { mensajeFueraDeFechas } = require("./sorteoFechas");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
 const constancia = require("./constanciaPago");
 const referidos = require("./referidosLogic");
 const bolitas = require("./bolitasLogic");
+const pichanga = require("./pichangaLogic");
 const tarjetas = require("./tarjetasGuardadas");
 
 admin.initializeApp();
+exports.kapiAssistant = require('./kapiFunction').kapiAssistant;
 const auth = admin.auth();
+// A16: human-confirmed vouchers. Auth/scope checks precede all database or storage IO.
+const { createHandler: createKentaReceiptHandler } = require('./kentaReceiptHandler');
+const { createService: createKentaReceiptService } = require('./kentaReceiptService');
+exports.registerKentaReceipt = functions.region('us-central1')
+  .runWith({ minInstances: 0, maxInstances: 2, memory: '256MB', timeoutSeconds: 120 })
+  .https.onRequest(createKentaReceiptHandler({
+    getSecret: () => process.env.KENTA_ORDER_STAGE_CALLBACK_SECRET || process.env.KENTA_PAYMENT_CALLBACK_SECRET,
+    getConfig: () => ({ owner: process.env.KENTA_COLLECTION_SOURCE_TENANT,
+      lineKeys: String(process.env.KENTA_RECEIPT_LINE_KEYS || '').split(',').map(s=>s.trim()).filter(Boolean) }),
+    service: payload => createKentaReceiptService({ db: getErpDb(), bucket: admin.storage().bucket(), FieldValue })(payload),
+  }));
 // Diagnostic batches go to Cloud Logging, not to the shared Firestore database.
 const { createMetricsHandler } = require('./clientReadMetrics');
 exports.collectClientFirestoreReads = functions.region('us-central1')
@@ -55,7 +72,6 @@ exports.collectClientFirestoreReads = functions.region('us-central1')
   }));
 const db = admin.firestore();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
-const ADMIN_USERS_COLLECTION = "adminUsers";
 
 // Configuración de la ruleta. El doc puede no existir: normalizarConfig() da los
 // valores de casa, así que la ruleta funciona sin que el admin lo haya tocado.
@@ -65,19 +81,12 @@ const MIN_PASSWORD_LENGTH = 6;
 
 // ── Autorización (Fase 0, H-01/H-09) ──────────────────────────────────────────
 // El llamante es admin si tiene el custom claim `admin: true`. El doc
-// adminUsers/{uid} solo vale para las cuentas de ADMIN_BRIDGE_EMAILS: mientras
-// las reglas compartidas con el ERP dejen escribirlo, cualquiera podía crearse
-// el suyo y pasar por admin (ver ./adminAuth.js).
-async function callerIsAdmin(context) {
-  if (!context || !context.auth) return false;
-  if (tieneClaimAdmin(context)) return true;
-  if (!puedeUsarPuente(context.auth.token)) return false;
-  try {
-    const snap = await db.collection(ADMIN_USERS_COLLECTION).doc(context.auth.uid).get();
-    return snap.exists && snap.data().role === "admin";
-  } catch (e) {
-    return false;
-  }
+// adminUsers/{uid} solo vale para las cuentas de ADMIN_BRIDGE_EMAILS (ver
+// ./adminAuth.js). Una persona de Configuración › Equipo (adminRoles) entra a
+// las funciones de sus grupos del menú: `grupos` es la lista que pide la
+// función ([] = solo superadmin). Sin `grupos`, solo las cuentas principales.
+async function callerIsAdmin(context, grupos = null) {
+  return adminConPermiso(db, context, grupos);
 }
 
 // ── Acceso al Firebase del ERP (Fase 0, H-02) ─────────────────────────────────
@@ -250,6 +259,15 @@ async function buscarPedidoPorCodigoWeb(erpDb, codigo) {
   }
   return null;
 }
+
+// ── Promo "Tu primera compra puede salir gratis" (functions/primeraCompra.js) ──
+// Saldo de bienvenida, pausa de monedas y cupones en la semana de bienvenida y
+// premio de S/ 10 por amigo. Lo usan el checkout, la creación del pedido, los
+// canjes y el reinicio de monedas.
+const primeraCompra = require("./primeraCompra")({
+  db, getErpDb, callerIsAdmin, duenoDeCodigo, buscarPedidoPorCodigoWeb, walaOrdersCollection: "wala_pedidos",
+});
+for (const [nombre, fn] of Object.entries(primeraCompra.callables)) exports[nombre] = fn;
 
 async function readCheckoutIntent(intentId, context, { exigirVigente = false } = {}) {
   const id = String(intentId || "").trim();
@@ -512,26 +530,52 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
 
     let descuentoCupon = 0;
     let envioGratis = false;
+    let tipoCupon = "";
+    let topeCupon = null;
     if (uid && cuponCode) {
       const encontrado = await buscarCupon(uid, cuponCode, t);
       const motivoCupon = motivoRechazo(encontrado && encontrado.cupon);
       // En la app el cupón se pide a propósito: si no sirve, se dice por qué (no se cobra sin descuento en silencio).
       if (motivoCupon && mobile) throw new functions.https.HttpsError("failed-precondition", motivoCupon);
       if (!motivoCupon) {
-        // Todas las líneas como "no valorables": la base del descuento es el
-        // subtotal que ya calculó el servidor, no el del navegador.
+        // Los productos de catálogo se valoran con el catálogo (como al validar el
+        // cupón en el carrito); los personalizados y las piezas de un combo, no.
+        // Antes iban todos como personalizados: un cupón de una marca no
+        // encontraba sus productos, descontaba 0 al pagar y el total no cuadraba.
         const items = Object.values(orderPayload.productos || {}).map((p) => ({
-          productId: p && p.productoId, qty: p && p.cantidad, precio: p && p.precio, personalizado: true,
+          productId: p && p.productoId, qty: p && p.cantidad, precio: p && p.precio,
+          personalizado: Boolean(p && (p.personalizado || p.comboCrear)),
         }));
+        // La base es el subtotal entero, como al validar el cupón (validarCuponSecure
+        // con un carrito de catálogo): con la base rebajada por las monedas, un cupón
+        // de % valía menos al pagar que al aplicarlo y el total no cuadraba. El tope
+        // de monedas + cupón lo pone repartoTopeCupon.
         const calculo = await calcularDescuentoCupon(encontrado.cupon, {
           items,
-          subtotal: Math.max(0, subtotal - monedasPedidas),
+          subtotal,
           subtotalProductos: subtotal,
         });
         envioGratis = envioGratis || calculo.envioGratis;
         descuentoCupon = calculo.envioGratis ? 0 : calculo.descuento;
+        tipoCupon = encontrado.cupon.tipo || "";
+        topeCupon = calculo.topeCupon;
       }
     }
+    // Monedas + cupón no pasan el tope de la marca (checkoutTotals.repartoTopeCupon).
+    const reparto = repartoTopeCupon({ topeMonedas, descuentoCupon, tipoCupon, envioGratis, topeCupon });
+    descuentoCupon = reparto.descuentoCupon;
+
+    // ── Semana de bienvenida (primeraCompra.js) ──
+    // Sin monedas ni cupones; el saldo de bienvenida paga productos hasta el
+    // tope de cada marca y nunca deja el pedido en S/ 0. Solo lee: lo que
+    // escribe va con las demás escrituras (bienvenida.escribir).
+    const envioGratisDesde = mobile ? 200 : ENVIO_GRATIS_DESDE;
+    const envioPrevio = totalEsperadoCheckout({ subtotal, envioGratis, envioEstandar: ENVIO_ESTANDAR, envioGratisDesde }).envio;
+    const bienvenida = await primeraCompra.revisarCheckout(t, {
+      uid, intentId, orderPayload, subtotal, envio: envioPrevio,
+      monedas: monedasPedidas, cupon: Boolean(cuponCode),
+    });
+    const saldoBienvenida = bienvenida.saldo;
 
     // ── Monedas ──
     const historial = Array.isArray(u.historialMonedasEspera) ? [...u.historialMonedasEspera] : [];
@@ -546,10 +590,12 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     }
     if (monedasPedidas > 0) {
       // El % de cada marca (Admin → Marcas); sin marca, la mitad.
-      const tope = topeMonedas;
+      // Con cupón, lo que quede del tope después de él.
+      const tope = reparto.maxMonedas;
       if (monedasPedidas > tope) {
-        throw new functions.https.HttpsError("failed-precondition",
-          `En este pedido puedes usar hasta ${tope} monedas. Recarga la página.`);
+        throw new functions.https.HttpsError("failed-precondition", descuentoCupon > 0
+          ? `Con tu cupón puedes usar hasta ${tope} monedas en este pedido. Quita las monedas o el cupón y vuelve a intentar.`
+          : `En este pedido puedes usar hasta ${tope} monedas. Recarga la página.`);
       }
       const disponibles = (Number(u.monedas) || 0) + liberar;
       if (disponibles < monedasPedidas) {
@@ -559,9 +605,11 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     }
 
     // ── Total ──
+    // El saldo de bienvenida descuenta productos igual que las monedas (en la
+    // semana de bienvenida no hay monedas: nunca van juntos).
     const { envio, total: esperado } = totalEsperadoCheckout({
-      subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis,
-      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde: mobile ? 200 : ENVIO_GRATIS_DESDE,
+      subtotal, monedas: monedasPedidas + saldoBienvenida, descuentoCupon, envioGratis,
+      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde,
     });
     const unidades = Object.values(orderPayload.productos || {})
       .reduce((acc, p) => acc + Math.max(1, Number(p && p.cantidad) || 1), 0);
@@ -593,12 +641,14 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     // servidor al confirmar el cobro) y con la cuenta real de quien compra. El
     // `referido` tampoco se acepta del navegador: lo pone el servidor si validó
     // el enlace (referidoParaCheckout).
-    const { referido: _referidoDelCliente, ...payloadCliente } = pagos.limpiarPayloadCliente(orderPayload);
+    const { referido: _referidoDelCliente, saldoBienvenida: _saldoDelCliente, ...payloadCliente } = pagos.limpiarPayloadCliente(orderPayload);
     const payloadGuardado = {
       ...payloadCliente,
       ...(referido ? { referido } : {}),
       ...(uid ? { userId: uid } : {}),
       ...(cuponMovil ? { montoTotal: cobro.cobroPen, costoEnvio: envio, descuentoCupon } : {}),
+      // Lo puso el servidor tras revisarlo; el del navegador se descarta.
+      ...(saldoBienvenida > 0 ? { saldoBienvenida } : {}),
       modalidadPago: cobro.modalidad,
       montoAdelanto: 0,
       montoPendiente: cobro.cobroPen,
@@ -615,10 +665,11 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       amountPen: montoCobro,
       cobro,
       orderPayload: payloadGuardado,
-      totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado },
+      totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado, saldoBienvenida },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+    bienvenida.escribir(t);
 
     if (liberar > 0) {
       t.update(anteriorRef, { status: "reemplazada", reemplazadaPor: intentId, updatedAt: FieldValue.serverTimestamp() });
@@ -940,6 +991,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   await escribirEspejoPagado({ orderId, payload: pedido, uid, pago, montos });
   await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
+  await primeraCompra.alCrearPedido({ orderId, payload, uid, pagado: true });
 
   // 4) El cobro en Finanzas del ERP (adelanto pendiente de validar). Al aprobar el
   // pedido, el ERP lo enlaza con el número de pedido nuevo (origenPedidoWebId).
@@ -1035,8 +1087,19 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       console.warn(`crearSolicitudWhatsappSecure: espejo de ${orderId} no escrito:`, e.message);
     }
   }
+  // El cupón de un pedido de la app se marca usado aquí (en la web lo canjea el navegador después con canjearCuponSecure).
+  const cuponMovil = checkout.intent.mobile && uid && payload.cuponCode ? payload.cuponCode : "";
+  if (cuponMovil) {
+    await db.runTransaction(async (t) => {
+      const cupon = await buscarCupon(uid, cuponMovil, t);
+      if (cupon && cupon.cupon.status !== "used" && !cupon.cupon.orderId) {
+        t.update(cupon.ref, { status: "used", orderId, descuentoAplicado: Number(payload.descuentoCupon) || 0, usadoAt: FieldValue.serverTimestamp() });
+      }
+    }).catch((e) => console.error(`crearSolicitudWhatsappSecure: no se marcó el cupón de ${orderId}:`, e));
+  }
   await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
+  await primeraCompra.alCrearPedido({ orderId, payload, uid, pagado: false });
   await checkout.ref.set({ whatsappSolicitado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { id: orderId };
 });
@@ -1719,10 +1782,13 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
       const currentMonedas = Number(userData.monedas || 0);
       const newBalance = currentMonedas + amount;
 
+      // Comprar también sube de nivel: +20 XP por pedido entregado.
+      const nivel = sumarXp(transaction, uid, userData, niveles.XP_PEDIDO);
       transaction.update(userRef, {
         monedas: newBalance,
         monedasActivas,
         monedasReclamadas: FieldValue.arrayUnion(...claimIds),
+        ...nivel.campos,
       });
 
       writeLedger(transaction, uid, {
@@ -1741,6 +1807,7 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
         claimIds,
         orderCollection: orderMatch.collection,
         orderDocId: orderMatch.docId,
+        subioDeNivel: nivel.subio,
       };
     });
   } catch (error) {
@@ -1804,10 +1871,27 @@ exports.resetKapiCoins = onSchedule(
 
     // Un batch admite 500 escrituras. Con la tienda creciendo, un solo batch
     // reventaria en silencio y dejaria a media tienda con el saldo intacto.
+    // Semana de bienvenida (primeraCompra.js): sus monedas estuvieron en pausa;
+    // no se borran en la fase ni en los días siguientes.
+    const configBienvenida = await primeraCompra.leerConfig({ fresca: true });
+    const ahoraMs = Date.now();
+    const protegidos = new Set();
+    for (let i = 0; i < docs.length; i += 300) {
+      const refs = docs.slice(i, i + 300).map((d) => primeraCompra.estadoRef(d.id));
+      const snaps = await db.getAll(...refs);
+      snaps.forEach((s) => {
+        if (s.exists && primeraCompraLogic.protegidoDelReinicio(s.data(), ahoraMs, configBienvenida)) {
+          protegidos.add(s.ref.parent.parent.id);
+        }
+      });
+    }
+    if (protegidos.size) console.log(`resetKapiCoins: ${protegidos.size} cuentas en su semana de bienvenida no se reinician.`);
+
     const TAMANO_LOTE = 400;
     for (let i = 0; i < docs.length; i += TAMANO_LOTE) {
       const batch = db.batch();
       for (const doc of docs.slice(i, i + TAMANO_LOTE)) {
+        if (protegidos.has(doc.id)) continue;
         totalUnspent += Number(doc.data().monedas) || 0;
         batch.update(doc.ref, {
           monedas: 0,
@@ -1912,6 +1996,15 @@ exports.rotateWeeklyChallenge = onSchedule({
   timeZone: "America/Lima"
 }, async (event) => {
   try {
+    // El reto que activó el admin dura sus 7 días: el lunes no se pisa (antes
+    // la rotación lo reemplazaba aunque lo hubieran activado el domingo).
+    const actual = await db.collection("globals").doc("activeChallenge").get();
+    const a = actual.exists ? actual.data() || {} : {};
+    if (a.manual === true && a.expiresAt && Date.parse(a.expiresAt) > Date.now()) {
+      console.log("Reto activado por el admin hasta", a.expiresAt, "- no se rota.");
+      return;
+    }
+
     const challengesSnap = await db.collection("weeklyChallenges").get();
     if (challengesSnap.empty) {
       console.log("No hay retos disponibles para rotar.");
@@ -1949,15 +2042,23 @@ exports.rotateWeeklyChallenge = onSchedule({
  * Callable Function: Enviar evidencia manual para el reto (ej. link a story, foto)
  */
 exports.submitChallengeEvidence = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
-  }
-  const { evidenceUrl, challengeId, evidenceType } = data;
-  if (!evidenceUrl || !challengeId) {
+  // Una cuenta de verdad (no la sesión anónima), un enlace http(s) y el reto
+  // activo de esta semana: antes se aceptaba cualquier texto para cualquier reto.
+  const uid = requireCuentaReal(context);
+  const { evidenceUrl, challengeId, evidenceType } = data || {};
+  const url = String(evidenceUrl || "").trim();
+  if (!url || !challengeId) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos de la evidencia.");
   }
+  if (url.length > 1000 || !/^https?:\/\/\S+$/i.test(url)) {
+    throw new functions.https.HttpsError("invalid-argument", "Pega un enlace que empiece con https://");
+  }
+  const activoSnap = await db.collection("globals").doc("activeChallenge").get();
+  const activo = activoSnap.exists ? activoSnap.data() || {} : null;
+  if (!activo || activo.challengeId !== challengeId || (activo.expiresAt && Date.parse(activo.expiresAt) < Date.now())) {
+    throw new functions.https.HttpsError("failed-precondition", "Ese reto ya no está activo.");
+  }
 
-  const uid = context.auth.uid;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const userDoc = await userRef.get();
   const userName = userDoc.exists ? userDoc.data().displayName : "Usuario";
@@ -1966,7 +2067,7 @@ exports.submitChallengeEvidence = functions.https.onCall(async (data, context) =
     userId: uid,
     userName: userName,
     challengeId,
-    evidenceUrl,
+    evidenceUrl: url,
     evidenceType: evidenceType || "image",
     status: "pending",
     submittedAt: FieldValue.serverTimestamp()
@@ -1985,7 +2086,7 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   // Antes no se comprobaba que fuera admin y el monto (rewardCoins/rewardType)
   // llegaba del navegador: cualquiera podía aprobarse su propia evidencia por la
   // cantidad que quisiera. Ahora solo admin, y el premio sale del reto.
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["premios"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo administradores.");
   }
 
@@ -2943,7 +3044,7 @@ async function leerCuentaPedidos(uid, token) {
  * Todas las consultas EN PARALELO (antes el navegador encadenaba hasta ~9
  * consultas una detrás de otra). Devuelve docs únicos por ruta.
  */
-async function buscarPedidosDeCuenta(cuenta) {
+async function buscarPedidosDeCuenta(cuenta, { estricto = false } = {}) {
   const erpDb = getErpDb() || db;
   const consultas = [];
   const docs = new Map();
@@ -2984,10 +3085,14 @@ async function buscarPedidosDeCuenta(cuenta) {
   }
 
   // Una consulta que falle (índice, permisos del ERP…) no tumba las demás.
+  // Con `estricto` (borrar la cuenta) sí: sin todas no se sabe si queda un
+  // pedido en curso.
   const resultados = await Promise.allSettled(consultas);
-  resultados
-    .filter((r) => r.status === "rejected")
-    .forEach((r) => console.warn("misPedidosSecure: consulta fallida:", r.reason?.message));
+  const fallidas = resultados.filter((r) => r.status === "rejected");
+  fallidas.forEach((r) => console.warn("misPedidosSecure: consulta fallida:", r.reason?.message));
+  if (estricto && fallidas.length) {
+    throw new functions.https.HttpsError("unavailable", "No pudimos revisar tus pedidos. Inténtalo de nuevo en un momento.");
+  }
   return [...docs.values()];
 }
 
@@ -3007,7 +3112,10 @@ async function quitarCopiasEliminadasEnErp(encontrados) {
       [p.origenPedidoWebId, p.portalPseudoOrderId].forEach((v) => { if (v) conocidos.add(String(v)); });
     }
   });
-  const dudosas = encontrados.filter((p) => p._coleccion === "wala_pedidos" && !p.pagado &&
+  // Una copia con un pago real (montoPagado: un adelanto por Culqi/PayPal) no se
+  // da por borrada aunque falte en el ERP: el cliente pagó y debe verla (con su
+  // saldo si lo tiene).
+  const dudosas = encontrados.filter((p) => p._coleccion === "wala_pedidos" && !p.pagado && !(Number(p.montoPagado) > 0) &&
     (p.estadoWala || "pendiente_pago") === "pendiente_pago" && clave(p) && !conocidos.has(clave(p)));
   const eliminadas = new Set();
   await Promise.all(dudosas.map(async (p) => {
@@ -3061,6 +3169,39 @@ exports.misPedidosSecure = functions
       throw new functions.https.HttpsError("internal", "No se pudieron cargar tus pedidos.");
     }
   });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BORRAR MI CUENTA — la app (Mi cuenta › Ajustes) y la web (/cuenta/ajustes)
+// ════════════════════════════════════════════════════════════════════════════
+// Qué se borra, qué se conserva (pedidos y registros de pago) y qué impide
+// borrar todavía: ./eliminarCuentaLogic.js. El manejador: ./eliminarCuenta.js.
+// Página pública para Google Play: /eliminar-cuenta (la web).
+const { crearEliminarCuenta } = require("./eliminarCuenta");
+
+/** Los pedidos de la cuenta, como misPedidosSecure (visibles = los que demostró que son suyos). */
+async function pedidosParaBorrarCuenta(uid, token) {
+  const cuenta = await leerCuentaPedidos(uid, token);
+  const encontrados = await quitarCopiasEliminadasEnErp(await buscarPedidosDeCuenta(cuenta, { estricto: true }));
+  const { visibles } = misPedidos.clasificarPedidos(encontrados, cuenta);
+  return { visibles, todos: encontrados };
+}
+
+exports.eliminarCuentaSecure = functions
+  .runWith({ timeoutSeconds: 540, memory: "512MB", secrets: ["CUENTAS_ELIMINADAS_SAL"] })
+  .https.onCall((data, context) => crearEliminarCuenta({
+    db,
+    auth,
+    bucket: admin.storage().bucket(),
+    FieldValue,
+    HttpsError: functions.https.HttpsError,
+    logger: functions.logger,
+    buscarPedidos: pedidosParaBorrarCuenta,
+    // Sal del hash del registro (cuentasEliminadas/{hash}): secreto de Secret
+    // Manager (firebase functions:secrets:set CUENTAS_ELIMINADAS_SAL). NO
+    // cambiarla después: los reintentos de una cuenta a medio borrar dejarían de
+    // encontrar su registro. El valor fijo es solo para emuladores y pruebas.
+    sal: process.env.CUENTAS_ELIMINADAS_SAL || "wala-cuentas-eliminadas-v1",
+  })(data, context));
 
 /**
  * Vincula a la cuenta un pedido que coincide por DNI, probando que se conoce:
@@ -3131,7 +3272,7 @@ function requireAuth(context) {
   return context.auth.uid;
 }
 
-// ── Alimentar a Kapi (monedas + racha) ────────────────────────────────────────
+// ── Alimentar a Walito (monedas + racha) ────────────────────────────────────────
 // Antes esto acreditaba `kapiCoins`, una segunda moneda que NO servía para
 // nada: el descuento del checkout siempre ha leído `monedas`. Encima el cron
 // mensual vaciaba `kapiCoins`, así que lo único que caducaba era el contador que
@@ -3139,7 +3280,7 @@ function requireAuth(context) {
 // alimentar da monedas directamente y son ellas las que caducan a fin de mes.
 exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
   // Calentamiento: el cliente llama con { ping: true } al abrir el panel de
-  // Kapi. Sin instancias mínimas, la primera llamada del día arrancaba en frío
+  // Walito. Sin instancias mínimas, la primera llamada del día arrancaba en frío
   // (varios segundos) justo cuando el usuario pulsaba "Alimentar". No toca nada.
   if (data && data.ping) return { warm: true };
   const uid = requireAuth(context);
@@ -3152,11 +3293,22 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
       if (u.lastKapiClaimDate === today) {
-        throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Kapi hoy.");
+        throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Walito hoy.");
       }
-      let weekly = u.weeklyClaimsData || { weekStart, daysClaimed: [] };
+      const previo = u.weeklyClaimsData || null;
+      // Los días de esta semana ANTES de hoy (para arrancar la cuenta de la ruleta).
+      const diasPreviosSemana = previo && previo.weekStart === weekStart && Array.isArray(previo.daysClaimed)
+        ? previo.daysClaimed.length : 0;
+      let weekly = previo || { weekStart, daysClaimed: [] };
       if (weekly.weekStart !== weekStart) weekly = { weekStart, daysClaimed: [today] };
       else if (!weekly.daysClaimed.includes(today)) weekly.daysClaimed.push(today);
+      // Ruleta, 7 días cuando sea: cada día que se alimenta suma 1 y no se
+      // reinicia el lunes. Quien no tenía cuenta arranca con los días de esta
+      // semana y, si le quedaba un giro con la regla de antes, lo conserva.
+      weekly.ruleta = sumarDiaRuleta(previo && previo.ruleta, today, {
+        dias: diasPreviosSemana,
+        listo: !!semanaDeGiroPendiente(u, { modoDesbloqueo: "racha7", semanaDeGracia: true }),
+      });
 
       let add = 1;
       if (u.activeMultiplier === "kapi_double_3d" && u.multiplierExpiresAt &&
@@ -3196,7 +3348,7 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("feedKapiSecure error:", e);
-    throw new functions.https.HttpsError("internal", "Error al alimentar a Kapi.");
+    throw new functions.https.HttpsError("internal", "Error al alimentar a Walito.");
   }
 });
 
@@ -3213,7 +3365,7 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
   try {
     const config = await db.collection("loyaltyConfig").doc("global").get();
     if (config.exists && config.data().bolitasExigirPrueba === true) {
-      throw new functions.https.HttpsError("failed-precondition", "Actualiza la app para ganar monedas con Las Bolitas de Kapi.");
+      throw new functions.https.HttpsError("failed-precondition", "Actualiza la app para ganar monedas con Las Bolitas de Walito.");
     }
     return await db.runTransaction(async (t) => {
       const snap = await t.get(userRef);
@@ -3242,7 +3394,7 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
   }
 });
 
-// ── Las Bolitas de Kapi: un cupón de marca ────────────────────────────────────
+// ── Las Bolitas de Walito: un cupón de marca ────────────────────────────────────
 // El del reto patrocinado y los premios del ranking semanal. Lleva brandId:
 // calcularDescuentoCupon lo aplica solo sobre los productos de esa marca.
 // Va dentro de una transacción (t) o de un lote; devuelve lo que se muestra.
@@ -3277,7 +3429,7 @@ function crearCuponBolitas(t, ref, uid, plantilla, { origen, titulo, marcaId, ma
   return cupon;
 }
 
-// ── Las Bolitas de Kapi: una partida ganada, comprobada ───────────────────────
+// ── Las Bolitas de Walito: una partida ganada, comprobada ───────────────────────
 // La app manda cada nivel o reto que gana: { modo: 'nivel' | 'reto', nivel |
 // fecha, movimientos: [[de, a]…], tubos }. El servidor rearma el nivel con el
 // mismo motor del celular (bolitasMotor.mjs, copia generada) y repite los
@@ -3330,6 +3482,8 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
       ]);
       if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = userSnap.data();
+      // Sin nombre en la ficha (entró con Google y no completó el perfil): el de su cuenta.
+      const nombrePublico = bolitas.nombrePublico(u) || bolitas.nombrePublico({ displayName: context.auth.token.name });
 
       let reward = 0;
       const ya = u.lastBallSortReward === hoy;
@@ -3349,7 +3503,7 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
         const antes = retoSnap.exists ? retoSnap.data().movimientos : null;
         mejor = antes == null || partida.movimientos < antes;
         if (mejor) {
-          const nombre = bolitas.nombrePublico(u);
+          const nombre = nombrePublico;
           t.set(retoRef, {
             uid, fecha: hoy, semana, nombre, movimientos: partida.movimientos, tubos: partida.tubos,
             hecho: FieldValue.serverTimestamp(),
@@ -3365,20 +3519,24 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
       if (patrocinio && patrocinio.activo && entregados < patrocinio.cupo && !cuponSnap.exists) {
         cupon = crearCuponBolitas(t, cuponRef, uid, patrocinio.cupon, {
           origen: "bolitas_reto",
-          titulo: "Reto del día: " + (patrocinio.marcaNombre || "Las Bolitas de Kapi"),
+          titulo: "Reto del día: " + (patrocinio.marcaNombre || "Las Bolitas de Walito"),
           marcaId: patrocinio.marcaId,
           marcaNombre: patrocinio.marcaNombre,
         });
         t.update(patrocinioRef, { entregados: FieldValue.increment(1) });
       }
 
-      t.set(jugadorRef, bolitas.sumarJugador(jugadorSnap.exists ? jugadorSnap.data() : null, hoy, partida.nivel || 0));
+      const jugadorAntes = jugadorSnap.exists ? jugadorSnap.data() : null;
+      const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre: nombrePublico, ahora: Date.now() });
+      t.set(jugadorRef, jugador);
+      // Subió su nivel más alto: el celular vuelve a pedir el top de niveles.
+      const record = jugador.nivelMax > ((jugadorAntes && jugadorAntes.nivelMax) || 0);
       t.set(statsRef, esReto
         ? { fecha: hoy, partidas: FieldValue.increment(1), retos: FieldValue.increment(1) }
         : { fecha: hoy, partidas: FieldValue.increment(1), niveles: { [partida.nivel]: FieldValue.increment(1) } },
       { merge: true });
 
-      return { success: true, reward, ya, movimientos: partida.movimientos, mejor, cupon };
+      return { success: true, reward, ya, movimientos: partida.movimientos, mejor, cupon, record };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -3387,13 +3545,34 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
   }
 });
 
-// ── Las Bolitas de Kapi: el ranking del reto ──────────────────────────────────
+// ── Las Bolitas de Walito: el ranking del reto ──────────────────────────────────
 // Hoy (menos movimientos; empate, quien llegó antes) y la semana (más retos;
 // empate, menos movimientos en total). Los 20 primeros, con el nombre corto,
 // y dónde quedó quien pregunta (si tiene sesión). Se ordena aquí y no con un
 // índice: con la cantidad de jugadores de hoy, 1000 filas sobran.
 const RANKING_BOLITAS_TOP = 20;
 const RANKING_BOLITAS_LEER = 1000;
+
+/**
+ * Pone el nombre corto a las filas que no lo guardaron: el de su ficha y, si
+ * la ficha no tiene (entró con Google y no completó el perfil), el de su
+ * cuenta en Firebase Auth. Sin nombre en ninguno, sale como "Jugador".
+ */
+async function completarNombresBolitas(filas) {
+  const sinNombre = filas.filter((f) => !f.nombre && f.uid);
+  if (!sinNombre.length) return;
+  const perfiles = await db.getAll(...sinNombre.map((f) => db.collection(PORTAL_USERS_COLLECTION).doc(f.uid)));
+  perfiles.forEach((p, k) => { sinNombre[k].nombre = p.exists ? bolitas.nombrePublico(p.data()) : null; });
+  const aun = sinNombre.filter((f) => !f.nombre);
+  if (!aun.length) return;
+  try {
+    const { users } = await auth.getUsers([...new Set(aun.map((f) => f.uid))].map((uid) => ({ uid })));
+    const porUid = new Map(users.map((u) => [u.uid, u.displayName]));
+    aun.forEach((f) => { f.nombre = bolitas.nombrePublico({ displayName: porUid.get(f.uid) }); });
+  } catch (e) {
+    console.warn("completarNombresBolitas (auth):", e.message);
+  }
+}
 
 exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) => {
   const uid = context.auth ? context.auth.uid : null;
@@ -3410,6 +3589,7 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
     });
     const dia = bolitas.ordenarRankingDia(filas(diaSnap));
     const sem = bolitas.ordenarRankingSemana(filas(semanaSnap));
+    await completarNombresBolitas([...dia.slice(0, RANKING_BOLITAS_TOP), ...sem.slice(0, RANKING_BOLITAS_TOP)]);
     const publico = (f, k) => ({
       puesto: k + 1,
       nombre: f.nombre || "Jugador",
@@ -3429,7 +3609,58 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
   }
 });
 
-// ── Las Bolitas de Kapi: premios del ranking semanal ──────────────────────────
+// ── Las Bolitas de Walito: el top de niveles ────────────────────────────────────
+// Quién llegó más lejos en los niveles (el nivel más alto que el servidor
+// comprobó, en bolitasJugadores/{uid}); empate, quien llegó antes. Los 20
+// primeros con el nombre corto, cuántos días jugaron, y dónde va quien
+// pregunta. Los jugadores sin nombre guardado lo toman del perfil o de su
+// cuenta de Google (completarNombresBolitas).
+const TOP_NIVELES_LEER = 500;
+
+exports.getTopBolitasSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  try {
+    const col = db.collection("bolitasJugadores");
+    const [snap, totalSnap] = await Promise.all([
+      col.orderBy("nivelMax", "desc").limit(TOP_NIVELES_LEER).get(),
+      col.where("nivelMax", ">", 0).count().get(),
+    ]);
+    const filas = bolitas.ordenarTopNiveles(snap.docs.map((d) => ({ ...d.data(), uid: d.id })));
+    const top = filas.slice(0, RANKING_BOLITAS_TOP);
+
+    await completarNombresBolitas(top);
+
+    let puesto = null;
+    let nivelYo = null;
+    if (uid) {
+      const k = filas.findIndex((f) => f.uid === uid);
+      if (k >= 0) {
+        puesto = k + 1;
+        nivelYo = filas[k].nivelMax;
+      } else {
+        const mio = await col.doc(uid).get();
+        nivelYo = mio.exists ? mio.data().nivelMax || 0 : 0;
+        if (nivelYo > 0) puesto = (await col.where("nivelMax", ">", nivelYo).count().get()).data().count + 1;
+      }
+    }
+
+    return {
+      top: top.map((f, k) => ({
+        puesto: k + 1,
+        nombre: f.nombre || "Jugador",
+        nivel: f.nivelMax,
+        dias: f.dias || 1,
+        yo: Boolean(uid) && f.uid === uid,
+      })),
+      yo: { puesto, nivel: nivelYo, jugadores: totalSnap.data().count },
+    };
+  } catch (e) {
+    console.error("getTopBolitasSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo cargar el top.");
+  }
+});
+
+// ── Las Bolitas de Walito: premios del ranking semanal ──────────────────────────
 // Cada lunes a las 00:15 (Lima) se premia la semana que terminó, con lo que el
 // admin puso en bolitasConfig/premios { activo, puestos: [{ desde, hasta,
 // cupon }] }: un cupón (de la marca, si el premio la tiene) a cada puesto. El
@@ -3459,7 +3690,7 @@ async function premiarSemanaBolitas(semana) {
         if ((await t.get(ref)).exists) return;
         crearCuponBolitas(t, ref, orden[k].uid, plantilla, {
           origen: "bolitas_semana",
-          titulo: "Puesto " + (k + 1) + " en Las Bolitas de Kapi",
+          titulo: "Puesto " + (k + 1) + " en Las Bolitas de Walito",
           marcaId: premio.marcaId || null,
           marcaNombre: premio.marcaNombre || null,
         });
@@ -3482,7 +3713,7 @@ exports.premiarRankingBolitas = onSchedule({
   console.log("premiarRankingBolitas:", JSON.stringify(r));
 });
 
-// ── Las Bolitas de Kapi: del juego a la tienda ────────────────────────────────
+// ── Las Bolitas de Walito: del juego a la tienda ────────────────────────────────
 // Cuenta los toques en una marca o un producto desde el juego (las métricas
 // del admin). Sin sesión también: solo suma, no guarda quién fue.
 exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
@@ -3495,7 +3726,7 @@ exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
   return { success: true };
 });
 
-// ── Las Bolitas de Kapi: el admin ─────────────────────────────────────────────
+// ── Las Bolitas de Walito: el admin ─────────────────────────────────────────────
 // Una sola función para /admin/bolitas (solo admin), con `accion`:
 //  - guardarPatrocinio { fecha, patrocinio } · borrarPatrocinio { fecha }
 //  - guardarMundos { marcas: [{ id, nombre }] } (el orden de las marcas de los mundos)
@@ -3504,7 +3735,7 @@ exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
 //  - premiarSemana { semana } (repetir a mano el premio de una semana)
 // Lo que se guarda pasa por las mismas normalizaciones que usa el juego.
 exports.adminBolitasSecure = functions.https.onCall(async (data, context) => {
-  if (!(await callerIsAdmin(context))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
+  if (!(await callerIsAdmin(context, ["premios"]))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
   const d = data || {};
   const FECHA = /^\d{4}-\d{2}-\d{2}$/;
   try {
@@ -3588,6 +3819,14 @@ function limaFechaEnDias(dias) {
 function semanaDeGiroPendiente(u, reglas) {
   const weekStart = limaWeekStartStr();
   const weekStartAnterior = limaWeekStartStr(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  if (reglas.modoDesbloqueo === "dias7") {
+    const cuenta = u.weeklyClaimsData && u.weeklyClaimsData.ruleta;
+    // Con cuenta: el giro está listo o no. Sin cuenta (aún no alimentó a Walito
+    // desde el cambio): lo que le dejaba la regla de antes.
+    if (cuenta) return cuenta.listo ? `dias7-${cuenta.listoDesde || "listo"}` : null;
+    return semanaDeGiroPendiente(u, Object.assign({}, reglas, { modoDesbloqueo: "racha7" }));
+  }
 
   let semanaPremio;
   if (reglas.modoDesbloqueo === "siempre") {
@@ -3714,9 +3953,9 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
       if (!semanaPremio) {
         // Se distingue "ya giraste" de "no desbloqueada" para que el cliente no
         // tenga que adivinar cuál de las dos es.
-        const yaGiro = u.lastRuletaSpinWeek === limaWeekStartStr() ||
+        const yaGiro = config.reglas.modoDesbloqueo !== "dias7" && (u.lastRuletaSpinWeek === limaWeekStartStr() ||
           (config.reglas.semanaDeGracia && !!u.ruletaDisponibleDe &&
-            u.lastRuletaSpinWeek === u.ruletaDisponibleDe);
+            u.lastRuletaSpinWeek === u.ruletaDisponibleDe));
         throw new functions.https.HttpsError(
           yaGiro ? "already-exists" : "failed-precondition",
           yaGiro ? "Ya giraste la ruleta de esa semana." : "Ruleta no desbloqueada.");
@@ -3757,8 +3996,24 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
 
       // ── Escrituras ──
       const texto = textoPremio(elegido);
+      // Con los 7 días, un giro de la semana pasada (de la regla de lunes a
+      // domingo) queda gastado: si el admin vuelve a esa regla, no se gira de más.
+      const gastarPendiente = config.reglas.modoDesbloqueo === "dias7";
+      const porDias = String(semanaPremio).startsWith("dias7");
+      const cuentaAntes = (u.weeklyClaimsData && u.weeklyClaimsData.ruleta) || null;
       const updates = {
-        lastRuletaSpinWeek: semanaPremio,
+        // Con los 7 días la marca es la semana en que se giró (por si el admin
+        // pasa a «una por semana» o «lunes a domingo», no se gira dos veces esa semana).
+        lastRuletaSpinWeek: porDias ? limaWeekStartStr() : semanaPremio,
+        ...(gastarPendiente ? { ruletaDisponibleDe: null } : {}),
+        // La cuenta de los 7 días: con esa regla, el giro la vuelve a 0. Con
+        // las otras, se gasta el giro guardado (si tenía) pero los días que
+        // llevaba se conservan, por si el admin vuelve a los 7 días.
+        weeklyClaimsData: Object.assign({ weekStart: limaWeekStartStr(), daysClaimed: [] }, u.weeklyClaimsData || {}, {
+          ruleta: config.reglas.modoDesbloqueo === "dias7"
+            ? { dias: 0, listo: false, listoDesde: null }
+            : { dias: Math.max(0, Math.floor(Number(cuentaAntes && cuentaAntes.dias) || 0)), listo: false, listoDesde: null },
+        }),
         // Conteo por premio: sostiene el tope `maxPorUsuario` sin tener que
         // consultar ruletaWins dentro de la transacción.
         ruletaPremiosGanados: Object.assign({}, ganados, {
@@ -3804,6 +4059,9 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
           topeDescuento: cupon.topeDescuento,
           productId: cupon.productId,
           productName: cupon.productName,
+          // De una marca: el checkout solo descuenta sus productos.
+          brandId: elegido.brandId || null,
+          marcaNombre: elegido.brandId ? elegido.marcaNombre || null : null,
           expiraEn: cupon.expiraEn,
           status: "active",
           orderId: null,
@@ -4012,6 +4270,7 @@ exports.recordChallengeEventSecure = functions.https.onCall(async (data, context
 // ── Gastar monedas (canje de catálogo) ────────────────────────────────────────
 exports.spendCoinsSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid);
   const amount = Number(data && data.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
@@ -4038,6 +4297,7 @@ exports.spendCoinsSecure = functions.https.onCall(async (data, context) => {
 // ── Congelar monedas para un pedido (descuento en checkout) ────────────────────
 exports.freezeCoinsSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid);
   const amount = Number(data && data.amount);
   const orderId = data && data.orderId;
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -4390,6 +4650,14 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   if (r.status === "claimed") {
     throw new functions.https.HttpsError("already-exists", "Ya reclamaste las monedas de este referido.");
   }
+  // Compras de tu semana de bienvenida (dan saldo, no monedas) o pagadas con
+  // saldo de bienvenida (no dan premio): primeraCompra.registrarPremio.
+  if (r.premioModo === "primera_compra") {
+    throw new functions.https.HttpsError("failed-precondition", "Esta compra fue durante tu semana de bienvenida: su premio es en saldo, no en monedas.");
+  }
+  if (r.premioModo === "sin_premio") {
+    throw new functions.https.HttpsError("failed-precondition", "Esta compra se pagó con saldo de bienvenida, así que no genera monedas.");
+  }
   // No puede referirse a sí mismo (la compra no puede ser del propio referrer).
   const ownOrder = (orderData.userId && orderData.userId === uid) ||
     (orderData.dni && u.dni && String(orderData.dni) === String(u.dni));
@@ -4737,6 +5005,43 @@ const XP_MISSION = 5;
 // Hitos de racha que otorgan bono de monedas en el check-in diario.
 const CHECKIN_MILESTONES = { 3: 5, 7: 15, 30: 50 };
 
+// ── XP y regalos de nivel ────────────────────────────────────────────────────
+// Devuelve los campos para el usuario ({ xp, nivelesPremiados? }) y, de paso,
+// deja en `userCoupons` el regalo de cada nivel alcanzado que no se premió
+// (nivelesLogic.regalosPendientes). Solo escribe: va después de las lecturas.
+// → { campos, subio: [{ key, nombre }] }
+function sumarXp(t, uid, u, ganada) {
+  const xp = (Number(u.xp) || 0) + Math.max(0, Number(ganada) || 0);
+  const pendientes = niveles.regalosPendientes(xp, u.nivelesPremiados);
+  for (const { key, nombre, premio } of pendientes) {
+    const base = { uid, code: generateCouponCode(), status: "active", origen: "nivel", nivel: key, createdAt: FieldValue.serverTimestamp() };
+    t.set(db.collection("userCoupons").doc(), {
+      ...base,
+      title: premio.titulo,
+      titulo: premio.titulo,
+      tipo: premio.tipo,
+      texto: textoPremio({ tipo: premio.tipo, nombre: premio.titulo, descuentoPct: premio.descuentoPct || 0, descuentoMonto: 0, topeDescuento: premio.topeDescuento || 0 }),
+      descuentoPct: premio.descuentoPct || 0,
+      descuentoMonto: 0,
+      topeDescuento: premio.topeDescuento || 0,
+      productId: null,
+      productName: "",
+      expiraEn: limaFechaEnDias(niveles.VIGENCIA_REGALO_DIAS),
+    });
+    if (premio.stickers && PACKS_STICKERS_WHATSAPP.includes(premio.stickers)) {
+      // Si ya tenía el pack, la página de cupones muestra uno solo.
+      t.set(db.collection("userCoupons").doc(), {
+        ...base, code: generateCouponCode(), title: "Stickers de Walito para WhatsApp", titulo: "Stickers de Walito para WhatsApp",
+        entrega: "stickers_whatsapp", packId: premio.stickers,
+      });
+    }
+    console.log(`Nivel ${nombre} alcanzado por ${uid}: regalo creado.`);
+  }
+  const campos = { xp };
+  if (pendientes.length) campos.nivelesPremiados = FieldValue.arrayUnion(...pendientes.map((r) => r.key));
+  return { campos, subio: pendientes.map(({ key, nombre }) => ({ key, nombre })) };
+}
+
 // ── Check-in diario seguro (idempotente por día Lima) ──────────────────────────
 // Incrementa la racha si el último check-in fue ayer; la reinicia a 1 si hubo un
 // hueco. En hitos (D3=5, D7=15, D30=50) otorga bono de monedas + ledger. Suma XP.
@@ -4772,10 +5077,11 @@ exports.dailyCheckInSecure = functions.https.onCall(async (data, context) => {
       const currentMonedas = u.monedas || 0;
       const newBalance = currentMonedas + reward;
 
+      const nivel = sumarXp(t, uid, u, XP_CHECKIN);
       const updates = {
         dailyStreak: newStreak,
         lastCheckInDate: today,
-        xp: (u.xp || 0) + XP_CHECKIN,
+        ...nivel.campos,
       };
       if (reward > 0) updates.monedas = newBalance;
       t.update(userRef, updates);
@@ -4789,7 +5095,7 @@ exports.dailyCheckInSecure = functions.https.onCall(async (data, context) => {
         });
       }
 
-      return { streak: newCount, reward };
+      return { streak: newCount, reward, subioDeNivel: nivel.subio };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -4970,9 +5276,10 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
         t.set(umRef, { userId: uid, date: today, items });
       }
 
+      const nivel = sumarXp(t, uid, u, XP_MISSION);
       t.update(userRef, {
         monedas: newBalance,
-        xp: (u.xp || 0) + XP_MISSION,
+        ...nivel.campos,
       });
 
       if (reward > 0) {
@@ -4984,7 +5291,7 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
         });
       }
 
-      return { success: true, reward };
+      return { success: true, reward, subioDeNivel: nivel.subio };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -5014,6 +5321,9 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
 // ── Helper: genera un code aleatorio de cupón tipo 'WALA-XXXXXX' ────────────────
 // 6 caracteres alfanuméricos en mayúsculas (sin O/0/I/1 para evitar confusiones),
 // obtenidos de bytes criptográficamente seguros (crypto ya importado arriba).
+// Packs de stickers de WhatsApp que traen las apps (public/stickers/packs.json).
+const PACKS_STICKERS_WHATSAPP = ["kapi", "adicto"];
+
 function generateCouponCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 símbolos, sin O/0/I/1
   const bytes = crypto.randomBytes(6);
@@ -5075,6 +5385,7 @@ exports.llevarEnComboSecure = functions.https.onCall(async (data, context) => {
 
 exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid);
   const rewardId = data && data.rewardId;
   if (!rewardId) {
     throw new functions.https.HttpsError("invalid-argument", "Falta rewardId.");
@@ -5098,6 +5409,28 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       }
       const u = userSnap.data();
+
+      // Stickers de WhatsApp: un pack conocido y una sola vez por persona.
+      const esStickers = reward.tipo === "stickers_whatsapp";
+      const packId = esStickers ? String(reward.packId || "") : "";
+      if (esStickers) {
+        if (!PACKS_STICKERS_WHATSAPP.includes(packId)) {
+          throw new functions.https.HttpsError("failed-precondition", "Este pack de stickers no está disponible.");
+        }
+        const ya = await t.get(db.collection("userCoupons")
+          .where("uid", "==", uid).where("entrega", "==", "stickers_whatsapp").where("packId", "==", packId).limit(1));
+        if (!ya.empty) {
+          throw new functions.https.HttpsError("already-exists", "Ya tienes estos stickers: añádelos a WhatsApp desde la app de Walá, en Mis cupones.");
+        }
+      } else if (reward.unaVezPorPersona === true) {
+        // Una sola vez por persona (lo marca el admin): cuenta cualquier canje
+        // de esta recompensa, también los de antes de encender la opción.
+        const ya = await t.get(db.collection("userCoupons")
+          .where("uid", "==", uid).where("rewardId", "==", String(rewardId)).limit(1));
+        if (!ya.empty) {
+          throw new functions.https.HttpsError("already-exists", "Ya canjeaste esta recompensa: es una sola vez por persona. La tienes en Mis cupones.");
+        }
+      }
 
       // Costo SERVER-AUTHORITATIVE: se toma del catálogo, no del cliente.
       const cost = Number(reward.cost);
@@ -5153,7 +5486,11 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
             descuentoMonto: reward.descuentoMonto || 0,
             topeDescuento: reward.topeDescuento || 0,
             productName: reward.productName,
+            marcaNombre: reward.brandId ? reward.marcaNombre : "",
           }),
+          // De una marca: el checkout solo descuenta sus productos.
+          brandId: reward.brandId || null,
+          marcaNombre: reward.brandId ? reward.marcaNombre || null : null,
           descuentoPct: reward.descuentoPct || 0,
           descuentoMonto: reward.descuentoMonto || 0,
           topeDescuento: reward.topeDescuento || 0,
@@ -5161,6 +5498,11 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
           productName: reward.productName || "",
           expiraEn: limaFechaEnDias(reward.vigenciaDias || 30),
         });
+      }
+      if (esStickers) {
+        // Se entrega en la app de Android ("Añadir a WhatsApp"): la app avisa
+        // con stickersAgregadosSecure y el canje queda entregado.
+        Object.assign(cuponBase, { entrega: "stickers_whatsapp", packId, titulo: reward.title || "" });
       }
       t.set(couponRef, cuponBase);
 
@@ -5171,6 +5513,213 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
     console.error("redeemRewardSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al canjear la recompensa.");
   }
+});
+
+// ── Canjes del catálogo de recompensas (admin) ───────────────────────────────
+// userCoupons solo lo lee su dueño, así que el panel ve los canjes por aquí.
+// Los que se entregan a mano (tipo 'manual': sin `tipo` en el cupón, como el
+// pack de stickers) quedan "por entregar" hasta que alguien del equipo los
+// marca entregados: el cupón pasa a 'used' y el cliente lo ve como usado.
+function nombreCompletoDePerfil(p) {
+  const v = [p.displayName, p.clienteNombre, p.name, p.nombre]
+    .map((x) => String(x == null ? "" : x).trim())
+    .find((x) => x && !x.includes("@"));
+  return v || "";
+}
+const msDeTimestamp = (v) => (v && typeof v.toMillis === "function" ? v.toMillis() : null);
+
+/*
+ * El embudo de los popups en personas (admin): vieron, cerraron, tocaron,
+ * abrieron la encuesta y cumplieron. Con la encuesta se cruza el clic con la
+ * cuenta (surveyCompletedAt en los 7 días siguientes), porque la conversión
+ * del navegador se pierde. Solo lee: analytics_events y los perfiles.
+ */
+exports.embudoPopupsSecure = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los resultados de los popups.");
+  }
+  const ids = [...new Set((Array.isArray(data && data.ids) ? data.ids : []).map(String).filter(Boolean))].slice(0, 30);
+  if (!ids.length) return { embudos: {} };
+  const config = (await db.collection("storeConfig").doc("popups").get()).data() || {};
+  const objetivoDe = new Map((Array.isArray(config.popups) ? config.popups : []).map((p) => [String(p && p.id), p && p.objetivo]));
+  const eventosDe = async (popupId, type) => {
+    const snap = await db.collection("analytics_events")
+      .where("type", "==", type)
+      .where("eventData.popupId", "==", popupId)
+      .select("uid", "anonymousId", "clientTsMs")
+      .get();
+    return snap.docs.map((d) => {
+      const x = d.data() || {};
+      return { uid: x.uid || null, anonymousId: x.anonymousId || null, ts: Number(x.clientTsMs) || 0 };
+    });
+  };
+  // ¿Abrió la encuesta en los 7 días después de su clic? (page_view de la ruta, por cuenta o aparato)
+  const abrioEncuesta = async (c) => {
+    const campo = c.uid ? "uid" : "anonymousId";
+    const valor = c.uid || c.anonymousId;
+    if (!valor) return false;
+    const snap = await db.collection("analytics_events")
+      .where("type", "==", "page_view")
+      .where("path", "==", popupsEmbudo.RUTA_ENCUESTA)
+      .where(campo, "==", valor)
+      .select("clientTsMs")
+      .limit(50)
+      .get();
+    return snap.docs.some((d) => popupsEmbudo.dentro(Number((d.data() || {}).clientTsMs), c.ts));
+  };
+  const embudos = {};
+  for (const id of ids) {
+    const objetivo = objetivoDe.get(id) || "";
+    const [vistas, cierres, clics, conversiones] = await Promise.all(
+      ["popup_view", "popup_close", "popup_click", "popup_conversion"].map((t) => eventosDe(id, t)),
+    );
+    const abrieron = new Set();
+    const completoEn = new Map();
+    if (objetivo === "encuesta") {
+      const clicDe = [...popupsEmbudo.primerosClics(clics).entries()].slice(0, 400);
+      const uids = [...new Set(clicDe.map(([, c]) => c.uid).filter(Boolean))];
+      for (let i = 0; i < uids.length; i += 100) {
+        const refs = uids.slice(i, i + 100).map((u) => db.collection(PORTAL_USERS_COLLECTION).doc(String(u)));
+        const snaps = await db.getAll(...refs, { fieldMask: ["surveyCompletedAt", "hasCompletedSurvey"] });
+        snaps.forEach((sn) => {
+          const p = sn.exists ? sn.data() || {} : {};
+          const t = msDeTimestamp(p.surveyCompletedAt) || Number(p.surveyCompletedAt) || 0;
+          if (p.hasCompletedSurvey && t) completoEn.set(sn.id, t);
+        });
+      }
+      for (let i = 0; i < clicDe.length; i += 20) {
+        const tanda = clicDe.slice(i, i + 20);
+        const res = await Promise.all(tanda.map(([, c]) => abrioEncuesta(c).catch(() => false)));
+        tanda.forEach(([p], k) => { if (res[k]) abrieron.add(p); });
+      }
+    }
+    embudos[id] = popupsEmbudo.embudoDePopup({ eventos: { vistas, cierres, clics, conversiones }, objetivo, abrieron, completoEn });
+  }
+  return { embudos };
+});
+
+/*
+ * Las cuentas principales del panel (Configuración › Equipo): las que tienen
+ * la marca de admin en la cuenta (claim `admin: true`, la fuente de verdad que
+ * leen las reglas y el servidor). No están en adminRoles, así que la lista del
+ * equipo no las veía. Solo para admins; solo lee (Auth en tandas de 1000).
+ */
+exports.cuentasPrincipalesSecure = functions.https.onCall(async (_data, context) => {
+  if (!(await callerIsAdmin(context, []))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver el equipo.");
+  }
+  const cuentas = [];
+  let pagina;
+  do {
+    const r = await auth.listUsers(1000, pagina);
+    r.users.forEach((u) => {
+      const c = u.customClaims || {};
+      if (c.admin === true) {
+        cuentas.push({
+          uid: u.uid,
+          correo: String(u.email || "").toLowerCase(),
+          nombre: u.displayName || "",
+          rol: c.role || "superadmin",
+          deshabilitada: Boolean(u.disabled),
+          ultimoIngreso: u.metadata && u.metadata.lastSignInTime ? new Date(u.metadata.lastSignInTime).toISOString() : null,
+        });
+      }
+    });
+    pagina = r.pageToken;
+  } while (pagina);
+  return { cuentas };
+});
+
+exports.canjesRecompensasSecure = functions.https.onCall(async (_data, context) => {
+  if (!(await callerIsAdmin(context, ["premios"]))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver los canjes.");
+  }
+  const snap = await db.collection("userCoupons").where("origen", "==", "recompensa").get();
+  const cupones = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+  const uids = [...new Set(cupones.map((c) => c.uid).filter(Boolean))];
+  const perfiles = new Map();
+  for (let i = 0; i < uids.length; i += 100) {
+    const refs = uids.slice(i, i + 100).map((u) => db.collection(PORTAL_USERS_COLLECTION).doc(String(u)));
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((s) => { if (s.exists) perfiles.set(s.id, s.data() || {}); });
+  }
+  const canjes = cupones.map((c) => {
+    const p = perfiles.get(c.uid) || {};
+    return {
+      id: c.id,
+      code: c.code || "",
+      titulo: c.title || c.titulo || "",
+      rewardId: c.rewardId || "",
+      tipo: c.tipo || null,
+      entrega: c.entrega || null,
+      packId: c.packId || null,
+      status: c.status || "active",
+      orderId: c.orderId || null,
+      expiraEn: c.expiraEn || null,
+      creadoMs: msDeTimestamp(c.createdAt),
+      usadoMs: msDeTimestamp(c.usadoAt),
+      entregadoMs: msDeTimestamp(c.entregadoAt),
+      entregadoPor: c.entregadoPor || "",
+      cliente: {
+        uid: c.uid || "",
+        nombre: nombreCompletoDePerfil(p),
+        telefono: String(p.phone || "").trim(),
+        email: String(p.email || "").trim(),
+      },
+    };
+  }).sort((a, b) => (b.creadoMs || 0) - (a.creadoMs || 0));
+  return { canjes };
+});
+
+// La app de Android añadió el pack a WhatsApp: el canje queda entregado. Solo
+// el dueño del cupón; repetirlo no hace nada (puede volver a añadirlo en otro
+// teléfono, el pack sigue siendo suyo).
+exports.stickersAgregadosSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const id = limpiarId(data && data.couponId);
+  if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta el cupón.");
+  const ref = db.collection("userCoupons").doc(id);
+  return db.runTransaction(async (t) => {
+    const s = await t.get(ref);
+    const c = s.exists ? s.data() || {} : null;
+    if (!c || c.uid !== uid || c.entrega !== "stickers_whatsapp") {
+      throw new functions.https.HttpsError("not-found", "Esos stickers no son tuyos.");
+    }
+    if (c.status === "used") return { entregado: true, yaEstaba: true };
+    t.update(ref, { status: "used", entregadoAt: FieldValue.serverTimestamp(), entregadoPor: "app" });
+    return { entregado: true };
+  });
+});
+
+// Marcar entregado (o deshacerlo) un canje que se entrega a mano.
+exports.entregarCanjeSecure = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context, ["premios"]))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede marcar canjes.");
+  }
+  const id = limpiarId(data && data.id);
+  if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta el canje.");
+  const entregado = !(data && data.entregado === false);
+  const ref = db.collection("userCoupons").doc(id);
+  return db.runTransaction(async (t) => {
+    const s = await t.get(ref);
+    const c = s.exists ? s.data() || {} : null;
+    if (!c || c.origen !== "recompensa") throw new functions.https.HttpsError("not-found", "Ese canje no existe.");
+    if (c.tipo) {
+      throw new functions.https.HttpsError("failed-precondition", "Este cupón lo usa el cliente en el carrito: no se entrega a mano.");
+    }
+    if (entregado) {
+      if (c.status === "used") return { entregado: true, yaEstaba: true };
+      t.update(ref, {
+        status: "used",
+        entregadoAt: FieldValue.serverTimestamp(),
+        entregadoPor: String((context.auth.token && context.auth.token.email) || context.auth.uid),
+      });
+      return { entregado: true };
+    }
+    if (c.status !== "used") return { entregado: false, yaEstaba: true };
+    t.update(ref, { status: "active", entregadoAt: FieldValue.delete(), entregadoPor: FieldValue.delete() });
+    return { entregado: false };
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -5266,7 +5815,7 @@ async function calcularDescuentoCupon(cupon, datos) {
   const exacta = todosValorados;
   let base = exacta ? subtotalCatalogo : subtotalCliente;
 
-  // 2b) Cupón de una marca (Las Bolitas de Kapi: el reto patrocinado y los
+  // 2b) Cupón de una marca (Las Bolitas de Walito: el reto patrocinado y los
   // premios del ranking): solo cuentan los productos de catálogo de esa marca
   // (los personalizados no, su precio no se puede rehacer aquí). Sin ninguno
   // en el carrito, no descuenta. Los cupones sin brandId no cambian.
@@ -5279,12 +5828,47 @@ async function calcularDescuentoCupon(cupon, datos) {
       if (precio !== undefined) baseMarca += precio * Math.max(1, Number(it.qty) || 1);
     }
     if (baseMarca <= 0) {
+      // ¿Hay de esa marca pero personalizados? Su precio no se puede rehacer aquí.
+      const soloPersonalizados = items.some((it) => it.personalizado && marcaPorId.get(String(it.productId || "")) === String(cupon.brandId));
       return {
-        descuento: 0, envioGratis: false, base: 0, exacta,
-        aviso: "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + ": añade alguno al carrito para usarlo.",
+        descuento: 0, envioGratis: false, base: 0, exacta, topeCupon: null,
+        aviso: soloPersonalizados
+          ? "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + " de la tienda (no vale en los personalizados)."
+          : "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + ": añade alguno al carrito para usarlo.",
       };
     }
     base = baseMarca;
+  }
+
+  // 2c) El tope del cupón: uno de una marca o de un producto descuenta como
+  // mucho lo que esa marca deja pagar con monedas en ESAS líneas (Admin →
+  // Marcas). Si no, usaba el margen de las otras marcas del carrito. Lo aplica
+  // repartoTopeCupon (al validar lo usa el carrito; al pagar, el servidor).
+  let topeCupon = null;
+  const productoDelCupon = ["producto_descuento", "producto_gratis"].includes(cupon.tipo) ? String(cupon.productId || "") : "";
+  const marcaDelTope = cupon.brandId ? String(cupon.brandId) : (productoDelCupon ? marcaPorId.get(productoDelCupon) || null : null);
+  if (cupon.brandId || (productoDelCupon && cupon.tipo === "producto_descuento")) {
+    let marcaDoc = null;
+    if (marcaDelTope) {
+      const sm = await db.collection("tienda_brands").doc(marcaDelTope).get();
+      marcaDoc = sm.exists ? sm.data() || {} : null;
+    }
+    const tope = topeDeMarca(marcaDoc);
+    let suma = 0;
+    if (cupon.brandId) {
+      for (const it of items) {
+        const id = String(it.productId || "");
+        if (it.personalizado || marcaPorId.get(id) !== String(cupon.brandId)) continue;
+        const precio = precioPorId.get(id);
+        const cantidad = Math.max(1, Number(it.qty) || 1);
+        if (precio !== undefined) suma += monedasDeLinea({ importe: precio * cantidad, cantidad, tope });
+      }
+    } else {
+      // Descuento en un producto: sobre una unidad, como el cupón.
+      const precio = precioPorId.get(productoDelCupon);
+      if (precio !== undefined) suma = monedasDeLinea({ importe: precio, cantidad: 1, tope });
+    }
+    topeCupon = Math.floor(suma + 1e-9);
   }
 
   let descuento = 0;
@@ -5366,12 +5950,13 @@ async function calcularDescuentoCupon(cupon, datos) {
   descuento = envioGratis
     ? Math.max(0, Math.min(descuento, ENVIO_ESTANDAR))
     : Math.max(0, Math.min(descuento, base));
-  return { descuento: +descuento.toFixed(2), envioGratis, base: +base.toFixed(2), exacta, aviso };
+  return { descuento: +descuento.toFixed(2), envioGratis, base: +base.toFixed(2), exacta, aviso, topeCupon };
 }
 
 // ── Validar un cupón (no lo consume) ──────────────────────────────────────────
 exports.validarCuponSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
+  await primeraCompra.exigirSinPausa(uid, { cupones: true });
   try {
     const encontrado = await buscarCupon(uid, data && data.code);
     const motivo = motivoRechazo(encontrado && encontrado.cupon);
@@ -5384,6 +5969,8 @@ exports.validarCuponSecure = functions.https.onCall(async (data, context) => {
       descuento: calculo.descuento,
       envioGratis: calculo.envioGratis,
       aviso: calculo.aviso,
+      // De una marca o un producto: el carrito lo usa para no pasar el tope de esas líneas.
+      topeCupon: calculo.topeCupon,
       cupon: {
         code: cupon.code,
         tipo: cupon.tipo,
@@ -5435,7 +6022,11 @@ exports.canjearCuponSecure = functions.https.onCall(async (data, context) => {
       t.update(previo.ref, {
         status: "used",
         orderId,
-        descuentoAplicado: calculo.descuento,
+        // Lo que de verdad pudo descontar: un cupón de una marca o de un
+        // producto no pasa el tope de esas líneas (topeCupon).
+        descuentoAplicado: calculo.topeCupon === null || calculo.topeCupon === undefined || ["producto_gratis"].includes(cupon.tipo)
+          ? calculo.descuento
+          : Math.min(calculo.descuento, calculo.topeCupon),
         usadoAt: FieldValue.serverTimestamp(),
       });
       return { success: true, descuento: calculo.descuento, repetido: false };
@@ -6141,6 +6732,9 @@ exports.resultadosEncuestaEntrega = require('./encuestaEntrega').resultadosEncue
 exports.aggregateAnalyticsDaily = require('./analyticsDaily').aggregateAnalyticsDaily;
 exports.aggregateAnalyticsDailyBackfill = require('./analyticsDaily').aggregateAnalyticsDailyBackfill;
 exports.aggregateAnalyticsToday = require('./analyticsDaily').aggregateAnalyticsToday;
+
+// La papelera de productos: cada madrugada borra lo que lleva 30 días ahí (./papelera).
+exports.vaciarPapeleraVieja = require('./papelera').vaciarPapeleraVieja;
 
 // ── Búsqueda de clientes (Resultados › Clientes) ──────────────────────────────
 // Guarda en cada perfil los comienzos de nombre/correo/DNI/teléfono para buscar
@@ -7396,18 +7990,9 @@ const SORTEO_CONTADOR_SHARDS = 10;
 // strings limpios + `nombre` (nombre completo listo para mostrar). NO valida
 // obligatoriedad: cada CF decide qué campos exige. Se usa tanto en la
 // participación gratis como en la compra de tickets para capturar el lead.
-// ¿La llamada viene de la app (Capacitor)? La app corre en https://localhost
-// (Android) o capacitor://localhost (iOS); la web, en wala.pe (o en un origen
-// con puerto, en desarrollo). Antes bastaba con que el navegador mandara
-// origenApp: true, y cualquiera lo ponía desde la web; ahora además tiene que
-// venir del origen de la app, que un navegador no puede falsear. Sin App Check
-// no resiste una llamada armada fuera del navegador.
-const ORIGENES_APP = new Set(["https://localhost", "capacitor://localhost"]);
-function vieneDeLaApp(data, context) {
-  const cabeceras = (context && context.rawRequest && context.rawRequest.headers) || {};
-  const origen = String(cabeceras.origin || "").toLowerCase();
-  return Boolean(data && data.origenApp === true) && ORIGENES_APP.has(origen);
-}
+// ¿La llamada viene de la app? La de antes (Capacitor) por su Origin; la de
+// ahora (Expo) llama sin Origin desde el SDK nativo. Ver ./origenApp.js.
+const { vieneDeLaApp } = require("./origenApp");
 
 function sanitizarDatosSorteo(datos) {
   const d = datos && typeof datos === "object" ? datos : {};
@@ -7460,6 +8045,10 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
   const sorteo = sorteoSnap.data();
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
   }
   if (sorteo.tipo === "pagado") {
     throw new functions.https.HttpsError("failed-precondition", "este sorteo requiere comprar ticket");
@@ -7607,6 +8196,10 @@ async function leerPrecioTicketSorteo(sorteoId, cantidad) {
   const sorteo = snap.data();
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
   }
   if (sorteo.tipo !== "pagado") {
     throw new functions.https.HttpsError("failed-precondition", "Este sorteo no vende tickets.");
@@ -7856,7 +8449,7 @@ async function confirmarTicketSorteoDesdePago({ metadata, pagoId, metodoPago } =
 exports.asignarTicketsManual = functions.https.onCall(async (data, context) => {
   // 1) Autorización: autenticado + admin (claim o puente adminUsers).
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede asignar tickets.");
   }
   const adminUid = context.auth.uid;
@@ -8285,7 +8878,7 @@ function elegirGanadoresPonderado(pool, n, nextIntBelow) {
 exports.decidirGanadoresSorteo = functions.https.onCall(async (data, context) => {
   // 1) Autorización: autenticado + admin.
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede decidir ganadores.");
   }
   const adminUid = context.auth.uid;
@@ -8466,6 +9059,10 @@ exports.sumarChanceCompartir = functions.https.onCall(async (data, context) => {
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
   }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
+  }
 
   try {
     return await db.runTransaction(async (t) => {
@@ -8528,6 +9125,10 @@ exports.claimRaffleReferralSecure = functions.https.onCall(async (data, context)
   }
   if (sorteo.estado !== "activo") {
     throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  // Fuera de sus fechas (fechaInicio/fechaFin del admin) tampoco acepta nada.
+  if (mensajeFueraDeFechas(sorteo)) {
+    throw new functions.https.HttpsError("failed-precondition", mensajeFueraDeFechas(sorteo));
   }
 
   // 2) Resuelve el DUEÑO del refCode en portal_clientes_users (referralCode==refCode).
@@ -8600,7 +9201,7 @@ exports.claimRaffleReferralSecure = functions.https.onCall(async (data, context)
 exports.grantRaffleChancesSecure = functions.https.onCall(async (data, context) => {
   // 1) Autorización: autenticado + admin.
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ajustar chances.");
   }
   const adminUid = context.auth.uid;
@@ -9225,6 +9826,9 @@ exports.crearSuscripcionCulqi = functions.https.onCall(async (data, context) => 
         planId,
         intervalo: plan.intervalo || null,
         meses,
+        // Lo que autorizó ("Autorizo el cobro automático de S/ X"): las
+        // renovaciones cobran esto aunque el admin cambie el precio del plan.
+        precioCentimos: montoCentimos,
         chancesPorCiclo,
         chancesExtra: esNuevo ? 0 : FieldValue.increment(0),
         chancesTotal,
@@ -9340,13 +9944,24 @@ exports.cobrarSuscripcionesCulqi = onSchedule(
         }
 
         try {
-          // MONTO autoritativo: se re-lee del plan de la campaña (no del suscriptor).
+          // MONTO: lo que autorizó el suscriptor (sub.precioCentimos), no el precio
+          // de hoy del plan: un cambio de precio en el admin es solo para los
+          // nuevos. Los de antes de guardarlo: el último recibo; si no hay, el plan.
+          // Así un plan borrado tampoco deja sin cobrar a sus suscriptores.
           const campSnap = await campRef.get();
           const campana = campSnap.exists ? campSnap.data() : {};
           const planes = Array.isArray(campana.planes) ? campana.planes : [];
           const plan = planes.find((p) => p && p.id === sub.planId) || {};
-          const montoCentimos = Number(plan.precioCentimos);
-          const meses = Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0 ? Number(plan.meses) : Number(sub.meses) || 1;
+          let montoCentimos = Number(sub.precioCentimos);
+          if (!Number.isInteger(montoCentimos) || montoCentimos <= 0) {
+            // eslint-disable-next-line no-await-in-loop
+            const ultimo = await subRef.collection("recibos").orderBy("fecha", "desc").limit(1).get().catch(() => null);
+            const delRecibo = ultimo && !ultimo.empty ? Number(ultimo.docs[0].data().montoCentimos) : NaN;
+            montoCentimos = Number.isInteger(delRecibo) && delRecibo > 0 ? delRecibo : Number(plan.precioCentimos);
+          }
+          const meses = Number.isInteger(Number(sub.meses)) && Number(sub.meses) > 0
+            ? Number(sub.meses)
+            : (Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0 ? Number(plan.meses) : 1);
           if (!Number.isInteger(montoCentimos) || montoCentimos <= 0 || !sub.culqiCardId) {
             await lockRef.set({ status: "failed", error: "plan/card inválido", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
             continue;
@@ -9387,6 +10002,8 @@ exports.cobrarSuscripcionesCulqi = onSchedule(
                     vigenciaHasta: admin.firestore.Timestamp.fromDate(nuevaVigencia),
                     proximoCobro: admin.firestore.Timestamp.fromDate(nuevaVigencia),
                     intentosFallidos: 0,
+                    // Queda guardado lo que se le cobra (los de antes no lo tenían).
+                    precioCentimos: montoCentimos,
                     updatedAt: FieldValue.serverTimestamp(),
                   }, { merge: true });
                   t.set(reciboRef, {
@@ -9442,10 +10059,14 @@ exports.cobrarSuscripcionesCulqi = onSchedule(
 async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
   const cacheRef = db.collection("paypalPlanes").doc(`${campaignId}__${plan.id}`);
   const cacheSnap = await cacheRef.get();
-  if (cacheSnap.exists && cacheSnap.data().paypalPlanId) {
-    return cacheSnap.data().paypalPlanId;
-  }
   const precioUsd = Number(plan.precioUsd);
+  // Un plan de PayPal tiene su precio y su intervalo fijos. Si el admin cambió
+  // alguno, se crea otro plan para los NUEVOS suscriptores; los de antes siguen
+  // en el suyo (pagan lo que aceptaron). Antes se reusaba siempre el primero.
+  const cache = cacheSnap.exists ? cacheSnap.data() || {} : {};
+  if (cache.paypalPlanId && Number(cache.precioUsd) === precioUsd && Number(cache.meses) === Number(meses)) {
+    return cache.paypalPlanId;
+  }
   if (!Number.isFinite(precioUsd) || precioUsd <= 0) {
     throw new functions.https.HttpsError("failed-precondition", "El plan no tiene precioUsd válido (PayPal).");
   }
@@ -9478,7 +10099,8 @@ async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
     headers: {
       "Authorization": `Bearer ${accessToken}`,
       "Content-Type": "application/json",
-      "PayPal-Request-Id": `plan_${campaignId}_${plan.id}`,
+      // Con el precio y los meses: el mismo id devolvería el plan de antes.
+      "PayPal-Request-Id": `plan_${campaignId}_${plan.id}_${precioUsd.toFixed(2)}_${meses}`,
     },
     body: JSON.stringify({
       product_id: productId,
@@ -9509,6 +10131,10 @@ async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
   await cacheRef.set({
     campaignId, planId: plan.id, productId, paypalPlanId,
     precioUsd, meses, createdAt: FieldValue.serverTimestamp(),
+    // Los planes de PayPal de antes (sus suscriptores siguen ahí).
+    ...(cache.paypalPlanId && cache.paypalPlanId !== paypalPlanId && {
+      anteriores: FieldValue.arrayUnion({ paypalPlanId: cache.paypalPlanId, precioUsd: Number(cache.precioUsd) || null, meses: Number(cache.meses) || null }),
+    }),
   }, { merge: true });
   return paypalPlanId;
 }
@@ -9609,6 +10235,8 @@ exports.confirmarSuscripcionPaypal = functions.https.onCall(async (data, context
       chancesTotal,
       metodoPago: "paypal",
       paypalSubscriptionId: subscriptionId,
+      // Lo que aceptó en PayPal (su plan de PayPal no cambia con el admin).
+      precioUsd: Number(plan.precioUsd) || null,
       culqiCustomerId: null,
       culqiCardId: null,
       updatedAt: FieldValue.serverTimestamp(),
@@ -9777,8 +10405,10 @@ exports.paypalSubscriptionWebhook = functions.https.onRequest(async (req, res) =
         const campSnap = await campRef.get();
         const planes = campSnap.exists && Array.isArray(campSnap.data().planes) ? campSnap.data().planes : [];
         const plan = planes.find((p) => p && p.id === (subData && subData.planId)) || {};
-        if (Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0) meses = Number(plan.meses);
-        montoUsd = Number(plan.precioUsd) || (recurso.amount && Number(recurso.amount.total)) || null;
+        // El intervalo y el monto del suscriptor (su plan de PayPal no cambia aunque
+        // el admin cambie el plan): lo cobrado por PayPal manda.
+        if (!(Number(subData && subData.meses) > 0) && Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0) meses = Number(plan.meses);
+        montoUsd = (recurso.amount && Number(recurso.amount.total)) || Number(subData && subData.precioUsd) || Number(plan.precioUsd) || null;
       } catch (_e) { /* usa defaults */ }
       const nuevaVigencia = sumarMeses(ahora, meses);
       const pagoId = recurso.id || `${eventId}`;
@@ -9822,7 +10452,7 @@ exports.paypalSubscriptionWebhook = functions.https.onRequest(async (req, res) =
 // return: { ok, drawId, ganadores, totalElegibles, seed, poolHash }
 exports.decidirGanadoresSuscripcion = functions.https.onCall(async (data, context) => {
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede decidir ganadores.");
   }
   const adminUid = context.auth.uid;
@@ -9986,7 +10616,7 @@ exports.cancelarSuscripcion = functions.https.onCall(async (data, context) => {
 // return: { ok, uid, chancesTotal }
 exports.grantChancesSuscripcion = functions.https.onCall(async (data, context) => {
   requireAuth(context);
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ajustar chances.");
   }
   const adminUid = context.auth.uid;
@@ -10067,6 +10697,24 @@ exports.grantChancesSuscripcion = functions.https.onCall(async (data, context) =
 // Solo observa cambios futuros de estadoGeneral. Kenta decide, según la
 // configuración del tenant, si existe una plantilla activa y si corresponde
 // enviar. La firma y el eventId hacen el callback autenticado e idempotente.
+// Foundation only: no messages, payment writes, or additional Firestore reads.
+exports.notifyKentaCollectionChanged = functions.runWith({
+  failurePolicy: true, timeoutSeconds: 30, memory: '128MB', maxInstances: 2,
+}).firestore.document('pedidos/{pedidoId}').onWrite(async (change, context) => {
+  const { buildSignal, deliver } = require('./kentaCollectionSignal');
+  const signal = buildSignal(change, context, {
+    owner: process.env.KENTA_COLLECTION_SOURCE_TENANT,
+    project: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT,
+  });
+  if (!signal) return null;
+  const result = await deliver(signal, {
+    url: process.env.KENTA_COLLECTION_CALLBACK_URL || 'https://kenta.pe/api/integrations/wala/order-collection-webhook',
+    secret: process.env.KENTA_ORDER_STAGE_CALLBACK_SECRET || process.env.KENTA_PAYMENT_CALLBACK_SECRET,
+  });
+  console.info('kenta_collection_signal', result);
+  return null;
+});
+
 exports.notifyKentaOrderStageChanged = functions.firestore
   .document("pedidos/{pedidoId}")
   .onUpdate(async (change, context) => {
@@ -10131,7 +10779,7 @@ exports.notifyKentaOrderStageChanged = functions.firestore
 // para quedarse con los ~200 que anotaron personas: tardaba mucho. Acá se leen
 // solo email + giftRecipients y se devuelve una fila por fecha, ya filtrada.
 exports.adminFechasDeUsuarios = functions.https.onCall(async (data, context) => {
-  if (!(await callerIsAdmin(context))) {
+  if (!(await callerIsAdmin(context, ["campanas"]))) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver esto.");
   }
   const snap = await db.collection(PORTAL_USERS_COLLECTION).select("email", "giftRecipients").get();
@@ -10193,7 +10841,15 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // coins: acepta monedas en el pago móvil (las reserva al preparar y las devuelve al cancelar).
   // gifts: acepta "Es un regalo" (giftDetails del pedido, el que abre /regalo/:orderId).
   // savedCards: cobra con una tarjeta guardada y guarda la nueva ("Guardar esta tarjeta"), sin 3DS, como la web.
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true,
+  // whatsapp: el pedido de la app se puede terminar por WhatsApp (crearSolicitudWhatsappSecure) y ya no se cancela.
+  // balance + publicKey: la app paga el saldo de un pedido con el formulario de Culqi (processCulqiPayment con
+  // metadata.pedidoId, como la web: sin 3DS); la llave pública es la misma del checkout.
+  // talCual: vende las prendas de Crear con seVendeTalCual como un producto de la tienda (con la talla de su color).
+  // giftDelivery: el regalo de una lista de deseos lleva su fecha de entrega, la ocasión y el código de la lista.
+  // welcomeBalance: acepta el saldo de bienvenida (semana de bienvenida, primeraCompra.js) en el pago móvil.
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true, talCual: true, giftDelivery: true,
+    welcomeBalance: true,
+    balance: true, publicKey: /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') ? process.env.CULQI_PUBLIC_KEY : null,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
@@ -10216,6 +10872,8 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
       const intent = snapshot.data();
       if (intent.uid !== uid || !intent.mobile) throw new functions.https.HttpsError('permission-denied', 'Este pago no pertenece a tu cuenta.');
       if (['paid_order_created', 'cobrando'].includes(intent.status)) throw new functions.https.HttpsError('failed-precondition', 'El pago está en comprobación o ya se completó. Consulta su estado antes de continuar.');
+      // Pedido por WhatsApp: ya está en el ERP con sus monedas reservadas; cancelar aquí las devolvería.
+      if (intent.whatsappSolicitado === true) throw new functions.https.HttpsError('failed-precondition', 'Ya pediste este pedido por WhatsApp. Si quieres anularlo, escríbele al asesor.');
       // Las monedas que reservó este intento vuelven ya: una intención vencida no la libera reconciliarMonedasEnEspera
       // (solo mira las que siguen "prepared") ni el siguiente checkout (reservaCheckoutLiberable, tampoco).
       const reserva = intent.status === 'prepared' && Number(intent.totalesServidor?.monedas) > 0 ? await transaction.get(userRef) : null;
@@ -10245,3 +10903,443 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
 // Confirmaciones de pago de Walá, separadas de la actividad del navegador.
 exports.recordCheckoutPaymentAnalytics = require('./productFunnel').recordCheckoutPaymentAnalytics;
 exports.recordErpPaymentAnalytics = require('./productFunnel').recordErpPaymentAnalytics;
+
+// ══ La Pichanga de Walito ═══════════════════════════════════════════════════════
+// Fútbol de chapas para jugar solo (/pichanga). Todo pasa por estas funciones:
+// el celular no lee ni escribe las colecciones del juego (pichangaProgreso,
+// pichangaRetos, pichangaSemanas, pichangaJugadores, pichangaMeses), así que
+// no hacen falta reglas nuevas para jugar. Detalle en
+// src/componentes/kit/guia/JUEGOS.md ("La Pichanga de Walito: fase 2").
+const PICHANGA_REWARD = 2;
+const RANKING_PICHANGA_TOP = 20;
+const RANKING_PICHANGA_LEER = 1000;
+
+// Una partida ganada, comprobada. La app manda cada nivel o reto que gana:
+// { modo: 'nivel' | 'reto', nivel | fecha, tiros: [[chapa, dx, dy]…], extras }.
+// El servidor la repite con el mismo motor (copias generadas) y, si mete gol:
+//  - paga +PICHANGA_REWARD si hoy no cobró (lastPichangaReward; fuente
+//    "pichanga_daily" en el libro mayor)
+//  - marca la misión del día ('pichanga_nivel' o 'pichanga_reto')
+//  - el reto de hoy: pichangaRetos/{fecha}_{uid} (el mejor del día) y
+//    pichangaSemanas/{lunes}_{uid}
+//  - pichangaJugadores/{uid}: días jugados y el nivel más alto (el top)
+//  - pichangaMeses/{mes}_{uid}: los goles del mes (cada nivel y el reto
+//    cuentan una vez por día)
+// Devuelve { success, reward, ya, toques, estrellas, mejor, record, golesMes }.
+exports.registrarPartidaPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const hoy = limaTodayStr();
+  let partida;
+  try {
+    partida = await pichanga.comprobarPartidaPichanga(data, hoy);
+  } catch (e) {
+    if (e.codigo) throw new functions.https.HttpsError(e.codigo, e.message);
+    console.error("registrarPartidaPichangaSecure (comprobar) error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo comprobar la partida.");
+  }
+  const esReto = partida.modo === "reto";
+  const [semana, mes] = await Promise.all([pichanga.semanaPichanga(hoy), pichanga.mesPichanga(hoy)]);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const accionesRef = db.collection("userActions").doc(uid + "_" + hoy);
+  const retoRef = esReto ? db.collection("pichangaRetos").doc(hoy + "_" + uid) : null;
+  const semanaRef = esReto ? db.collection("pichangaSemanas").doc(semana + "_" + uid) : null;
+  const jugadorRef = db.collection("pichangaJugadores").doc(uid);
+  const mesRef = db.collection("pichangaMeses").doc(mes + "_" + uid);
+  const statsRef = db.collection("pichangaStats").doc(hoy);
+  // El reto patrocinado (pichangaPatrocinios/{hoy}, lo pone el admin) da un
+  // cupón de la marca: uno por persona y día (el id del cupón lo asegura)
+  // mientras quede cupo, como en las Bolitas.
+  const patrocinioRef = esReto ? db.collection("pichangaPatrocinios").doc(hoy) : null;
+  const cuponRef = esReto ? db.collection("userCoupons").doc("pichanga_reto_" + hoy + "_" + uid) : null;
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const [userSnap, accionesSnap, retoSnap, semanaSnap, jugadorSnap, mesSnap, patrocinioSnap, cuponSnap] = await Promise.all([
+        t.get(userRef),
+        t.get(accionesRef),
+        retoRef ? t.get(retoRef) : null,
+        semanaRef ? t.get(semanaRef) : null,
+        t.get(jugadorRef),
+        t.get(mesRef),
+        patrocinioRef ? t.get(patrocinioRef) : null,
+        cuponRef ? t.get(cuponRef) : null,
+      ]);
+      if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = userSnap.data();
+      const nombre = bolitas.nombrePublico(u) || bolitas.nombrePublico({ displayName: context.auth.token.name });
+
+      let reward = 0;
+      const ya = u.lastPichangaReward === hoy;
+      if (!ya) {
+        reward = PICHANGA_REWARD;
+        const nuevoSaldo = (u.monedas || 0) + reward;
+        t.update(userRef, { monedas: nuevoSaldo, lastPichangaReward: hoy });
+        writeLedger(t, uid, { type: "earn", amount: reward, source: "pichanga_daily", balanceAfter: nuevoSaldo });
+      }
+
+      const acciones = accionesSnap.exists ? { ...(accionesSnap.data().actions || {}) } : {};
+      acciones[esReto ? "pichanga_reto" : "pichanga_nivel"] = true;
+      t.set(accionesRef, { userId: uid, date: hoy, actions: acciones });
+
+      let mejor = false;
+      if (esReto) {
+        const antes = retoSnap.exists ? retoSnap.data().toques : null;
+        mejor = antes == null || partida.toques < antes;
+        if (mejor) {
+          t.set(retoRef, { uid, fecha: hoy, semana, nombre, toques: partida.toques, hecho: FieldValue.serverTimestamp() });
+          const suma = pichanga.sumarRetoASemana(semanaSnap.exists ? semanaSnap.data() : null, hoy, partida.toques);
+          t.set(semanaRef, { uid, semana, nombre, ...suma, hecho: FieldValue.serverTimestamp() });
+        }
+      }
+
+      let cupon = null;
+      const patrocinio = esReto && patrocinioSnap.exists ? bolitas.normalizarPatrocinio(patrocinioSnap.data()) : null;
+      const entregados = patrocinio ? Number(patrocinioSnap.data().entregados) || 0 : 0;
+      if (patrocinio && patrocinio.activo && entregados < patrocinio.cupo && !cuponSnap.exists) {
+        cupon = crearCuponBolitas(t, cuponRef, uid, patrocinio.cupon, {
+          origen: "pichanga_reto",
+          titulo: "Reto del día: " + (patrocinio.marcaNombre || "La Pichanga de Walito"),
+          marcaId: patrocinio.marcaId,
+          marcaNombre: patrocinio.marcaNombre,
+        });
+        t.update(patrocinioRef, { entregados: FieldValue.increment(1) });
+      }
+
+      const jugadorAntes = jugadorSnap.exists ? jugadorSnap.data() : null;
+      const jugador = bolitas.sumarJugador(jugadorAntes, hoy, partida.nivel || 0, { nombre, ahora: Date.now() });
+      t.set(jugadorRef, jugador);
+      const record = jugador.nivelMax > ((jugadorAntes && jugadorAntes.nivelMax) || 0);
+
+      const mesAntes = mesSnap.exists ? mesSnap.data() : null;
+      const sumaMes = pichanga.sumarGolesMes(mesAntes, mes, hoy, esReto ? "reto" : "n" + partida.nivel, partida.goles);
+      if (sumaMes) t.set(mesRef, { uid, nombre, ...sumaMes, hecho: FieldValue.serverTimestamp() });
+      const golesMes = sumaMes ? sumaMes.goles : (mesAntes && mesAntes.mes === mes ? mesAntes.goles || 0 : 0);
+
+      // Las cifras del día para /admin/pichanga (cada partida comprobada suma una vez).
+      const stats = {
+        fecha: hoy,
+        partidas: FieldValue.increment(1),
+        goles: FieldValue.increment(partida.goles || 0),
+        monedas: FieldValue.increment(reward),
+      };
+      if (esReto) stats.retos = FieldValue.increment(1);
+      else {
+        stats.niveles = FieldValue.increment(1);
+        if (partida.nivel) stats.porNivel = { [String(partida.nivel)]: FieldValue.increment(1) };
+      }
+      if (!jugadorAntes) stats.nuevos = FieldValue.increment(1);
+      t.set(statsRef, stats, { merge: true });
+
+      return { success: true, reward, ya, toques: partida.toques, estrellas: partida.estrellas, mejor, record, golesMes, cupon };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("registrarPartidaPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar la partida.");
+  }
+});
+
+// El patrocinio del reto de hoy, para el juego: { patrocinio: { marcaId,
+// marcaNombre, texto, quedan, ganado } } o { patrocinio: null } si no hay o
+// está apagado. `ganado`: quien pregunta (con sesión) ya tiene el cupón de hoy.
+exports.patrocinioPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  const hoy = limaTodayStr();
+  try {
+    const [snap, cuponSnap] = await Promise.all([
+      db.collection("pichangaPatrocinios").doc(hoy).get(),
+      uid ? db.collection("userCoupons").doc("pichanga_reto_" + hoy + "_" + uid).get() : null,
+    ]);
+    const p = snap.exists ? bolitas.normalizarPatrocinio(snap.data()) : null;
+    if (!p || !p.activo) return { fecha: hoy, patrocinio: null };
+    return {
+      fecha: hoy,
+      patrocinio: {
+        marcaId: p.marcaId,
+        marcaNombre: p.marcaNombre,
+        texto: bolitas.textoCupon(p.cupon, p.marcaNombre),
+        quedan: Math.max(0, p.cupo - (Number(snap.data().entregados) || 0)),
+        ganado: Boolean(cuponSnap && cuponSnap.exists),
+      },
+    };
+  } catch (e) {
+    console.error("patrocinioPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo leer el patrocinio.");
+  }
+});
+
+// Los rankings, uno por pedido ({ tabla }):
+//  - 'reto': hoy (menos toques; empate, quien llegó antes) y la semana (más
+//    retos; empate, menos toques en total)
+//  - 'niveles': el nivel más alto que pasó cada uno
+//  - 'goleadores': los goles del mes
+// Los 20 primeros con el nombre corto y dónde va quien pregunta.
+exports.getRankingPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  const tabla = data && data.tabla;
+  const hoy = limaTodayStr();
+  const fila = (d) => {
+    const f = d.data();
+    return { ...f, uid: f.uid || d.id, hecho: f.hecho && f.hecho.toMillis ? f.hecho.toMillis() : 0 };
+  };
+  const puestoDe = (lista) => (uid ? lista.findIndex((f) => f.uid === uid) + 1 || null : null);
+  const publico = (f, k) => ({ puesto: k + 1, nombre: f.nombre || "Jugador", yo: Boolean(uid) && f.uid === uid });
+  try {
+    if (tabla === "reto") {
+      const semana = await pichanga.semanaPichanga(hoy);
+      const [diaSnap, semanaSnap] = await Promise.all([
+        db.collection("pichangaRetos").where("fecha", "==", hoy).limit(RANKING_PICHANGA_LEER).get(),
+        db.collection("pichangaSemanas").where("semana", "==", semana).limit(RANKING_PICHANGA_LEER).get(),
+      ]);
+      const dia = pichanga.ordenarRetoDia(diaSnap.docs.map(fila));
+      const sem = pichanga.ordenarRetoSemana(semanaSnap.docs.map(fila));
+      await completarNombresBolitas([...dia.slice(0, RANKING_PICHANGA_TOP), ...sem.slice(0, RANKING_PICHANGA_TOP)]);
+      return {
+        tabla, fecha: hoy, semana,
+        hoy: dia.slice(0, RANKING_PICHANGA_TOP).map((f, k) => ({ ...publico(f, k), toques: f.toques })),
+        semanal: sem.slice(0, RANKING_PICHANGA_TOP).map((f, k) => ({ ...publico(f, k), completados: f.completados, total: f.total })),
+        yo: { hoy: puestoDe(dia), semana: puestoDe(sem), jugadoresHoy: dia.length, jugadoresSemana: sem.length },
+      };
+    }
+    if (tabla === "niveles") {
+      const snap = await db.collection("pichangaJugadores").orderBy("nivelMax", "desc").limit(RANKING_PICHANGA_LEER).get();
+      const filas = bolitas.ordenarTopNiveles(snap.docs.map(fila));
+      const top = filas.slice(0, RANKING_PICHANGA_TOP);
+      await completarNombresBolitas(top);
+      const k = uid ? filas.findIndex((f) => f.uid === uid) : -1;
+      return {
+        tabla,
+        top: top.map((f, j) => ({ ...publico(f, j), nivel: f.nivelMax })),
+        yo: { puesto: k >= 0 ? k + 1 : null, nivel: k >= 0 ? filas[k].nivelMax : null, jugadores: filas.length },
+      };
+    }
+    if (tabla === "goleadores") {
+      const mes = await pichanga.mesPichanga(hoy);
+      const snap = await db.collection("pichangaMeses").where("mes", "==", mes).limit(RANKING_PICHANGA_LEER).get();
+      const filas = pichanga.ordenarGoleadores(snap.docs.map(fila));
+      const top = filas.slice(0, RANKING_PICHANGA_TOP);
+      await completarNombresBolitas(top);
+      const k = uid ? filas.findIndex((f) => f.uid === uid) : -1;
+      return {
+        tabla, mes,
+        top: top.map((f, j) => ({ ...publico(f, j), goles: f.goles })),
+        yo: { puesto: k >= 0 ? k + 1 : null, goles: k >= 0 ? filas[k].goles : null, jugadores: filas.length },
+      };
+    }
+    throw new functions.https.HttpsError("invalid-argument", "Tabla desconocida.");
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("getRankingPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo cargar el ranking.");
+  }
+});
+
+// El progreso en la cuenta (pichangaProgreso/{uid}): sin `progreso`, lo
+// devuelve; con él, lo une con lo guardado (lo ganado no se pierde) y guarda
+// el resultado. No vale dinero: el premio y los rankings salen de partidas
+// comprobadas. → { progreso } (null si no hay nada guardado).
+// ── La Pichanga de Walito: premios del mes ─────────────────────────────────────
+// El día 1 a las 00:20 (Lima) se premia a los goleadores del mes que terminó,
+// con lo que el admin puso en pichangaConfig/premios { activo, puestos:
+// [{ desde, hasta, cupon, marcaId?, marcaNombre? }] }: un cupón a cada puesto
+// (como los premios semanales de las Bolitas). El id del cupón (mes + uid) y
+// pichangaPremios/{mes} evitan premiar dos veces si la tarea se repite.
+function mesAnteriorPichanga(mes) {
+  const [y, m] = mes.split("-").map(Number);
+  return m === 1 ? (y - 1) + "-12" : y + "-" + String(m - 1).padStart(2, "0");
+}
+
+async function premiarMesPichanga(mes) {
+  const marcaRef = db.collection("pichangaPremios").doc(mes);
+  if ((await marcaRef.get()).exists) return { mes, ya: true };
+  const config = await db.collection("pichangaConfig").doc("premios").get();
+  const c = config.exists ? config.data() : null;
+  if (!c || c.activo === false || !Array.isArray(c.puestos) || !c.puestos.length) return { mes, sinPremios: true };
+
+  const snap = await db.collection("pichangaMeses").where("mes", "==", mes).limit(RANKING_PICHANGA_LEER).get();
+  const filas = snap.docs.map((x) => {
+    const f = x.data();
+    return { ...f, hecho: f.hecho && f.hecho.toMillis ? f.hecho.toMillis() : 0 };
+  });
+  const orden = pichanga.ordenarGoleadores(filas).filter((f) => (f.goles || 0) > 0);
+  const entregados = [];
+  for (let k = 0; k < orden.length; k += 1) {
+    const plantilla = bolitas.premioDePuesto(k + 1, c.puestos);
+    if (!plantilla) continue;
+    const premio = c.puestos.find((x) => k + 1 >= Number(x.desde) && k + 1 <= Number(x.hasta || x.desde)) || {};
+    const ref = db.collection("userCoupons").doc("pichanga_mes_" + mes + "_" + orden[k].uid);
+    try {
+      await db.runTransaction(async (t) => {
+        if ((await t.get(ref)).exists) return;
+        crearCuponBolitas(t, ref, orden[k].uid, plantilla, {
+          origen: "pichanga_mes",
+          titulo: "Puesto " + (k + 1) + " en los goleadores de La Pichanga de Walito",
+          marcaId: premio.marcaId || null,
+          marcaNombre: premio.marcaNombre || null,
+        });
+      });
+      entregados.push({ puesto: k + 1, uid: orden[k].uid, goles: orden[k].goles || 0 });
+    } catch (e) {
+      console.error("premiarMesPichanga: no se pudo premiar el puesto", k + 1, e);
+    }
+  }
+  await marcaRef.set({ mes, entregados, jugadores: orden.length, hecho: FieldValue.serverTimestamp() });
+  return { mes, entregados: entregados.length };
+}
+
+exports.premiarGoleadoresPichanga = onSchedule({
+  schedule: "20 0 1 * *",
+  timeZone: "America/Lima",
+}, async () => {
+  const mes = mesAnteriorPichanga(await pichanga.mesPichanga(limaTodayStr()));
+  const r = await premiarMesPichanga(mes);
+  console.log("premiarGoleadoresPichanga:", JSON.stringify(r));
+});
+
+// ── La Pichanga de Walito: el admin ────────────────────────────────────────────
+// Una sola función para /admin/pichanga (solo admin), con `accion`:
+//  - metricas { dias } → por día (pichangaStats), los jugadores (como en las
+//    Bolitas: vuelven, siguen, dónde se traban, hasta dónde llegan), el
+//    vestuario y los partidos contra Happy (del progreso guardado en cuentas)
+//    y los rankings del momento
+//  - leerPremios · guardarPremios { activo, puestos }
+//  - premiarMes { mes: 'AAAA-MM' } (repetir a mano el premio de un mes)
+//  - listarPatrocinios { desde } · guardarPatrocinio { fecha, patrocinio } ·
+//    borrarPatrocinio { fecha } (el reto del día patrocinado, como en las Bolitas)
+exports.adminPichangaSecure = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context, ["premios"]))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
+  const d = data || {};
+  const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+  try {
+    switch (d.accion) {
+      case "listarPatrocinios": {
+        const desde = FECHA.test(String(d.desde)) ? String(d.desde) : limaTodayStr();
+        const snap = await db.collection("pichangaPatrocinios").where("fecha", ">=", desde).limit(200).get();
+        const patrocinios = snap.docs.map((x) => {
+          const p = x.data();
+          return { fecha: p.fecha, marcaId: p.marcaId, marcaNombre: p.marcaNombre, cupon: p.cupon, cupo: p.cupo, activo: p.activo, entregados: p.entregados || 0 };
+        }).sort((a, b) => a.fecha.localeCompare(b.fecha));
+        return { success: true, patrocinios };
+      }
+      case "guardarPatrocinio": {
+        if (!FECHA.test(String(d.fecha))) throw new functions.https.HttpsError("invalid-argument", "Fecha inválida.");
+        if (String(d.fecha) < limaTodayStr()) throw new functions.https.HttpsError("invalid-argument", "Ese día ya pasó.");
+        const p = bolitas.normalizarPatrocinio(d.patrocinio);
+        if (!p) throw new functions.https.HttpsError("invalid-argument", "Falta la marca, el cupón o el cupo.");
+        const ref = db.collection("pichangaPatrocinios").doc(d.fecha);
+        await db.runTransaction(async (t) => {
+          const antes = await t.get(ref);
+          t.set(ref, {
+            ...p, fecha: d.fecha, texto: bolitas.textoCupon(p.cupon, p.marcaNombre),
+            entregados: antes.exists ? Number(antes.data().entregados) || 0 : 0, actualizado: FieldValue.serverTimestamp(),
+          });
+        });
+        return { success: true, patrocinio: p };
+      }
+      case "borrarPatrocinio": {
+        if (!FECHA.test(String(d.fecha))) throw new functions.https.HttpsError("invalid-argument", "Fecha inválida.");
+        await db.collection("pichangaPatrocinios").doc(d.fecha).delete();
+        return { success: true };
+      }
+      case "metricas": {
+        const dias = Math.min(60, Math.max(1, Math.floor(Number(d.dias)) || 14));
+        const hoy = limaTodayStr();
+        const desde = limaTodayStr(Date.now() - (dias - 1) * 86400000);
+        const mes = await pichanga.mesPichanga(hoy);
+        const [statsSnap, jugadoresSnap, progresoSnap, mesSnap] = await Promise.all([
+          db.collection("pichangaStats").where("fecha", ">=", desde).get(),
+          db.collection("pichangaJugadores").limit(5000).get(),
+          db.collection("pichangaProgreso").limit(3000).get(),
+          db.collection("pichangaMeses").where("mes", "==", mes).limit(RANKING_PICHANGA_LEER).get(),
+        ]);
+        const jugadores = jugadoresSnap.docs.map((x) => x.data());
+        const recientes = jugadores.filter((j) => j.primerDia && j.primerDia >= limaTodayStr(Date.now() - 90 * 86400000));
+        // Hasta dónde llegan: el nivel más alto de cada uno (todos).
+        const llegan = {};
+        for (const j of jugadores) if (j.nivelMax) llegan[j.nivelMax] = (llegan[j.nivelMax] || 0) + 1;
+        // Del progreso guardado: el equipo puesto, la dificultad y los partidos.
+        const equipos = {};
+        const dificultad = {};
+        const partidos = { jugados: 0, ganados: 0, personas: 0 };
+        for (const x of progresoSnap.docs) {
+          const p = x.data() || {};
+          if (p.equipo) equipos[p.equipo] = (equipos[p.equipo] || 0) + 1;
+          const jugados = Number(p.partidos && p.partidos.jugados) || 0;
+          if (jugados > 0) {
+            partidos.jugados += jugados;
+            partidos.ganados += Number(p.partidos.ganados) || 0;
+            partidos.personas += 1;
+            const dif = p.dificultad || "normal";
+            dificultad[dif] = (dificultad[dif] || 0) + 1;
+          }
+        }
+        const fila = (f) => ({ nombre: f.nombre || "Jugador", goles: f.goles || 0, nivelMax: f.nivelMax || 0 });
+        const goleadores = pichanga.ordenarGoleadores(mesSnap.docs.map((x) => {
+          const f = x.data();
+          return { ...f, hecho: f.hecho && f.hecho.toMillis ? f.hecho.toMillis() : 0 };
+        })).slice(0, 10).map(fila);
+        const top = bolitas.ordenarTopNiveles(jugadores).slice(0, 10).map(fila);
+        const porDia = statsSnap.docs.map((x) => x.data()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+        return {
+          success: true, desde, hasta: hoy, mes, porDia,
+          jugadores: bolitas.metricasJugadores(recientes, hoy),
+          totalJugadores: jugadores.length, llegan, equipos, dificultad, partidos, goleadores, top,
+          cuentasConProgreso: progresoSnap.size,
+        };
+      }
+      case "leerPremios": {
+        const snap = await db.collection("pichangaConfig").doc("premios").get();
+        const premiados = await db.collection("pichangaPremios").orderBy("mes", "desc").limit(6).get();
+        return {
+          success: true,
+          premios: snap.exists ? snap.data() : null,
+          premiados: premiados.docs.map((x) => ({ mes: x.data().mes, entregados: (x.data().entregados || []).length, jugadores: x.data().jugadores || 0 })),
+        };
+      }
+      case "guardarPremios": {
+        const puestos = (Array.isArray(d.puestos) ? d.puestos : []).slice(0, 10).map((x) => ({
+          desde: Math.max(1, Math.floor(Number(x.desde)) || 1),
+          hasta: Math.max(1, Math.floor(Number(x.hasta || x.desde)) || 1),
+          cupon: bolitas.normalizarPlantillaCupon(x.cupon),
+          marcaId: typeof x.marcaId === "string" && x.marcaId ? x.marcaId.slice(0, 80) : null,
+          marcaNombre: String(x.marcaNombre || "").slice(0, 60) || null,
+        })).filter((x) => x.cupon && x.hasta >= x.desde);
+        await db.collection("pichangaConfig").doc("premios").set({ activo: d.activo !== false, puestos, actualizado: FieldValue.serverTimestamp() });
+        return { success: true, puestos };
+      }
+      case "premiarMes": {
+        if (!/^\d{4}-\d{2}$/.test(String(d.mes))) throw new functions.https.HttpsError("invalid-argument", "Mes inválido.");
+        if (String(d.mes) >= await pichanga.mesPichanga(limaTodayStr())) throw new functions.https.HttpsError("failed-precondition", "Ese mes todavía no termina.");
+        return { success: true, ...(await premiarMesPichanga(d.mes)) };
+      }
+      default:
+        throw new functions.https.HttpsError("invalid-argument", "Acción desconocida.");
+    }
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("adminPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo completar la acción.");
+  }
+});
+
+exports.progresoPichangaSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const ref = db.collection("pichangaProgreso").doc(uid);
+  const enviado = data && data.progreso;
+  try {
+    if (enviado == null) {
+      const snap = await ref.get();
+      return { progreso: await pichanga.limpiarProgresoPichanga(snap.exists ? snap.data() : null) };
+    }
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const unido = await pichanga.unirProgresoPichanga(enviado, snap.exists ? snap.data() : null);
+      t.set(ref, unido);
+      return { progreso: unido };
+    });
+  } catch (e) {
+    if (e.codigo) throw new functions.https.HttpsError(e.codigo, e.message);
+    console.error("progresoPichangaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo guardar el progreso.");
+  }
+});

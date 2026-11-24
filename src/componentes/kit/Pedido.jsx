@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
+import { PausaBienvenida } from './piezas/Bienvenida';
 import Boton from './Boton';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
@@ -210,12 +211,13 @@ export function SeguimientoPedido({
  *  - personalizado: "Con tu diseño"
  *  - seleccionado + onSeleccionar(bool): la casilla de "comprar esta vez";
  *    sin marcar, la fila se apaga y dice que no se cobra
+ *  - noDisponible: el texto de por qué ya no se puede comprar (se ve apagado)
  *  - incompleto: 'color' | 'talla' | 'color y talla' · urlElegir
  *  - srcSet: copias de la foto en varios tamaños (la fila mide 84px)
  */
 export function ItemCarrito({
   imagen, srcSet, nombre: nombreOriginal, variante, precio, precioAntes, personalizado = false, url, detalles = [], combo = false, piezas = [],
-  seleccionado, onSeleccionar, incompleto, urlElegir, urlEditar, avisoPersonalizacion,
+  seleccionado, onSeleccionar, incompleto, urlElegir, urlEditar, avisoPersonalizacion, noDisponible,
   cantidad: cantidadControlada, onCantidad, onQuitar, cantidadInicial = 1,
 }) {
   const nombre = useTexto(nombreOriginal);
@@ -226,7 +228,7 @@ export function ItemCarrito({
   const conCasilla = typeof seleccionado === 'boolean';
   const foto = <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} como="div" className={s.itemImgCaja} src={imagen} srcSet={srcSet} sizes="96px" relleno="8px" />;
   return (
-    <div className={[s.item, conCasilla && s.itemConCasilla, seleccionado === false && s.itemApagado].filter(Boolean).join(' ')} data-componente="ItemCarrito">
+    <div className={[s.item, conCasilla && s.itemConCasilla, (seleccionado === false || noDisponible) && s.itemApagado].filter(Boolean).join(' ')} data-componente="ItemCarrito">
       {conCasilla && (
         <label className={s.itemCasilla}>
           <input type="checkbox" checked={seleccionado} onChange={(e) => onSeleccionar?.(e.target.checked)} />
@@ -257,7 +259,9 @@ export function ItemCarrito({
         {personalizado && <Etiqueta tono="violeta" icono={<Sparkles aria-hidden="true" />}><Texto>Con tu diseño</Texto></Etiqueta>}
         {avisoPersonalizacion && <p className={s.itemFalta}><Texto>{avisoPersonalizacion}</Texto></p>}
         {urlEditar && <Boton to={urlEditar} variante="fantasma" tamano="sm"><Texto>Editar personalización</Texto></Boton>}
-        {incompleto && !avisoPersonalizacion && (
+        {/* Ya no se puede comprar (papelera, borrado, oculto o sin una de sus prendas): solo quitarlo. */}
+        {noDisponible && <p className={s.itemFalta}><AlertTriangle aria-hidden="true" /> <Texto>{noDisponible}</Texto> <Texto>Quítalo para poder pagar lo demás.</Texto></p>}
+        {incompleto && !avisoPersonalizacion && !noDisponible && (
           <p className={s.itemFalta}><AlertTriangle aria-hidden="true" /> <Texto>{`Falta elegir ${incompleto}`}</Texto>{urlElegir && <> · <Enlace to={urlElegir}><Texto>Elegir ahora</Texto></Enlace></>}</p>
         )}
         {seleccionado === false && <p className={s.itemVariante}><Texto>No se cobra en esta compra.</Texto></p>}
@@ -338,12 +342,15 @@ export function BarraEnvioGratis({ actual, meta, compacta = false, estricto = fa
  *    cupón va en el checkout; sin esta prop no sale)
  *  - monedas: las que ganas con la compra · saldoMonedas: las que ya tienes
  *    ("podrás usarlas al pagar")
+ *  - bienvenida: { enPausa, saldo } la semana de bienvenida (piezas/Bienvenida):
+ *    las monedas no se usan y el saldo de bienvenida se usa al pagar; { cargando }
+ *    mientras se sabe (no se promete nada de las monedas)
  *  - onPagar · textoBoton · deshabilitado · nota (bajo el botón; por defecto
  *    los medios de pago de la tienda: tarjeta con Culqi, y Yape, Plin o
  *    transferencia acordando por WhatsApp)
  */
 export function ResumenPedido({
-  subtotal, descuento = 0, envio = 0, monedas = 0, saldoMonedas = 0, cupones, onPagar,
+  subtotal, descuento = 0, envio = 0, monedas = 0, saldoMonedas = 0, cupones, onPagar, bienvenida,
   etiquetaSubtotal = 'Subtotal', textoBoton = 'Ir a pagar', deshabilitado = false, nota = 'Pago seguro con tarjeta, Yape, Plin o transferencia',
 }) {
   const etiquetaResumen = useTexto('Resumen del pedido');
@@ -414,7 +421,10 @@ export function ResumenPedido({
       {monedas > 0 && (
         <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${monedas} monedas`, monedas]}>{`Con esta compra ganas ${monedas} monedas`}</TextoResaltado></span></p>
       )}
-      {saldoMonedas > 0 && (
+      {bienvenida?.enPausa && bienvenida.saldo > 0 && (
+        <p className={s.ganas}><Gift aria-hidden="true" /><span><TextoResaltado resaltar={[soles(bienvenida.saldo)]}>{`Tienes ${soles(bienvenida.saldo)} de saldo de bienvenida: úsalo al pagar.`}</TextoResaltado></span></p>
+      )}
+      {bienvenida?.enPausa ? <PausaBienvenida que="monedas" /> : !bienvenida?.cargando && saldoMonedas > 0 && (
         <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${saldoMonedas} monedas`, saldoMonedas]}>{`Tienes ${saldoMonedas} monedas: podrás usarlas al pagar.`}</TextoResaltado></span></p>
       )}
       <Boton tamano="lg" bloque brillo={!deshabilitado} disabled={deshabilitado} onClick={onPagar}><Texto>{textoBoton}</Texto></Boton>

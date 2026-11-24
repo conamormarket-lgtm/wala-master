@@ -8,7 +8,7 @@ const parser = require('@babel/parser');
 const mobile = require('../mobileCheckout');
 const source = fs.readFileSync(require.resolve('../index'), 'utf8');
 const ast = parser.parse(source, { sourceType: 'script' });
-let handlerSource; let prepareSource; let cancelSource;
+let handlerSource; let prepareSource; let cancelSource; let whatsappSource;
 for (const statement of ast.program.body) {
   const node = statement.expression;
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'processCulqiPayment') {
@@ -16,6 +16,9 @@ for (const statement of ast.program.body) {
   }
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'prepareCheckoutPayment') {
     const handler = node.right.arguments[0]; prepareSource = source.slice(handler.start, handler.end);
+  }
+  if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'crearSolicitudWhatsappSecure') {
+    const handler = node.right.arguments[0]; whatsappSource = source.slice(handler.start, handler.end);
   }
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'cancelMobileCheckoutSecure') {
     const handler = node.right.arguments[0]; cancelSource = source.slice(handler.start, handler.end);
@@ -71,6 +74,9 @@ async function fixture(provider) {
     verificarPreciosYStock: async (products) => ({ subtotal: Object.values(products).reduce((sum, p) => sum + p.precio * p.cantidad, 0), topeMonedas: 0 }),
     totalEsperadoCheckout: require('../checkoutTotals').totalEsperadoCheckout, ENVIO_ESTANDAR: 15, ENVIO_GRATIS_DESDE: 100,
     toleranciaCheckout: () => 0.01,
+    repartoTopeCupon: require('../checkoutTotals').repartoTopeCupon,
+    // La promo de bienvenida apagada: no toca nada del checkout de la app.
+    primeraCompra: { revisarCheckout: async () => ({ saldo: 0, escribir: () => {} }), alCrearPedido: async () => {} },
     mobileCheckoutResponse: (id, i) => ({ ...mobile.view(id, i), publicKey: 'pk_test_fixture' }),
   };
   context.pagos.limpiarPayloadCliente = (payload) => payload;
@@ -182,6 +188,25 @@ test('preparación REAL con monedas: tope de la marca y saldo del servidor, se r
   await f.cancel(withCoins.requestId);
   assert.equal(f.ledger.get('a').monedas, 30);
 });
+test('preparación REAL con saldo de bienvenida: lo revisa primeraCompra, baja el cobro y queda en el pedido', async () => {
+  const f = await fixture(approved);
+  const vistos = [];
+  // revisarCheckout real: fase, tope y saldo (functions/primeraCompra.js); aquí aprueba hasta S/ 40.
+  f.context.primeraCompra.revisarCheckout = async (_t, { orderPayload, monedas, cupon }) => {
+    vistos.push({ saldo: orderPayload.saldoBienvenida, monedas, cupon });
+    if (orderPayload.saldoBienvenida > 40) throw new HttpsError('failed-precondition', 'En este pedido puedes usar hasta S/ 40.00 de tu saldo de bienvenida.');
+    return { saldo: orderPayload.saldoBienvenida || 0, escribir: () => {} };
+  };
+  const conSaldo = { ...f.input, requestId: 'bienvenidasaldo00001', welcomeBalance: 40, expectedTotal: 124.7 };
+  const session = await f.prepare({ mobileCheckout: conSaldo });
+  assert.deepEqual(vistos[0], { saldo: 40, monedas: 0, cupon: false });
+  assert.equal(session.totals.welcomeBalance, 40); assert.equal(session.totals.total, 124.7);
+  const guardado = f.ledger.get(session.intentId);
+  assert.equal(guardado.amountPen, 124.7); assert.equal(guardado.orderPayload.saldoBienvenida, 40);
+  assert.equal(guardado.totalesServidor.saldoBienvenida, 40);
+  // Más de lo que permite el servidor: no se prepara nada.
+  await assert.rejects(f.prepare({ mobileCheckout: { ...conSaldo, requestId: 'bienvenidasaldo00002', welcomeBalance: 50, expectedTotal: 114.7 } }), /hasta S\/ 40/);
+});
 test('preparación REAL con regalo: el pedido guardado lleva giftDetails y la app ve para quién es', async () => {
   const f = await fixture(approved);
   const gift = { recipientName: 'María', message: '¡Feliz cumpleaños!', sticker: 'kapi-love' };
@@ -227,4 +252,62 @@ test('la vuelta de la verificación del banco no vuelve a guardar la tarjeta', a
     deviceId: 'device_test0001', amount: 16470, currency: 'PEN' });
   assert.equal((await f.pay({ guardarTarjeta: true, authentication3DS: { eci: '05', xid: 'x', cavv: 'c', protocolVersion: '2.1.0' } })).success, true);
   assert.equal(f.newCards.length, 0); assert.equal(f.counts().calls, 1);
+});
+test('un pedido de la app pedido por WhatsApp ya no se cancela (sus monedas siguen reservadas) y la app lo ve', async () => {
+  const f = await fixture(approved);
+  const session = await f.prepare({ mobileCheckout: { ...f.input, requestId: 'whatsappwhatsapp0001' } });
+  f.ledger.set(session.intentId, { ...f.ledger.get(session.intentId), whatsappSolicitado: true });
+  await assert.rejects(f.cancel('whatsappwhatsapp0001'), /WhatsApp/);
+  assert.equal(f.ledger.get(session.intentId).status, 'prepared');
+  assert.equal(mobile.view(session.intentId, f.ledger.get(session.intentId)).whatsappRequested, true);
+  assert.equal(mobile.view(session.intentId, { ...f.ledger.get(session.intentId), whatsappSolicitado: false }).whatsappRequested, undefined);
+});
+test('pedir por WhatsApp desde la app marca el cupón usado una sola vez; el de la web lo sigue canjeando el navegador', async () => {
+  const run = async (intent) => {
+    const coupons = new Map([['c1', { status: 'active', code: 'WALA-10' }]]); const erp = new Map(); const writes = [];
+    const ref = { id: 'MC-intento', set: async (data) => writes.push(data) };
+    const context = {
+      functions: { https: { HttpsError } }, esPrecalentamiento: () => false, precalentar() {}, console: { warn() {}, error() {} },
+      INTENCION_NO_COBRABLE: new Set(['reemplazada', 'vencida']), checkoutOrderId: (p) => p.numeroPedido, FieldValue: { serverTimestamp: () => 1 },
+      readCheckoutIntent: async () => ({ id: 'MC-intento', ref, intent, orderPayload: intent.orderPayload }),
+      getErpDb: () => ({ collection: () => ({ doc: (id) => ({ id, get: async () => ({ exists: erp.has(id) }), set: async (d) => erp.set(id, d) }) }),
+        runTransaction: async (fn) => fn({ get: async (r) => ({ exists: erp.has(r.id) }), set: (r, d) => erp.set(r.id, { ...erp.get(r.id), ...d }) }) }),
+      congelarDisenos: async (p) => p, camposErpWala: async () => ({}), ERP_CANAL_WALA: 'WALA', WALA_ORDERS_COLLECTION: 'wala_pedidos', sanearWalaDocId: (x) => x,
+      pagos: { resumirProductos: () => [] }, marcarCreacionesDelPedido: async () => {}, vincularCompraReferido: async () => {},
+      primeraCompra: { alCrearPedido: async () => {} },
+      buscarCupon: async (_uid, code) => { const [id, cupon] = [...coupons].find(([, c]) => c.code === code) || []; return id ? { ref: { id }, cupon } : null; },
+      db: { runTransaction: async (fn) => fn({ update: (r, d) => coupons.set(r.id, { ...coupons.get(r.id), ...d }) }) },
+    };
+    const handler = vm.runInNewContext(`(${whatsappSource})`, context);
+    const result = await handler({ intentId: 'MC-intento' }, { auth: { uid: 'a' } });
+    await handler({ intentId: 'MC-intento' }, { auth: { uid: 'a' } });
+    return { result, coupon: coupons.get('c1'), erp, writes };
+  };
+  const payload = { numeroPedido: 'MC-intento', cuponCode: 'WALA-10', descuentoCupon: 10, productos: {} };
+  const app = await run({ uid: 'a', status: 'prepared', mobile: { contract: 'mobile-v1' }, orderPayload: payload });
+  assert.equal(app.result.id, 'MC-intento'); assert.equal(app.coupon.status, 'used'); assert.equal(app.coupon.orderId, 'MC-intento');
+  assert.equal(app.coupon.descuentoAplicado, 10); assert.equal(app.erp.get('MC-intento').metodoPago, 'whatsapp');
+  assert.equal(app.writes.every((w) => w.whatsappSolicitado === true), true);
+  const web = await run({ uid: 'a', status: 'prepared', orderPayload: payload });
+  assert.equal(web.coupon.status, 'active');
+});
+test('saldo de un pedido desde la app: el token del formulario cobra el saldo del servidor, sin 3DS como la web', async () => {
+  let body; let registered = 0;
+  const f = await fixture((sent) => { body = sent; return approved(sent); });
+  Object.assign(f.context, {
+    objetivoSaldoPedido: async (id) => ({ tipo: 'saldo', clave: `saldo:pedidos/${id}`, coleccion: 'pedidos', pedidoId: id, montoCentimos: 3500, moneda: 'PEN' }),
+    reservarCobroGenerico: async () => 'cerrojo', liberarCobroGenerico: async () => {},
+    registrarPagoSaldo: async () => { registered++; }, marcarWalaPedidoPagado: async () => {},
+  });
+  const handler = vm.runInNewContext(`(${handlerSource})`, f.context);
+  const pay = (extra) => handler({ tokenId: 'tkn_test_saldo0001', amount: 3500, currency: 'PEN', email: 'cliente@wala.test', description: 'Pago de saldo en Walá',
+    metadata: { pedidoId: 'PED-1' }, ...extra }, { auth: { uid: 'a', token: { email: 'cliente@wala.test' } } });
+  assert.equal((await pay()).success, true);
+  assert.equal(body.amount, 3500); assert.equal(body.source_id, 'tkn_test_saldo0001'); assert.equal(body.antifraud_details, undefined); assert.equal(registered, 1);
+  await assert.rejects(pay({ tokenId: 'tkn_test_saldo0002', amount: 3000 }), /S\/ 35|35\.00|3500/);
+  const g = await fixture(() => ({ ok: true, status: 201, json: async () => ({ object: 'error', action_code: '3DS_VALIDATION_NEEDED' }) }));
+  Object.assign(g.context, f.context, { fetch: g.context.fetch });
+  const challenge = vm.runInNewContext(`(${handlerSource})`, g.context);
+  await assert.rejects(challenge({ tokenId: 'tkn_test_saldo0003', amount: 3500, currency: 'PEN', email: 'cliente@wala.test', metadata: { pedidoId: 'PED-1' } },
+    { auth: { uid: 'a', token: { email: 'cliente@wala.test' } } }), /verificación adicional/);
 });

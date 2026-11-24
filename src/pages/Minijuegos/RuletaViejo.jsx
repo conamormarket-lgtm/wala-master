@@ -27,7 +27,7 @@ const PREMIOS_DEMO = [
   { id: 'd3', nombre: 'Sigue intentando', etiqueta: 'Casi', tipo: 'nada', icono: '🍀', texto: 'Sigue intentando' },
   { id: 'd4', nombre: 'Envío gratis', etiqueta: 'Envío gratis', tipo: 'envio_gratis', icono: '📦', texto: 'Envío gratis' },
   { id: 'd5', nombre: '50 monedas', etiqueta: '50 monedas', tipo: 'monedas', icono: '💰', texto: '50 monedas' },
-  { id: 'd6', nombre: 'Taza Kapi gratis', etiqueta: 'Taza gratis', tipo: 'producto_gratis', icono: '🎁', texto: 'Taza Kapi gratis' },
+  { id: 'd6', nombre: 'Taza Walito gratis', etiqueta: 'Taza gratis', tipo: 'producto_gratis', icono: '🎁', texto: 'Taza Walito gratis' },
   { id: 'd7', nombre: '5 monedas', etiqueta: '5 monedas', tipo: 'monedas', icono: '🪙', texto: '5 monedas' },
 ];
 
@@ -131,7 +131,7 @@ const RuletaViejo = () => {
   const { entregando, empezarEntrega } = useEntregaMonedas();
   const [error, setError] = useState('');
 
-  // Aquí NO se pinta a Kapi: el componente KapiPet se monta en App.jsx y sale
+  // Aquí NO se pinta a Walito: el componente KapiPet se monta en App.jsx y sale
   // en todas las páginas. Cuando esta pantalla ponía la suya, se veían dos.
 
   const [rotacion, setRotacion] = useState(0);
@@ -358,7 +358,7 @@ const RuletaViejo = () => {
       'Al girar, se acaba hasta la semana siguiente.',
     ]
     : [
-      'Alimenta a Kapi todos los días, de lunes a domingo.',
+      'Alimenta a Walito todos los días, de lunes a domingo.',
       'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.',
       'Al completar los 7 días ganas un giro.',
       'Un giro por semana: al girar, se acaba hasta la siguiente.',
@@ -393,7 +393,7 @@ const RuletaViejo = () => {
             <p className={styles.ayudaObjetivo}>
               {config.reglas.modoDesbloqueo === 'siempre'
                 ? <T>Un giro por semana, cortesía de la casa. Los premios cambian según el día.</T>
-                : <T>La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.</T>}
+                : <T>La ruleta no se juega: se gana. Es el premio de mantener tu racha con Walito toda la semana.</T>}
             </p>
 
             <ol className={styles.ayudaPasos}>

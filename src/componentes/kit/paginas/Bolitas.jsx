@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup } from 'framer-motion';
 import {
   Gamepad2, RotateCcw, Undo2, Eye, Plus, Lightbulb, ArrowRight, Map as IconoMapa, Crown, Lock, ChevronLeft, ChevronRight,
-  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star,
+  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star, Trophy,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { BloqueSeccion } from '../Seccion';
@@ -13,9 +13,9 @@ import { Estallido } from '../Efectos';
 import { FondoBolitas, escenaDelMundo } from '../piezas/FondoBolitas';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
-import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
+import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
 import {
-  TuboBolitas, EstrellasNivel, RankingBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca,
+  TuboBolitas, EstrellasNivel, RankingBolitas, TopBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca,
 } from '../piezas/Bolitas';
 import { efectoBolitas } from '../piezas/efectosBolitas';
 import { progresoBolitas } from '../piezas/bolitasProgreso.mjs';
@@ -26,7 +26,7 @@ import {
 import { Texto, useTexto } from '../Traduccion';
 import s from './Juegos.module.css';
 
-/* ── Las Bolitas de Kapi (/ball-sort) ───────────────────── */
+/* ── Las Bolitas de Walito (/ball-sort) ───────────────────── */
 
 /** Las ayudas de cada nivel (vuelven a estar completas al reiniciarlo). */
 export const AYUDAS_BOLITAS = { deshacer: 5, tubo: 1, pista: 3 };
@@ -151,7 +151,7 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
 }
 
 /**
- * Las Bolitas de Kapi: ordenar los colores en los tubos. Niveles en mundos de
+ * Las Bolitas de Walito: ordenar los colores en los tubos. Niveles en mundos de
  * 20 (el último, un jefe), de 1 a 3 estrellas según los movimientos, una
  * racha de victorias que abre cofres con ayudas, el reto del día, sonido y
  * vibración. Se toca un tubo para levantar las bolitas de arriba del mismo
@@ -170,6 +170,8 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
  *  - ranking (del reto: ver RankingBolitas) · cargandoRanking ·
  *    onPedirRanking(): al entrar al reto, para traerlo
+ *  - top (de niveles: ver TopBolitas) · cargandoTop · onPedirTop(): al
+ *    jugar los niveles, para traerlo
  *  - marcasMundos: [{ id, nombre, logo, url, color, color2 }] las marcas de
  *    los mundos, en orden (se repiten): el mundo toma sus colores y su logo
  *  - patrocinio (del reto de hoy): { marca, texto, quedan }
@@ -180,14 +182,15 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  *    patrocinado): { code, titulo, texto, expiraEn, marcaNombre }
  *  - inicial: { estado, colores, par } para empezar en un tablero puesto (la demo)
  *  - vistaInicial: 'juego' | 'mapa' · ayudaVista · onAyudaVista · estado: 'cargando'
+ *  - monedas: { saldo, cargando } para la barra del juego en el celular (MarcoJuego)
  * Mientras se acredita, la hoja no se cierra y no se pasa de nivel.
  * Los textos pasan por la traducción.
  */
 export function PaginaBolitas({
   sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, onCompletar, hoy, progreso, onProgreso,
-  ranking, cargandoRanking = false, onPedirRanking,
+  ranking, cargandoRanking = false, onPedirRanking, top, cargandoTop = false, onPedirTop,
   marcasMundos = [], patrocinio, onPedirProductos, onClicMarca,
-  inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
+  inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado, monedas,
 }) {
   const [prog, setProg] = useState(() => progresoBolitas(progreso));
   const [modo, setModo] = useState('niveles');
@@ -211,6 +214,8 @@ export function PaginaBolitas({
   // Los productos de la marca que se muestran en el resultado: { marca, lista, cargando }.
   const [vitrina, setVitrina] = useState(null);
   const inicialUsado = useRef(false);
+  // El panel (racha, top, ranking): en el celular va bajo la mesa y la barra baja hasta él.
+  const panelRef = useRef(null);
   const t = {
     sonido: useTexto(prog.sonido ? 'Silenciar' : 'Activar el sonido'),
     vibracion: useTexto(prog.vibracion ? 'Quitar la vibración' : 'Activar la vibración'),
@@ -248,6 +253,12 @@ export function PaginaBolitas({
   // El ranking del reto se trae al entrar al reto.
   useEffect(() => {
     if (modo === 'reto' && estado !== 'cargando') onPedirRanking?.();
+  }, [modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // El top de niveles, al jugar los niveles (una vez: después lo refresca
+  // quien registra la partida, si subió su nivel más alto).
+  useEffect(() => {
+    if (modo === 'niveles' && estado !== 'cargando' && !top) onPedirTop?.();
   }, [modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (estado === 'cargando' || !p) return <EsqueletoPagina forma="bolitas" />;
@@ -478,6 +489,7 @@ export function PaginaBolitas({
 
   const interruptores = (
     <>
+      <BotonIrAlPanel destino={panelRef} etiqueta={esReto ? 'Ver el ranking' : 'Ver la racha y el top'} icono={<Trophy aria-hidden="true" />} />
       <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.sonido} aria-pressed={prog.sonido} onClick={() => guardar({ sonido: !prog.sonido })}
         icono={prog.sonido ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
       />
@@ -489,8 +501,8 @@ export function PaginaBolitas({
 
   return (
     <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores}>
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="Las Bolitas de Walito" onAyuda={() => setAyuda(true)} acciones={interruptores} monedas={monedas}>
           <div className={s.bolitas} data-componente="PaginaBolitas">
             <div
               className={[s.mesa, (!esReto || marcaMesa) && s.mesaMundo].filter(Boolean).join(' ')}
@@ -565,11 +577,14 @@ export function PaginaBolitas({
                       <div>
                         <p className={s.mundoLinea}>
                           <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
-                          {' · '}
-                          {marcaMundo
-                            ? <MarcaBolitas marca={marcaMundo} onClick={() => onClicMarca?.({ marcaId: marcaMundo.id, destino: 'marca' })} />
-                            : <Texto>{infoMundo(mundo).nombre}</Texto>}
+                          {!marcaMundo && <>{' · '}<Texto>{infoMundo(mundo).nombre}</Texto></>}
                         </p>
+                        {/* La marca del mundo, en su sello (lleva a su tienda). */}
+                        {marcaMundo && (
+                          <div className={s.mundoMarca}>
+                            <MarcaBolitas marca={marcaMundo} tamano="sello" onClick={() => onClicMarca?.({ marcaId: marcaMundo.id, destino: 'marca' })} />
+                          </div>
+                        )}
                         <p className={s.nivelTitulo}>
                           {p.nivel.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
                           <TextoResaltado resaltar={[numero]}>{p.nivel.jefe ? `Nivel ${numero} · Jefe` : `Nivel ${numero}`}</TextoResaltado>
@@ -599,7 +614,7 @@ export function PaginaBolitas({
                     {aviso && <span key={aviso} className={s.mensaje}><Texto>{aviso}</Texto></span>}
                   </div>
                   <LayoutGroup>
-                    <div className={[s.tubos, actual.tubos.length > 6 && s.tubosCompactos].filter(Boolean).join(' ')} style={columnas(actual.tubos.length)}>
+                    <div className={[s.tubos, s.tablero, actual.tubos.length > 6 && s.tubosCompactos].filter(Boolean).join(' ')} style={columnas(actual.tubos.length)}>
                       {actual.tubos.map((tubo, i) => (
                         <TuboBolitas
                           key={i}
@@ -642,7 +657,7 @@ export function PaginaBolitas({
                 </>
               )}
             </div>
-            <aside className={s.lado}>
+            <aside ref={panelRef} className={s.lado}>
               <div className={s.panel}>
                 {promesa}
                 <CifrasJuego cifras={[
@@ -671,6 +686,7 @@ export function PaginaBolitas({
                     )}
                   </div>
                 )}
+                {!esReto && onPedirTop && <TopBolitas top={top} cargando={cargandoTop} sesion={sesion} urlLogin={urlLogin} />}
               </div>
             </aside>
           </div>

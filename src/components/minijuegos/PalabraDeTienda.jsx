@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
+import useMonedasDelJuego from './useMonedasDelJuego';
 import {
   getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getEstadoPartidaDeHoy, claimWordleReward,
 } from '../../services/wordle';
@@ -51,6 +52,7 @@ const ayudaYaVista = () => {
 
 export default function PalabraDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
+  const monedas = useMonedasDelJuego();
   const queryClient = useQueryClient();
   const anonimo = useTexto('Anónimo');
   const sesion = tieneCuenta(user);
@@ -79,16 +81,23 @@ export default function PalabraDeTienda() {
     if (!objetivo || loading) return undefined;
     let vivo = true;
     (async () => {
-      const guardado = leerLocal(clave);
+      let guardado = leerLocal(clave);
+      // A medias con otra palabra (la cambiaron después): se empieza de nuevo.
+      if (guardado?.word && guardado.word !== objetivo && guardado.gameStatus === 'playing') guardado = null;
       const terminadaAqui = Boolean(guardado?.gameStatus) && guardado.gameStatus !== 'playing';
       const tablero = guardado ? { filas: guardado.guesses || [], inicio: guardado.startTime || null } : {};
       // Sin cuenta no hay a quién preguntar: manda este navegador.
       const { estado, partida } = sesion ? await getEstadoPartidaDeHoy() : { estado: 'sin-sesion' };
       if (!vivo) return;
       if (estado === 'jugada') {
+        // Con la palabra con la que se jugó: si la cambiaron después, la partida
+        // sigue mostrando la suya (no la de ahora, que dejaría el tablero raro).
+        const jugada = partida.word ? normalizarPalabra(partida.word) : objetivo;
+        const mismoTablero = terminadaAqui && (!guardado.word || guardado.word === jugada);
         setInicial({
-          ...(terminadaAqui ? tablero : {}),
-          terminada: { gano: Boolean(partida.won), intentos: Number(partida.attempts) || 0, palabra: objetivo },
+          ...(mismoTablero ? tablero : {}),
+          palabraJugada: jugada,
+          terminada: { gano: Boolean(partida.won), intentos: Number(partida.attempts) || 0, palabra: jugada },
         });
         return;
       }
@@ -122,7 +131,7 @@ export default function PalabraDeTienda() {
   const intento = ({ palabras, inicio }) => {
     const ultima = palabras[palabras.length - 1];
     const gameStatus = ultima === objetivo ? 'won' : palabras.length >= INTENTOS ? 'lost' : 'playing';
-    guardarLocal(clave, { guesses: palabras, gameStatus, startTime: inicio });
+    guardarLocal(clave, { guesses: palabras, gameStatus, startTime: inicio, word: objetivo });
   };
 
   const terminar = async ({ gano, intentos, segundos }) => {
@@ -153,11 +162,19 @@ export default function PalabraDeTienda() {
 
   return (
     <PaginaPalabra
+      monedas={monedas}
       // Al llegar lo jugado hoy (o cambiar de cuenta), el tablero empieza de ahí.
       key={listo ? `${user?.uid || 'invitado'}-${hoy}` : 'cargando'}
       estado={listo ? undefined : 'cargando'}
-      objetivo={objetivo}
-      esValida={(p) => VALID_GUESSES.size <= 10 || VALID_GUESSES.has(normalizarPalabra(p))}
+      objetivo={inicial?.palabraJugada || objetivo}
+      // El diccionario es de 5 letras: con una palabra puesta de 6 a 8 (desde el
+      // admin) vale cualquier intento de ese largo; la de hoy vale siempre.
+      esValida={(p) => {
+        const w = normalizarPalabra(p);
+        if (w === objetivo) return true;
+        if ([...objetivo].length !== 5) return /^[A-ZÑ]+$/.test(w);
+        return VALID_GUESSES.size <= 10 || VALID_GUESSES.has(w);
+      }}
       inicial={inicial || {}}
       sesion={sesion}
       estadisticas={estadisticas}

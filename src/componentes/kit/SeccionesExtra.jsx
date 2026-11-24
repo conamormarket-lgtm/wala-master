@@ -323,7 +323,7 @@ function useCargarAlLlegar(activo, alLlegar) {
  *  - finDeLista: "Has visto todos los productos" cuando ya no queda nada
  *    por mostrar (con o sin paginación, como ProductGrid).
  *  - tarjeta: la de la tienda; recibe también `indice` (las primeras cargan ya).
- *  - sinKapi: los avisos sin Kapi (la página ya muestra el flotante).
+ *  - sinKapi: los avisos sin Walito (la página ya muestra el flotante).
  * Si la lista quedó vacía pero el servidor tiene más (un filtro descartó lo
  * cargado), sigue pidiendo páginas en vez de decir que no hay nada.
  */
@@ -521,8 +521,8 @@ export function CatalogoConFiltros({
                   })}
                 </div>
                 <div className={s.precio}>
-                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label={t.min} icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
-                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label={t.max} icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
+                  <Campo type="number" pasos={false} inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label={t.min} icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
+                  <Campo type="number" pasos={false} inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label={t.max} icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
                 </div>
               </>
             ),

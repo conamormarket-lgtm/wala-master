@@ -1,11 +1,14 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import usePrimeraCompra, { CLAVE_PRIMERA_COMPRA } from '../../hooks/usePrimeraCompra';
+import { cotizarPrimeraCompra } from '../../services/primeraCompra';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import useInvitacionReferido from '../../hooks/useInvitacionReferido';
 import { getMessage } from '../../services/messages';
+import { empresa } from '../../config/empresa';
 import { getBrands } from '../../services/brands';
 import { prepareCheckoutPayment, precalentarFunciones } from '../../services/checkoutPayment';
 import { validarCupon } from '../../services/cupones';
@@ -31,7 +34,7 @@ import { PaginaCheckout } from '../../componentes/kit/paginas/Checkout';
 import { PagoTarjeta } from '../../componentes/kit/piezas/Pago';
 import { htmlAbriendoWhatsApp } from '../../componentes/kit/piezas/AbriendoWhatsApp';
 import { itemCarritoDesde, direccionDesdeFirestore } from '../../componentes/kit/adaptadores';
-import { pctMonedasDeProducto } from '../../utils/topeMonedas';
+import { topeDeProducto } from '../../utils/topeMonedas';
 
 // PayPal (su SDK) baja solo si se paga desde otro país.
 const PaypalCheckout = lazy(() => import('../PaypalCheckout/PaypalCheckout'));
@@ -88,23 +91,22 @@ const LUGARES = {
 // El WhatsApp (los números y el texto): los cinco mensajes a la vez (antes, uno detrás de otro).
 const leerWhatsappConfig = async () => {
   try {
-    const [tienda, general, texto, principalMsg, multimarcaMsg] = await Promise.all([
-      getMessage('whatsapp_number_tienda'), getMessage('whatsapp_number'), getMessage('whatsapp_text_tienda'),
-      getMessage('whatsapp_number_principal'), getMessage('whatsapp_multimarca'),
+    const [texto, principalMsg, multimarcaMsg] = await Promise.all([
+      getMessage('whatsapp_text_tienda'), getMessage('whatsapp_number_principal'), getMessage('whatsapp_multimarca'),
     ]);
     const limpiar = (n) => {
       const x = String(n || '').replace(/[\s\-()+]/g, '');
       return x && !x.startsWith('51') && x.length <= 9 ? `51${x}` : x;
     };
     return {
-      number: limpiar(tienda.data?.trim() || general.data?.trim()) || '51999999999',
-      principalNumber: limpiar(principalMsg.data?.trim() || '+51924426791') || '51924426791',
+      // Los pedidos: el de Ajustes › WhatsApp y teléfonos o, vacío, el de config/empresa.
+      principalNumber: limpiar(principalMsg.data?.trim()) || empresa.whatsapp,
       multimarca: multimarcaMsg.data?.trim().toLowerCase() === 'true',
       customText: texto.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.',
     };
   } catch {
     return {
-      number: '51999999999', principalNumber: '51924426791', multimarca: false,
+      principalNumber: empresa.whatsapp, multimarca: false,
       customText: 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.',
     };
   }
@@ -130,6 +132,8 @@ export default function CheckoutDeTienda() {
   const toast = useGlobalToast();
   const invitacion = useInvitacionReferido();
   const sesion = tieneCuenta(user);
+  const queryClient = useQueryClient();
+  const { bienvenida: estadoBienvenida, cargando: cargandoEstadoBienvenida } = usePrimeraCompra();
 
   // Lo que se paga: los elegidos. Al preparar el pago se congela la lista (el
   // carrito puede cambiar después: al terminar se quitan los pagados).
@@ -148,8 +152,8 @@ export default function CheckoutDeTienda() {
       variante: varianteDe(fila),
       precio: fila.precio,
       cantidad: fila.cantidad,
-      // Qué parte de su precio se paga con monedas: lo decide su marca.
-      topeMonedas: pctMonedasDeProducto(catalogo.get(item.productId)?.brandId || item.brandId, marcas),
+      // Cuánto de su precio se paga con monedas (un % o monedas por producto): lo decide su marca.
+      topeMonedas: topeDeProducto(catalogo.get(item.productId)?.brandId || item.brandId, marcas),
     };
   }), [itemsCompra, catalogo, marcas]);
   const incompletos = useMemo(() => {
@@ -276,7 +280,9 @@ export default function CheckoutDeTienda() {
     if (esComboCrear(it)) {
       const piezas = it.customization.piezas || [];
       const precios = repartirPrecio(it.customization?.finalPrice || it.price || 0, piezas.length);
-      return piezas.map((p, k) => ({ productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: !p.fija }));
+      // Las piezas de un combo se cobran al precio del combo, no al de catálogo:
+      // como en el cobro (prepareCheckoutPayment), no se revaloran.
+      return piezas.map((p, k) => ({ productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: true }));
     }
     return [{
       productId: it.productId || '',
@@ -292,12 +298,47 @@ export default function CheckoutDeTienda() {
     // Un cupón que no resta nada en este carrito no se aplica: se consumiría para nada.
     if (!res.descuento) throw new Error(res.aviso || 'Este cupón no descuenta nada en este carrito.');
     const cupon = {
-      codigo, descuento: res.descuento, envioGratis: res.envioGratis,
+      codigo, descuento: res.descuento, envioGratis: res.envioGratis, tipo: res.cupon?.tipo || '', topeCupon: res.topeCupon ?? null,
       texto: res.cupon?.texto || res.cupon?.titulo || '', aviso: res.aviso || '',
     };
     cuponRef.current = cupon;
     return cupon;
   };
+
+  /* ── Semana de bienvenida: el saldo que se puede usar en estos productos y,
+     para quien llegó con una invitación, si su compra premia a quien lo invitó ── */
+  const productosCotizar = useMemo(() => {
+    const out = {};
+    itemsParaCupon().forEach((it, i) => { out[`l${i}`] = { productoId: it.productId, precio: it.precio, cantidad: it.qty }; });
+    return out;
+  }, [elegidos]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { data: cotizacion, isLoading: cotizando, isError: cotizacionFallo } = useQuery({
+    queryKey: ['primeraCompraCotizar', user?.uid, JSON.stringify(productosCotizar)],
+    queryFn: () => cotizarPrimeraCompra(productosCotizar),
+    // Solo si está en su semana o llegó con una invitación (si no, no hay nada que mostrar).
+    enabled: sesion && elegidos.length > 0 && (estadoBienvenida?.fase?.estado === 'activa' || Boolean(invitacion)),
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const enSemana = estadoBienvenida?.fase?.estado === 'activa';
+  const bienvenida = useMemo(() => {
+    // Mientras no se sabe si está en su semana, monedas y cupón esperan
+    // (si no, se podían prender y después aparecía la pausa).
+    if (sesion && (cargandoEstadoBienvenida || cotizando)) return { cargando: true };
+    // Si no se pudo calcular el saldo en su semana: pausa sin saldo (el servidor rechazaría monedas y cupones).
+    if (!cotizacion && enSemana && cotizacionFallo) {
+      return { enPausa: true, saldo: 0, tope: 0, venceMs: estadoBienvenida?.fase?.venceMs };
+    }
+    if (!cotizacion) return undefined;
+    if (!cotizacion.enPausa && !cotizacion.invitador) return undefined;
+    return {
+      enPausa: cotizacion.enPausa,
+      saldo: cotizacion.saldo || 0,
+      tope: cotizacion.topeSaldo || 0,
+      venceMs: estadoBienvenida?.fase?.venceMs,
+      invitador: cotizacion.invitador || undefined,
+    };
+  }, [cotizacion, estadoBienvenida?.fase?.venceMs, sesion, cargandoEstadoBienvenida, cotizando, enSemana, cotizacionFallo]);
 
   /* ── Preparar el pago (aún no hay pedido) ── */
   const alPreparar = async (datos) => {
@@ -317,16 +358,19 @@ export default function CheckoutDeTienda() {
     const subtotal = getTotalPrice();
     const discount = datos.monedas || 0;
     const cupon = datos.cupon && cuponRef.current?.codigo === datos.cupon ? cuponRef.current : null;
-    const cuponAplicado = cupon ? { code: cupon.codigo, descuento: cupon.descuento, envioGratis: cupon.envioGratis } : null;
     const cuponEnvioGratis = Boolean(cupon?.envioGratis);
-    const descuentoCupon = cuponEnvioGratis ? 0 : (cupon?.descuento || 0);
+    // Lo que de verdad descuenta: el kit lo recorta al tope de la marca (monedas + cupón).
+    const descuentoCupon = cuponEnvioGratis ? 0 : (datos.descuentoCupon ?? cupon?.descuento ?? 0);
+    const cuponAplicado = cupon ? { code: cupon.codigo, descuento: descuentoCupon, envioGratis: cupon.envioGratis } : null;
     const shipping = cuponEnvioGratis ? 0 : costoEnvio(subtotal);
-    const total = Math.max(0, subtotal - discount - descuentoCupon) + shipping;
+    // Semana de bienvenida: el saldo paga productos (el servidor lo revisa).
+    const saldoBienvenida = Math.max(0, Number(datos.saldoBienvenida) || 0);
+    const total = Math.round((Math.max(0, subtotal - discount - descuentoCupon - saldoBienvenida) + shipping) * 100) / 100;
     // El teléfono con el código del país: fuera del Perú (en el Perú, el número tal cual, como antes).
     const phoneFull = extranjero ? `${prefijoDe(d.pais)}${values.phone}` : '';
 
     const { pseudoOrderId, esPeru, webOrderPayload } = armarPedidoWeb({
-      values, phoneFull, selectedItems: elegidos, discount, shipping, total, cuponAplicado, descuentoCupon, cuponEnvioGratis,
+      values, phoneFull, selectedItems: elegidos, discount, shipping, total, cuponAplicado, descuentoCupon, cuponEnvioGratis, saldoBienvenida,
       user, registryEventLabel, giftRegistryItem, muestraColor: (item) => muestraColor(item, catalogo),
     });
 
@@ -341,7 +385,7 @@ export default function CheckoutDeTienda() {
     }
 
     const { waLink, waGroups } = armarWhatsapp({
-      values, selectedItems: elegidos, subtotal, discount, shipping, total, cuponAplicado, descuentoCupon, esPeru, pseudoOrderId,
+      values, selectedItems: elegidos, subtotal, discount, shipping, total, cuponAplicado, descuentoCupon, esPeru, pseudoOrderId, saldoBienvenida,
       whatsappConfig, brandsList: marcas, registryEventLabel,
     });
 
@@ -404,6 +448,7 @@ export default function CheckoutDeTienda() {
     if (!efectosRef.current) {
       efectosRef.current = true;
       await aplicarEfectosDeCompra({ datos, pedidoWebId, user, freezeMonedas, toast });
+      queryClient.invalidateQueries({ queryKey: [CLAVE_PRIMERA_COMPRA] });
     }
     // Una solicitud WhatsApp previa no debe ocultar un pago posterior por pasarela.
     emitirCompra(metodo, datos, pedidoWebId);
@@ -616,6 +661,7 @@ export default function CheckoutDeTienda() {
       onListo={alListo}
       onPaso={alPaso}
       entrega={entrega}
+      bienvenida={bienvenida}
       invitacion={invitacion ? { nombre: invitacion.nombre, aceptada: invitacion.tipo === 'invitacion' && invitacion.invitacion === 'aceptada' } : undefined}
       urlLogin={urlLogin('/checkout')}
       urlRegistro={`/registro?redirect=${encodeURIComponent('/checkout')}`}

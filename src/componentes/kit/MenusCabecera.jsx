@@ -250,6 +250,11 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
         <div className={s.identidadTexto}>
           <strong>{lateral ? usuario.nombre : <><Texto>Hola,</Texto> {usuario.nombre}</>}</strong>
           <span>{usuario.email}</span>
+          {usuario.nivel && (
+            <Enlace to="/cuenta/misiones" className={s.nivelChip} onClick={onNavegar}>
+              <Sparkles aria-hidden="true" /> <Texto>Nivel</Texto> <Texto>{usuario.nivel}</Texto>
+            </Enlace>
+          )}
         </div>
       </div>
       {promo && (

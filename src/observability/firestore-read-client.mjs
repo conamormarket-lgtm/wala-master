@@ -1,3 +1,4 @@
+import { installFirestoreTransportMeter } from './firestore-transport-meter.mjs';
 import { createReadRecorder, routeScreen } from './firestore-read-recorder.mjs';
 // Literal route templates only: IDs, slugs and URL search strings never leave the browser.
 const routes = [
@@ -52,15 +53,12 @@ const routes = [
   "/admin/respuestas-encuesta",
   "/admin/encuesta-entregas",
   "/admin/combos-crear",
-  "/admin/inventario",
-  "/admin/plantillas-yoryo",
   "/admin/productos/nuevo",
   "/admin/categorias",
   "/admin/colecciones",
   "/admin/atributos-catalogo",
   "/admin/recompensas",
   "/admin/envios",
-  "/admin/blueprints",
   "/admin/whatsapp",
   "/admin/referidos",
   "/admin/gestion-pagos",
@@ -72,15 +70,11 @@ const routes = [
   "/admin/enlaces",
   "/admin/destacados",
   "/admin/zonas",
-  "/admin/cliparts",
-  "/admin/mascota",
-  "/admin/crear-cuentas-pedidos",
   "/admin/publico-productos",
   "/admin/wordle",
   "/admin/notificaciones",
   "/admin/marcas",
   "/admin/landing-pages",
-  "/admin/temas",
   "/admin/ruleta",
   "/admin/bolitas",
   "/admin/backups",
@@ -99,6 +93,7 @@ const routes = [
   "/politicas-privacidad",
   "/terminos-y-condiciones",
   "/terminos-condiciones",
+  "/eliminar-cuenta",
   "/libro-de-reclamaciones",
   "/regalos-con-amor",
   "/nuevos-usuarios",
@@ -146,7 +141,16 @@ export function registerReadScreen(base, tab) {
   const key = Symbol(); details.set(key, { base, tab });
   return () => details.delete(key);
 }
-export function configureReadTelemetry(options) { readRecorder.configure(options); }
+export function configureReadTelemetry(options) {
+  readRecorder.configure(options);
+  if (typeof window !== 'undefined' && readRecorder.status().enabled) {
+    try {
+      const meter = installFirestoreTransportMeter({ observe: readRecorder.observe,
+        enabled: () => readRecorder.status().enabled, screen: readRecorder.currentScreen }, window);
+      window.__firestoreReads.transport = meter.snapshot;
+    } catch { /* Diagnostics must never affect app startup. */ }
+  }
+}
 if (typeof window !== 'undefined') {
   window.__firestoreReads = { status: readRecorder.status, snapshot: readRecorder.snapshot, flush: readRecorder.flush, verifyConnection: () => readRecorder.verifyConnection() };
   window.addEventListener('pagehide', () => { readRecorder.checkpoint(); void readRecorder.flush(); });

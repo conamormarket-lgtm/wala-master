@@ -24,7 +24,7 @@ import s from './Minijuegos.module.css';
  */
 export function PaginaMinijuegos({
   juegos = [], listos = 0, sesion = false, cargando = false, urlLogin = '/login',
-  titulo = 'Zona Arcade', subtitulo = 'Cuatro juegos, una rutina diaria y premios que sí se canjean en tus compras.',
+  titulo = 'Zona Arcade', subtitulo = 'Cinco juegos, una rutina diaria y premios que sí se canjean en tus compras.',
   aviso,
 }) {
   // Cuántos juegos quedan: dato de la página, en texto (no en etiqueta).

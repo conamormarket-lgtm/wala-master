@@ -73,6 +73,8 @@ export const guardarComboCrear = async (id, form) => {
     brandId,
     // La categoría: la página de la marca muestra un carrusel por categoría.
     ...(Array.isArray(form.categories) && { categories: form.categories.filter(Boolean) }),
+    // El tipo de producto lo pone su categoría (Categorías); null lo quita.
+    ...(form.productType !== undefined && { productType: form.productType || null }),
     esComboCrear: true,
     // `visible` no es el interruptor de un combo (se arma en /combo/:id y se
     // ofrece con comboCrear.publicado): sale en la tienda solo con enTienda.
@@ -104,8 +106,14 @@ export const guardarComboCrear = async (id, form) => {
 };
 
 /** Archiva el combo: deja de ofrecerse, pero los pedidos que lo usan siguen igual. */
-export const archivarComboCrear = async (id) => {
-  const res = await updateDocument(COLLECTION, id, { deleted: true, 'comboCrear.publicado': false });
+export const archivarComboCrear = async (id, { publicadoAntes } = {}) => {
+  // A la papelera, como los demás productos (Productos › Papelera). visibleAntes:
+  // si estaba publicado (restaurarProducto lo vuelve a publicar).
+  const ahora = Date.now();
+  const res = await updateDocument(COLLECTION, id, {
+    deleted: true, deletedAt: new Date(ahora).toISOString(), papeleraDesde: ahora, 'comboCrear.publicado': false,
+    ...(typeof publicadoAntes === 'boolean' && { visibleAntes: publicadoAntes }),
+  });
   if (res.error) throw new Error(res.error);
   clearProductCaches();
 };

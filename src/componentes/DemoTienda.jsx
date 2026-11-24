@@ -8,6 +8,8 @@ import {
   VentanaCampana, AvisoIdioma, AvisoInvitacion, ProveedorEnlaces, ProveedorTraduccion, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ESQUELETO_MARCA, ETAPAS_PRODUCCION,
 } from './kit';
+import { PopupBienvenida } from './kit/piezas/Bienvenida';
+import { GuiaPasos } from './kit/piezas/GuiaPasos';
 import { PaginaEncuestaEntrega } from './kit/paginas/EncuestaEntrega';
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
@@ -122,7 +124,7 @@ const RULETAS = [
   { id: 'girada', texto: 'Girada', ruleta: { dias: 7, empezada: true, girada: true } },
   { id: 'perdida', texto: 'Semana perdida', ruleta: { dias: 3, empezada: true, perdida: true } },
 ];
-const HECHOS = [['palabra', 'Palabra jugada'], ['kapi', 'Kapi alimentado'], ['bolitas', 'Bolitas hechas'], ['cargando', 'Cargando sesión']];
+const HECHOS = [['palabra', 'Palabra jugada'], ['kapi', 'Walito alimentado'], ['bolitas', 'Bolitas hechas'], ['cargando', 'Cargando sesión']];
 
 const EXTRAS = [
   ['aviso', 'Aviso del sistema'],
@@ -130,8 +132,10 @@ const EXTRAS = [
   ['idioma', 'Sugerencia de idioma'],
   ['campana', 'Ventana de campaña'],
   ['reto', 'Reto semanal'],
-  ['triste', 'Kapi triste'],
+  ['triste', 'Walito triste'],
   ['invitacion', 'Aviso de invitación'],
+  ['bienvenida', 'Semana de bienvenida'],
+  ['recorrido', 'Recorrido de Walito'],
 ];
 
 /* Reto de ejemplo (mismos campos que globals/activeChallenge; hoy no hay uno
@@ -333,6 +337,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const esAdmin = rol === 'admin';
   const enEditor = esAdmin && editando && pagina === 'inicio';
   const ver = (x) => extras.includes(x);
+  const [avisoBienvenida, setAvisoBienvenida] = useState(false);
   const alternar = (x) => setExtras((xs) => (xs.includes(x) ? xs.filter((y) => y !== x) : [...xs, x]));
   const avisar = useCallback((titulo, texto) => toast({ tipo: 'info', titulo, texto, duracion: 2200 }), [toast]);
 
@@ -415,7 +420,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   const visibles = useMemo(() => marcas.filter((m) => m.active !== false && m.visible !== false), [marcas]);
 
-  // Kapi: el mismo perfil para el botón flotante, su ventana y la Zona Arcade.
+  // Walito: el mismo perfil para el botón flotante, su ventana y la Zona Arcade.
   const kapiAlimentado = hechos.includes('kapi');
   const kapi = kapiDesdePerfil({
     lastKapiClaimDate: kapiAlimentado ? limaTodayStr() : haceDias(ver('triste') ? 5 : 1),
@@ -469,6 +474,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   /* ── Marco: igual en todas las páginas ── */
   const cabecera = {
+    // Semana de bienvenida: el saldo al lado de las monedas (abre su aviso).
+    ...(ver('bienvenida') && conSesion ? { saldoBienvenida: { saldo: 20, premio: 10, onAbrir: () => setAvisoBienvenida(true) } } : {}),
     enlaces: [
       { id: 'tienda', texto: 'Tienda', url: '/tienda', menu: 'tienda' },
       { id: 'crear', texto: 'Crear', url: '/personalizar' },
@@ -502,7 +509,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     ideasBusqueda,
   };
 
-  // En la encuesta y en el acceso Kapi ya está en la página (uno solo a la
+  // En la encuesta y en el acceso Walito ya está en la página (uno solo a la
   // vista) y la píldora distrae (o invita a la misma encuesta): no se muestran.
   const enEncuesta = ['encuesta', 'acceso', 'crear', 'estudio', 'checkout', 'juego'].includes(pagina);
   const flotantes = {
@@ -518,10 +525,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         )}
       </>
     ),
-    izquierda: conSesion && pildora && !enEncuesta && (
-      <Parte n="M10" nombre="PildoraRecompensa" bloque={false}>
-        <PildoraRecompensa titulo="Gana 15 monedas" texto="Completa tu perfil de regalos" monedas={15} to="/encuesta-suscripcion" onCerrar={() => setPildora(false)} />
-      </Parte>
+    // Las píldoras de la izquierda, una sobre otra (la primera abajo).
+    izquierda: (ver('bienvenida') || (conSesion && pildora && !enEncuesta)) && (
+      <>
+        {conSesion && pildora && !enEncuesta && (
+          <Parte n="M10" nombre="PildoraRecompensa" bloque={false}>
+            <PildoraRecompensa titulo="Gana 15 monedas" texto="Completa tu perfil de regalos" monedas={15} to="/encuesta-suscripcion" onCerrar={() => setPildora(false)} />
+          </Parte>
+        )}
+        {ver('bienvenida') && (
+          <Parte n="M10" nombre="PildoraRecompensa · onAbrir" bloque={false}>
+            <PildoraRecompensa icono="regalo" titulo="Tienes S/ 20.00 de regalo" texto="Vence en 4 d 7 h" onAbrir={() => setAvisoBienvenida(true)} />
+            <PopupBienvenida abierta={avisoBienvenida} onCerrar={() => setAvisoBienvenida(false)} venceMs={Date.now() + (4 * 24 + 7) * 3600 * 1000} saldo={20} pendiente={10} onInvitar={() => setAvisoBienvenida(false)} />
+          </Parte>
+        )}
+      </>
     ),
   };
 
@@ -567,7 +585,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     pie: INICIO.pie,
     pieLegal: PIE_LEGAL,
     barraInferior: { activo: PESTANA_DE_PAGINA[pagina], usuario: conSesion ? usuario : null, carrito: enCarrito },
-    // Editando, los flotantes (WhatsApp, Kapi…) se esconden: taparían el panel.
+    // Editando, los flotantes (WhatsApp, Walito…) se esconden: taparían el panel.
     flotantes: enEditor ? undefined : flotantes,
   };
 
@@ -642,7 +660,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       lunes: new Date(Date.now() + msHastaLunesLima()).toISOString(),
     },
     onAlimentar: () => (hechos.includes('kapi')
-      ? toast({ tipo: 'info', titulo: '¡Ya alimentaste a Kapi hoy!', texto: 'Vuelve mañana por su moneda.' })
+      ? toast({ tipo: 'info', titulo: '¡Ya alimentaste a Walito hoy!', texto: 'Vuelve mañana por su moneda.' })
       : setKapiAbierta(true)),
   });
 
@@ -682,14 +700,14 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </MarcoTienda>
     )
   ) : pagina === 'juego' ? (
-    // Un juego es una herramienta: sin Kapi en el pie (aparece en el resultado).
+    // Un juego es una herramienta: sin Walito en el pie (aparece en el resultado).
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="P20" nombre={{ '/ruleta': 'PaginaRuleta', '/ball-sort': 'PaginaBolitas' }[rutaJuego] || 'PaginaPalabra'}>
         <JuegosDemo key={rutaJuego} ruta={rutaJuego} sesion={conSesion} usuario={usuario} estados={estadosJuego} onMonedas={(n) => setMonedas((m) => m + n)} toast={toast} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'legales' ? (
-    // Privacidad y términos terminan con la tarjeta de ayuda (Kapi asomado): el pie no lo repite.
+    // Privacidad y términos terminan con la tarjeta de ayuda (Walito asomado): el pie no lo repite.
     <MarcoTienda {...marco} kapiEnPie={rutaLegal === '/libro-de-reclamaciones'}>
       <Parte n="P19" nombre={rutaLegal === '/libro-de-reclamaciones' ? 'PaginaReclamaciones' : 'PaginaLegal'}>
         <LegalesDemo ruta={rutaLegal} sesion={conSesion} usuario={usuario} estados={estadosLegales} />
@@ -712,7 +730,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       onReintentar={() => avisar('Volviendo a cargar', 'La marca y sus productos.')}
     />
   ) : pagina === 'buscar' ? (
-    // Sin resultados ya habla Kapi (el estado vacío): el pie no lo asoma (uno solo a la vista).
+    // Sin resultados ya habla Walito (el estado vacío): el pie no lo asoma (uno solo a la vista).
     <MarcoTienda {...marco} kapiEnPie={resultados.length > 0}>
       <Parte n="P4" nombre="PaginaBusqueda">
         <PaginaBusqueda
@@ -769,7 +787,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </Parte>
     </MarcoTienda>
   ) : pagina === 'noEncontrada' ? (
-    // Una dirección que no existe (la propuesta: hoy la tienda manda al inicio sin avisar). Kapi ya está en la tarjeta.
+    // Una dirección que no existe (la propuesta: hoy la tienda manda al inicio sin avisar). Walito ya está en la tarjeta.
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="P22" nombre="PaginaNoEncontrada">
         <PaginaNoEncontrada ruta="/poleras-anime" onBuscar={(q) => navegar.current(`/buscar?q=${encodeURIComponent(q)}`)} />
@@ -783,21 +801,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </Parte>
     </MarcoTienda>
   ) : pagina === 'pagoRapido' ? (
-    // Un enlace de pago: sin la barra inferior ni Kapi en el pie (solo pagar).
+    // Un enlace de pago: sin la barra inferior ni Walito en el pie (solo pagar).
     <MarcoTienda {...marco} barraInferior={null} kapiEnPie={false}>
       <Parte n="P16" nombre="PaginaPagoRapido">
         <PagoRapidoDemo estados={estadosPagoRapido} toast={toast} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'checkout' ? (
-    // Pagar: sin la barra inferior (la compra manda) y sin Kapi en el pie.
+    // Pagar: sin la barra inferior (la compra manda) y sin Walito en el pie.
     <MarcoTienda {...marco} barraInferior={null} kapiEnPie={false}>
       <Parte n="P14" nombre="PaginaCheckout">
         <CheckoutDemo items={carrito.filter((it) => it.seleccionado !== false)} sesion={conSesion} usuario={usuario} monedas={monedas} estados={estadosCheckout} toast={toast} onIrA={(r) => navegar.current(r)} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'producto' ? (
-    // Sin producto (error o retirado), Kapi ya está en el estado vacío.
+    // Sin producto (error o retirado), Walito ya está en el estado vacío.
     <MarcoTienda {...marco} kapiEnPie={!estadosProducto.some((e) => e === 'error' || e === 'noDisponible')}>
       <Parte n="P13" nombre="PaginaProducto">
         <ProductoDemo
@@ -855,14 +873,14 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </Parte>
     </MarcoTienda>
   ) : pagina === 'crear' ? (
-    // Kapi ya está en el arte de la portada: ni el pie ni el flotante lo repiten.
+    // Walito ya está en el arte de la portada: ni el pie ni el flotante lo repiten.
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="P7" nombre="PaginaCrear">
         <CrearDemo sesion={conSesion} esAdmin={esAdmin} estados={estadosCrear} toast={toast} onIrA={(r) => navegar.current(r)} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'acceso' ? (
-    // Kapi asoma en el panel de la marca: el pie no lo muestra.
+    // Walito asoma en el panel de la marca: el pie no lo muestra.
     <MarcoTienda {...marco} kapiEnPie={false}>
       {(() => {
         const v = VISTAS_ACCESO.find((x) => x.ruta === rutaAcceso) || VISTAS_ACCESO[0];
@@ -879,7 +897,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       })()}
     </MarcoTienda>
   ) : pagina === 'encuesta' ? (
-    // Kapi ya está en la portada (y en los estados): el pie no lo asoma.
+    // Walito ya está en la portada (y en los estados): el pie no lo asoma.
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="P6" nombre="PaginaEncuesta">
         <EncuestaDemo
@@ -911,7 +929,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </Parte>
     </MarcoTienda>
   ) : pagina === 'cuenta' ? (
-    // Sin sesión o sin datos, Kapi ya está en el estado vacío: el pie no lo asoma.
+    // Sin sesión o sin datos, Walito ya está en el estado vacío: el pie no lo asoma.
     <MarcoTienda {...marco} kapiEnPie={conSesion && !estadosCuenta.includes('vacio')}>
       <CuentaDemo
         ruta={rutaCuenta}
@@ -1338,7 +1356,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         titulo="Queremos conocerte mejor"
         onAccion={() => { alternar('campana'); avisar('En la tienda iría a', '/encuesta-suscripcion'); }}
       />
-      {/* Kapi: como en la tienda, solo con sesión (sin perfil no hay mascota). */}
+      {/* Walito: como en la tienda, solo con sesión (sin perfil no hay mascota). */}
       {conSesion && (
         <VentanaKapi
           abierta={kapiAbierta}
@@ -1349,6 +1367,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           reto={ver('reto') ? { ...retoDesdePerfil(RETO_DEMO, {}), onEnviar: () => new Promise((r) => setTimeout(r, 800)) } : undefined}
         />
       )}
+      {/* El recorrido de la primera vez (GuiaPasos), con "Recorrido de Walito". */}
+      <GuiaPasos
+        abierta={conSesion && kapiAbierta && ver('recorrido')}
+        pasos={[
+          { selector: '#kapi-pet-container', titulo: 'Conoce a Walito', texto: '¡Esta es tu mascota! Crece contigo mientras usas Walá.' },
+          { selector: '#kapi-stats', titulo: 'Su felicidad', texto: 'Si te olvidas de darle de comer, se pone triste y su barra de felicidad baja.' },
+          { selector: '#kapi-feed-btn', titulo: '¡A comer!', texto: 'Dale de comer cada día aquí. A cambio te regala monedas para canjear por recompensas.' },
+        ]}
+        onTerminar={() => alternar('recorrido')}
+      />
     </>
   );
 }

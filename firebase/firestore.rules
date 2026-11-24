@@ -21,6 +21,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Supervision uses server-only, tenant-scoped summary endpoints.
     function notSupervision() {
       return request.auth == null || request.auth.token.get('metricsOnly', false) != true;
     }
@@ -35,13 +36,30 @@ service cloud.firestore {
     function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
 
     // Admin = custom claim `admin: true` (fuente de verdad, H-09) o una cuenta con
-    // rol en el panel (adminRoles/{correo}) y el correo VERIFICADO. adminRoles es
-    // solo de Walá: con estas reglas solo un admin lo puede escribir.
+    // rol en el panel (adminRoles/{correo}) con algún permiso y el correo
+    // VERIFICADO. Un doc sin permisos no cuenta (en sept. 2026 apareció uno
+    // creado con las reglas abiertas). adminRoles solo lo escribe un superadmin.
+    function permisosDelPanel() {
+      return get(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())).data.get('permissions', []);
+    }
+    function tieneRolDelPanel() {
+      return request.auth.token.get('email_verified', false) == true &&
+        request.auth.token.get('email', '') != '' &&
+        exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())) &&
+        permisosDelPanel() is list && permisosDelPanel().size() > 0;
+    }
     function isAdmin() {
       return isAuthenticated() && (
+        request.auth.token.get('admin', false) == true || tieneRolDelPanel()
+      );
+    }
+    // Superadmin: las cuentas principales (claim) o 'superadmin' en adminRoles.
+    // Solo él cambia el equipo: si cualquier admin pudiera escribir adminRoles,
+    // alguien con un solo grupo (p. ej. Catálogo) se pondría Super Admin.
+    function isSuperadmin() {
+      return isAuthenticated() && (
         request.auth.token.get('admin', false) == true ||
-        (request.auth.token.get('email_verified', false) == true &&
-         exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())))
+        (tieneRolDelPanel() && permisosDelPanel().hasAny(['superadmin']))
       );
     }
 
@@ -120,7 +138,9 @@ service cloud.firestore {
     // reutilice lo ya traducido; escritura solo admin, para que nadie de fuera
     // pueda inyectar textos en la tienda.
     match /translations/{id}          { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
-    match /suggested_packages/{id}    { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    // Los paquetes que el equipo arma para un cliente: cada cliente lee solo los
+    // suyos (getUserSuggestedPackages filtra por userId); antes los leía cualquiera.
+    match /suggested_packages/{id}    { allow read: if notSupervision() && (isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid)); allow write: if notSupervision() && (isAdmin()); }
     match /universal_dates/{id}       { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
     match /tienda_encuesta_config/{id}{ allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
     // cuestionarios_templates: sin match desde el 2026-10-16 (se retiró el
@@ -243,6 +263,11 @@ service cloud.firestore {
       allow read: if notSupervision() && (true);
       allow write: if notSupervision() && (isAdmin());
     }
+    // La Pichanga de Kapi: pichangaProgreso, pichangaRetos, pichangaSemanas,
+    // pichangaJugadores y pichangaMeses no tienen match: el juego las lee y
+    // escribe solo con funciones (progresoPichangaSecure,
+    // registrarPartidaPichangaSecure, getRankingPichangaSecure). Están en
+    // esSoloWala para que la regla general del ERP no las abra.
     match /bolitasConfig/{id} {
       allow read: if notSupervision() && (true);
       allow write: if notSupervision() && (isAdmin());
@@ -389,7 +414,7 @@ service cloud.firestore {
     // adminRoles: el cliente autenticado lee su propio rol para computar permisos de UI.
     match /adminRoles/{id} {
       allow read: if notSupervision() && (isAuthenticated());
-      allow write: if notSupervision() && (isAdmin());
+      allow write: if notSupervision() && (isSuperadmin());
     }
     match /notification_settings/{id} { allow read, write: if notSupervision() && (isAdmin()); }
     // Historial y cola de campañas push: las escribe solo el servidor
@@ -533,6 +558,16 @@ service cloud.firestore {
       allow write: if notSupervision() && (false);
     }
 
+    // Borrar mi cuenta (eliminarCuentaSecure): el registro de auditoría (id =
+    // hash del uid con la sal del servidor; solo fecha, origen y conteos) y la
+    // cola de clientes de Culqi por quitar de Culqi. Solo el servidor.
+    match /cuentasEliminadas/{c} {
+      allow read, write: if notSupervision() && (false);
+    }
+    match /culqiPorBorrar/{c} {
+      allow read, write: if notSupervision() && (false);
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // ERP (repo conamormarket-lgtm/sistema)
     // ═════════════════════════════════════════════════════════════════════════
@@ -547,13 +582,15 @@ service cloud.firestore {
         'bolitasPremios', 'bolitasProgreso', 'bolitasRetos', 'bolitasSemanas', 'bolitasStats',
         'challengeEvidences', 'chancesAjustes', 'characters',
         'checkout_payment_intents', 'clics', 'cliparts', 'cobros_en_curso', 'comunidad_meta', 'contador',
-        'cuestionarios_templates', 'culqiCharges', 'culqiWebhookEvents', 'customShapes', 'designs',
+        'cuentasEliminadas', 'cuestionarios_templates', 'culqiCharges', 'culqiPorBorrar', 'culqiWebhookEvents',
+        'customShapes', 'designs',
         'enlaces_pago', 'flashOffers', 'fonts', 'fx', 'galeria', 'ganadores_galeria', 'heatmap_events',
-        'inventoryLogs', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyConfig', 'loyaltyLedger',
+        'inventoryLogs', 'kapi_server', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyConfig', 'loyaltyLedger',
         'messages', 'missions', 'niches', 'notification_campaigns', 'notification_drafts',
         'notification_settings', 'notification_state', 'notification_stats', 'notifications',
         'order_notifications', 'organizable_events', 'pages', 'pagos_anomalias', 'participantes',
         'payment_link_integrations', 'payouts', 'paypalPlanes', 'paypalSubEvents', 'paypal_ordenes',
+        'pichangaJugadores', 'pichangaMeses', 'pichangaProgreso', 'pichangaRetos', 'pichangaSemanas',
         'pedidos_vinculo_intentos', 'portal_clientes_users', 'productTypes', 'product_reviews',
         'product_view_notifications', 'producto_cliente_personalizado', 'productos_wala', 'recibos',
         'referralClaims', 'referralOrderClaims', 'referrals', 'rewardsCatalog', 'ruletaConfig',
@@ -624,8 +661,10 @@ service cloud.firestore {
     match /{collection}/{document=**} {
       allow read: if notSupervision() && (request.auth != null && !esSoloWala(collection) && !collection.matches('supervision_.*'));
       allow write: if notSupervision() && (request.auth != null
+        && !collection.matches('readModels_.*')
         && !esSoloWala(collection) && !collection.matches('supervision_.*')
         && !collection.matches('stockReview_.*')
+        && !collection.matches('financeMetrics_.*')
         && !(changesStockState(collection) && serverOwnsStockTransition()));
     }
   }

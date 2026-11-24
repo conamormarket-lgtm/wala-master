@@ -1796,3 +1796,18 @@
     transition: none;
   }
 }
+
+/* Los números del editor (ControlNumero) sin las flechas del navegador, como
+   los Campo del kit: blancas y diminutas, desentonaban de noche. */
+.input[type='number'] {
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.input[type='number']::-webkit-inner-spin-button,
+.input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}

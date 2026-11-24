@@ -5,6 +5,11 @@ import INICIO from './demo/inicio.json';
 
 /* Las 6 primeras categorías reales de la tienda, con su cantidad de productos. */
 const CATEGORIAS_REALES = INICIO.categorias.slice(0, 6);
+// «Colecciones con foto»: banners anchos de ejemplo (los de Walito); dos sin foto, para ver el degradado.
+const COLECCIONES_DEMO = [
+  ['Anime', '/assets/kapi/banners/ruleta.webp'], ['Navidad', '/assets/kapi/banners/palabra.webp'], ['Parejas', ''],
+  ['Fútbol peruano', '/assets/kapi/banners/bolitas.webp'], ['Calaveras', '/assets/kapi/banners/alimenta.webp'], ['Cómics', ''],
+].map(([name, imageUrl], k) => ({ collectionId: `col-${k}`, name, imageUrl }));
 
 /*
  * Catálogo de secciones del builder: cada tipo por separado, con su nombre,
@@ -26,14 +31,14 @@ const ejemplos = (img, logos = []) => ({
     ['Carrusel', {
       slides: [
         { imageUrl: '/crear/banner-crear-1200.webp', mobileImageUrl: '/crear/banner-crear-movil.webp', title: 'Diseña tu polera en 2 minutos', subtitle: 'Sube tu foto, escribe tu frase y nosotros la estampamos.', buttonText: 'Empezar a crear', buttonLink: '/personalizar', contentPosition: 'left', overlayColor: '#1e1b2e', overlayOpacity: 35, buttonBgColor: '#ffffff', buttonTextColor: '#4c1d95' },
-        { imageUrl: '/assets/kapi/banners/ruleta.webp', title: 'Gira la ruleta de Kapi', subtitle: 'Gana monedas y cupones todos los días.', buttonText: 'Jugar', buttonLink: '/minijuegos', contentPosition: 'left', overlayOpacity: 25 },
+        { imageUrl: '/assets/kapi/banners/ruleta.webp', title: 'Gira la ruleta de Walito', subtitle: 'Gana monedas y cupones todos los días.', buttonText: 'Jugar', buttonLink: '/minijuegos', contentPosition: 'left', overlayOpacity: 25 },
       ],
       autoPlay: false, showArrows: true, showDots: true, heightDesktop: '380px', heightMobile: '300px', borderRadius: '20px',
     }],
   ],
   hero_banner: [
     ['Imagen', { mediaType: 'image', mediaUrl: '/crear/banner-crear-1200.webp', eyebrow: 'Con Amor', title: 'Regalos que se recuerdan', subtitle: 'Tu foto, tu frase y nuestro taller. Listo en 48 horas.', buttonText: 'Crear el mío', buttonLink: '/personalizar', textAlign: 'left', overlayOpacity: 55, minHeight: '420px' }],
-    ['Centrado', { mediaType: 'image', mediaUrl: '/assets/kapi/banners/alimenta.webp', title: 'Kapi tiene hambre', subtitle: 'Juega, gana monedas y canjéalas por descuentos.', buttonText: 'Jugar ahora', buttonLink: '/minijuegos', textAlign: 'center', textPosition: 'flex-end', overlayOpacity: 45, minHeight: '380px' }],
+    ['Centrado', { mediaType: 'image', mediaUrl: '/assets/kapi/banners/alimenta.webp', title: 'Walito tiene hambre', subtitle: 'Juega, gana monedas y canjéalas por descuentos.', buttonText: 'Jugar ahora', buttonLink: '/minijuegos', textAlign: 'center', textPosition: 'flex-end', overlayOpacity: 45, minHeight: '380px' }],
   ],
   header: [
     ['Centrado', { eyebrow: 'Nuestro taller', title: 'Hecho en Perú, con amor', titleHighlight: 'con amor', subtitle: 'Cada pedido se estampa a mano en nuestro taller de Lima.', textAlign: 'center', buttonText: 'Conoce el taller', buttonLink: '/nosotros' }],
@@ -43,7 +48,7 @@ const ejemplos = (img, logos = []) => ({
     ['Texto', { heading: 'Cómo cuidamos tu pedido', content: 'Revisamos tu diseño antes de estamparlo y te escribimos si algo no se verá bien.\nEmpacamos cada prenda en papel de seda y la enviamos con seguimiento.', textAlign: 'left', maxWidth: '720px', buttonText: 'Ver preguntas frecuentes', buttonLink: '#faq' }],
   ],
   image: [
-    ['Imagen con enlace', { url: '/assets/kapi/banners/bolitas.webp', alt: 'Juega a las bolitas de Kapi', link: '/minijuegos', maxWidth: '960px', borderRadius: '20px' }],
+    ['Imagen con enlace', { url: '/assets/kapi/banners/bolitas.webp', alt: 'Juega a las bolitas de Walito', link: '/minijuegos', maxWidth: '960px', borderRadius: '20px' }],
   ],
   video: [
     ['YouTube', { url: VIDEO_DEMO, aspectRatio: '16:9' }],
@@ -72,7 +77,7 @@ const ejemplos = (img, logos = []) => ({
       cards: [
         { id: 'c1', title: 'Polera con tu foto', subtitle: 'Estampado de alta duración', imageUrl: img.frente, link: '/tienda?categoria=poleras' },
         { id: 'c2', title: 'Taza mágica', subtitle: 'Aparece el diseño con el calor', imageUrl: img.taza, link: '/tienda?categoria=tazas' },
-        { id: 'c3', title: 'Kapi de peluche', subtitle: 'Suave y con lazo', imageUrl: '/assets/kapi/kapi-happy.webp', link: '/kapi' },
+        { id: 'c3', title: 'Walito de peluche', subtitle: 'Suave y con lazo', imageUrl: '/assets/kapi/kapi-happy.webp', link: '/kapi' },
         { id: 'c4', title: 'Cuadro decorativo', subtitle: 'Tu foto en lienzo', imageUrl: img.cuadro, link: '/tienda?categoria=cuadros' },
         { id: 'c5', title: 'Para parejas', subtitle: 'Diseños que combinan', imageUrl: img.espalda, link: '/tienda?categoria=parejas' },
       ],
@@ -88,15 +93,19 @@ const ejemplos = (img, logos = []) => ({
     ['Cuadros', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact', showProductCount: true, items: CATEGORIAS_REALES }],
     ['Círculos', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'round', showProductCount: true, items: CATEGORIAS_REALES }],
   ],
+  collection_grid: [
+    ['Tres por fila', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 3, items: COLECCIONES_DEMO }],
+    ['Dos por fila', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 2, items: COLECCIONES_DEMO.slice(0, 4) }],
+  ],
   categories_nav: [['Burbujas', { brandId: 'conamor', align: 'center' }], ['Cinta', { brandId: 'conamor', animation: 'slider' }]],
   banner_grid: [
     ['Marcas', { dataSource: 'brands', title: 'Explora nuestros mundos', subtitle: 'Encuentra productos de tus marcas favoritas', columns: 3, brandCardStyle: 'editorial', autoPlay: false }],
     ['Marcas uniformes', { dataSource: 'brands', title: 'Explora nuestros mundos', columns: 3, brandCardStyle: 'uniform', autoPlay: false }],
     ['Marcas con borde', { dataSource: 'brands', title: 'Explora nuestros mundos', columns: 3, brandCardStyle: 'outline', autoPlay: false }],
     ['Banners a mano', {
-      dataSource: 'manual', title: 'Juega con Kapi', columns: 2,
+      dataSource: 'manual', title: 'Juega con Walito', columns: 2,
       items: [
-        { imageUrl: '/assets/kapi/banners/ruleta.webp', link: '/minijuegos', alt: 'Ruleta de Kapi' },
+        { imageUrl: '/assets/kapi/banners/ruleta.webp', link: '/minijuegos', alt: 'Ruleta de Walito' },
         { imageUrl: '/assets/kapi/banners/palabra.webp', link: '/minijuegos', alt: 'Palabra del día' },
       ],
     }],
@@ -178,6 +187,7 @@ const PIEZAS_DE = {
   product_grid: ['TituloSeccion', 'TarjetaProducto', 'Boton'],
   sidebar_catalog: ['TituloSeccion', 'Acordeon', 'OpcionesFiltro', 'Chip', 'Campo', 'Buscador', 'HojaInferior', 'TarjetaProducto'],
   category_grid: ['TituloSeccion', 'TarjetaCategoria'],
+  collection_grid: ['TituloSeccion', 'TarjetaColeccion'],
   categories_nav: ['TarjetaCategoria', 'Marquesina'],
   banner_grid: ['TituloSeccion', 'Carrusel', 'TarjetaMarca'],
   trust_badges: ['Beneficio', 'IconoWala'],
@@ -210,7 +220,7 @@ function Ficha({ tipo, variantes, datos }) {
     if (sec.type === 'sale_carousel') return datos.productos.filter((p) => p.salePrice);
     return datos.productos;
   };
-  const categoriasPara = (sec) => (sec.type === 'category_grid' ? undefined : datos.categorias);
+  const categoriasPara = (sec) => (sec.type === 'category_grid' || sec.type === 'collection_grid' ? undefined : datos.categorias);
 
   return (
     <article id={`t-${tipo}`} className={s.ficha}>

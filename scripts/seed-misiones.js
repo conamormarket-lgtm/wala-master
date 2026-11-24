@@ -1,5 +1,5 @@
 /**
- * Siembra 6 misiones diarias de ejemplo (las 2 de las bolitas, apagadas) en la colección `missions`, para
+ * Siembra 8 misiones diarias de ejemplo (las 2 de las bolitas y las 2 de la pichanga, apagadas) en la colección `missions`, para
  * poder probar el flujo completo en /cuenta/misiones y /admin/misiones.
  *
  * IDs fijos (mision-catalogo, etc.): correrlo dos veces actualiza los mismos
@@ -128,12 +128,12 @@ const MISIONES = [
     type: "daily",
     actionKey: "visit_minijuegos",
   },
-  // Las Bolitas de Kapi: el servidor marca la acción solo con una partida
+  // Las Bolitas de Walito: el servidor marca la acción solo con una partida
   // comprobada (registrarPartidaBolitasSecure). Apagadas: pagan monedas de
   // verdad, se activan a mano en /admin/misiones.
   {
     id: "mision-bolitas-nivel",
-    title: "Pasa un nivel de Las Bolitas de Kapi",
+    title: "Pasa un nivel de Las Bolitas de Walito",
     description: "Ordena todos los tubos de cualquier nivel.",
     rewardPoints: 2,
     order: 5,
@@ -150,6 +150,29 @@ const MISIONES = [
     active: false,
     type: "daily",
     actionKey: "bolitas_reto",
+  },
+  // La Pichanga de Walito: igual, las marca registrarPartidaPichangaSecure. En
+  // producción se activaron el 2026-11-09 (+2 y +3, como las bolitas); aquí
+  // quedan apagadas para no pisar lo que haya en /admin/misiones.
+  {
+    id: "mision-pichanga-nivel",
+    title: "Pasa un nivel de La Pichanga de Walito",
+    description: "Mete gol en cualquier nivel del fútbol de chapas.",
+    rewardPoints: 2,
+    order: 7,
+    active: false,
+    type: "daily",
+    actionKey: "pichanga_nivel",
+  },
+  {
+    id: "mision-pichanga-reto",
+    title: "Haz el reto del día de La Pichanga",
+    description: "La misma jugada para todos: entra al ranking del día.",
+    rewardPoints: 3,
+    order: 8,
+    active: false,
+    type: "daily",
+    actionKey: "pichanga_reto",
   },
 ];
 

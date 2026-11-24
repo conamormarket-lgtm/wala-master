@@ -10,7 +10,7 @@ const { recomendarRegalos } = require("./giftLogic");
 const {
   avisoQueToca: avisoQueTocaEncuesta, MAX_DIAS: MAX_DIAS_ENCUESTA, DIA_MS,
 } = require("./encuestaRecordatorioLogic");
-const { puedeUsarPuente } = require("./adminAuth");
+const { adminConPermiso } = require("./adminAuth");
 const { configEntrega } = require("./encuestaEntregaLogic");
 const {
   avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha, armarAvisoFestivo,
@@ -411,21 +411,21 @@ exports.notificationEngine = onSchedule({
         if (sent) continue; // Una automática por usuario por corrida.
       }
 
-      // -- REGLA 2: Retención Kapi --
+      // -- REGLA 2: Retención Walito --
       if (retencionActiva && data.lastAppOpen) {
         const diffDays = (now - new Date(data.lastAppOpen)) / (1000 * 60 * 60 * 24);
-        const nombreKapi = vars.nombre || "Kapi";
+        const nombreKapi = vars.nombre || "Walito";
 
         if (diffDays >= 14 && canSendPush(data, "retention_14d")) {
           const { text, variante } = copyDe(settings, "retention_14d", uid, vars, vars.monedas > 0
-            ? `Tienes ${vars.monedas} monedas que se van a perder. Y Kapi está muy triste...`
-            : "Kapi te extraña mucho. Lleva varios días sin verte 😢");
+            ? `Tienes ${vars.monedas} monedas que se van a perder. Y Walito está muy triste...`
+            : "Walito te extraña mucho. Lleva varios días sin verte 😢");
           await sendPush(uid, fcmTokens, {
-            title: "Kapi te extraña", body: text, type: "retention_14d", link: "/cuenta", variante,
+            title: "Walito te extraña", body: text, type: "retention_14d", link: "/cuenta", variante,
           }, userRef, data.antiSpamLog);
         } else if (diffDays >= 7 && diffDays < 14 && canSendPush(data, "retention_7d")) {
           const { text, variante } = copyDe(settings, "retention_7d", uid, vars,
-            `Kapi extraña a ${nombreKapi}. Lleva ${Math.floor(diffDays)} días sin comer 😢`);
+            `Walito extraña a ${nombreKapi}. Lleva ${Math.floor(diffDays)} días sin comer 😢`);
           await sendPush(uid, fcmTokens, {
             title: "Mascota Hambrienta", body: text, type: "retention_7d", link: "/cuenta", variante,
           }, userRef, data.antiSpamLog);
@@ -653,17 +653,13 @@ exports.probarAvisoFechas = functions.https.onCall(async (data, context) => {
   return { titulo: payload.title, cuerpo: payload.body, image: payload.image || "", push, tieneApp: tokens.length > 0 };
 });
 
-// Admin = custom claim. El doc adminUsers/{uid} solo vale para las cuentas de
-// ADMIN_BRIDGE_EMAILS (ver ./adminAuth.js) (H-04).
+// Admin = custom claim, adminUsers/{uid} solo para ADMIN_BRIDGE_EMAILS (H-04),
+// o el equipo con el grupo Campañas (Notificaciones y ofertas): ./adminAuth.js.
 async function exigirAdmin(context) {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
-  const esAdmin = context.auth.token?.admin === true
-    || (puedeUsarPuente(context.auth.token)
-      && await db.collection("adminUsers").doc(context.auth.uid).get()
-        .then((s) => s.exists && s.data().role === "admin")
-        .catch(() => false));
+  const esAdmin = await adminConPermiso(db, context, ["campanas"]);
   if (!esAdmin) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede enviar notificaciones.");
   }

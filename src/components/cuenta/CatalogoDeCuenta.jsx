@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCollection } from '../../services/firebase/firestore';
 import { recordMissionAction } from '../../services/loyalty';
+import { getMisCupones } from '../../services/cupones';
 import { textoPremio } from '../../utils/ruletaModel';
 import { PaginaCatalogo } from '../../componentes/kit/paginas/CuentaRecompensas';
+import usePrimeraCompra from '../../hooks/usePrimeraCompra';
 import { recompensaDesdeFirestore } from '../../componentes/kit/adaptadores';
 
 /*
@@ -22,6 +24,7 @@ import { recompensaDesdeFirestore } from '../../componentes/kit/adaptadores';
 // Lo que gana el cliente, con el mismo texto que la Ruleta (textoPremio).
 const beneficioDe = (r) => {
   if (!r || !r.tipo || r.tipo === 'manual') return '';
+  if (r.tipo === 'stickers_whatsapp') return 'Stickers para WhatsApp · se añaden en la app de Walá';
   return textoPremio({
     tipo: r.tipo,
     nombre: r.title,
@@ -29,6 +32,8 @@ const beneficioDe = (r) => {
     descuentoMonto: Number(r.descuentoMonto) || 0,
     topeDescuento: Number(r.topeDescuento) || 0,
     productName: r.productName,
+    brandId: r.brandId,
+    marcaNombre: r.marcaNombre,
     monedas: 0,
   });
 };
@@ -55,6 +60,35 @@ export default function CatalogoDeCuenta() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Las de una sola vez (los packs de stickers y las que el admin marcó «Una
+  // vez por persona») que ya canjeó salen como obtenidas, sin canjear. Misma
+  // consulta (y caché) que Mis cupones; un canje la renueva.
+  const misCupones = useQuery({
+    queryKey: ['mis-cupones', user?.uid],
+    queryFn: async () => {
+      const { data, error } = await getMisCupones(user.uid);
+      if (error) throw new Error(error);
+      return data || [];
+    },
+    enabled: Boolean(user?.uid),
+  });
+  const tuyas = useMemo(() => {
+    const packs = new Set();
+    const recompensas = new Set();
+    (misCupones.data || []).forEach((c) => {
+      if (c.entrega === 'stickers_whatsapp' && c.packId) packs.add(c.packId);
+      if (c.rewardId) recompensas.add(c.rewardId);
+    });
+    return { packs, recompensas };
+  }, [misCupones.data]);
+  const recompensas = useMemo(
+    () => (catalogo.data || []).map((r) => {
+      const obtenida = r.packId ? tuyas.packs.has(r.packId) : r.unaVez && tuyas.recompensas.has(r.id);
+      return obtenida ? { ...r, obtenida: true } : r;
+    }),
+    [catalogo.data, tuyas],
+  );
+
   // Para Misiones diarias: el cliente entró aquí de verdad (si falla, no avisa).
   useEffect(() => {
     if (user?.uid) recordMissionAction('visit_catalogo_recompensas').catch(() => {});
@@ -72,9 +106,12 @@ export default function CatalogoDeCuenta() {
     return { codigo: res?.data?.coupon?.code };
   };
 
+  // Semana de bienvenida: monedas y cupones en pausa.
+  const { bienvenida } = usePrimeraCompra();
   return (
     <PaginaCatalogo
-      recompensas={catalogo.data || []}
+      enPausa={Boolean(bienvenida?.enPausa)}
+      recompensas={recompensas}
       saldo={Number(activeMainCoins) || 0}
       cargando={catalogo.isPending}
       error={catalogo.isError}

@@ -1,0 +1,317 @@
+/* ── D8b · WhatsApp y el historial ────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.etiqueta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+/* WhatsApp: el formulario y, al lado (abajo en el celular), cómo queda. */
+.whatsapp {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .whatsapp {
+    grid-template-columns: minmax(0, 44rem) minmax(16rem, 22rem);
+  }
+
+  .resumen {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.columna {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Una parte dentro de una tarjeta (el mensaje, Crear, Mi cuenta…), separada con una línea. */
+.otro {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.resumen {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.resumenTitulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.resumenParte {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.resumenSubtitulo {
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.resumenLista {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resumenLista li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.75rem;
+  align-items: baseline;
+}
+
+.resumenDonde {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+}
+
+.resumenNumero {
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.resumenSin {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.resumenNota {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+
+.enlace {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+/* El mensaje como globo de chat: verde suave, como lo ve quien lo recibe. */
+.burbuja {
+  display: grid;
+  gap: 0.25rem;
+  justify-self: start;
+  max-width: min(100%, 26rem);
+  padding: 0.6rem 0.8rem;
+  border-radius: 14px 14px 14px 4px;
+  background: #dcf8c6;
+  color: #111b21;
+}
+
+.burbuja .etiqueta {
+  color: #3b6b2a;
+}
+
+.burbuja p {
+  margin: 0;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:global([data-theme='dark']) .burbuja {
+  background: #005c4b;
+  color: #e9edef;
+}
+
+:global([data-theme='dark']) .burbuja .etiqueta {
+  color: #a7e3c4;
+}
+
+/* El historial */
+.cuando {
+  display: grid;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sube,
+.baja,
+.igual {
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sube {
+  color: var(--verde-exito-hover);
+}
+
+.baja {
+  color: var(--danger-hover);
+}
+
+.igual {
+  color: var(--color-text-muted);
+}
+
+/* Las páginas guardadas: una tarjeta por página, con su copia puesta y las anteriores. */
+.paginasGuardadas {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+  .paginasGuardadas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.paginaGuardada {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.paginaCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.paginaNombre {
+  display: grid;
+  min-width: 0;
+}
+
+.paginaNombre h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.copias {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.copia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+  background: var(--color-surface-2);
+}
+
+.copiaTexto {
+  display: grid;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+
+.verAnteriores {
+  justify-self: start;
+}
+
+.girado {
+  transform: rotate(180deg);
+}
+
+/* El aviso de los dos números entra bajando suave al aparecer. Solo
+   transform y opacity. */
+.avisoVivo {
+  animation: avisoEntra var(--dur-media) var(--ease-signature) both;
+}
+
+@keyframes avisoEntra {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avisoVivo {
+    animation: none;
+  }
+}
+
+/* Dos campos por fila (Yape y Plin, los asesores de marca); uno en el celular. */
+.dosCampos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .dosCampos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

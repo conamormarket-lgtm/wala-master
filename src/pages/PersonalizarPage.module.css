@@ -12,9 +12,9 @@
 }
 
 /* ── Hero ──
-   Banner de Kapi diseñando (public/crear/). En escritorio es el fondo y el
+   Banner de Walito diseñando (public/crear/). En escritorio es el fondo y el
    texto va en su lado libre (derecha); en el celular, la versión vertical:
-   el texto arriba, en su parte clara, y Kapi abajo. */
+   el texto arriba, en su parte clara, y Walito abajo. */
 .hero {
   position: relative;
   overflow: hidden;
@@ -75,7 +75,7 @@
     position: absolute;
     inset: 0;
     height: 100%;
-    /* Kapi está a la izquierda: si el banner se recorta, que sea por la
+    /* Walito está a la izquierda: si el banner se recorta, que sea por la
        derecha (el fondo liso). */
     object-position: left center;
   }

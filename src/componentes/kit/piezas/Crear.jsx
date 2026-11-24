@@ -24,7 +24,7 @@ export const PASOS_CREAR = [
 ];
 
 /**
- * La portada de Crear: el arte de Kapi diseñando (ancho en escritorio,
+ * La portada de Crear: el arte de Walito diseñando (ancho en escritorio,
  * vertical en el celular) y, en el lado libre, el título con su trazo y los
  * tres pasos en sellos unidos por una costura punteada (como una prenda).
  *  - titulo, texto · pasos: [{ Icono, titulo, texto }] (PASOS_CREAR)

@@ -1,5 +1,5 @@
 /*
- * El progreso del jugador en Las Bolitas de Kapi: qué se guarda y cómo se
+ * El progreso del jugador en Las Bolitas de Walito: qué se guarda y cómo se
  * une lo del aparato con lo de la cuenta. Puro, con pruebas
  * (bolitasProgreso.test.mjs).
  */

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone, PawPrint } from 'lucide-react';
+import { ChevronRight, Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone, PawPrint } from 'lucide-react';
 import { Estallido } from '../Efectos';
 import { Destello } from '../Marca';
+import { Hueso } from '../Esqueletos';
 import { Pestanas } from '../Navegacion';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
@@ -12,7 +13,7 @@ import { COLORES, CAPACIDAD, tramo, tuboListo } from './bolitasMotor.mjs';
 import s from './Bolitas.module.css';
 
 /*
- * Piezas de Las Bolitas de Kapi (/ball-sort): un tubo con sus bolitas. Las
+ * Piezas de Las Bolitas de Walito (/ball-sort): un tubo con sus bolitas. Las
  * reglas, los niveles y el solucionador están en bolitasMotor.mjs (puro, con
  * sus pruebas). Las bolitas viajan de un tubo a otro con `layoutId`
  * (framer-motion): la página envuelve los tubos en un <LayoutGroup>.
@@ -60,7 +61,8 @@ export function EstrellasNivel({ valor = 0, tamano = 'sm', animar = false }) {
 /**
  * Una marca en el juego: su logo (o la inicial) y su nombre. Con `url`, es un
  * enlace a su tienda (onClick avisa, para las métricas).
- *  - marca: { nombre, logo, url } · tamano: 'sm' | 'md'
+ *  - marca: { nombre, logo, url } · tamano: 'sm' | 'md' | 'sello' (la marca del
+ *    mundo: el logo entero en un cuadro blanco, el nombre y una flecha a su tienda)
  */
 export function MarcaBolitas({ marca, tamano = 'sm', onClick }) {
   if (!marca) return null;
@@ -70,6 +72,7 @@ export function MarcaBolitas({ marca, tamano = 'sm', onClick }) {
         ? <img src={marca.logo} alt="" className={s.marcaLogo} loading="lazy" />
         : <span className={s.marcaInicial} aria-hidden="true">{marca.nombre?.charAt(0)}</span>}
       <span className={s.marcaNombre}>{marca.nombre}</span>
+      {tamano === 'sello' && marca.url && <ChevronRight className={s.marcaFlecha} aria-hidden="true" />}
     </>
   );
   const clase = [s.marca, s[`marca_${tamano}`]].join(' ');
@@ -220,6 +223,66 @@ export function RankingBolitas({ ranking, cargando = false, sesion = true, urlLo
       {!sesion && (
         <div className={s.rankingNota}>
           <Texto>Inicia sesión para aparecer en el ranking.</Texto>
+          <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * El top de niveles: quién llegó más lejos (el nivel más alto que pasó,
+ * comprobado por el servidor; no el que está jugando); empate, quien llegó antes.
+ *  - top: { top: [{ puesto, nombre, nivel, dias, yo }], yo: { puesto, nivel, jugadores } }
+ *  - cargando (sin top todavía: esqueleto) · sesion · urlLogin
+ */
+export function TopBolitas({ top, cargando = false, sesion = true, urlLogin = '/login' }) {
+  const t = { tu: useTexto('Tú'), titulo: useTexto('Top de jugadores') };
+  const lista = top?.top || [];
+  const yo = top?.yo || {};
+  const fuera = yo.puesto && !lista.some((f) => f.yo);
+  let cuerpo;
+  if (cargando && !top) {
+    cuerpo = (
+      <ol className={s.rankingLista} aria-busy="true" aria-label="Cargando el top">
+        {[0, 1, 2, 3].map((k) => (
+          <li key={k}><Hueso forma="circulo" ancho="1.6rem" alto="1.6rem" /><Hueso ancho={`${70 - k * 10}%`} /><Hueso ancho="3.2rem" /></li>
+        ))}
+      </ol>
+    );
+  } else if (!lista.length) {
+    cuerpo = <p className={s.rankingVacio}><Texto>Todavía nadie pasó un nivel. ¡Sé la primera persona!</Texto></p>;
+  } else {
+    cuerpo = (
+      <ol className={s.rankingLista}>
+        {lista.map((f) => (
+          <li key={`${f.puesto}-${f.nombre}`} className={f.yo ? s.rankingYo : undefined}>
+            <span className={[s.rankingPuesto, f.puesto <= 3 && s[`podio${f.puesto}`]].filter(Boolean).join(' ')}>{f.puesto}</span>
+            <span className={s.rankingNombre}>{f.nombre}{f.yo && <small>{t.tu}</small>}</span>
+            <span className={s.rankingValor}><Texto>{`Pasó el nivel ${f.nivel}`}</Texto></span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  return (
+    <section className={s.ranking} aria-label={t.titulo} data-componente="TopBolitas">
+      <p className={s.rankingTitulo}><Trophy aria-hidden="true" />{t.titulo}</p>
+      <p className={s.rankingNota}><Texto>El nivel más alto que pasó cada persona.</Texto></p>
+      {cuerpo}
+      {fuera && (
+        <p className={s.rankingNota}>
+          <TextoResaltado resaltar={[yo.puesto, yo.nivel]}>
+            {yo.jugadores ? `Vas en el puesto ${yo.puesto} de ${yo.jugadores}: pasaste el nivel ${yo.nivel}.` : `Vas en el puesto ${yo.puesto}: pasaste el nivel ${yo.nivel}.`}
+          </TextoResaltado>
+        </p>
+      )}
+      {sesion && !yo.puesto && lista.length > 0 && (
+        <p className={s.rankingNota}><Texto>Gana un nivel para entrar al top.</Texto></p>
+      )}
+      {!sesion && (
+        <div className={s.rankingNota}>
+          <Texto>Inicia sesión para aparecer en el top.</Texto>
           <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
         </div>
       )}

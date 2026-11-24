@@ -1,0 +1,999 @@
+/* ── Tabla del admin (D0) ─────────────────────────────────── */
+/* "tabla": 720 px o más es tabla; menos, tarjetas. */
+.tabla {
+  container: tabla / inline-size;
+  position: relative;
+}
+
+.ancha {
+  display: none;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
+  font-size: 0.88rem;
+}
+
+/* Sin overflow (dejaría de pegarse la cabecera): las esquinas, a mano. */
+.ancha thead th:first-child {
+  border-top-left-radius: 18px;
+}
+
+.ancha thead th:last-child {
+  border-top-right-radius: 18px;
+}
+
+.ancha tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+
+.ancha tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+
+.ancha thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 42px;
+  padding: 0 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2, var(--color-bg));
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ancha tbody td {
+  height: 56px;
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.ancha tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.filaTocable {
+  cursor: pointer;
+}
+
+.filaTocable:hover td {
+  background: var(--color-hover, var(--gris-hover));
+}
+
+.filaElegida td,
+.filaElegida:hover td {
+  background: var(--primary-light);
+}
+
+.alinear_fin {
+  text-align: right !important;
+}
+
+.alinear_centro {
+  text-align: center !important;
+}
+
+.colCasilla {
+  width: 48px;
+  padding-right: 0 !important;
+}
+
+.colAcciones {
+  width: 56px;
+  padding: 0 0.5rem !important;
+  text-align: right !important;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.ordenar svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  opacity: 0.55;
+}
+
+.ordenar:hover,
+.ordenarActual {
+  color: var(--primary-color);
+}
+
+.ordenarActual svg {
+  opacity: 1;
+}
+
+/* El título de la fila es un botón (teclado y lectores); se ve como texto. */
+.tituloBoton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tituloBoton:hover {
+  color: var(--primary-color);
+}
+
+.casilla {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -11px;
+  cursor: pointer;
+}
+
+.casilla input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.casilla input:focus-visible + span {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* Algunas elegidas: el visto apagado (ni todo ni nada). */
+.mixto {
+  opacity: 0.55;
+}
+
+.masBoton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.masBoton:hover,
+.masBoton[aria-expanded='true'] {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.masBoton svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* ── Tarjetas (angosta) ── */
+.tarjetas {
+  display: grid;
+  /* Sin minmax(0, 1fr) la tarjeta se estira al contenido y se sale del ancho en el celular. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.3rem 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.tarjeta > .casilla {
+  margin: 0 -0.35rem 0 -0.2rem;
+}
+
+.tarjetaCuerpo {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 60px;
+  padding: 0.3rem 0.35rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tarjetaCuerpo:disabled {
+  cursor: default;
+}
+
+.tarjetaCuerpo:not(:disabled):active {
+  background: var(--color-hover, var(--gris-hover));
+}
+
+.tarjetaFoto {
+  display: inline-flex;
+  flex: none;
+}
+
+.tarjetaTextos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tarjetaTitulo {
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjetaDetalles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.tarjetaDetalle {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tarjetaEstado {
+  flex: none;
+}
+
+.esqueleto {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.vacio {
+  padding: 1.5rem 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+@container tabla (min-width: 720px) {
+  .ancha {
+    display: table;
+  }
+
+  .tarjetas {
+    display: none;
+  }
+}
+
+/* ── Filtros ── */
+.filtros {
+  container: filtros / inline-size;
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.filtrosFila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filtrosBuscar {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 28rem;
+}
+
+/* Con varios filtros (ancha), el buscador no se aplasta: los filtros bajan. */
+@container filtros (min-width: 720px) {
+  .filtrosBuscar {
+    flex: 1 1 16rem;
+    min-width: 14rem;
+  }
+}
+
+/* El input trae su ancho del navegador (~20 letras): que se encoja. */
+.filtrosBuscar input {
+  width: 100%;
+  min-width: 0;
+}
+
+.filtrosAncho {
+  display: none;
+}
+
+.filtroCampo {
+  min-width: 11rem;
+}
+
+/* El campo con su etiqueta: en la fila, la etiqueta queda solo para lectores. */
+.filtroCampo label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.filtroCampo > * {
+  margin: 0;
+}
+
+.filtrosBoton {
+  flex: none;
+}
+
+.filtrosCuenta {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.filtrosResumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.total {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chipsPuestos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.filtrosHoja {
+  display: grid;
+  gap: 1rem;
+}
+
+@container filtros (min-width: 720px) {
+  .filtrosAncho {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filtrosBoton {
+    display: none;
+  }
+
+  /* En la fila los filtros ya se ven: los chips sobran. */
+  .chipsPuestos {
+    display: none;
+  }
+}
+
+/* ── Lo elegido ── */
+.lote {
+  position: sticky;
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.4rem;
+  border-radius: 16px;
+  background: var(--noche-wala, #14121c);
+  color: #fff;
+  box-shadow: 0 14px 30px -16px rgba(20, 18, 28, 0.7);
+}
+
+.loteLimpiar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.loteLimpiar:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.loteLimpiar svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.loteCuantos {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.loteAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* ── Ver más ── */
+.mas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 1rem;
+  margin-top: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Ordenar a mano ── */
+.ordenable {
+  container: orden / inline-size;
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ordenFila {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.ordenFila:active {
+  z-index: 2;
+}
+
+.asa {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.asa:active {
+  cursor: grabbing;
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.asa svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.ordenNumero {
+  flex: none;
+  min-width: 1.6rem;
+  color: var(--primary-color);
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.ordenCuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.ordenFlechas {
+  display: inline-flex;
+  flex: none;
+}
+
+.ordenFlechas button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ordenFlechas button:hover:not(:disabled) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.ordenFlechas button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.ordenFlechas svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ── Elegir productos ── */
+.selector {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.selectorBuscar {
+  max-width: none;
+}
+
+.selectorBuscar input {
+  width: 100%;
+  min-width: 0;
+}
+
+.selectorLista {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selectorFila {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.selectorFoto {
+  flex: none;
+  width: 44px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 55px;
+  border-radius: 10px;
+}
+
+.selectorTextos {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.selectorTextos strong {
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectorTextos span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.selectorHecho {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--verde-exito-hover, #059669);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.selectorHecho svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.selectorMas,
+.selectorNada {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+/* Angosta: el número sobra (el orden se ve) y deja lugar al nombre. */
+@container orden (max-width: 420px) {
+  .ordenNumero {
+    display: none;
+  }
+
+  .ordenFila {
+    gap: 0.25rem;
+  }
+}
+
+/* De noche la barra noche se perdía sobre el fondo: violeta oscuro con borde. */
+:global([data-theme='dark']) .lote {
+  border: 1px solid var(--violet-700, #6d28d9);
+  background: var(--violet-900, #2e1065);
+}
+
+/* ── Controles en la tarjeta ── */
+.tarjetaConControles {
+  flex-wrap: wrap;
+}
+
+.tarjetaQuieta {
+  cursor: default;
+}
+
+.tarjetaControles {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem 0.4rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.tarjetaControl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.tarjetaControlNombre {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Número en la fila ── */
+.enLinea {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.enLineaCaja {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.enLineaCaja:focus-within {
+  border-color: var(--violet-400);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.enLineaError {
+  border-color: var(--danger);
+}
+
+/* Cambiado y sin guardar: el borde violeta lo dice aunque se vaya el foco. */
+.enLineaCambiado {
+  border-color: var(--violet-400);
+}
+
+/* El ancla del globo: el recuadro del número (la caja recorta lo que sale). */
+.enLineaAncla {
+  position: relative;
+  display: inline-flex;
+}
+
+/* El globo de guardar: encima del número, con su flecha apuntándolo. Entra
+   creciendo desde la flecha y sale igual de rápido (sin bucles ni brillos). */
+.enLineaGlobo {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  z-index: 6;
+  display: grid;
+  gap: 0.6rem;
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.7rem 0.75rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 12px 28px -14px rgba(20, 18, 28, 0.5), 0 2px 6px -2px rgba(20, 18, 28, 0.12);
+  /* Crece desde la flecha, que apunta al centro del número (la caja mide ~130 px). */
+  transform-origin: calc(100% - 60px) calc(100% + 8px);
+  animation: globoEntra 160ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* La flecha: un cuadrado girado con el mismo borde, apuntando al número. */
+.enLineaGlobo::after {
+  content: '';
+  position: absolute;
+  right: 54px;
+  bottom: -6px;
+  width: 11px;
+  height: 11px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transform: rotate(45deg);
+}
+
+.enLineaGloboSale {
+  animation: globoSale 140ms ease-in both;
+}
+
+@keyframes globoEntra {
+  from { opacity: 0; transform: translateY(4px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes globoSale {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(3px) scale(0.94); }
+}
+
+.enLineaGloboTexto {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.enLineaGloboTexto > svg {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 1px;
+  color: var(--primary-color);
+}
+
+.enLineaGloboTexto strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.enLineaGloboTexto span span {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.enLineaGloboBotones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.enLineaGloboBotones button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 30px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.enLineaGloboBotones button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.enLineaGloboBotones svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.enLineaCancelar {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.enLineaCancelar:hover:not(:disabled) {
+  border-color: var(--violet-400);
+  color: var(--primary-color);
+}
+
+.enLineaGuardar {
+  border: 1px solid var(--primary-color);
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.enLineaGuardar:hover:not(:disabled) {
+  background: var(--primary-hover, var(--primary-color));
+}
+
+.enLineaGloboBotones button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enLineaGlobo,
+  .enLineaGloboSale {
+    animation-duration: 1ms;
+  }
+}
+
+.enLineaCaja button {
+  width: 36px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.enLineaCaja button:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.enLineaCaja input {
+  width: 3.6rem;
+  height: 100%;
+  border: 0;
+  background: transparent !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.enLineaCaja input::-webkit-outer-spin-button,
+.enLineaCaja input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.enLineaCaja input:focus {
+  outline: none;
+}
+
+.enLineaSufijo {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.enLineaEstado {
+  display: inline-flex;
+  align-items: center;
+  min-width: 1.2rem;
+}
+
+.enLineaEstado svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.girar {
+  color: var(--primary-color);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+.enLineaListo {
+  color: var(--verde-exito-hover, #059669);
+}
+
+.enLineaReintentar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--danger-hover);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girar {
+    animation-duration: 2s;
+  }
+}

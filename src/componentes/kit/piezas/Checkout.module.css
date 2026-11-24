@@ -123,6 +123,13 @@
 }
 
 /* ── Cupón ─────────────────────────────────────────────────── */
+/* En la semana de bienvenida: solo la razón de que no se pueda. */
+.cuponPausa {
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+}
+
 .cupon {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

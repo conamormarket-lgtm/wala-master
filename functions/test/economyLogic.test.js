@@ -248,7 +248,7 @@ function run() {
   });
 
   // ────────────────────────────────────────────────────────────────────────
-  // diasEntreFechasLima / felicidadKapiHoy (Kapi)
+  // diasEntreFechasLima / felicidadKapiHoy (Walito)
   // ────────────────────────────────────────────────────────────────────────
   check("diasEntreFechasLima: mismo día -> 0", () => {
     assert.strictEqual(eco.diasEntreFechasLima("2026-09-08", "2026-09-08"), 0);

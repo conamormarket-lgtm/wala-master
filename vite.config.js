@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createDocumentByteMeter } from './src/observability/firestore-byte-meter.mjs';
 import { storefrontBootstrap } from './scripts/storefront-bootstrap.mjs';
 
 // Migración CRA -> Vite (Fase 1). Para NO obligar a renombrar el .env ni el código,
@@ -20,7 +21,15 @@ const REACT_APP_KEYS = [
   'REACT_APP_ERP_FIREBASE_APP_ID', 'REACT_APP_ERP_FIREBASE_MEASUREMENT_ID',
 ];
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(async ({ command, mode }) => {
+  const localPlugins = [];
+  if (command === 'serve') {
+    // Keep the local backend out of config bundling: Vercel excludes functions/,
+    // which supplies its catalog pricing. A URL import is resolved only in DEV.
+    const localPluginUrl = new URL('./scripts/kapi-local/plugin.mjs', import.meta.url).href;
+    const { kapiLocalPlugin } = await import(localPluginUrl);
+    localPlugins.push(kapiLocalPlugin());
+  }
   const env = loadEnv(mode, process.cwd(), '');
 
   const define = {
@@ -43,14 +52,14 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react(), {
+    plugins: [react(), ...localPlugins, {
       name: 'public-storefront-bootstrap',
       apply: 'build',
       transformIndexHtml() {
         if (mode !== 'production' || env.VITE_USE_EMULATORS === 'true' ||
             !env.REACT_APP_FIREBASE_PROJECT_ID || !env.REACT_APP_FIREBASE_API_KEY) return [];
         const config = JSON.stringify([env.REACT_APP_FIREBASE_PROJECT_ID, env.REACT_APP_FIREBASE_API_KEY]).replace(/</g, '\\u003c');
-        return [{ tag: 'script', injectTo: 'head-prepend', children: `(${storefrontBootstrap.toString()})(...${config});` }];
+        return [{ tag: 'script', injectTo: 'head-prepend', children: `(${storefrontBootstrap.toString()})(...${config}, (${createDocumentByteMeter.toString()})());` }];
       },
     }],
     define,

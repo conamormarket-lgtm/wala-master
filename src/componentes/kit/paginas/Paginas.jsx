@@ -20,9 +20,9 @@ import s from './Paginas.module.css';
  *  - arriba: nodos sobre la cabecera (AvisoSistema, BannerApp, BarraAdmin)
  *  - cabecera: props de <Cabecera> (o null para landings sin menú)
  *  - pie: ajustes de footer_columns (o null)  · pieLegal: props de <PieLegal>
- *  - kapiEnPie: Kapi asomado por el pie (false si la página ya termina con uno)
+ *  - kapiEnPie: Walito asomado por el pie (false si la página ya termina con uno)
  *  - barraInferior: props de <BarraInferior> (o null)
- *  - flotantes: { derecha, izquierda } → <PilaFlotante> (WhatsApp, Kapi…)
+ *  - flotantes: { derecha, izquierda } → <PilaFlotante> (WhatsApp, Walito…)
  *  - contenida: el marco vive dentro de algo con su propio scroll (demo,
  *    editor): los flotantes se pegan al marco y no a la ventana.
  * Cada parte lleva data-componente (Cabecera, PiePagina, BarraInferior) para
@@ -104,8 +104,8 @@ export function PaginaTienda({
 }) {
   const navDe = (sec) => (sec.type === 'categories_nav' ? navPorMarca[(sec.settings?.brandId || '').trim()] : undefined);
   const catalogo = useMemo(() => ({ marcas, categorias, marcaActual }), [marcas, categorias, marcaActual]);
-  // Un solo Kapi a la vista: si la página termina con Preguntas frecuentes
-  // (su tarjeta de ayuda trae a Kapi), el pie no lo repite.
+  // Un solo Walito a la vista: si la página termina con Preguntas frecuentes
+  // (su tarjeta de ayuda trae a Walito), el pie no lo repite.
   const orden = [...(secciones.secciones || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const kapiEnPie = kapiForzado ?? orden[orden.length - 1]?.type !== 'faq_accordion';
   const contenido = (

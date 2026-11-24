@@ -3,6 +3,9 @@
 .ruleta,
 .bolitas {
   display: grid;
+  /* Una columna que no pasa del ancho de la pantalla (las pestañas de los
+     modos ensanchaban la mesa en un celular de 320 px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -157,6 +160,21 @@
 .modos {
   display: flex;
   justify-content: center;
+  min-width: 0;
+}
+
+/* En un celular angosto, las pestañas de los modos más compactas para que
+   entren las tres sin desplazarse. */
+@media (max-width: 400px) {
+  .modos [role='tab'] {
+    min-height: 36px;
+    padding-inline: 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .mesa {
+    padding-inline: 0.6rem;
+  }
 }
 
 .nivelTitulo {
@@ -185,8 +203,11 @@
 
   /* Muchos tubos en el celular: más chicos para que entren en dos filas. */
   .tubosCompactos {
-    --mesa-tubo: 36px;
-    --mesa-bola: 27px;
+    /* Hasta 36 px, o menos si no entran a lo ancho (el reto trae 13: 7 por
+       fila en un celular de 320 px). */
+    container-type: inline-size;
+    --mesa-tubo: min(36px, calc(100cqi / var(--col-movil) - 0.55rem));
+    --mesa-bola: calc(var(--mesa-tubo) * 0.75);
     --mesa-base-extra: 4px;
     gap: 1.6rem 0.4rem;
   }
@@ -255,6 +276,11 @@
   color: var(--color-text-muted);
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+/* El sello de la marca del mundo, entre «Mundo 2» y el nivel. */
+.mundoMarca {
+  margin: 0.35rem 0 0.45rem;
 }
 
 .coronaTitulo {
@@ -562,5 +588,182 @@
   @keyframes aparecerQuieto {
     0%, 82% { opacity: 1; }
     100% { opacity: 0; }
+  }
+}
+
+/* ── Escritorio: el juego entra en la pantalla ──
+   Cuando la mesa tiene tablero (.tablero: los tubos o la cancha), las
+   pestañas van arriba a todo lo ancho; debajo, el nivel o el marcador, los
+   avisos y los botones en una columna a la izquierda, y el tablero a la
+   derecha con todo el alto que queda. El panel de al lado se desplaza por
+   dentro. Así se juega sin subir ni bajar. En el mapa (sin tablero) la mesa
+   sigue en una columna. */
+@media (min-width: 1024px) and (min-height: 560px) {
+  .mesa:has(> .tablero) {
+    grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
+    grid-template-rows: auto repeat(7, auto) 1fr;
+    column-gap: 1.75rem;
+    row-gap: 0;
+    align-items: start;
+  }
+
+  .mesa:has(> .tablero) > :not(.adornos):not(.fiesta):not(.tablero) {
+    grid-column: 1;
+    margin-bottom: 0.85rem;
+  }
+
+  .mesa:has(> .tablero) > .modos:not(.adornos):not(.fiesta):not(.tablero) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .mesa:has(> .tablero) > .tablero {
+    grid-column: 2;
+    grid-row: 2 / -1;
+    align-self: center;
+  }
+
+  /* Los botones, uno debajo de otro en la columna, sobre una tarjeta: se
+     leen sobre cualquier escena del fondo (el estadio de noche es oscuro). */
+  .mesa:has(> .tablero) > .botonesMesa:not(.adornos) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-self: stretch;
+    padding: 0.5rem;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.55);
+  }
+
+  .mesa:has(> .tablero) > .botonesMesa > * {
+    width: 100%;
+  }
+
+  /* El nivel: el texto arriba y el botón del mapa debajo (la columna es angosta). */
+  .mesa:has(> .tablero) .cabezaNivel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Los avisos, alineados a la izquierda de su columna. */
+  .mesa:has(> .tablero) .mensajeZona {
+    place-items: start;
+  }
+
+  /* Los tubos se achican solos para entrar a lo ancho de su columna (el
+     reto puede traer 13: 7 por fila). */
+  .mesa:has(> .tablero) > .tubos {
+    container-type: inline-size;
+    --mesa-tubo-grande: min(62px, calc(100cqi / var(--col-escritorio) - 1.15rem));
+    --mesa-bola-grande: calc(var(--mesa-tubo-grande) * 0.77);
+    --mesa-tubo: var(--mesa-tubo-grande);
+    --mesa-bola: var(--mesa-bola-grande);
+    --mesa-base-extra: 6px;
+    padding-top: 0.5rem;
+  }
+
+  .lado .panel {
+    max-height: calc(100dvh - var(--altura-cabecera, 72px) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* ── Modo juego (celular) ──
+   Sin la cabecera de la tienda (components/marco/modoJuego.js), el juego
+   ocupa el alto de la pantalla (--alto-juego, de MarcoJuego): el tablero en
+   medio y lo que se toca (teclado, botones, girar) abajo, al alcance del
+   pulgar. El panel (ranking, racha, historial) queda debajo; la barra baja
+   hasta él. */
+@media (max-width: 768px) {
+  .seccionJuego {
+    padding-top: 0 !important;
+    padding-bottom: calc(1rem + var(--safe-bottom, 0px)) !important;
+  }
+
+  .juego,
+  .zonaRueda,
+  .mesa {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--alto-juego);
+  }
+
+  /* Palabra: el teclado (o el cierre del día) abajo. */
+  .juego > :last-child {
+    margin-top: auto;
+  }
+
+  /* Ruleta: la rueda al centro y el botón de girar abajo. */
+  .zonaRueda {
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Bolitas: los tubos al centro de lo que sobra y los botones pegados
+     abajo mientras se baja (por encima de la regla de .mesa > …). */
+  .mesa {
+    gap: 1rem;
+    padding-top: 1rem;
+  }
+
+  .mesa .tubos {
+    margin-block: auto;
+    padding-top: 0.5rem;
+  }
+
+  /* Los avisos («¡Nivel jefe!…») flotan sobre el tablero en vez de
+     reservarle una franja: el alto es para los tubos. La clase va doble
+     para ganarle a `.mesa > :not(.adornos):not(.fiesta)` (z-index 1): con
+     el mismo z-index, los tubos (que vienen después) tapaban el aviso. */
+  .mesa .mensajeZona.mensajeZona {
+    height: 0;
+    min-height: 0;
+    overflow: visible;
+    z-index: 4;
+  }
+
+  /* «3 estrellas con 25 movimientos o menos» en una o dos líneas de texto
+     (como flex, cada pedazo se partía en su propia línea junto al mapa). */
+  .metaEstrellas {
+    display: block;
+    line-height: 1.5;
+  }
+
+  .metaEstrellas > :first-child {
+    display: inline-flex;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+  }
+
+  /* Al bajar con el botón de la barra, el panel no queda debajo de ella. */
+  .lado {
+    scroll-margin-top: calc(var(--alto-barra-juego, 3.25rem) + var(--safe-top, 0px) + 0.75rem);
+  }
+
+  .mesa > .botonesMesa:not(.adornos):not(.fiesta) {
+    position: sticky;
+    bottom: calc(0.5rem + var(--safe-bottom, 0px));
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-self: stretch;
+    gap: 0.4rem;
+    /* Sobre una tarjeta: se leen sobre cualquier escena del fondo. */
+    padding: 0.4rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.55);
+  }
+
+  /* Dos por fila: entran las cuatro ayudas sin comerse el tablero. */
+  .mesa > .botonesMesa > * {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0.4rem;
+    font-size: 0.86rem;
+    white-space: nowrap;
   }
 }

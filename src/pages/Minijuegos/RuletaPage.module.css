@@ -18,7 +18,7 @@
 /* El contenido se centra con márgenes automáticos y NO con justify-content en
    .pageContainer: eso arrastraba también la barra de "Volver" y el título, que
    tienen que quedarse arriba como en el resto de minijuegos. Mismo patrón que
-   Las Bolitas de Kapi.
+   Las Bolitas de Walito.
 
    En escritorio la rueda convive con el panel de premios: antes tenía media
    pantalla vacía a los lados. Por debajo de 900px se apilan. */

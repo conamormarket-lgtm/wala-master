@@ -1,5 +1,7 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
+import { getMessage } from '../../services/messages';
 import { empresa } from '../../config/empresa';
 import { PaginaLegal } from '../../componentes/kit/paginas/Legales';
 import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
@@ -7,28 +9,45 @@ import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
 /*
  * Política de privacidad y términos y condiciones con el kit (paso 6,
  * LEGALES.md): PaginaLegal con el documento de config/legales/ (el mismo
- * texto de antes, palabra por palabra) y el contacto de config/empresa.
- * Con sesión, la tarjeta de contacto va sin Kapi (ya está el flotante).
+ * texto de antes, palabra por palabra) y el contacto de config/empresa; el
+ * WhatsApp, el general de /admin/whatsapp (config/empresa de respaldo).
+ * Con sesión, la tarjeta de contacto va sin Walito (ya está el flotante).
  * Lo de antes: pages/PoliticasPrivacidadViejo.jsx y
  * pages/TerminosCondicionesViejo.jsx (interruptor legalesViejo).
  *  - tipo: 'privacidad' | 'terminos' · documento: el de config/legales/
+ *  - otro: { pregunta, texto, url } en vez del otro documento (/eliminar-cuenta
+ *    lleva a la cuenta) · mensaje: el texto con el que abre WhatsApp
  */
-const URL_WHATSAPP = enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una consulta sobre sus políticas.');
+const MENSAJE = '¡Hola Walá! Tengo una consulta sobre sus políticas.';
+
+/** 912881722 o 51912881722 → 51912881722 (lo que pide wa.me). */
+const conPrefijo = (crudo) => {
+  const n = String(crudo || '').replace(/\D/g, '');
+  return n && !n.startsWith('51') && n.length <= 9 ? `51${n}` : n;
+};
 
 const OTRO = {
   privacidad: { pregunta: '¿Buscabas las condiciones del servicio?', texto: 'Términos y Condiciones', url: '/terminos-y-condiciones' },
   terminos: { pregunta: '¿Buscabas cómo tratamos tus datos?', texto: 'Política de Privacidad', url: '/politicas-privacidad' },
 };
 
-export default function LegalDeTienda({ tipo, documento }) {
+export default function LegalDeTienda({ tipo, documento, otro, mensaje = MENSAJE }) {
   const { userProfile } = useAuth();
+  // El WhatsApp general de /admin/whatsapp (el mismo del botón flotante en
+  // estas páginas). Antes iba fijo el de config/empresa, que es otro número.
+  const { data: numero } = useQuery({
+    queryKey: ['whatsapp-general'],
+    queryFn: async () => conPrefijo((await getMessage('whatsapp_number')).data),
+    staleTime: 10 * 60 * 1000,
+  });
+  const urlWhatsApp = enlaceWhatsApp(numero || empresa.whatsapp, mensaje);
   return (
     <PaginaLegal
       tipo={tipo}
       documento={documento}
       empresa={empresa}
-      urlWhatsApp={URL_WHATSAPP}
-      otro={OTRO[tipo]}
+      urlWhatsApp={urlWhatsApp}
+      otro={otro || OTRO[tipo]}
       sinKapi={Boolean(userProfile)}
     />
   );

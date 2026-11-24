@@ -12,11 +12,10 @@ import { getProductsByBrand } from '../../services/products';
 import { getDocument } from '../../services/firebase/firestore';
 import { uploadFile } from '../../services/firebase/storage';
 import { getLandingPageBySlug, saveLandingPage } from '../../pages/Tienda/services/landingPages';
-import { getThemes } from '../../pages/Tienda/services/themes';
 import { getDefaultSettings } from '../../pages/Tienda/services/storefront';
 import BurbujasDeMarca, { burbujasParaLaMarca } from './BurbujasDeMarca';
 import PanelEditor from '../../componentes/kit/editor/PanelEditor';
-import { ControlOpciones, ControlInterruptor } from '../../componentes/kit/editor/CamposEditor';
+import { ControlInterruptor } from '../../componentes/kit/editor/CamposEditor';
 import Boton from '../../componentes/kit/Boton';
 import { useConfirmar } from '../../componentes/kit/Feedback';
 import { COLUMNAS_POR_DEFECTO } from '../marco/columnasDelPie';
@@ -95,7 +94,6 @@ function useAvisoAlSalir(activo) {
 function AjustesDeLanding({ slug }) {
   const { isHeaderVisible, setHeaderVisible, isFooterVisible, setFooterVisible } = useLayoutContext();
   const queryClient = useQueryClient();
-  const { data: temas } = useQuery({ queryKey: ['admin-themes'], queryFn: getThemes });
   const { data: landing } = useQuery({ queryKey: ['editor-landing', slug], queryFn: () => getLandingPageBySlug(slug) });
   const guardar = async (cambios) => {
     if (!landing?.id) return;
@@ -105,13 +103,6 @@ function AjustesDeLanding({ slug }) {
   if (!landing) return <p>Esta página no es una landing guardada: no tiene ajustes propios.</p>;
   return (
     <>
-      <ControlOpciones
-        etiqueta="Tema visual"
-        ayuda="Cambia los colores solo en esta landing. Se ve al recargar la página."
-        valor={landing.themeId || ''}
-        opciones={[{ valor: '', texto: 'El de la tienda' }, ...(temas || []).map((t) => ({ valor: t.id, texto: t.name || t.id }))]}
-        onCambiar={(themeId) => guardar({ themeId })}
-      />
       <ControlInterruptor
         etiqueta="Ocultar la cabecera"
         descripcion="Para una landing sin distracciones."

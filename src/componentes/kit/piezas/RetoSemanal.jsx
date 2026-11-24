@@ -11,7 +11,7 @@ import s from './RetoSemanal.module.css';
 /**
  * El reto de la semana (globals/activeChallenge): qué hay que hacer, el premio,
  * cuánto llevas y, en los retos manuales, el enlace con la evidencia. Va en la
- * ventana de Kapi; también sirve en la cuenta.
+ * ventana de Walito; también sirve en la cuenta.
  *
  *  - titulo, descripcion
  *  - recompensa: texto ("10 monedas", "Doble monedas al alimentar")
@@ -61,7 +61,9 @@ export function RetoSemanal({ titulo, descripcion, recompensa, progreso = 0, met
         <Aviso compacto tipo="exito"><Texto>¡Reto completado! Ya te dimos el premio.</Texto></Aviso>
       ) : (
         <>
-          <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta="Tu avance" />
+          {conEvidencia
+            ? <p className={s.descripcion}><Texto>Cuando lo hagas, pega aquí el enlace de tu foto o historia. Lo revisamos y te damos el premio.</Texto></p>
+            : <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta="Tu avance" />}
           {conEvidencia && (
             <form className={s.evidencia} onSubmit={enviar}>
               <Campo

@@ -267,9 +267,9 @@ const PersonalizarViejo = () => {
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
-        {/* Kapi diseñando, de fondo. En escritorio el banner ancho (texto en
+        {/* Walito diseñando, de fondo. En escritorio el banner ancho (texto en
             el lado libre, a la derecha); en el celular uno vertical (texto
-            arriba, Kapi abajo). Es decoración: no se arrastra ni se elige. */}
+            arriba, Walito abajo). Es decoración: no se arrastra ni se elige. */}
         <picture>
           <source media="(max-width: 768px)" srcSet="/crear/banner-crear-movil.webp" width="800" height="1067" />
           <img

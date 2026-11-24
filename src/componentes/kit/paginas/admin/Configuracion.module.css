@@ -1,0 +1,114 @@
+/* ── D8a · Configuración ───────────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-hover);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+/* El equipo */
+.persona {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.persona > span:first-child {
+  display: grid;
+  min-width: 0;
+}
+
+.permisos {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.permisos:focus {
+  outline: none;
+}
+
+.ve {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: var(--violet-50);
+  font-size: 0.84rem;
+}
+
+.ve ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+}
+
+.ve li span {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.ve li span::after {
+  content: ':';
+}
+
+:global([data-theme='dark']) .ve {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+/* Imágenes e idiomas */
+.tarea {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 46rem;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.errores {
+  margin-top: 0.4rem;
+}
+
+.errores summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.errores ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}

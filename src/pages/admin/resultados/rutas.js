@@ -1,6 +1,6 @@
 // Pestañas de Resultados y a dónde llevan los avisos de "Cosas por mejorar".
 // soloClientes: muestra datos personales; solo con permiso de clientes
-// (manage_clients), igual que en el menú.
+// (`clientes`, o manage_clients de antes), igual que en el menú.
 
 export const BASE_RESULTADOS = '/admin/resultados';
 

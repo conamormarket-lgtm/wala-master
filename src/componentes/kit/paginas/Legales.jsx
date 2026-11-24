@@ -22,12 +22,12 @@ const ICONOS = { privacidad: <ShieldCheck aria-hidden="true" />, terminos: <File
 /**
  * Un documento legal: la cabeza con la fecha, el índice (fijo al costado en
  * escritorio, plegado en el celular) y las secciones numeradas. La sección
- * de contacto termina con la tarjeta de ayuda (Kapi, el correo y WhatsApp).
+ * de contacto termina con la tarjeta de ayuda (Walito, el correo y WhatsApp).
  *  - tipo: 'privacidad' | 'terminos' (el ícono)
  *  - documento: { titulo, actualizado, secciones: [{ id, titulo, parrafos,
  *    lista: [{ etiqueta, texto }], destacado, contacto }] } · contacto:
  *    { equipo, lineas: [texto] } (los datos tal cual; luego la tarjeta de ayuda)
- *  - sinKapi: la tarjeta de ayuda sin Kapi (con sesión ya está el flotante)
+ *  - sinKapi: la tarjeta de ayuda sin Walito (con sesión ya está el flotante)
  *  - empresa: { email } · urlWhatsApp
  *  - otro: { pregunta, texto, url } el otro documento ("¿Buscabas cómo
  *    tratamos tus datos?")
@@ -60,7 +60,7 @@ export function PaginaLegal({ tipo = 'privacidad', documento = {}, empresa = {},
                       titulo="¿Te quedó una duda?"
                       texto={empresa.email ? `Escríbenos a ${empresa.email} o por WhatsApp: te responde el equipo de Walá.` : 'Escríbenos por WhatsApp: te responde el equipo de Walá.'}
                       accion={urlWhatsApp ? { texto: 'Escribir por WhatsApp', url: urlWhatsApp } : undefined}
-                      // Con sesión ya está el Kapi flotante: uno solo a la vista.
+                      // Con sesión ya está el Walito flotante: uno solo a la vista.
                       imagen={sinKapi ? null : undefined}
                     />
                   </div>

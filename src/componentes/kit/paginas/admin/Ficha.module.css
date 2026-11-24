@@ -1,0 +1,513 @@
+/* ── Ficha de un producto (D2b) ────────────────────────────── */
+.ficha {
+  padding-bottom: 0.5rem;
+}
+
+.pestanas {
+  margin-bottom: 1rem;
+}
+
+.aviso {
+  margin-bottom: 1rem;
+}
+
+.pestana {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  max-width: 860px;
+}
+
+.pestana[hidden] {
+  display: none;
+}
+
+.bloque {
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@container pagina-admin (min-width: 560px) {
+  .dos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.etiqueta {
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.fila {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.descripcion {
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* El tipo, que viene de la categoría: solo se lee. */
+.tipoDeCategoria {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.tipoDeCategoria p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem;
+  min-height: 50px;
+  margin: 0;
+  padding: 0.75rem 0.95rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 14px;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.tipoNota {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+/*
+ * El editor de la descripción (Quill, lo trae el conector): con la caja de
+ * los campos del kit. Quill mide su texto al 100% de una caja que no cuenta
+ * la barra, y se salía de la tarjeta: aquí es una columna que crece.
+ */
+.descripcion :global(.quill) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  transition: border-color var(--dur-media, 0.2s) ease, box-shadow var(--dur-media, 0.2s) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .descripcion :global(.quill):hover {
+    border-color: var(--violet-300);
+  }
+}
+
+.descripcion :global(.quill):focus-within {
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+}
+
+.descripcion :global(.ql-toolbar.ql-snow) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 12.5px 12.5px 0 0;
+  background: var(--color-hover, rgba(124, 58, 237, 0.04));
+  font-family: inherit;
+}
+
+/* Cada grupo de botones, separado por una rayita. */
+.descripcion :global(.ql-toolbar.ql-snow .ql-formats) {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.descripcion :global(.ql-toolbar.ql-snow .ql-formats:last-child) {
+  border-right: 0;
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 8px;
+  transition: background-color 120ms ease;
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button:hover),
+.descripcion :global(.ql-snow.ql-toolbar button:focus-visible),
+.descripcion :global(.ql-snow.ql-toolbar button.ql-active),
+.descripcion :global(.ql-snow.ql-toolbar .ql-picker-label:hover) {
+  background: var(--primary-light);
+}
+
+/* Los íconos de Quill toman el color del texto (y el violeta al usarse). */
+.descripcion :global(.ql-snow .ql-stroke) {
+  stroke: var(--color-text-muted);
+}
+
+.descripcion :global(.ql-snow .ql-fill),
+.descripcion :global(.ql-snow .ql-stroke.ql-fill) {
+  fill: var(--color-text-muted);
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button:hover .ql-stroke),
+.descripcion :global(.ql-snow.ql-toolbar button.ql-active .ql-stroke),
+.descripcion :global(.ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke),
+.descripcion :global(.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke),
+.descripcion :global(.ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-stroke) {
+  stroke: var(--primary-color);
+}
+
+.descripcion :global(.ql-snow.ql-toolbar button:hover .ql-fill),
+.descripcion :global(.ql-snow.ql-toolbar button.ql-active .ql-fill) {
+  fill: var(--primary-color);
+}
+
+/* Texto / Título / Subtítulo: un botón con su nombre, no el select gris de Quill. */
+.descripcion :global(.ql-snow .ql-picker) {
+  height: 32px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.descripcion :global(.ql-snow .ql-picker-label) {
+  display: flex;
+  align-items: center;
+  padding: 0 1.6rem 0 0.6rem;
+  border: 1px solid transparent !important;
+  border-radius: 8px;
+  transition: background-color 120ms ease;
+}
+
+.descripcion :global(.ql-snow .ql-picker-label svg) {
+  right: 0.35rem;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-expanded .ql-picker-label) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+/* Lo que se elige: un panel del kit, con sombra suave y que entra. */
+.descripcion :global(.ql-snow .ql-picker-options) {
+  z-index: 20;
+  max-height: 16rem;
+  margin-top: 6px;
+  padding: 0.3rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 16px 34px -18px rgba(20, 18, 28, 0.55);
+  animation: opcionesEntran 140ms ease-out both;
+}
+
+.descripcion :global(.ql-snow .ql-picker-item) {
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  color: var(--color-text);
+}
+
+.descripcion :global(.ql-snow .ql-picker-item:hover),
+.descripcion :global(.ql-snow .ql-picker-item.ql-selected) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+/* Ancho del elegidor de títulos y sus nombres en español (Quill trae "Heading"). */
+.descripcion :global(.ql-snow .ql-picker.ql-header) {
+  width: 7.2rem;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-label::before),
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-item::before) {
+  content: 'Texto' !important;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-label[data-value='2']::before),
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-item[data-value='2']::before) {
+  content: 'Título' !important;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-label[data-value='3']::before),
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-item[data-value='3']::before) {
+  content: 'Subtítulo' !important;
+}
+
+/* En el menú, cada uno con el tamaño que tendrá (como en la tienda). */
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-item[data-value='2']::before) {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.descripcion :global(.ql-snow .ql-picker.ql-header .ql-picker-item[data-value='3']::before) {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+/* El texto: con la letra y el aire de la página. */
+.descripcion :global(.ql-container.ql-snow) {
+  height: auto;
+  border: 0;
+  border-radius: 0 0 12.5px 12.5px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.descripcion :global(.ql-editor) {
+  min-height: 9.5rem;
+  padding: 0.9rem 1rem 1rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.descripcion :global(.ql-editor :is(h2, h3)) {
+  margin: 0.6rem 0 0.3rem;
+  font-family: var(--fuente-marca, inherit);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.descripcion :global(.ql-editor h2) { font-size: 1.15rem; }
+.descripcion :global(.ql-editor h3) { font-size: 1rem; }
+
+.descripcion :global(.ql-editor.ql-blank::before) {
+  left: 1rem;
+  right: 1rem;
+  color: var(--color-text-muted);
+  font-style: normal;
+}
+
+@keyframes opcionesEntran {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .descripcion :global(.ql-snow .ql-picker-options) {
+    animation: none;
+  }
+}
+
+.cargando {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 860px;
+}
+
+/* Colores */
+.colores {
+  display: flex;
+  gap: 0.4rem;
+  padding-bottom: 0.1rem;
+}
+
+.color,
+.colorAgregar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.colorActivo {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.colorAgregar {
+  border-style: dashed;
+  color: var(--primary-color);
+}
+
+.colorAgregar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.colorPunto {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--borde-muestra, var(--color-border));
+  border-radius: 50%;
+}
+
+.corona {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--gold-600, #d97706);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.principal svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--gold-600, #d97706);
+}
+
+.portada {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@container pagina-admin (min-width: 640px) {
+  .portada {
+    grid-template-columns: minmax(0, 1fr) 170px;
+    align-items: start;
+  }
+}
+
+.tarjetaVista {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.tarjetaFoto {
+  width: 150px;
+  border: 1px solid var(--color-border);
+}
+
+/* Combo */
+.pieza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.piezaFoto {
+  flex: none;
+  width: 48px;
+  /* 4:5, como la tarjeta del producto en la tienda */
+  height: 60px;
+  border-radius: 10px;
+}
+
+.piezaCampos {
+  display: grid;
+  flex: 1;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.piezaNombre,
+.piezaColor {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.piezaNombre {
+  font-weight: 700;
+}
+
+.piezaNombre:focus,
+.piezaColor:focus {
+  border-color: var(--violet-400);
+  outline: none;
+}
+
+/* Dónde se ve */
+.crear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.crear > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--primary-color);
+}
+
+.crear > div {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.crear p {
+  margin: 0.15rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+/* Guardar */
+.guardar {
+  position: sticky;
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 860px;
+  margin-top: 1rem;
+  padding: 0.55rem 0.6rem 0.55rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 14px 30px -18px rgba(20, 18, 28, 0.45);
+  box-sizing: border-box;
+}
+
+.guardarEstado {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}

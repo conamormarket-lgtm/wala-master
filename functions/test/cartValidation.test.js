@@ -27,7 +27,7 @@ test("checkout batches unique catalog documents and projects only validation fie
   const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, inStock: 2 } });
   await f.validate([line("a"), line("a", 2), line("b", 1, { precio: 30 })]);
   assert.deepEqual(f.calls, [{ ids: ["a", "b"], options: {
-    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId"],
+    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId", "isComboProduct", "comboItems"],
   } }]);
 });
 
@@ -191,9 +191,34 @@ test("coin cap uses each product's brand percentage (default half)", async () =>
   assert.deepEqual(brandRead.ids.sort(), ["m0", "m20", "sinConfig"]);
 });
 
+test("a brand can cap coins per product instead of a percentage", async () => {
+  const f = fixture({
+    a: { price: 40, inStock: 10, brandId: "fija" },
+    b: { price: 6, inStock: 10, brandId: "fija" },
+    fija: { topeMonedasTipo: "monedas", topeMonedasCantidad: 10, topeMonedasPct: 80 },
+  });
+  const r = await f.validate([line("a", 3, { precio: 40 }), line("b", 1, { precio: 6 })]);
+  // 10 por cada uno de los 3 de S/ 40 (30) + el de S/ 6 entero (6, no 10) → 36; el 80 % no cuenta.
+  assert.equal(r.subtotal, 126);
+  assert.equal(r.topeMonedas, 36);
+  const brandRead = f.calls.find((c) => c.options.fieldMask.includes("topeMonedasTipo"));
+  assert.ok(brandRead.options.fieldMask.includes("topeMonedasCantidad"));
+});
+
 test("carts without brands do not read brands and keep the half rule", async () => {
   const f = fixture({ a: { price: 45, inStock: 10 } });
   const r = await f.validate([line("a")]);
   assert.equal(r.topeMonedas, 22);
   assert.equal(f.calls.length, 1);
+});
+
+test("a store combo with a piece in the trash or gone cannot be bought; hidden pieces are fine", async () => {
+  const combo = { price: 45, isComboProduct: true, comboItems: [{ productId: "p1" }, { productId: "p2" }] };
+  const ok = fixture({ c: combo, p1: { visible: false }, p2: {} });
+  await ok.validate([line("c")]);
+  assert.deepEqual(ok.calls[1], { ids: ["p1", "p2"], options: { fieldMask: ["deleted"] } });
+  for (const p2 of [{ deleted: true }, undefined]) {
+    const f = fixture({ c: combo, p1: {}, p2 });
+    await assert.rejects(f.validate([line("c")]), /ya no se vende/);
+  }
 });

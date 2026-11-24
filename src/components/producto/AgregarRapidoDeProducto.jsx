@@ -22,7 +22,7 @@ export default function AgregarRapidoDeProducto({ product, abierto, onCerrar }) 
   const personalizableViejo = useLoViejo('personalizable');
   const { addToCart } = useCart();
   const toast = useGlobalToast();
-  const { porIndice, porId, listas, terminado } = usePiezasDelCombo(product, abierto);
+  const { porIndice, porId, listas, terminado, incompleto } = usePiezasDelCombo(product, abierto);
 
   const opciones = useMemo(() => {
     const o = opcionesDeProducto(product, { subproductos: porId });
@@ -37,7 +37,8 @@ export default function AgregarRapidoDeProducto({ product, abierto, onCerrar }) 
 
   const alConfirmar = (eleccion) => {
     if (!listas) {
-      if (terminado) toast.error('No pudimos cargar las prendas del combo. Recarga la página e inténtalo de nuevo.');
+      if (incompleto) toast.error('Este combo no está disponible: una de sus prendas ya no se vende.');
+      else if (terminado) toast.error('No pudimos cargar las prendas del combo. Recarga la página e inténtalo de nuevo.');
       else toast.info('Un momento: estamos cargando las prendas del combo.');
       return;
     }

@@ -3,7 +3,7 @@ import { useTexto } from './Traduccion';
 import s from './IconosWala.module.css';
 
 /*
- * Íconos de Walá: dibujados con el estilo de Kapi (contorno violeta oscuro
+ * Íconos de Walá: dibujados con el estilo de Walito (contorno violeta oscuro
  * grueso, colores planos de la marca y un brillo blanco). Reemplazan a los
  * emojis, que cada sistema dibuja distinto, y a los íconos de línea genéricos
  * en beneficios, íconos de confianza y el editor.

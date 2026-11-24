@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import { createDocumentByteMeter } from '../../src/observability/firestore-byte-meter.mjs';
 import { storefrontBootstrap } from '../storefront-bootstrap.mjs';
 
 function encode(value) {
@@ -15,14 +16,14 @@ function encode(value) {
 async function run({ pathname = '/', search = '', mobile = false, response, fail = false } = {}) {
   const requests = [], links = [], timers = new Map();
   const window = { location: { pathname, search }, matchMedia: () => ({ matches: mobile }) };
-  vm.runInNewContext(`(${storefrontBootstrap.toString()})('public-project', 'public-key')`, {
-    window, URLSearchParams, AbortController,
+  vm.runInNewContext(`(${storefrontBootstrap.toString()})('public-project', 'public-key', (${createDocumentByteMeter.toString()})())`, {
+    window, URLSearchParams, AbortController, TextEncoder,
     document: { createElement: () => ({}), head: { appendChild: link => links.push(link) } },
     setTimeout: fn => { timers.set(1, fn); return 1; }, clearTimeout: id => timers.delete(id),
     fetch: async (url, options) => {
       requests.push({ url, options });
       if (fail) throw new Error('offline');
-      return response || { ok: false };
+      return response ? { ...response, text: response.text || (async () => JSON.stringify(await response.json?.() ?? {})) } : { ok: false, text: async () => '{}' };
     },
   });
   const result = await window.__walaStorefrontBootstrap?.promise;
@@ -41,6 +42,8 @@ test('HTML bootstrap reads only public page sections and preloads the correct mo
   assert.equal(result.requests[0].options.credentials, 'omit');
   assert.equal(result.requests[0].options.cache, 'no-store');
   assert.equal(result.timers.size, 0);
+  const events = result.window.__bootstrapFirestoreReads;
+  assert.ok(events.some(e => e.counts.transportResponseBytes > 0));
 });
 
 test('private routes and editor previews never issue a public bootstrap read', async () => {

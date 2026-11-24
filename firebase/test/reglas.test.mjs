@@ -84,7 +84,8 @@ const casos = [
   ["anónimo NO edita productos", false, () => updateDoc(doc(anon, "productos_wala/p1"), { price: 1 })],
   ["anónimo NO lee la copia wala_pedidos ajena", false, () => getDoc(doc(anon, "wala_pedidos/PD-9"))],
   ["anónimo NO crea una copia wala_pedidos pagada", false, () => setDoc(doc(anon, "wala_pedidos/PD-2"), { pagado: true, estadoWala: "pagado" })],
-  ["anónimo crea una copia wala_pedidos SIN pago", true, () => setDoc(doc(anon, "wala_pedidos/PD-3"), { pagado: false, estadoWala: "pendiente_pago" })],
+  // Desde el 2026-10-16 la copia la escribe solo el servidor (se retiró el cuestionario de producto).
+  ["anónimo NO crea una copia wala_pedidos SIN pago", false, () => setDoc(doc(anon, "wala_pedidos/PD-3"), { pagado: false, estadoWala: "pendiente_pago" })],
 
   ["cliente lee su perfil", true, () => getDoc(doc(cliente, "portal_clientes_users/u1"))],
   ["cliente cambia su nombre", true, () => updateDoc(doc(cliente, "portal_clientes_users/u1"), { displayName: "Ana" })],
@@ -101,6 +102,24 @@ const casos = [
   ["rol del panel con correo verificado edita productos", true, () => updateDoc(doc(rolPanel, "productos_wala/p1"), { price: 79 })],
   ["rol del panel SIN correo verificado NO edita", false, () => updateDoc(doc(rolSinVerificar, "productos_wala/p1"), { price: 1 })],
   ["nadie desde el navegador lee intenciones de pago (ni admin)", false, () => getDoc(doc(admin, "checkout_payment_intents/PD-1"))],
+
+  // Juegos: lo de Walá queda fuera de la regla general del ERP.
+  ["cliente guarda su progreso de Las Bolitas", true, () => setDoc(doc(cliente, "bolitasProgreso/u1"), { nivel: 3 })],
+  ["cliente NO toca el progreso de Las Bolitas de otro", false, () => setDoc(doc(cliente, "bolitasProgreso/u2"), { nivel: 99 })],
+  ["anónimo NO escribe el ranking de Las Bolitas", false, () => setDoc(doc(anon, "bolitasSemanas/2026-W45"), { top: [] })],
+  ["sin sesión lee la configuración de Las Bolitas", true, () => getDoc(doc(sinSesion, "bolitasConfig/global"))],
+  ["cliente NO escribe su progreso de La Pichanga (solo funciones)", false, () => setDoc(doc(cliente, "pichangaProgreso/u1"), { monedas: 999 })],
+  ["anónimo NO lee el ranking de La Pichanga", false, () => getDoc(doc(anon, "pichangaSemanas/2026-W45"))],
+  ["anónimo NO escribe loyaltyConfig", false, () => setDoc(doc(anon, "loyaltyConfig/global"), { x: 1 })],
+
+  // Borrar mi cuenta: el registro y la cola de Culqi son solo del servidor.
+  ["anónimo NO lee la cola culqiPorBorrar", false, () => getDoc(doc(anon, "culqiPorBorrar/cus_1"))],
+  ["cliente NO escribe cuentasEliminadas", false, () => setDoc(doc(cliente, "cuentasEliminadas/h"), { estado: "en_curso" })],
+  ["admin NO lee cuentasEliminadas", false, () => getDoc(doc(admin, "cuentasEliminadas/h"))],
+
+  // ERP: los readModels_ los escribe solo su servidor; las demás colecciones del ERP siguen abiertas a su sesión.
+  ["anónimo NO escribe readModels_ del ERP", false, () => setDoc(doc(anon, "readModels_ventas/x"), { a: 1 })],
+  ["anónimo (ERP) sigue escribiendo una colección del ERP", true, () => setDoc(doc(anon, "clientes_erp/x"), { a: 1 })],
 ];
 
 let fallas = 0;

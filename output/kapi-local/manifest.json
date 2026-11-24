@@ -1,0 +1,184 @@
+{
+  "idle": {
+    "label": "En reposo",
+    "src": "/output/kapi-local/assets/idle.webp",
+    "still": "/output/kapi-local/assets/idle.png",
+    "duration": 4800,
+    "frames": 240,
+    "bytes": 1245958,
+    "sourceBytes": 8896504
+  },
+  "walk": {
+    "label": "Caminar",
+    "src": "/output/kapi-local/assets/walk.webp",
+    "still": "/output/kapi-local/assets/walk.png",
+    "duration": 1280,
+    "frames": 96,
+    "bytes": 964634,
+    "sourceBytes": 5438414
+  },
+  "sit": {
+    "label": "Sentarse y levantarse",
+    "src": "/output/kapi-local/assets/sit.webp",
+    "still": "/output/kapi-local/assets/sit.png",
+    "duration": 3200,
+    "frames": 113,
+    "bytes": 805058,
+    "sourceBytes": 4998728
+  },
+  "point": {
+    "label": "Señalar",
+    "src": "/output/kapi-local/assets/point.webp",
+    "still": "/output/kapi-local/assets/point.png",
+    "duration": 3200,
+    "frames": 113,
+    "bytes": 1027588,
+    "sourceBytes": 6030432,
+    "hold": "/output/kapi-local/assets/point-hold.png",
+    "holdAfter": 1120
+  },
+  "wave": {
+    "label": "Saludar",
+    "src": "/output/kapi-local/assets/wave.webp",
+    "still": "/output/kapi-local/assets/wave.png",
+    "duration": 3100,
+    "frames": 129,
+    "bytes": 958746,
+    "sourceBytes": 6408054
+  },
+  "talk": {
+    "label": "Hablar",
+    "src": "/output/kapi-local/assets/talk.webp",
+    "still": "/output/kapi-local/assets/talk.png",
+    "duration": 3300,
+    "frames": 132,
+    "bytes": 111690,
+    "sourceBytes": 750266
+  },
+  "celebrate": {
+    "label": "Celebrar",
+    "src": "/output/kapi-local/assets/celebrate.webp",
+    "still": "/output/kapi-local/assets/celebrate.png",
+    "duration": 2300,
+    "frames": 64,
+    "bytes": 446772,
+    "sourceBytes": 2898446
+  },
+  "think": {
+    "label": "Pensar",
+    "src": "/output/kapi-local/assets/think.webp",
+    "still": "/output/kapi-local/assets/think.png",
+    "duration": 3800,
+    "frames": 113,
+    "bytes": 606948,
+    "sourceBytes": 4006674
+  },
+  "surprised": {
+    "label": "Sorprenderse",
+    "src": "/output/kapi-local/assets/surprised.webp",
+    "still": "/output/kapi-local/assets/surprised.png",
+    "duration": 3000,
+    "frames": 89,
+    "bytes": 529138,
+    "sourceBytes": 3509998
+  },
+  "sad": {
+    "label": "Estar triste",
+    "src": "/output/kapi-local/assets/sad.webp",
+    "still": "/output/kapi-local/assets/sad.png",
+    "duration": 4400,
+    "frames": 141,
+    "bytes": 654638,
+    "sourceBytes": 4250664
+  },
+  "angry": {
+    "label": "Enojarse",
+    "src": "/output/kapi-local/assets/angry.webp",
+    "still": "/output/kapi-local/assets/angry.png",
+    "duration": 3800,
+    "frames": 113,
+    "bytes": 610958,
+    "sourceBytes": 4143974
+  },
+  "sleep": {
+    "label": "Dormirse",
+    "src": "/output/kapi-local/assets/sleep.webp",
+    "still": "/output/kapi-local/assets/sleep.png",
+    "duration": 4400,
+    "frames": 121,
+    "bytes": 547186,
+    "sourceBytes": 3771266
+  },
+  "wake": {
+    "label": "Despertarse",
+    "src": "/output/kapi-local/assets/wake.webp",
+    "still": "/output/kapi-local/assets/wake.png",
+    "duration": 5000,
+    "frames": 171,
+    "bytes": 1110330,
+    "sourceBytes": 7085102
+  },
+  "yes": {
+    "label": "Asentir",
+    "src": "/output/kapi-local/assets/yes.webp",
+    "still": "/output/kapi-local/assets/yes.png",
+    "duration": 2400,
+    "frames": 81,
+    "bytes": 387108,
+    "sourceBytes": 2469378
+  },
+  "no": {
+    "label": "Negar",
+    "src": "/output/kapi-local/assets/no.webp",
+    "still": "/output/kapi-local/assets/no.png",
+    "duration": 2400,
+    "frames": 81,
+    "bytes": 389406,
+    "sourceBytes": 2538722
+  },
+  "confused": {
+    "label": "Dudar",
+    "src": "/output/kapi-local/assets/confused.webp",
+    "still": "/output/kapi-local/assets/confused.png",
+    "duration": 3400,
+    "frames": 121,
+    "bytes": 683454,
+    "sourceBytes": 4692972
+  },
+  "laugh": {
+    "label": "Reír",
+    "src": "/output/kapi-local/assets/laugh.webp",
+    "still": "/output/kapi-local/assets/laugh.png",
+    "duration": 3200,
+    "frames": 113,
+    "bytes": 614166,
+    "sourceBytes": 4253382
+  },
+  "clap": {
+    "label": "Aplaudir",
+    "src": "/output/kapi-local/assets/clap.webp",
+    "still": "/output/kapi-local/assets/clap.png",
+    "duration": 3200,
+    "frames": 115,
+    "bytes": 621348,
+    "sourceBytes": 4236710
+  },
+  "approve": {
+    "label": "Pulgar arriba",
+    "src": "/output/kapi-local/assets/approve.webp",
+    "still": "/output/kapi-local/assets/approve.png",
+    "duration": 3600,
+    "frames": 99,
+    "bytes": 543486,
+    "sourceBytes": 3794030
+  },
+  "disapprove": {
+    "label": "Pulgar abajo",
+    "src": "/output/kapi-local/assets/disapprove.webp",
+    "still": "/output/kapi-local/assets/disapprove.png",
+    "duration": 3600,
+    "frames": 99,
+    "bytes": 544972,
+    "sourceBytes": 3651194
+  }
+}

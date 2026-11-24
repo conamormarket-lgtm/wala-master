@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { totalEsperadoCheckout, topeMonedasCheckout, pctMonedasDeMarca } = require("../checkoutTotals");
+const { totalEsperadoCheckout, topeMonedasCheckout, pctMonedasDeMarca, topeDeMarca } = require("../checkoutTotals");
 
 const reglas = { envioEstandar: 15, envioGratisDesde: 100 };
 
@@ -44,4 +44,51 @@ test("% de la marca: sin configurar es la mitad, se acota a 0-100", () => {
   assert.equal(pctMonedasDeMarca({ topeMonedasPct: 150 }), 100);
   assert.equal(pctMonedasDeMarca({ topeMonedasPct: -5 }), 0);
   assert.equal(pctMonedasDeMarca({ topeMonedasPct: "abc" }), 50);
+});
+
+test("tope por producto: monedas fijas por unidad, nunca más que el importe", () => {
+  // 10 por unidad: 3 polos de S/ 40 → 30; 1 llavero de S/ 6 → 6 (no 10).
+  assert.equal(topeMonedasCheckout([{ importe: 120, cantidad: 3, tope: { tipo: "monedas", valor: 10 } }]), 30);
+  assert.equal(topeMonedasCheckout([{ importe: 6, cantidad: 1, tope: { tipo: "monedas", valor: 10 } }]), 6);
+  // Se mezcla con las del %: 30 fijas + 50 % de 45.
+  assert.equal(topeMonedasCheckout([
+    { importe: 120, cantidad: 3, tope: { tipo: "monedas", valor: 10 } },
+    { importe: 45, cantidad: 1, tope: { tipo: "pct", valor: 50 } },
+  ]), 52);
+  assert.equal(topeMonedasCheckout([{ importe: 40, tope: 25 }]), 10);
+});
+
+test("tope de la marca: % o monedas; sin cantidad válida, el %", () => {
+  assert.deepEqual(topeDeMarca(null), { tipo: "pct", valor: 50 });
+  assert.deepEqual(topeDeMarca({ topeMonedasPct: 20 }), { tipo: "pct", valor: 20 });
+  assert.deepEqual(topeDeMarca({ topeMonedasTipo: "monedas", topeMonedasCantidad: 12 }), { tipo: "monedas", valor: 12 });
+  assert.deepEqual(topeDeMarca({ topeMonedasTipo: "monedas", topeMonedasCantidad: "7.9" }), { tipo: "monedas", valor: 7 });
+  assert.deepEqual(topeDeMarca({ topeMonedasTipo: "monedas", topeMonedasCantidad: "", topeMonedasPct: 30 }), { tipo: "pct", valor: 30 });
+  assert.deepEqual(topeDeMarca({ topeMonedasTipo: "pct", topeMonedasCantidad: 12, topeMonedasPct: 30 }), { tipo: "pct", valor: 30 });
+});
+
+test("un cupón de una marca no pasa el tope de esa marca aunque el carrito tenga otras", () => {
+  const { repartoTopeCupon } = require("../checkoutTotals");
+  // Carrito: S/ 50 de Geeks al 20 % (tope 10) + S/ 200 de Lumi al 50 % (tope 100) → 110.
+  // 50 % en Geeks = 25, pero Geeks solo deja 10: el cupón queda en 10 y las monedas, hasta 100.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 110, descuentoCupon: 25, tipoCupon: "descuento", topeCupon: 10 }), { descuentoCupon: 10, maxMonedas: 100 });
+  // Sin topeCupon (cupón de toda la tienda), el tope del pedido entero.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 110, descuentoCupon: 25, tipoCupon: "descuento", topeCupon: null }), { descuentoCupon: 25, maxMonedas: 85 });
+  // Un topeCupon mayor que el del pedido no lo agranda.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 5, descuentoCupon: 25, tipoCupon: "descuento", topeCupon: 30 }), { descuentoCupon: 5, maxMonedas: 0 });
+  // Producto gratis: el regalo entero, aunque tenga topeCupon.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 110, descuentoCupon: 60, tipoCupon: "producto_gratis", topeCupon: 10 }), { descuentoCupon: 60, maxMonedas: 50 });
+});
+
+test("monedas + cupón no pasan el tope de la marca; el cupón va primero", () => {
+  const { repartoTopeCupon } = require("../checkoutTotals");
+  // S/ 200 al 50 %: tope 100. Cupón de S/ 40 → monedas hasta 60.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 100, descuentoCupon: 40, tipoCupon: "descuento" }), { descuentoCupon: 40, maxMonedas: 60 });
+  // Un cupón más grande que el tope se recorta al tope y no quedan monedas.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 20, descuentoCupon: 30, tipoCupon: "descuento" }), { descuentoCupon: 20, maxMonedas: 0 });
+  // Producto gratis: el regalo entero; las monedas, lo que quede (nunca negativo).
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 50, descuentoCupon: 70, tipoCupon: "producto_gratis" }), { descuentoCupon: 70, maxMonedas: 0 });
+  // Envío gratis no toca los productos; sin cupón, el tope entero.
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 50, descuentoCupon: 15, tipoCupon: "envio_gratis", envioGratis: true }), { descuentoCupon: 0, maxMonedas: 50 });
+  assert.deepStrictEqual(repartoTopeCupon({ topeMonedas: 50 }), { descuentoCupon: 0, maxMonedas: 50 });
 });

@@ -144,7 +144,7 @@ const RECOMPENSAS = [
   {
     id: "reward-stickers",
     title: "Pack de stickers Walá",
-    description: "Un pack de stickers coleccionables de Kapi, enviado a tu domicilio.",
+    description: "Un pack de stickers coleccionables de Walito, enviado a tu domicilio.",
     cost: 20,
     order: 4,
     active: true,

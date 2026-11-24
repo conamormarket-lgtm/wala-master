@@ -44,6 +44,15 @@ const PaypalTicketSorteo = lazy(() => import('../PaypalCheckout/PaypalTicketSort
 
 const PAISES = COUNTRIES.map((c) => ({ valor: c.code, texto: c.name, prefijo: c.dialCode }));
 
+// Antes de su fechaInicio ('AAAA-MM-DD', 00:00 de Lima): la fecha para "Empieza el…".
+// Misma regla que el servidor (functions/sorteoFechas.js).
+const empiezaDelSorteo = (fechaInicio, ahora = Date.now()) => {
+  if (typeof fechaInicio !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fechaInicio)) return undefined;
+  if (ahora >= Date.parse(`${fechaInicio}T00:00:00-05:00`)) return undefined;
+  const [a, m, d] = fechaInicio.split('-');
+  return `${Number(d)}/${Number(m)}/${a}`;
+};
+
 // fechaFin: 'AAAA-MM-DD' (el admin) → el final de ese día en Lima; un Timestamp, tal cual.
 const finDelSorteo = (fechaFin) => {
   if (!fechaFin) return undefined;
@@ -238,7 +247,9 @@ export default function SorteoDeTienda() {
     moneda: sorteo.moneda || 'PEN',
     numGanadores: Number(sorteo.numGanadores) || 1,
     hasta: finDelSorteo(sorteo.fechaFin),
-    cerrado: sorteo.estado === 'cerrado',
+    // Cerrado también pasada su fecha de fin (el servidor ya no acepta nada).
+    cerrado: sorteo.estado === 'cerrado' || Boolean(finDelSorteo(sorteo.fechaFin) && Date.now() > Date.parse(finDelSorteo(sorteo.fechaFin))),
+    empieza: empiezaDelSorteo(sorteo.fechaInicio),
     participantes: typeof contador === 'number' ? contador : sorteo.contadorParticipantes || 0,
     reglas: {
       compartir: Boolean(sorteo.chanceExtraCompartir),

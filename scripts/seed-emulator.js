@@ -82,7 +82,19 @@ async function ensureUser(uid, email, password, claims) {
   // ── Usuarios (Auth + perfil) ──────────────────────────────────────────────────
   await ensureUser("admin-uid", "admin@wala.test", "wala1234", { admin: true, role: "superadmin" });
   await setDoc("adminUsers", "admin-uid", { role: "admin", email: "admin@wala.test" });
-  await setDoc("portal_clientes_users", "admin-uid", { email: "admin@wala.test", displayName: "Admin Demo", role: "admin", referralCode: "KS-ADMIN1", monedas: 100 });
+  await setDoc("portal_clientes_users", "admin-uid", { email: "admin@wala.test", displayName: "Admin Demo", dni: "11223344", phone: "999000111", role: "admin", referralCode: "KS-ADMIN1", monedas: 100 });
+
+  // Admins con un solo permiso (adminRoles por correo, sin claim): para probar el
+  // menú del panel y SinPermiso (guia/ADMIN.md, D0). Misma contraseña.
+  for (const [uid, email, nombre, permisos] of [
+    ["catalogo-uid", "catalogo@wala.test", "Admin Catálogo", ["manage_products"]],
+    ["inventario-uid", "inventario@wala.test", "Admin Inventario", ["manage_inventory"]],
+    ["clientes-uid", "clientes@wala.test", "Admin Clientes", ["manage_clients"]],
+  ]) {
+    await ensureUser(uid, email, "wala1234", null);
+    await setDoc("adminRoles", email, { email, name: nombre, permissions: permisos });
+    await setDoc("portal_clientes_users", uid, { email, displayName: nombre, dni: "87654321", phone: "999111222", referralCode: `KS-${uid.slice(0, 4).toUpperCase()}`, monedas: 0 });
+  }
 
   await ensureUser("cliente-uid", "cliente@wala.test", "wala1234", null);
   await setDoc("portal_clientes_users", "cliente-uid", { email: "cliente@wala.test", displayName: "Cliente Demo", dni: "12345678", phone: "999888777", referralCode: "KS-CLI001", monedas: 50, kapiCoins: 3 });
@@ -99,22 +111,6 @@ async function ensureUser(uid, email, password, claims) {
   // Campos escritos por servidor en producción; aquí los sembramos con merge para probar la UI.
   await setDoc("portal_clientes_users", "cliente-uid", { xp: 120, dailyStreak: { count: 2, lastDate: null, freezeTokens: 1 } });
 
-  // ── Blueprints POD (Fase 4; lectura pública, escritura admin) ──────────────────
-  // Plantillas de producto estilo Printful: prenda base + áreas de impresión + métodos.
-  // CRUD admin en AdminBlueprints / service blueprints.js. basePrintCost en soles.
-  await setDoc("blueprints", "bp-polo", {
-    name: "Polo clásico",
-    baseGarment: "polo",
-    printAreas: [
-      { name: "Frente", widthCm: 30, heightCm: 40, dpi: 300 },
-      { name: "Espalda", widthCm: 30, heightCm: 40, dpi: 300 },
-    ],
-    decorationMethods: ["DTG", "vinilo"],
-    basePrintCost: 8,
-    active: true,
-    order: 0,
-  });
-
   // ── Catálogo de recompensas (Fase 2b; lectura pública, escritura admin) ─────────
   // 'cost' está en puntos ('monedas'). Se canjean con la Cloud Function redeemRewardSecure.
   await setDoc("rewardsCatalog", "rw-stickers", { title: "Pack de stickers", description: "Set de stickers Wala de edición coleccionable", cost: 30, value: "Pack de stickers físico", active: true, order: 0 });
@@ -129,7 +125,7 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("flashOffers", "fo-polos-30", { title: "Polos -30% hoy", productId: "p1", discountPct: 30, startsAt: new Date(_now - 36e5).toISOString(), endsAt: new Date(_now + 864e5).toISOString(), active: true, order: 0 });
   await setDoc("flashOffers", "fo-tazas-2x1", { title: "Tazas 2x1", productId: "p2", discountPct: 50, startsAt: new Date(_now - 36e5).toISOString(), endsAt: new Date(_now + 864e5).toISOString(), active: true, order: 1 });
 
-  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, 1 blueprint POD (bp-polo: Polo clásico), 2 flash offers (Polos -30% / Tazas 2x1), admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
+  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, 2 flash offers (Polos -30% / Tazas 2x1), admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
   console.log("ℹ Pago: el checkout usa Mercado Pago (gateado por MERCADOPAGO_ACCESS_TOKEN). En este emulador NO hay token → el pago se SIMULA (init_point /pago-demo/{orderId}) y confirmPaymentSecure marca 'paid' + genera payouts. orders/subOrders/payouts las crean las Cloud Functions, no este seed.");
   process.exit(0);
 })().catch((e) => { console.error("Error sembrando:", e); process.exit(1); });

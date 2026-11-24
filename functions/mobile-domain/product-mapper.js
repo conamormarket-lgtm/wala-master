@@ -97,6 +97,9 @@ function mapProduct(id, data, options = {}) {
     const primary = variants.find((variant) => variant.id === defaultVariantId)?.images[0] ?? images[0];
     const stockValue = numeric(data.inStock);
     const stock = data.inStock === false ? 0 : stockValue === null ? null : Math.floor(stockValue);
+    // Sin stock cargado es sin límite (agotadoDe de la web, la lista del admin y cartValidation): solo un stock en 0, en
+    // negativo, `false` o que no es número lo agota. Cambio puntual: la regeneración completa queda pendiente (wala-mobile).
+    const unlimited = data.inStock === undefined || data.inStock === null || data.inStock === '';
     // productType/categoryId are Firestore references, never customer-facing labels.
     const category = text(data.categoryLabel) || 'Productos';
     const description = text(data.description).replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<[^>]*>/g, ' ')
@@ -104,7 +107,7 @@ function mapProduct(id, data, options = {}) {
     return { id, name, description, sku: text(data.sku), price: Math.round(amount * 100) / 100, regularPrice: Math.round(price * 100) / 100,
         category, imageUrl: primary?.url ?? pieces[0]?.imageUrl ?? null, images, variants, defaultVariantId, sizes,
         sizeLabel: text(data.sizeLabel) || variants.find((variant) => variant.sizeLabel)?.sizeLabel || 'Talla', stock,
-        available: data.active !== false && (data.inStock === true || (stock !== null && stock > 0)),
+        available: data.active !== false && (unlimited || data.inStock === true || (stock !== null && stock > 0)),
         requiresConfiguration: !!isCombo || variants.length > 1 || variants.some((variant) => variant.sizes.length > 0) || sizes.length > 0 || !!issue,
         configurationIssue: issue, combo: isCombo ? { sizeMode: data.comboTallas === 'una' ? 'shared' : 'per-piece', pieces } : null,
         searchTerms: normal([name, category, text(data.sku), ...strings(data.tags)].join(' ')) };

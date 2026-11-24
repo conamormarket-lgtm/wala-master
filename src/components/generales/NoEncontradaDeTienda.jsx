@@ -10,7 +10,7 @@ import { PaginaNoEncontrada } from '../../componentes/kit/paginas/Generales';
  * la tienda mandaba al inicio sin avisar (una landing que no existe) o a Mi
  * cuenta (lo demás). Ahora:
  *  - se ve con la cabecera y el pie (la landing los había ocultado mientras
- *    buscaba); Kapi ya está en la tarjeta: ni el pie ni el de la esquina lo
+ *    buscaba); Walito ya está en la tarjeta: ni el pie ni el de la esquina lo
  *    repiten
  *  - el buscador lleva a /buscar?q=…
  *  - queda en la analítica (page_not_found, con de dónde venía): así se ven

@@ -22,7 +22,8 @@ import s from './GaleriaProducto.module.css';
  *    prenda en blanco), atenuada (la prenda todavía sin diseño) o juntas:
  *    [{ url, relleno, atenuada }] (varias fotos lado a lado, como "Todo el
  *    combo"; esa no se acerca)
- *  - un vídeo lleva tipo: 'video' y url; solo se monta cuando se selecciona
+ *  - un vídeo lleva tipo: 'video' y url; el reproductor solo se monta al
+ *    seleccionarlo, y su miniatura carga un fotograma al acercarse a la vista
  *  - inicial: la que se ve primero
  *  - salto: { indice, vez } para ir a otra foto desde fuera (la prenda de un
  *    combo que se recoloreó): cada `vez` nueva, la tira se desliza hasta ella
@@ -114,7 +115,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
                   de ese recorte para que al viajar no se vea cortado. */}
               <span className={s.miniaturaFoto}>
                 {img.tipo === 'video'
-                  ? <span className={s.miniaturaVideo}><Play aria-hidden="true" /></span>
+                  ? <MiniaturaVideo url={img.url} />
                   : img.juntas
                   ? <Juntas fotos={img.juntas} />
                   : <img src={img.url} srcSet={img.srcSet} sizes={img.srcSet ? SIZES_MINIATURA : undefined} alt="" loading="lazy" decoding="async" draggable={false} className={img.atenuada ? s.atenuada : undefined} style={conRelleno(img)} />}
@@ -140,7 +141,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
           {imagenes.map((img, i) => (
             <div key={`${img.url}-${i}`} className={s.lamina} aria-hidden={i !== sel || undefined}>
               {img.tipo === 'video' ? (
-                i === sel ? <VideoProducto key={img.url} url={img.url} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
+                i === sel ? <VideoProducto key={img.url} url={img.url} portada={imagenes.find((f) => f.tipo !== 'video' && !f.juntas)?.url} nombre={[nombre, img.nombre].filter(Boolean).join(' · ')} /> : null
               ) : img.juntas ? <Juntas fotos={img.juntas} grande /> : (
               // El nombre del producto llega traducido; el de la foto se traduce aquí.
               <Traducido texto={img.nombre}>{(lado) => (
@@ -182,6 +183,44 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
 }
 
 const conRelleno = (img) => (img.relleno ? { boxSizing: 'border-box', padding: img.relleno } : undefined);
+
+/** Un fotograma también en la miniatura, sin controles, sonido ni reproducción. */
+function MiniaturaVideo({ url }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return undefined;
+    if (typeof IntersectionObserver === 'undefined') { setVisible(true); return undefined; }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: '80px' });
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <span className={s.miniaturaVideo}>
+      <video
+        ref={ref}
+        data-video-miniatura=""
+        src={visible ? url : undefined}
+        preload="metadata"
+        muted
+        playsInline
+        tabIndex={-1}
+        aria-hidden="true"
+        onLoadedMetadata={(event) => {
+          const video = event.currentTarget;
+          if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = Math.min(0.1, video.duration / 2);
+        }}
+      />
+      <span className={s.miniaturaVideoIcono}><Play aria-hidden="true" /></span>
+    </span>
+  );
+}
 
 /** Varias fotos lado a lado (las prendas de un combo, juntas). */
 function Juntas({ fotos, grande = false }) {

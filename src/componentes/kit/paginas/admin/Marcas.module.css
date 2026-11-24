@@ -1,0 +1,122 @@
+/* ── Marcas del admin (D1) ─────────────────────────────────── */
+.whatsapp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.tarjetasArriba {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.whatsappTextos {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: 0.1rem;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.whatsappTextos strong {
+  font-size: 0.92rem;
+}
+
+.whatsappTextos span {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.prefijo {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.vista {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+.vistaTitulo {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.vistaTarjeta {
+  width: min(220px, 100%);
+  margin: 0 auto;
+}
+
+.pestanas {
+  margin-bottom: 1rem;
+}
+
+/* Una marca en la lista para arrastrar, en columnas como la tabla: el logo,
+   su nombre y dirección, el WhatsApp del asesor y las monedas. La cabecera
+   (PaginaListaAdmin `ordenable.cabecera`) usa la misma rejilla. */
+.fila {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, 1fr) 140px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.filaTextos {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.filaTextos strong {
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filaWhatsapp {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filaMonedas {
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+/* En el celular: el logo a la izquierda y, en renglones, el nombre, el
+   WhatsApp y las monedas (en una columna de 4 no entraban: se cortaban). */
+@container pagina-admin (max-width: 720px) {
+  .fila {
+    grid-template-columns: 40px minmax(0, 1fr);
+    row-gap: 0.15rem;
+  }
+
+  .fila > :first-child {
+    grid-row: 1 / span 3;
+    align-self: start;
+  }
+
+  .filaWhatsapp,
+  .filaMonedas {
+    grid-column: 2;
+    font-size: 0.82rem;
+    text-align: left;
+  }
+}

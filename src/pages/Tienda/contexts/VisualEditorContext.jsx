@@ -12,7 +12,7 @@ const VisualEditorContext = createContext();
 export const useVisualEditor = () => useContext(VisualEditorContext);
 
 export const VisualEditorProvider = ({ children }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditModeActive, setIsEditModeActive] = useState(false);
   const [activeSection, setActiveSection] = useState(null); // 'heroBanner', 'layout', 'header'
@@ -215,6 +215,8 @@ export const VisualEditorProvider = ({ children }) => {
         config: borradorAGuardar,
         timestamp: new Date().toISOString(),
         user: isAdmin ? 'Admin' : 'Unknown',
+        // Quién guardó (el historial lo muestra; antes solo decía «Admin»).
+        userEmail: user?.email || '',
         description: `Guardado desde el Editor Visual (Página: ${activePageId})`
       });
     }

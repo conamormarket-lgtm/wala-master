@@ -28,7 +28,7 @@ const ORIGEN = {
   recompensa: 'Catálogo de recompensas',
 };
 
-// Banner ilustrado por origen (mascota Kapi + motivo de cada fuente real de
+// Banner ilustrado por origen (mascota Walito + motivo de cada fuente real de
 // cupones, ver services/cupones.js): "ruleta" es el único valor que el
 // servidor escribe hoy (spinRuletaSecure); los del catálogo de recompensas
 // (redeemRewardSecure) no traen `origen` -por eso el fallback es el banner

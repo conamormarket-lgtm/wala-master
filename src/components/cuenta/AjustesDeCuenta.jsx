@@ -5,11 +5,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { logout } from '../../services/firebase/auth';
 import { PaginaAjustes } from '../../componentes/kit/paginas/Cuenta';
 import { brilloActivo, guardarBrillo, escucharBrillo } from '../../interactions/preferenciaBrillo.mjs';
+import BorrarCuentaDeCuenta from './BorrarCuentaDeCuenta';
 
 /*
  * Ajustes (/cuenta/ajustes): modo noche (useTheme().toggle, como el botón de
  * siempre), el idioma (useLanguage) y, en el celular, el brillo mágico del
- * dedo (interactions/preferenciaBrillo.mjs) y cerrar sesión. Lo de
+ * dedo (interactions/preferenciaBrillo.mjs), cerrar sesión y, al final,
+ * "Borrar mi cuenta" (BorrarCuentaDeCuenta.jsx). Lo de
  * antes, en pages/cuenta/CuentaAjustesViejo.jsx (interruptor cuentaVieja).
  */
 
@@ -45,6 +47,7 @@ export default function AjustesDeCuenta() {
       idiomas={available.map((codigo) => ({ valor: codigo, ...(IDIOMAS[codigo] || { texto: codigo.toUpperCase() }) }))}
       onIdioma={setLang}
       onCerrarSesion={cerrarSesion}
+      borrarCuenta={<BorrarCuentaDeCuenta />}
     />
   );
 }

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import useMonedasDelJuego from './useMonedasDelJuego';
 import { getRuletaBoard, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { CONFIG_POR_DEFECTO } from '../../utils/ruletaModel';
@@ -11,7 +12,7 @@ import { PaginaRuleta } from '../../componentes/kit/paginas/Ruleta';
 import entregarMonedas from './entregarMonedas';
 
 /*
- * La Ruleta Semanal (/ruleta) con el kit (paso 6, JUEGOS.md). La misma
+ * La Ruleta de Walito (/ruleta) con el kit (paso 6, JUEGOS.md). La misma
  * lógica que la página de antes:
  *  - sin cuenta, al login (y de vuelta aquí)
  *  - el tablero (config, premios de hoy en su orden, historial) lo arma el
@@ -35,7 +36,7 @@ import entregarMonedas from './entregarMonedas';
  */
 
 const CLAVE_AYUDA = 'wala_ruleta_ayuda_vista';
-const JUEGO = { gameId: 'ruleta', gameName: 'Ruleta Semanal' };
+const JUEGO = { gameId: 'ruleta', gameName: 'La Ruleta de Walito' };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -59,7 +60,7 @@ const PREMIOS_DEMO = [
   { id: 'd3', nombre: 'Sigue intentando', etiqueta: 'Casi', tipo: 'nada', texto: 'Sigue intentando' },
   { id: 'd4', nombre: 'Envío gratis', etiqueta: 'Envío gratis', tipo: 'envio_gratis', texto: 'Envío gratis' },
   { id: 'd5', nombre: '50 monedas', etiqueta: '50 monedas', tipo: 'monedas', texto: '50 monedas' },
-  { id: 'd6', nombre: 'Taza Kapi gratis', etiqueta: 'Taza gratis', tipo: 'producto_gratis', texto: 'Taza Kapi gratis' },
+  { id: 'd6', nombre: 'Taza Walito gratis', etiqueta: 'Taza gratis', tipo: 'producto_gratis', texto: 'Taza Walito gratis' },
   { id: 'd7', nombre: '5 monedas', etiqueta: '5 monedas', tipo: 'monedas', texto: '5 monedas' },
 ];
 const HISTORIAL_DEMO = [
@@ -90,6 +91,7 @@ const ayudaYaVista = () => {
 
 export default function RuletaDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
+  const monedas = useMonedasDelJuego();
   const sesionForzada = diseno('sesion') === 'activa';
   const premiosDemo = diseno('premios') === 'demo';
   const resultadoDemo = diseno('resultado');
@@ -175,6 +177,7 @@ export default function RuletaDeTienda() {
 
   return (
     <PaginaRuleta
+      monedas={monedas}
       key={user?.uid || 'sin-cuenta'}
       estado={estado}
       error={estado === 'error' ? tablero.error : undefined}

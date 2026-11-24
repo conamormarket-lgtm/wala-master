@@ -1,7 +1,7 @@
 "use strict";
 
 const { precioDeCatalogo } = require("./catalogPricing");
-const { topeMonedasCheckout, pctMonedasDeMarca } = require("./checkoutTotals");
+const { topeMonedasCheckout, topeDeMarca } = require("./checkoutTotals");
 
 // Prendas del apartado "Crear" (esPrendaBase): a diferencia del resto de
 // personalizados, su precio SÍ se puede reconstruir aquí. Es el de catálogo,
@@ -129,21 +129,21 @@ function createCartValidator({ db, HttpsError }) {
     const lineas = [];
     const sumar = (item, precio, brandId = null) => {
       const cantidad = Math.max(1, Number(item.cantidad) || 1);
-      lineas.push({ importe: Math.max(0, Number(precio) || 0) * cantidad, brandId });
+      lineas.push({ importe: Math.max(0, Number(precio) || 0) * cantidad, cantidad, brandId });
     };
-    // Lee el % de monedas de las marcas de las líneas y cierra la cuenta.
+    // Lee el tope de monedas de las marcas de las líneas (% o monedas por producto) y cierra la cuenta.
     const cerrar = async () => {
       const subtotal = lineas.reduce((tot, l) => tot + l.importe, 0);
       const marcaIds = [...new Set(lineas.map((l) => l.brandId).filter(Boolean))];
       const marcas = new Map();
       if (marcaIds.length) {
         const snaps = await reader.getAll(...marcaIds.map((id) => db.collection("tienda_brands").doc(id)), {
-          fieldMask: ["topeMonedasPct"],
+          fieldMask: ["topeMonedasPct", "topeMonedasTipo", "topeMonedasCantidad"],
         });
         for (const snap of snaps) if (snap.exists) marcas.set(snap.id, snap.data() || {});
       }
       const topeMonedas = topeMonedasCheckout(lineas.map((l) => ({
-        importe: l.importe, pct: pctMonedasDeMarca(l.brandId ? marcas.get(l.brandId) : null),
+        importe: l.importe, cantidad: l.cantidad, tope: topeDeMarca(l.brandId ? marcas.get(l.brandId) : null),
       })));
       return { subtotal: redondear(subtotal), topeMonedas };
     };
@@ -159,9 +159,32 @@ function createCartValidator({ db, HttpsError }) {
     }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
     const snapshots = await reader.getAll(...refs, {
-      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId"],
+      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId", "isComboProduct", "comboItems"],
     });
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+
+    // Un combo de la tienda se cobra entero: si una de sus prendas está en la
+    // papelera (deleted) o ya no existe, no se vende (la app ya lo frena;
+    // la web, en usePiezasDelCombo). Las piezas ocultas sí valen: suelen serlo.
+    const piezasDe = new Map();
+    for (const snapshot of snapshots) {
+      const data = snapshot.exists ? snapshot.data() || {} : {};
+      if (data.isComboProduct === true && Array.isArray(data.comboItems)) {
+        piezasDe.set(snapshot.id, [...new Set(data.comboItems.map((it) => String(it?.productId || "").trim()).filter(Boolean))]);
+      }
+    }
+    const idsPiezas = [...new Set([...piezasDe.values()].flat())];
+    if (idsPiezas.length) {
+      const snapsPiezas = await reader.getAll(...idsPiezas.map((id) => db.collection("productos_wala").doc(id)), { fieldMask: ["deleted"] });
+      const vivas = new Set(snapsPiezas.filter((sp) => sp.exists && (sp.data() || {}).deleted !== true).map((sp) => sp.id));
+      for (const item of items) {
+        const id = String(item?.productoId || "").trim();
+        if ((piezasDe.get(id) || []).some((pieza) => !vivas.has(pieza))) {
+          throw new HttpsError("failed-precondition",
+            `"${item.producto || id}" ya no está disponible: una de sus prendas ya no se vende. Quítalo del carrito.`);
+        }
+      }
+    }
 
     for (const item of items) {
       const id = String(item?.productoId || "").trim();

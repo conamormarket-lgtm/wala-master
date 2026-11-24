@@ -36,7 +36,7 @@ function CabezaRegalo({ titulo, texto, accion }) {
   );
 }
 
-// Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+// Sin la cara de Walito: en la tienda ya está el flotante (un solo Walito a la vista).
 function NoEncontrada({ urlTienda, titulo = 'No encontramos esta lista' }) {
   return (
     <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
@@ -146,7 +146,7 @@ export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, 
 }
 
 /**
- * Abrir un regalo (/regalo/:pedido): el sobre con Kapi y el mensaje; al
+ * Abrir un regalo (/regalo/:pedido): el sobre con Walito y el mensaje; al
  * abrirlo, invita a la app (o a la tienda, si ya está en la app).
  *  - regalo: { para, mensaje, sticker } · enApp · urlDescargar · urlTienda
  *  - estado: 'cargando' | 'noEncontrado'

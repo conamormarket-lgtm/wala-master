@@ -74,7 +74,7 @@ const GiftExperienceViejo = () => {
     <div className={styles.pageContainer}>
       <div className={`${styles.scene} ${isOpen ? styles.open : ''}`}>
         
-        {/* Kapi dibujado en CSS */}
+        {/* Walito dibujado en CSS */}
         <div className={styles.kapiContainer}>
           <div className={styles.kapiEars}>
             <div className={styles.earLeft}></div>

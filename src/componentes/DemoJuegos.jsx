@@ -5,10 +5,14 @@ import { premiosDeHoy, textoPremio, sortearPremio, esCupon, normalizarConfig } f
 import { volarMonedasGanadas } from '../utils/animations';
 import { DAILY_WORDS, PALABRAS_FIJAS, VALID_GUESSES } from '../data/wordleDictionary';
 import JUEGOS from './demo/juegos.json';
+import MARCAS_DEMO from './demo/marcas.json';
+
+// Los mundos con la marca de cada uno (estado «Mundos con marca»).
+const MARCAS_MUNDOS_DEMO = MARCAS_DEMO.slice(0, 4).map((m) => ({ id: m.id, nombre: m.name, logo: m.logoUrl, url: `/${m.slug}` }));
 
 /*
  * Los minijuegos por dentro en la Tienda de prueba: la Palabra del día
- * (/palabra-del-dia), la Ruleta Semanal (/ruleta) y Las Bolitas de Kapi
+ * (/palabra-del-dia), La Ruleta de Walito (/ruleta) y Las Bolitas de Walito
  * (/ball-sort).
  *
  * Qué es real y qué es de ejemplo:
@@ -35,8 +39,8 @@ function palabraDeHoy(hoy) {
 
 export const VISTAS_JUEGOS = [
   ['Palabra del día', '/palabra-del-dia'],
-  ['Ruleta Semanal', '/ruleta'],
-  ['Las Bolitas de Kapi', '/ball-sort'],
+  ['La Ruleta de Walito', '/ruleta'],
+  ['Las Bolitas de Walito', '/ball-sort'],
 ];
 
 export const ESTADOS_JUEGOS = {
@@ -45,7 +49,7 @@ export const ESTADOS_JUEGOS = {
   '/ball-sort': [
     ['casi', 'Casi resuelto (2 jugadas)'], ['racha2', 'Racha 2 (el próximo abre cofre)'], ['mapa', 'El mapa del mundo'],
     ['nivel12', 'Nivel 12 (ocultas)'], ['nivel20', 'Nivel 20 (jefe)'], ['nivel25', 'Nivel 25 (cortina)'], ['nivel45', 'Nivel 45 (hielo)'],
-    ['nivel150', 'Nivel 150'], ['retoHecho', 'Reto de hoy hecho'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando'],
+    ['nivel150', 'Nivel 150'], ['marcas', 'Mundos con marca'], ['retoHecho', 'Reto de hoy hecho'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando'],
   ],
 };
 
@@ -80,6 +84,18 @@ const RANKING_BOLITAS = {
   yo: { hoy: 12, semana: 7, jugadoresHoy: 23, jugadoresSemana: 41 },
 };
 
+// El top de niveles (getTopBolitasSecure): quien pregunta va fuera del top 5.
+const TOP_BOLITAS = {
+  top: [
+    { puesto: 1, nombre: 'Mariana V.', nivel: 64, dias: 21 },
+    { puesto: 2, nombre: 'Lucía R.', nivel: 58, dias: 17 },
+    { puesto: 3, nombre: 'Diego P.', nivel: 41, dias: 9 },
+    { puesto: 4, nombre: 'Camila T.', nivel: 40, dias: 12 },
+    { puesto: 5, nombre: 'Andrés S.', nivel: 33, dias: 6 },
+  ],
+  yo: { puesto: 9, nivel: 26, jugadores: 57 },
+};
+
 const PALABRA_PERDIDA =['CARTA', 'MONTE', 'PISTA', 'LUNAR', 'BRISA', 'FRESA'];
 
 export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario, estados = [], onMonedas, toast }) {
@@ -105,6 +121,9 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
         vistaInicial={estados.includes('mapa') ? 'mapa' : 'juego'}
         hoy={hoy}
         ranking={sesion ? RANKING_BOLITAS : { ...RANKING_BOLITAS, yo: {} }}
+        top={sesion ? TOP_BOLITAS : { ...TOP_BOLITAS, yo: {} }}
+        onPedirTop={() => {}}
+        marcasMundos={estados.includes('marcas') ? MARCAS_MUNDOS_DEMO : []}
         progreso={{
           nivel,
           estrellas,

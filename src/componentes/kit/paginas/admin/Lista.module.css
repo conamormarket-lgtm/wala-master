@@ -1,0 +1,238 @@
+/* ── Plantilla de listas del admin (D1) ─────────────────────── */
+.pagina {
+  display: block;
+}
+
+.antes {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.eliminar {
+  color: var(--danger-hover) !important;
+}
+
+/* Lo que comparten las celdas de las listas. */
+.foto {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tam, 44px);
+  height: var(--tam, 44px);
+  border: 1px solid var(--borde-muestra, var(--color-border));
+  border-radius: 12px;
+  background: var(--escenario-foto, #fff);
+  color: var(--color-text-muted);
+  overflow: hidden;
+}
+
+.fotoCirculo {
+  border-radius: 50%;
+}
+
+.fotoAncha {
+  width: calc(var(--tam, 44px) * 2.2);
+}
+
+/* Productos: la misma proporción que la tarjeta de la tienda (4:5), con la
+   foto entera en vez de recortada al cuadrado. */
+.fotoProducto {
+  height: calc(var(--tam, 44px) * 1.25);
+  border-radius: 10px;
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fotoProducto img {
+  object-fit: contain;
+}
+
+.fotoContener img {
+  object-fit: contain;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.foto svg {
+  width: 40%;
+  height: 40%;
+}
+
+.marcas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.logos {
+  display: inline-flex;
+  flex: none;
+}
+
+.logos > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 0.65rem;
+  font-weight: 800;
+  object-fit: cover;
+}
+
+.logos > * + * {
+  margin-left: -8px;
+}
+
+.marcasTexto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.numero {
+  font-variant-numeric: tabular-nums;
+}
+
+/* En la tabla la columna ya dice qué es; en la tarjeta, el número solo no se entiende. */
+.soloTarjeta {
+  display: none;
+}
+
+@container tabla (max-width: 719.98px) {
+  .soloTarjeta {
+    display: inline;
+  }
+}
+
+.sub {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.atajos {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: -0.35rem;
+}
+
+.atajos button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.casillas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+/* Pestañas que no entran: se deslizan en vez de salirse. */
+.desliza {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* overflow-x también recorta arriba y abajo: el chip que sube 1 px al pasar
+     el ratón (y el rebote al tocarlo) perdía un pedazo de su borde. Aire de
+     4 px; arriba lo devuelve el margen (abajo no: ahí cada página pone el suyo). */
+  padding-block: 4px;
+  margin-top: -4px;
+}
+
+/* La lista para arrastrar (ordenable): la fila entera abre la edición. */
+.filaOrdenable {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.filaOrdenable:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
+.guardarOrden {
+  position: sticky;
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border: 1px solid var(--violet-200);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 14px 30px -18px rgba(20, 18, 28, 0.45);
+}
+
+.guardarOrden > span {
+  flex: 1 1 10rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* Una fila de la lista para arrastrar: la foto y el nombre (Colecciones). */
+.ordenFila {
+  display: grid;
+  /* La foto ancha de FotoCelda (36 px de alto × 2,2) y el nombre; la cabecera usa la misma rejilla. */
+  grid-template-columns: 80px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.ordenNombre {
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Los títulos de las columnas sobre la lista para arrastrar: con el mismo
+   corrimiento que el asa y el número de cada fila (y las flechas a la derecha),
+   así quedan encima de su columna, como en la tabla. */
+.ordenCabecera {
+  padding: 0 calc(0.4rem + 1px + 80px + 0.5rem) 0.4rem calc(0.4rem + 1px + 36px + 0.5rem + 1.6rem + 0.5rem);
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@container pagina-admin (max-width: 720px) {
+  .ordenCabecera {
+    display: none;
+  }
+}

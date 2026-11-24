@@ -1,5 +1,5 @@
 // =========================================================================
-// Ruleta Semanal — modelo de premios y disponibilidad (ESPEJO DE CLIENTE)
+// La Ruleta de Walito — modelo de premios y disponibilidad (ESPEJO DE CLIENTE)
 // -------------------------------------------------------------------------
 // GENERADO por scripts/generar-espejo-ruleta.js desde functions/ruletaLogic.js.
 // No lo edites a mano: edita el original y vuelve a ejecutar el script. El
@@ -94,6 +94,9 @@ export function normalizarPremio(raw) {
     topeDescuento: Math.max(0, Number(raw.topeDescuento || 0) || 0),
     productId: raw.productId ? String(raw.productId) : null,
     productName: raw.productName ? String(raw.productName) : "",
+    // Un cupón de una marca: solo descuenta sus productos (el checkout mira brandId).
+    brandId: raw.brandId ? String(raw.brandId) : null,
+    marcaNombre: raw.brandId && raw.marcaNombre ? String(raw.marcaNombre) : "",
     vigenciaDias: Math.max(1, Number(raw.vigenciaDias || VIGENCIA_CUPON_POR_DEFECTO) || VIGENCIA_CUPON_POR_DEFECTO),
 
     // Presentación. color null = toma el color que le toque de la paleta.
@@ -193,9 +196,11 @@ export const CONFIG_POR_DEFECTO = {
     imagenCentro: "",
   },
   reglas: {
-    // racha7  -> hay que reclamar los 7 días (regla histórica).
+    // dias7   -> 7 días alimentando a Walito, cuando sea (cada persona lleva su
+    //            cuenta; los días no se pierden al cambiar de semana).
+    // racha7  -> los 7 días de una misma semana, de lunes a domingo (la de antes).
     // siempre -> un giro por semana sin condición (para campañas).
-    modoDesbloqueo: "racha7",
+    modoDesbloqueo: "dias7",
     semanaDeGracia: true,
     // Una ruleta que gira casi cinco segundos se hace larga: para cuando el
     // usuario ya ha visto el premio, sigue arrastrandose. 4 vueltas en 3,5 s dan
@@ -205,7 +210,7 @@ export const CONFIG_POR_DEFECTO = {
   },
 };
 
-export const MODOS_DESBLOQUEO = ["racha7", "siempre"];
+export const MODOS_DESBLOQUEO = ["dias7", "racha7", "siempre"];
 
 // Devuelve siempre una config completa: el doc puede no existir (nunca se creó:
 // CONFIG_DOC estaba declarado pero jamás se escribía) o venir a medias.
@@ -305,18 +310,20 @@ export function textoPremio(premio) {
   switch (premio.tipo) {
     case "monedas":
       return premio.monedas + " monedas";
-    case "descuento":
+    case "descuento": {
+      const deMarca = premio.marcaNombre ? " en productos de " + premio.marcaNombre : "";
       if (premio.descuentoPct > 0) {
-        return premio.descuentoPct + "% de descuento" +
+        return premio.descuentoPct + "% de descuento" + deMarca +
           (premio.topeDescuento > 0 ? " (hasta S/ " + premio.topeDescuento.toFixed(2) + ")" : "");
       }
-      return "S/ " + premio.descuentoMonto.toFixed(2) + " de descuento";
+      return "S/ " + premio.descuentoMonto.toFixed(2) + " de descuento" + deMarca;
+    }
     case "producto_descuento":
       return premio.descuentoPct + "% en " + (premio.productName || "un producto");
     case "producto_gratis":
       return (premio.productName || "Un producto") + " gratis";
     case "envio_gratis":
-      return "Envío gratis";
+      return premio.marcaNombre ? "Envío gratis con productos de " + premio.marcaNombre : "Envío gratis";
     case "manual":
       return premio.nombre;
     case "nada":

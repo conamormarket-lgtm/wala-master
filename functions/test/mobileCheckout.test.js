@@ -150,6 +150,29 @@ test('monedas: enteras y positivas; cambian la huella del intento, pero sin ella
   assert.equal(mobile.identity({ ...input(), coins: 0 }, 'a').hash, plain.hash);
   assert.notEqual(mobile.identity({ ...input(), coins: 10 }, 'a').hash, plain.hash);
 });
+test('saldo de bienvenida: baja los productos, va al pedido como saldoBienvenida y queda en el resumen', async () => {
+  const withWelcome = { ...input(), welcomeBalance: 20.5, expectedTotal: 149.7 - 20.5 + 15 };
+  const result = await mobile.build(withWelcome, 'a', read());
+  assert.equal(result.payload.montoTotal, 144.2);
+  assert.equal(result.payload.saldoBienvenida, 20.5);
+  assert.equal(result.payload.descuentoMonedas, undefined);
+  assert.deepEqual(result.meta.summary.totals, { subtotal: 149.7, shipping: 15, welcomeBalance: 20.5, total: 144.2 });
+  assert.equal(result.meta.input.welcomeBalance, 20.5);
+  // La misma cuenta que revisa prepareCheckoutPayment (el saldo descuenta como las monedas).
+  assert.equal(totalEsperadoCheckout({ subtotal: 149.7, monedas: 20.5, envioEstandar: 15, envioGratisDesde: 200 }).total, 144.2);
+  // Al cobrar se vuelve a armar con lo guardado: el total sigue cuadrando.
+  assert.equal((await mobile.build(result.meta.input, 'a', read())).payload.montoTotal, 144.2);
+  await assert.rejects(mobile.build({ ...withWelcome, expectedTotal: 164.7 }, 'a', read()));
+  assert.equal((await mobile.build(input(), 'a', read())).payload.saldoBienvenida, undefined);
+});
+test('saldo de bienvenida: con céntimos y positivo; cambia la huella, pero sin él es la de siempre', () => {
+  for (const welcomeBalance of [-1, '5', 1.234, NaN, 200_000]) assert.throws(() => mobile.welcomeOf({ welcomeBalance }));
+  assert.equal(mobile.welcomeOf({}), 0); assert.equal(mobile.welcomeOf({ welcomeBalance: 0 }), 0);
+  assert.equal(mobile.welcomeOf({ welcomeBalance: 10.1 }), 10.1);
+  const plain = mobile.identity(input(), 'a');
+  assert.equal(mobile.identity({ ...input(), welcomeBalance: 0 }, 'a').hash, plain.hash);
+  assert.notEqual(mobile.identity({ ...input(), welcomeBalance: 10 }, 'a').hash, plain.hash);
+});
 test('regalo: para quién, mensaje y sticker llegan al pedido como giftDetails, como la web', async () => {
   const gift = { recipientName: '  María   José ', message: '¡Feliz cumpleaños!', sticker: 'kapi-party' };
   const result = await mobile.build({ ...input(), gift }, 'a', read());
@@ -170,4 +193,30 @@ test('regalo: rechaza datos incompletos, largos o un sticker inventado; cambia l
   const plain = mobile.identity(input(), 'a');
   assert.equal(mobile.identity({ ...input(), gift: null }, 'a').hash, plain.hash);
   assert.notEqual(mobile.identity({ ...input(), gift: ok }, 'a').hash, plain.hash);
+});
+test('tal cual: una prenda con seVendeTalCual en la tienda se compra con la talla de su color; sin eso sigue siendo solo de Crear', async () => {
+  const prenda = { name: 'Billetera', price: 59.9, esPrendaBase: true, seVendeTalCual: true, enTienda: true, brandId: 'yoryo',
+    variants: [{ id: 'negro', name: 'Negro', sizes: [] }, { id: 'cafe', name: 'Café', sizes: ['Única'] }], prendaBase: { tallas: ['S', 'M'] } };
+  const readRaw = (extra = {}) => async (ids) => new Map(ids.map((id) => [id, { ...prenda, ...extra }]));
+  const order = (variantId, size) => ({ ...input(), items: [{ productId: 'billetera', quantity: 1, selection: { variantId, size, pieces: {} } }], expectedTotal: 74.9 });
+  const result = await mobile.build(order('negro', 'M'), 'a', readRaw());
+  assert.equal(result.payload.productos.item_0.color, 'Negro'); assert.equal(result.payload.productos.item_0.talla, 'M');
+  assert.equal(result.payload.productos.item_0.personalizado, false); assert.equal(result.payload.productos.item_0.brandId, 'yoryo');
+  assert.equal((await mobile.build(order('cafe', 'Única'), 'a', readRaw())).payload.montoTotal, 74.9);
+  await assert.rejects(mobile.build(order('cafe', 'M'), 'a', readRaw()));
+  await assert.rejects(mobile.build(order('negro', 'M'), 'a', readRaw({ seVendeTalCual: false })));
+  await assert.rejects(mobile.build(order('negro', 'M'), 'a', readRaw({ enTienda: false })));
+  await assert.rejects(mobile.build(order('negro', 'M'), 'a', readRaw({ inStock: 0 })));
+  assert.equal(mobile.talCual({ ...prenda, inStock: '' }).inStock, true);
+  assert.deepEqual(mobile.talCual(prenda).variants[0].sizes, ['Única', 'S', 'M']);
+});
+test('regalo de una lista: la fecha de entrega, la ocasión y el código llegan a giftDetails; sin ellos, el regalo de siempre', async () => {
+  const gift = { recipientName: 'Ana', message: '¡Feliz cumple!', sticker: 'kapi-party', deliveryDate: '2026-12-05', deliveryEventLabel: 'Cumpleaños de Ana', wishlistUserCode: 'ana123' };
+  const result = await mobile.build({ ...input(), gift }, 'a', read());
+  assert.deepEqual(result.payload.giftDetails, { isGift: true, recipientName: 'Ana', message: '¡Feliz cumple!', sticker: 'kapi-party',
+    deliveryDate: '2026-12-05', deliveryEventLabel: 'Cumpleaños de Ana', wishlistUserCode: 'ANA123' });
+  const ok = { recipientName: 'Ana', message: 'Hola', sticker: 'kapi-love' };
+  assert.deepEqual(mobile.giftOf({ gift: ok }), ok);
+  assert.equal(mobile.giftOf({ gift: { ...ok, deliveryEventLabel: 'sin fecha' } }).deliveryEventLabel, undefined);
+  for (const bad of [{ deliveryDate: '05/12/2026' }, { wishlistUserCode: 'a b' }, { wishlistUserCode: '../x' }]) assert.throws(() => mobile.giftOf({ gift: { ...ok, ...bad } }));
 });

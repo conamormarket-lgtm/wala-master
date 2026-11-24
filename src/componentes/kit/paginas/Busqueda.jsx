@@ -30,7 +30,7 @@ const sinCambio = (nodo) => nodo;
 /**
  * Página de resultados: el término, un buscador grande con su botón y los
  * resultados en el MISMO catálogo con filtros de /tienda (con "Ordenar por" y
- * el grupo Modalidad). Sin resultados y sin filtros, Kapi lo dice; con
+ * el grupo Modalidad). Sin resultados y sin filtros, Walito lo dice; con
  * filtros, el catálogo sigue a la vista para poder quitarlos.
  *
  *  - termino, onBuscar(texto)
@@ -44,7 +44,7 @@ const sinCambio = (nodo) => nodo;
  *    probar cuando no hay resultados
  *  - catalogo, onAgregar: para las tarjetas · tarjeta, columnas, segundaFoto:
  *    como GrillaProductos (en la tienda, la tarjeta de la tienda)
- *  - sinKapi: el vacío lleva un sello y no a Kapi (con sesión ya está el
+ *  - sinKapi: el vacío lleva un sello y no a Walito (con sesión ya está el
  *    flotante: uno solo a la vista)
  *  - envolverMostrador(nodo): envuelve el mostrador (en la tienda, el marco
  *    del editor visual: `EditableSection` de "Buscador")

@@ -122,15 +122,70 @@
 
 .botonEnlace,
 .botonEnlace:hover {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  min-height: 58px;
+  min-height: 60px;
   padding: 0.5rem 0.75rem;
-  font-weight: 700;
+  overflow: hidden;
+  font-weight: 800;
   text-align: center;
   text-decoration: none;
   transition: transform var(--dur-media) var(--ease-signature);
+}
+
+/* El brillo cruza solo al pasar o tocar (nada en bucle). */
+.botonEnlace::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.botonEnlace:hover::after,
+.botonEnlace:focus-visible::after {
+  opacity: 1;
+  left: 120%;
+  transition: left 600ms var(--ease-signature), opacity 120ms ease;
+}
+
+.botonIcono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.botonIcono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.botonFlecha {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  opacity: 0.75;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.botonFlecha svg {
+  width: 20px;
+  height: 20px;
+}
+
+.botonEnlace:hover .botonFlecha {
+  transform: translateX(3px);
 }
 
 .botonEnlace:hover {
@@ -156,8 +211,13 @@
   }
 
   .red,
-  .botonEnlace {
+  .botonEnlace,
+  .botonFlecha {
     transition: none;
+  }
+
+  .botonEnlace::after {
+    display: none;
   }
 
   .red:hover,

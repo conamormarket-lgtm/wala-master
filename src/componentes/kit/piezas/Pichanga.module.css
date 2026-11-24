@@ -1,0 +1,910 @@
+/* La mesita de La Pichanga: el canvas toma el tamaño que le da la página
+   (CanchaPichanga lo ajusta para que entre entera a lo ancho y a lo alto).
+   En escritorio, el alto de la pantalla menos la barra y la cabecera; en el
+   celular, lo que sobra entre la cabecera del nivel y los botones.
+   touch-action: none para que arrastrar no mueva la página. */
+.marcoCancha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: clamp(440px, calc(100dvh - 16rem), 940px);
+}
+
+/* En escritorio, con los controles al costado (Juegos.module.css), la cancha
+   toma el alto que queda debajo de la cabecera, el título y las pestañas. */
+@media (min-width: 1024px) and (min-height: 560px) {
+  .marcoCancha {
+    height: clamp(420px, calc(100dvh - var(--altura-cabecera, 72px) - 12.5rem), 940px);
+  }
+
+  /* En la columna angosta: el nivel arriba (sin cortarse) y los toques y el
+     mapa en una fila debajo. */
+  .cabeza {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* El nivel y el marcador, sobre una tarjeta: se leen sobre cualquier
+     escena del fondo (el estadio de noche es oscuro). */
+  .cabeza,
+  .marcador {
+    padding: 0.7rem 0.8rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.55);
+  }
+
+  .cabezaMundo,
+  .cabezaNivel,
+  .cabezaMeta {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .cabezaDerecha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.cancha {
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.canchaLista {
+  cursor: grab;
+}
+
+.canchaLista:active {
+  cursor: grabbing;
+}
+
+.muestra {
+  display: block;
+}
+
+.muestraEstadio {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* La línea del medio y el círculo central de la cancha chica. */
+.muestraEstadio::before,
+.muestraEstadio::after {
+  position: absolute;
+  content: '';
+}
+
+.muestraEstadio::before {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--linea);
+}
+
+.muestraEstadio::after {
+  top: 50%;
+  left: 50%;
+  width: 40%;
+  height: 40%;
+  border: 2px solid var(--linea);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── La página (paginas/Pichanga.jsx) ── */
+
+.mesa {
+  gap: 0.75rem;
+}
+
+.zonaCancha {
+  position: relative;
+}
+
+/* El gol: la cara de Walito y una cinta con el degradado del logo (Montserrat
+   900), sobre el arco. Aparece una vez al meterlo (nada en bucle). */
+.gol {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: golAparece 1.5s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.golCinta {
+  padding: 0.35em 0.75em 0.4em;
+  border: 3px solid #fff;
+  border-radius: 14px 26px 26px 26px;
+  background: var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899));
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.9rem, 9vw, 3.2rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-shadow: 0 3px 0 rgba(76, 29, 149, 0.55);
+  box-shadow: 0 10px 18px -10px rgba(76, 29, 149, 0.9);
+  transform: rotate(-6deg);
+}
+
+.golKapi .golCinta {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  font-size: clamp(1.4rem, 6.5vw, 2.3rem);
+}
+
+.golKapiCara {
+  z-index: 1;
+  width: clamp(44px, 12vw, 64px);
+  height: auto;
+  margin-right: -0.9rem;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #fde68a;
+  transform: rotate(-12deg);
+}
+
+@keyframes golAparece {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-10deg); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+  28% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  82% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -64%) scale(0.96); }
+}
+
+/* El confeti sale del arco de arriba. */
+.fiestaArco {
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* El sacudón de la mesita con el gol (una vez). */
+.temblor .cancha {
+  animation: temblor 0.42s ease-out 0.05s both;
+}
+
+@keyframes temblor {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 3px) rotate(-0.4deg); }
+  40% { transform: translate(5px, -2px) rotate(0.4deg); }
+  60% { transform: translate(-3px, 2px); }
+  80% { transform: translate(2px, -1px); }
+}
+
+.cabezaDerecha {
+  display: grid;
+  justify-items: end;
+  gap: 0.4rem;
+}
+
+.quedan {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.quedanPocos {
+  background: #fef3c7;
+  color: #92400e;
+  box-shadow: inset 0 0 0 1px #fcd34d;
+}
+
+/* El marcador del partido: Tú 1 – 0 Walito y de quién es el turno. */
+.marcador {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.lado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.lado:first-child {
+  justify-content: flex-end;
+}
+
+.goles {
+  font-family: var(--fuente-marca);
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.turno {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.resultadoMarcador {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 2.2rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.dificultad {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* El botón del vestuario en el panel: tu chapa, tu equipo y qué se cambia. */
+.vestuarioBoton {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s;
+}
+
+.vestuarioBoton:hover {
+  border-color: #8b5cf6;
+}
+
+.vestuarioBoton:active {
+  transform: scale(0.98);
+}
+
+.vestuarioBoton span {
+  display: grid;
+}
+
+.vestuarioBoton small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.vestuarioBoton > svg {
+  width: 20px;
+  height: 20px;
+  color: #7c3aed;
+}
+
+/* ── El vestuario ── */
+.vestuario {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.prendas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prenda {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.7rem 0.4rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s;
+}
+
+.prenda:hover:not(:disabled) {
+  border-color: #a78bfa;
+}
+
+.prenda:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.prendaPuesta {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #7c3aed 25%, transparent);
+}
+
+.prendaCerrada {
+  cursor: not-allowed;
+}
+
+.prendaCerrada > :first-child {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.prendaNombre {
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.prendaNota {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.prendaPuesta .prendaNota {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.prendaNota svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* Lo desbloqueado, en el resultado. */
+/* La habilidad de cada camiseta, en el vestuario. */
+.prendaHabilidad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  color: #8b5cf6;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.prendaHabilidad svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* Las habilidades del partido, debajo del marcador. */
+.habilidadesActivas {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.habilidadesActivas > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.habilidadesActivas svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Arma tu equipo (antes del partido contra Happy). */
+.armar {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.camisetas {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.camiseta {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 2.2rem 0.55rem 0.6rem;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: color-mix(in srgb, #8b5cf6 8%, var(--color-surface));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.camiseta:hover:not(:disabled),
+.camiseta:focus-visible {
+  border-color: color-mix(in srgb, #8b5cf6 45%, transparent);
+}
+
+.camiseta:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.camisetaElegida {
+  border-color: #7c3aed;
+  background:
+    linear-gradient(color-mix(in srgb, #8b5cf6 12%, var(--color-surface)), color-mix(in srgb, #8b5cf6 12%, var(--color-surface))) padding-box,
+    var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899)) border-box;
+}
+
+.camisetaCerrada {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.camisetaTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.camisetaTexto strong {
+  font-family: var(--fuente-marca);
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.habilidad,
+.camisetaCandado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.habilidad svg,
+.camisetaCandado svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 0.1rem;
+  color: #8b5cf6;
+}
+
+.habilidad b {
+  font-weight: 800;
+}
+
+.camisetaCheck {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: #fff;
+  transform: translateY(-50%);
+}
+
+.armarTitulo {
+  margin: 0.4rem 0 0;
+  color: #8b5cf6;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.armarFila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.armarChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.25rem 0.75rem 0.25rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, #8b5cf6 8%, var(--color-surface));
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.armarChipPuesto {
+  border-color: #7c3aed;
+}
+
+/* El reto patrocinado: una franja sobre la cancha (logo, premio y cupo). */
+.patrocinio {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899)) border-box;
+}
+
+.patrocinioLogo {
+  display: grid;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.patrocinioLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.patrocinioLogo span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: #7c3aed;
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.patrocinioTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.patrocinioTexto small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #8b5cf6;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.patrocinioTexto small svg {
+  width: 13px;
+  height: 13px;
+}
+
+.patrocinioTexto > span {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.patrocinioQuedan {
+  display: grid;
+  flex: none;
+  min-width: 3.4rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: #7c3aed;
+  color: #fff;
+  line-height: 1.05;
+  place-items: center;
+  text-align: center;
+}
+
+.patrocinioQuedan strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.patrocinioQuedan small {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.patrocinioQuedan svg {
+  width: 16px;
+  height: 16px;
+}
+
+.patrocinioListo {
+  background: #16a34a;
+}
+
+.patrocinioAgotado {
+  background: #6b7280;
+}
+
+/* Lo nuevo del vestuario, en el resultado: una tarjeta con el borde del
+   degradado del logo, un sello "¡Nuevo!" y la muestra grande. Entra una vez
+   (sin bucles) y el botón brilla solo al pasar o tocar. */
+.desbloqueos {
+  position: relative;
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+  padding: 1.15rem 0.9rem 0.9rem;
+  border: 2px solid transparent;
+  text-align: left;
+  border-radius: 20px;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899)) border-box;
+  animation: desbloqueoEntra 0.6s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.desbloqueosSello {
+  position: absolute;
+  top: -0.85rem;
+  left: 0.9rem;
+  padding: 0.2em 0.7em 0.25em;
+  border: 2px solid #fff;
+  border-radius: 10px 18px 18px 18px;
+  background: var(--degradado-logo, linear-gradient(135deg, #8b5cf6, #ec4899));
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 rgba(76, 29, 149, 0.45);
+  box-shadow: 0 6px 12px -8px rgba(76, 29, 149, 0.9);
+  transform: rotate(-4deg);
+}
+
+.desbloqueosTitulo {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.desbloqueos ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.desbloqueo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, #8b5cf6 9%, var(--color-surface));
+}
+
+.desbloqueoMuestra {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.desbloqueoTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.desbloqueoTexto small {
+  color: #7c3aed;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.desbloqueoTexto strong {
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.desbloqueoPoner {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.desbloqueoPoner svg {
+  width: 16px;
+  height: 16px;
+}
+
+.desbloqueoPoner:hover:not(:disabled),
+.desbloqueoPoner:focus-visible {
+  box-shadow: 0 0 0 4px color-mix(in srgb, #8b5cf6 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.desbloqueoPoner:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.desbloqueoPoner:disabled {
+  background: color-mix(in srgb, #16a34a 14%, var(--color-surface));
+  color: #15803d;
+  cursor: default;
+}
+
+@keyframes desbloqueoEntra {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desbloqueos {
+    animation: none;
+  }
+
+  .temblor .cancha {
+    animation: none;
+  }
+
+  .gol {
+    animation-name: golQuieto;
+  }
+
+  @keyframes golQuieto {
+    0%, 80% { opacity: 1; transform: translate(-50%, -50%); }
+    100% { opacity: 0; transform: translate(-50%, -50%); }
+  }
+}
+
+/* En el celular, la mesa ocupa justo el alto del juego: la cancha toma lo
+   que sobra entre la cabecera y los botones (que quedan abajo, sin taparla). */
+@media (max-width: 768px) {
+  .mesa {
+    height: var(--alto-juego);
+  }
+
+  .zonaCancha {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .marcoCancha {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+/* ── La cabecera del nivel, compacta (deja el alto para la cancha) ── */
+.cabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.cabezaTexto {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cabezaMundo,
+.cabezaNivel,
+.cabezaMeta {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cabezaMundo {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.cabezaNivel {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.cabezaMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* El aviso flota arriba de la cancha (no reserva una franja). */
+.avisoCancha {
+  position: absolute;
+  top: 0.4rem;
+  right: 0;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pases {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}

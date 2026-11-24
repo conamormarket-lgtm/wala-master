@@ -95,3 +95,11 @@ El commit y push autorizados corresponden a esta rama de trabajo. El despliegue 
 ## Verificación previa al commit
 
 Se exportaron los archivos preparados para el commit a una carpeta independiente, excluyendo los cambios locales de Kapi y telemetría. Sobre ese conjunto pasaron 56 pruebas de composición, mosaico, vídeos, persistencia y medición; la compilación en modo `preview` terminó correctamente en 19,08 s, con el aviso existente de paquetes grandes. Registros: `commit-tests.log` y `commit-build.log` en la carpeta de evidencia. Esta comprobación no resuelve la incidencia visual intermitente descrita arriba ni sustituye la validación del despliegue.
+
+## Integración para publicación autorizada
+
+El usuario autorizó después la integración y el despliegue. La rama principal real es `master`. Se integró su versión `fd9b39a1`, conservando sus avances de catálogo, checkout y vista previa de vídeos. La ficha de venta se conectó al editor administrativo actual (`FichaDelPanel` / `PaginaFichaProducto`), incluidos sus borradores y adaptadores, y al formulario anterior. La medición se trasladó también al resumen actual del panel sin reemplazarlo por la pantalla antigua.
+
+Pasaron 109 pruebas de integración y regresión; una prueba adicional del recorrido producto → editor actual → borrador → edición de precio → producto pasó junto con las 52 pruebas existentes del adaptador. La compilación preview terminó en 21,56 s. ESLint dirigido no mostró errores; quedaron tres advertencias previas del formulario antiguo.
+
+Se verificó el respaldo diario de Firestore del 23/11/2026 a las 17:36 UTC, en estado READY. Las reglas desplegadas se guardaron en `release-backup/firestore.rules`: el cambio propuesto solo añade la protección de `analytics_verified_orders`. Las configuraciones previas de los dos agregadores también están respaldadas. El despliegue no requiere migrar productos ni modificar sus archivos en Storage.

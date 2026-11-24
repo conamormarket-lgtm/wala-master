@@ -14,7 +14,7 @@ import { CARAS_KAPI } from '../piezas/Flotantes';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from '../piezas/Ficha';
 import { FilaPiezaCombo } from '../piezas/Crear';
 import { TextoResaltado } from '../piezas/TextoResaltado';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto, useTexto, useHtml } from '../Traduccion';
 import s from './Combo.module.css';
 
 /*
@@ -71,8 +71,9 @@ export function PaginaCombo({
   const t = {
     nota: useTexto('Incluye la impresión de todos tus diseños.'),
     ahorro: useTexto(`Ahorras ${soles(ahorro)} frente a comprarlas por separado.`),
-    descripcion: useTexto(combo.descripcion || ''),
   };
+  // La descripción la escribe el editor del admin: viene como HTML.
+  const descripcion = useHtml(combo.descripcion || '');
 
   if (estado === 'cargando') return <EsqueletoPagina forma="producto" />;
   if (estado === 'error' || estado === 'noDisponible') {
@@ -158,9 +159,9 @@ export function PaginaCombo({
       <div className={s.cabeza}>
         <EtiquetaColgante tono="violeta" tamano="sm" icono={<Users aria-hidden="true" />}><Texto>{`${mio ? 'Mi combo' : 'Combo'} · ${n} prendas`}</Texto></EtiquetaColgante>
         <TituloEditable nombre={nombre} onRenombrar={mio?.onRenombrar} />
-        <p className={s.base}>
-          {mio ? <TextoResaltado resaltar={[combo.nombre]} envolver={(x) => x}>{`Hecho sobre ${combo.nombre}`}</TextoResaltado> : t.descripcion}
-        </p>
+        {mio
+          ? <p className={s.base}><TextoResaltado resaltar={[combo.nombre]} envolver={(x) => x}>{`Hecho sobre ${combo.nombre}`}</TextoResaltado></p>
+          : descripcion && <div className={s.textoRico} dangerouslySetInnerHTML={{ __html: descripcion }} />}
         {combo.publicado === false && <span className={s.borrador}><Texto>Borrador: solo lo ves tú</Texto></span>}
       </div>
 
@@ -260,7 +261,7 @@ export function PaginaCombo({
               </div>
             ),
           },
-          mio && combo.descripcion && { id: 'sobre', question: 'Sobre el combo', answer: <p className={s.nota}>{t.descripcion}</p> },
+          mio && combo.descripcion && { id: 'sobre', question: 'Sobre el combo', answer: <div className={s.textoRico} dangerouslySetInnerHTML={{ __html: descripcion }} /> },
         ].filter(Boolean)}
       />
 

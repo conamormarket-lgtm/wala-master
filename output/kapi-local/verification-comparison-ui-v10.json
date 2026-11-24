@@ -1,0 +1,364 @@
+{
+  "checks": {
+    "compareButton": true,
+    "preferenceFollowup": true,
+    "reloadRestoresComparison": true,
+    "sameTabNavigation": true,
+    "closeReturnsToIdle": true
+  },
+  "url": "http://127.0.0.1:3000/producto/c1u5PtJoUFkwMkvvIfRb?kapiDemo=1",
+  "cards": [
+    "La elegiría para tiProyector de dibujo infantil JirafaS/ 15.75Es una mesita de dibujo con proyector e incluye discos de imágenes, plumón, borrador y bloc.A considerar: Su juego se centra en dibujar; no incluye muñeco ni accesorios de baño.Ver detalles →",
+    "Tina de juguete con muñeco bebé y accesoriosS/ 19.35Incluye tina, regadera, muñeco bebé y accesorios de baño para juego de roles.A considerar: Está pensado para juego de baño, no para dibujar.Ver detalles →"
+  ],
+  "layouts": [
+    {
+      "actor": {
+        "bottom": 770,
+        "height": 118,
+        "right": 370,
+        "width": 88,
+        "x": 282,
+        "y": 652
+      },
+      "body": {
+        "bottom": 704,
+        "height": 199,
+        "right": 259,
+        "scrollHeight": 786,
+        "width": 232,
+        "x": 27,
+        "y": 505
+      },
+      "bubble": {
+        "bottom": 770,
+        "height": 312,
+        "right": 274,
+        "width": 262,
+        "x": 12,
+        "y": 458
+      },
+      "close": {
+        "bottom": 505,
+        "height": 32,
+        "right": 259,
+        "width": 32,
+        "x": 227,
+        "y": 473
+      },
+      "comparisonText": "Tu presupuesto: S/ 50.00Diferencia entre menor y mayor precio: S/ 3.60.",
+      "horizontalOverflow": false,
+      "input": {
+        "bottom": 750,
+        "height": 36,
+        "right": 214,
+        "width": 182,
+        "x": 32,
+        "y": 714
+      },
+      "recommended": "c1u5PtJoUFkwMkvvIfRb",
+      "root": {
+        "bottom": 438,
+        "height": 438,
+        "right": 390,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "actor": {
+        "bottom": 566,
+        "height": 118,
+        "right": 308,
+        "width": 88,
+        "x": 220,
+        "y": 448
+      },
+      "body": {
+        "bottom": 500,
+        "height": 199,
+        "right": 189,
+        "scrollHeight": 1176,
+        "width": 162,
+        "x": 27,
+        "y": 301
+      },
+      "bubble": {
+        "bottom": 566,
+        "height": 312,
+        "right": 204,
+        "width": 192,
+        "x": 12,
+        "y": 254
+      },
+      "close": {
+        "bottom": 301,
+        "height": 32,
+        "right": 189,
+        "width": 32,
+        "x": 157,
+        "y": 269
+      },
+      "comparisonText": "Tu presupuesto: S/ 50.00Diferencia entre menor y mayor precio: S/ 3.60.",
+      "horizontalOverflow": false,
+      "input": {
+        "bottom": 546,
+        "height": 36,
+        "right": 144,
+        "width": 112,
+        "x": 32,
+        "y": 510
+      },
+      "recommended": "c1u5PtJoUFkwMkvvIfRb",
+      "root": {
+        "bottom": 234,
+        "height": 234,
+        "right": 320,
+        "width": 320,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": {
+        "height": 640,
+        "width": 320
+      }
+    },
+    {
+      "actor": {
+        "bottom": 306,
+        "height": 118,
+        "right": 370,
+        "width": 88,
+        "x": 282,
+        "y": 188
+      },
+      "body": {
+        "bottom": 115,
+        "height": 56,
+        "right": 359,
+        "scrollHeight": 629,
+        "width": 278,
+        "x": 81,
+        "y": 59
+      },
+      "bubble": {
+        "bottom": 172,
+        "height": 148,
+        "right": 370,
+        "width": 300,
+        "x": 70,
+        "y": 24
+      },
+      "close": {
+        "bottom": 59,
+        "height": 24,
+        "right": 359,
+        "width": 24,
+        "x": 335,
+        "y": 35
+      },
+      "comparisonText": "Tu presupuesto: S/ 50.00Diferencia entre menor y mayor precio: S/ 3.60.",
+      "horizontalOverflow": false,
+      "input": {
+        "bottom": 156,
+        "height": 36,
+        "right": 314,
+        "width": 228,
+        "x": 86,
+        "y": 120
+      },
+      "recommended": "c1u5PtJoUFkwMkvvIfRb",
+      "root": {
+        "bottom": 2453.671875,
+        "height": 2453.671875,
+        "right": 382,
+        "width": 382,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": {
+        "height": 380,
+        "width": 390
+      }
+    },
+    {
+      "actor": {
+        "bottom": 566,
+        "height": 118,
+        "right": 308,
+        "width": 88,
+        "x": 220,
+        "y": 448
+      },
+      "body": {
+        "bottom": 500,
+        "height": 199,
+        "right": 189,
+        "scrollHeight": 948,
+        "width": 162,
+        "x": 27,
+        "y": 301
+      },
+      "bubble": {
+        "bottom": 566,
+        "height": 312,
+        "right": 204,
+        "width": 192,
+        "x": 12,
+        "y": 254
+      },
+      "close": {
+        "bottom": 301,
+        "height": 32,
+        "right": 189,
+        "width": 32,
+        "x": 157,
+        "y": 269
+      },
+      "comparisonText": "Tu presupuesto: S/ 50.00Diferencia entre menor y mayor precio: S/ 3.60.",
+      "horizontalOverflow": false,
+      "input": {
+        "bottom": 546,
+        "height": 36,
+        "right": 144,
+        "width": 112,
+        "x": 32,
+        "y": 510
+      },
+      "recommended": "c1u5PtJoUFkwMkvvIfRb",
+      "root": {
+        "bottom": 234,
+        "height": 234,
+        "right": 320,
+        "width": 320,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": {
+        "height": 640,
+        "width": 320
+      }
+    },
+    {
+      "actor": {
+        "bottom": 770,
+        "height": 118,
+        "right": 378,
+        "width": 88,
+        "x": 290,
+        "y": 652
+      },
+      "body": {
+        "bottom": 704,
+        "height": 199,
+        "right": 259,
+        "scrollHeight": 741,
+        "width": 232,
+        "x": 27,
+        "y": 505
+      },
+      "bubble": {
+        "bottom": 770,
+        "height": 312,
+        "right": 274,
+        "width": 262,
+        "x": 12,
+        "y": 458
+      },
+      "close": {
+        "bottom": 505,
+        "height": 32,
+        "right": 259,
+        "width": 32,
+        "x": 227,
+        "y": 473
+      },
+      "comparisonText": "Tu presupuesto: S/ 50.00Diferencia entre menor y mayor precio: S/ 3.60.",
+      "horizontalOverflow": false,
+      "input": {
+        "bottom": 750,
+        "height": 36,
+        "right": 214,
+        "width": 182,
+        "x": 32,
+        "y": 714
+      },
+      "recommended": "c1u5PtJoUFkwMkvvIfRb",
+      "root": {
+        "bottom": 438,
+        "height": 438,
+        "right": 390,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "actor": {
+        "bottom": 802,
+        "height": 150,
+        "right": 1315,
+        "width": 112,
+        "x": 1203,
+        "y": 652
+      },
+      "body": {
+        "bottom": 570,
+        "height": 249,
+        "right": 1394,
+        "scrollHeight": 644,
+        "width": 270,
+        "x": 1124,
+        "y": 321
+      },
+      "bubble": {
+        "bottom": 636,
+        "height": 362,
+        "right": 1409,
+        "width": 300,
+        "x": 1109,
+        "y": 274
+      },
+      "close": {
+        "bottom": 321,
+        "height": 32,
+        "right": 1394,
+        "width": 32,
+        "x": 1362,
+        "y": 289
+      },
+      "comparisonText": "Tu presupuesto: S/ 50.00Diferencia entre menor y mayor precio: S/ 3.60.",
+      "horizontalOverflow": false,
+      "input": {
+        "bottom": 616,
+        "height": 36,
+        "right": 1349,
+        "width": 220,
+        "x": 1129,
+        "y": 580
+      },
+      "recommended": "c1u5PtJoUFkwMkvvIfRb",
+      "root": {
+        "bottom": 1586.9375,
+        "height": 1586.9375,
+        "right": 1432,
+        "width": 1432,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    }
+  ]
+}

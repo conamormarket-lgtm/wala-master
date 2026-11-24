@@ -53,7 +53,11 @@ export function IsoWala({ tamano = 32, tono = 'color', className, titulo }) {
       role={titulo ? 'img' : undefined}
       aria-label={titulo}
       aria-hidden={titulo ? undefined : true}
-    />
+    >
+      {/* A color, la W blanca va en su propia capa (como la cabecera de la tienda):
+          mezclada en la misma máscara que la etiqueta, sus bordes se veían borrosos. */}
+      {tono === 'color' && <span className={s.isoW} aria-hidden="true" />}
+    </span>
   );
 }
 

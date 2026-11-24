@@ -1,5 +1,6 @@
 /* Piezas que arman las secciones del builder (y se pueden usar sueltas). */
 export { TarjetaCategoria, TarjetaCategoriaEsqueleto } from './TarjetaCategoria';
+export { TarjetaColeccion } from './TarjetaColeccion';
 export { TarjetaTestimonio } from './TarjetaTestimonio';
 export { TarjetaMarca } from './TarjetaMarca';
 export { LogoMarca } from './LogoMarca';
@@ -18,7 +19,7 @@ export { VentanaKapi } from './VentanaKapi';
 export { PanelBusqueda, useBusquedasRecientes, TextoResaltado, ChipsBusqueda, InvitacionBusqueda } from './PanelBusqueda';
 export { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from './Cuenta';
 export { TarjetaDireccion } from './TarjetaDireccion';
-export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
+export { TarjetaRecompensa, TarjetaCupon, TarjetaStickers, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
 export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from './Referidos';
 export { TarjetaCreacion, VersionesAnteriores } from './Creaciones';
 export { RecortarFoto } from './RecortarFoto';
@@ -45,7 +46,7 @@ export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable,
 export { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego } from './Juegos';
 export { TableroPalabra, FichaPalabra, TecladoPalabra, LeyendaPalabra, RankingPalabra, evaluarIntento, estadosDeTeclas, normalizarPalabra, INTENTOS_PALABRA } from './Palabra';
 export { RuedaRuleta, HistorialRuleta, ICONO_PREMIO } from './Ruleta';
-export { TuboBolitas, Bolita, EstrellasNivel, RankingBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca, colorDe, tuboListo, COLORES_BOLITAS, CAPACIDAD_TUBO } from './Bolitas';
+export { TuboBolitas, Bolita, EstrellasNivel, RankingBolitas, TopBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca, colorDe, tuboListo, COLORES_BOLITAS, CAPACIDAD_TUBO } from './Bolitas';
 export { CabezaSorteo, ListaGanadores, TarjetaPlan, TarjetaAliado } from './Sorteos';
 export { AvisoInvitacion, RedesEnlaces, BotonEnlace } from './Campanas';
 export { TemaMarca, temaDeMarca } from './TemaMarca';

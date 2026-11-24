@@ -1,9 +1,10 @@
 /**
  * Same Firebase API and results, with passive diagnostic observations.
  * All application SDK reads go through this module. Never issues extra Firebase reads,
- * changes snapshot options, calls data(), or estimates billing from snapshot size.
+ * changes snapshot options or calls data(). Payload estimates are not billing.
  * Counter batches use a separate HTTP collector. Writes pass through to the SDK unchanged.
  */
+import { snapshotPayloadCounts } from '../../observability/firestore-byte-meter.mjs';
 import * as sdk from 'firebase/firestore';
 import { firestoreScope, listenerTopology, observe, registerFirestoreDatabase } from '../../observability/firestore-telemetry.mjs';
 export * from 'firebase/firestore';
@@ -37,7 +38,7 @@ export const query = referenceFactory('query');
 export const collectionGroup = referenceFactory('collectionGroup');
 function recordSnapshot(scope, operation, snap, listener = false) {
     try {
-        const counts = { snapshots: 1 };
+        const counts = { snapshots: 1, ...snapshotPayloadCounts(snap, listener, scope) };
         const add = (name, n = 1) => { counts[name] = (counts[name] || 0) + n; };
         const source = (doc) => doc.metadata?.hasPendingWrites ? 'pendingWriteDocuments'
             : snap.metadata?.fromCache === true ? 'cacheDocuments'

@@ -133,12 +133,17 @@ export default function DemoPiezasCuenta({ imagenes }) {
         <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))' }}>
           <TarjetaRecompensa titulo="Cupón de descuento" descripcion="Para tu próxima compra." beneficio="10% de descuento" costo={30} saldo={43} onCanjear={() => new Promise((r) => setTimeout(r, 800))} />
           <TarjetaRecompensa titulo="Taza de regalo" imagen={imagenes.taza} beneficio="De regalo" costo={120} saldo={43} />
+          <TarjetaRecompensa titulo="Stickers de Happy para WhatsApp" imagen="/recompensas/stickers-adicto.webp" beneficio="Stickers para WhatsApp · se añaden en la app de Walá" descripcion="Una sola vez por persona: ya lo canjeó." costo={8} saldo={4} obtenida />
         </div>
       </Ficha>
 
       <Ficha nombre="TarjetaCupon" usadaEn="Mis cupones">
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           <TarjetaCupon texto="15% en tu próxima compra" codigo="RULETA-8KQ2" origen="ruleta" vence="31 de octubre" onCopiar={copiar} />
+          <TarjetaCupon texto="15% de descuento en productos de Con Amor Geeks (hasta S/ 30.00)" codigo="RULETA-4FD9" origen="ruleta" marca="Con Amor Geeks" vence="20 de noviembre" onCopiar={copiar} />
+          <TarjetaCupon texto="10 % de descuento en productos de Con Amor Geeks (hasta S/ 20)" codigo="BOLI-7KM2" origen="bolitas_reto" marca="Con Amor Geeks" vence="22 de noviembre" onCopiar={copiar} />
+          <TarjetaCupon texto="20 % de descuento (hasta S/ 40)" codigo="RANK-2QX8" origen="bolitas_semana" vence="24 de noviembre" onCopiar={copiar} />
+          <TarjetaCupon texto="Envío gratis con productos de Lumi" codigo="WALA-9PL4" origen="recompensa" marca="Lumi" vence="20 de noviembre" onCopiar={copiar} />
           <TarjetaCupon texto="S/ 10 de descuento" codigo="WALA-1ZB3" origen="recompensa" estado="caducado" vence="30 de septiembre" />
         </div>
       </Ficha>
@@ -200,7 +205,7 @@ export default function DemoPiezasCuenta({ imagenes }) {
 
       <Ficha nombre="TarjetaCreacion" usadaEn="Mis creaciones (y sus borradores)">
         <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))' }}>
-          <TarjetaCreacion nombre="Mi polera con Kapi" imagen={imagenes.frente} imagenEspalda={imagenes.espalda} producto="Polera clásica" color={{ nombre: 'Blanco', hex: '#fff' }}
+          <TarjetaCreacion nombre="Mi polera con Walito" imagen={imagenes.frente} imagenEspalda={imagenes.espalda} producto="Polera clásica" color={{ nombre: 'Blanco', hex: '#fff' }}
             fecha="Guardada ayer" precio={59.9} comprado urlEditar="/crear" urlComprar="/creacion" onEliminar={() => new Promise((r) => setTimeout(r, 600))} onRenombrar={() => Promise.resolve()} />
           <TarjetaCreacion borrador nombre="Sin terminar" imagen={imagenes.frente} producto="Polera clásica" fecha="Guardada hoy" urlEditar="/crear" />
         </div>

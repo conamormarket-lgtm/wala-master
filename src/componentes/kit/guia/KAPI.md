@@ -135,3 +135,15 @@ cambia un componente o su forma de recibir datos.
 
 Para volver atrás: cada paso en su propio commit; el `KapiPet` viejo no se
 borra hasta que el nuevo lleve un tiempo en producción.
+
+## Recorrido de la primera vez y turno de ventanas (2026-11-11)
+
+- El recorrido de Walito ya no usa driver.js: es `GuiaPasos`
+  (piezas/GuiaPasos.jsx), con el sello numerado, la letra de la marca, los
+  puntos de avance y los botones del kit. Resalta cada parte de VentanaKapi
+  (`#kapi-pet-container`, `#kapi-stats`, `#kapi-feed-btn`); si una no está
+  (ya comió), la tarjeta va al centro. En la demo: "Recorrido de Walito".
+- Una sola ventana grande a la vez (`utils/turnoVentanas.js`): primero el aviso
+  de la semana de bienvenida, después Walito (la primera vez) y al final el
+  popup de campaña, con 15 s de pausa entre una y otra. Lo que abre la persona
+  no espera turno.

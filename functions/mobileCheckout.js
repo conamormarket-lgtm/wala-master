@@ -25,8 +25,17 @@ function coinsOf(input) {
   if (!Number.isInteger(input.coins) || input.coins < 0 || input.coins > 1_000_000) fail('Revisa las monedas que quieres usar.');
   return input.coins;
 }
+// El saldo de bienvenida que se usa (semana de bienvenida, primeraCompra.js), en soles con céntimos; 0 si no se mandó.
+// La fase, el tope de las marcas y el saldo disponible los revisa primeraCompra.revisarCheckout en prepareCheckoutPayment.
+function welcomeOf(input) {
+  if (input?.welcomeBalance == null || input.welcomeBalance === 0) return 0;
+  const value = input.welcomeBalance;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 100_000
+    || Math.abs(Math.round(value * 100) - value * 100) > 1e-6) fail('Revisa el saldo de bienvenida que quieres usar.');
+  return Math.round(value * 100) / 100;
+}
 // "Es un regalo" (regalo del checkout web → giftDetails del pedido, que lee obtenerRegaloSecure en /regalo/:orderId):
-// para quién, un mensaje de hasta 200 letras y uno de los stickers de Kapi. null si no se mandó.
+// para quién, un mensaje de hasta 200 letras y uno de los stickers de Walito. null si no se mandó.
 const GIFT_STICKERS = ['kapi-love', 'kapi-party', 'kapi-smile'];
 function giftOf(input) {
   if (input?.gift == null) return null;
@@ -36,17 +45,25 @@ function giftOf(input) {
   const recipientName = text(gift.recipientName); const message = typeof gift.message === 'string' ? gift.message.trim() : '';
   if (!recipientName || recipientName.length > 60) fail('Escribe para quién es el regalo.');
   if (!message || message.length > 200) fail('Escribe un mensaje de hasta 200 letras para el regalo.');
-  if (!GIFT_STICKERS.includes(gift.sticker)) fail('Elige cómo te acompaña Kapi en el regalo.');
-  return { recipientName, message, sticker: gift.sticker };
+  if (!GIFT_STICKERS.includes(gift.sticker)) fail('Elige cómo te acompaña Walito en el regalo.');
+  // Regalo de una lista de deseos con fecha (/regalar/:código de la web): cuándo entregarlo, la ocasión y de qué lista es
+  // (giftDetails.deliveryDate, deliveryEventLabel y wishlistUserCode, que lee el ERP para saber qué día entregar).
+  const deliveryDate = gift.deliveryDate == null || gift.deliveryDate === '' ? '' : String(gift.deliveryDate);
+  if (deliveryDate && !/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) fail('Revisa la fecha de entrega del regalo.');
+  const deliveryEventLabel = deliveryDate ? text(gift.deliveryEventLabel).slice(0, 80) : '';
+  const wishlistUserCode = gift.wishlistUserCode == null || gift.wishlistUserCode === '' ? '' : String(gift.wishlistUserCode).trim().toUpperCase();
+  if (wishlistUserCode && !/^[A-Z0-9_-]{3,40}$/.test(wishlistUserCode)) fail('Revisa la lista de deseos del regalo.');
+  return { recipientName, message, sticker: gift.sticker, ...(deliveryDate ? { deliveryDate } : {}),
+    ...(deliveryEventLabel ? { deliveryEventLabel } : {}), ...(wishlistUserCode ? { wishlistUserCode } : {}) };
 }
 function identity(input, uid) {
   if (!uid) fail('Inicia sesión para preparar el pago.');
   if (!input || !/^[A-Za-z0-9_-]{16,80}$/.test(input.requestId || '') || input.contract !== CONTRACT) fail('El intento de pago no es válido.');
   if (input.expectedUid !== undefined && input.expectedUid !== uid) fail('La sesión cambió. Vuelve a preparar el pago desde tu cuenta actual.');
-  // Sin cupón ni monedas el cuerpo es el de siempre: los intentos ya preparados conservan su huella.
-  const coupon = couponCode(input); const coins = coinsOf(input); const gift = giftOf(input);
+  // Sin cupón, monedas, regalo ni saldo el cuerpo es el de siempre: los intentos ya preparados conservan su huella.
+  const coupon = couponCode(input); const coins = coinsOf(input); const gift = giftOf(input); const welcome = welcomeOf(input);
   const body = JSON.stringify(stable({ items: input.items, address: input.address, email: input.email, expectedTotal: input.expectedTotal,
-    ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}), ...(gift ? { gift } : {}) }));
+    ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}), ...(gift ? { gift } : {}), ...(welcome ? { welcomeBalance: welcome } : {}) }));
   if (!body || body.length > 128_000) fail('El pedido supera el tamaño permitido.');
   return { id: `MC-${createHash('sha256').update(`${uid}:${input.requestId}`).digest('hex').slice(0, 28)}`,
     hash: createHash('sha256').update(body).digest('hex') };
@@ -197,19 +214,34 @@ async function comboLines(rows, uid, read, readDesigns) {
   });
 }
 
+// Una prenda de Crear que también se vende tal cual (seVendeTalCual con "También en la tienda", como la billetera de
+// Yoryo): se compra como un producto de la tienda, con la talla de su color. Se lee con la forma de uno (mapProduct no
+// vende prendas) y con las reglas de Crear: un stock vacío es "sin límite" y un color sin tallas usa las de la prenda,
+// como tallasDePrenda de cartValidation.js, que es quien revisa la línea al preparar el pago.
+function talCual(raw) {
+  if (!raw || raw.esPrendaBase !== true || raw.seVendeTalCual !== true || raw.enTienda !== true || raw.visible === false || raw.deleted === true) return raw;
+  const textos = (list) => (Array.isArray(list) ? list : []).map((t) => String(t == null ? '' : t).trim()).filter(Boolean);
+  const variants = Array.isArray(raw.variants) ? raw.variants : [];
+  const prenda = raw.prendaBase && typeof raw.prendaBase === 'object' ? raw.prendaBase : {};
+  const todas = [...new Set([...variants.flatMap((v) => textos(v && v.sizes)), ...textos(prenda.tallas), ...textos(raw.mainSizes)])];
+  return { ...raw, esPrendaBase: false, hasVariants: variants.length > 0,
+    inStock: raw.inStock == null || raw.inStock === '' ? true : raw.inStock,
+    variants: variants.map((v) => (v && textos(v.sizes).length ? v : { ...v, sizes: todas })) };
+}
+
 async function build(input, uid, read, readDesigns = async () => new Map()) {
   const key = identity(input, uid);
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 100) fail('Revisa los productos del carrito.');
   const address = cleanAddress(input.address || {}); const email = String(input.email || '').trim();
   assertAddress(address, email);
-  const coupon = couponCode(input); const coins = coinsOf(input); const gift = giftOf(input);
+  const coupon = couponCode(input); const coins = coinsOf(input); const gift = giftOf(input); const welcome = welcomeOf(input);
   const comboRows = input.items.filter((item) => item && item.comboId);
   const designRows = input.items.filter((item) => item && !item.comboId && item.designId);
   const catalogRows = input.items.filter((item) => !(item && (item.designId || item.comboId)));
   const ids = [...new Set(catalogRows.map((item) => item && item.productId))];
   if (ids.some((id) => !validId(id))) fail('Un producto no es válido.');
   const roots = ids.length ? await read(ids) : new Map();
-  const products = new Map(ids.map((id) => [id, roots.get(id) ? mapProduct(id, roots.get(id)) : null]));
+  const products = new Map(ids.map((id) => [id, roots.get(id) ? mapProduct(id, talCual(roots.get(id))) : null]));
   const componentIds = [...new Set([...products.values()].flatMap((p) => p?.combo?.pieces.map((piece) => piece.productId) || []))];
   if (componentIds.length > 200 || componentIds.some((id) => !validId(id))) fail('Revisa las piezas del pedido.');
   const rawComponents = componentIds.length ? await read(componentIds) : new Map();
@@ -237,8 +269,9 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
   const subtotal = (items.reduce((sum, line) => sum + cents(line.product.price) * line.quantity, 0)
     + creations.reduce((sum, line) => sum + cents(line.price) * line.quantity, 0)
     + combos.reduce((sum, line) => sum + cents(line.price) * line.quantity, 0)) / 100;
-  // Las monedas bajan los productos (nunca por debajo de cero); el envío se mide sobre el subtotal, como en la web.
-  const envio = shipping(subtotal); const total = (Math.max(0, cents(subtotal) - coins * 100) + cents(envio)) / 100;
+  // Las monedas y el saldo de bienvenida bajan los productos (nunca por debajo de cero); el envío se mide sobre el
+  // subtotal, como en la web. En la semana de bienvenida no hay monedas: nunca van juntos (revisarCheckout).
+  const envio = shipping(subtotal); const total = (Math.max(0, cents(subtotal) - coins * 100 - cents(welcome)) + cents(envio)) / 100;
   if (!Number.isFinite(input.expectedTotal) || cents(total) !== cents(input.expectedTotal)) fail('El importe cambió. Vuelve a revisar el pedido antes de pagar.');
   if (cents(total) < 300 || cents(total) > 999900) fail('El importe está fuera del rango permitido para este pago con Culqi.');
   const isPeru = address.country === 'PE';
@@ -304,6 +337,8 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
     montoTotal: total, montoAdelanto: 0, montoPendiente: total, costoEnvio: envio,
     ...(coins ? { descuentoMonedas: coins, monedasEnEspera: coins } : {}),
     ...(gift ? { giftDetails: { isGift: true, ...gift } } : {}),
+    // primeraCompra.revisarCheckout lo revisa (fase, tope y saldo); prepareCheckoutPayment guarda el que aprobó.
+    ...(welcome ? { saldoBienvenida: welcome } : {}),
     estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: [...items, ...creations, ...combos].reduce((sum, line) => sum + line.quantity, 0), productos,
     prendas: [...items.map((line) => `${line.product.name} x${line.quantity}`),
       ...creations.map((line) => `${line.raw.name || line.design.productName || 'Personalizado'} x${line.quantity}`),
@@ -314,6 +349,7 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
   };
   return { key, payload, meta: { contract: CONTRACT, requestId: input.requestId, requestHash: key.hash,
     input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email, ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}), ...(gift ? { gift } : {}),
+      ...(welcome ? { welcomeBalance: welcome } : {}),
       items: [...items.map((line) => ({ productId: line.product.id, quantity: line.quantity, selection: selectionFromChosen(line.selection) })),
         ...creations.map((line) => ({ designId: line.designId, quantity: line.quantity, size: line.size })),
         ...combos.map((line) => ({ comboId: line.comboId, miComboId: line.miComboId, quantity: line.quantity,
@@ -326,7 +362,7 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
       piezas: line.piezas.map((p) => ({ fija: p.fija, designId: p.designId || '', productId: p.esperada.prendaId, productName: p.prenda.name || p.esperada.nombre || '',
         name: (p.design && p.design.name) || p.prenda.name || '', color: p.fija ? ((p.esperada.color && p.esperada.color.nombre) || '') : ((p.design.color && p.design.color.nombre) || ''),
         size: p.size, imageUrl: p.fija ? ((p.variant.images || [])[0] || p.esperada.imagen || '') : p.preview })) })),
-    totals: { subtotal, shipping: envio, ...(coins ? { coins } : {}), total }, currency: 'PEN' } } };
+    totals: { subtotal, shipping: envio, ...(coins ? { coins } : {}), ...(welcome ? { welcomeBalance: welcome } : {}), total }, currency: 'PEN' } } };
 }
 function view(id, intent) {
   if (!intent?.mobile || intent.mobile.contract !== CONTRACT) fail('Este pago no pertenece a la app.');
@@ -334,7 +370,9 @@ function view(id, intent) {
     : intent.status === 'cobrando' ? 'processing' : ['vencida', 'reemplazada'].includes(intent.status) ? 'expired'
       : intent.mobilePending3DS ? 'challenge' : 'ready';
   return { intentId: id, requestId: intent.mobile.requestId, contract: CONTRACT, state,
-    orderId: state === 'paid' ? intent.pedidoWebId || id : null, ...intent.mobile.summary };
+    orderId: state === 'paid' ? intent.pedidoWebId || id : null, ...intent.mobile.summary,
+    // Se pidió por WhatsApp (crearSolicitudWhatsappSecure): el pedido ya está en el ERP, sin pagar.
+    ...(intent.whatsappSolicitado === true ? { whatsappRequested: true } : {}) };
 }
 function threeDS(data) {
   if (data == null) return null;
@@ -346,4 +384,4 @@ function threeDS(data) {
   }
   return out;
 }
-module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, coinsOf, giftOf, GIFT_STICKERS, repartirPrecio };
+module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, coinsOf, giftOf, welcomeOf, GIFT_STICKERS, repartirPrecio, talCual };

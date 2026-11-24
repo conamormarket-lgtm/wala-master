@@ -704,6 +704,23 @@ export const CartProvider = ({ children }) => {
     );
   }, []);
 
+  // El precio de catálogo cambió (carritoDisponible.preciosCambiados): la línea
+  // toma el nuevo, como lo cobrará el servidor. cambios: [{ id, price, regularPrice }].
+  // NO es un cambio de la persona: no mueve la hora del carrito ni sube a la
+  // nube (metaSiguienteRef). Si contara, un aparato con el carrito de hace días
+  // quedaba como "el más nuevo" al abrir /carrito y devolvía lo que se había
+  // borrado en otro (pasó el 2026-11-05 con el arreglo c4770be5 ya puesto).
+  const actualizarPrecios = React.useCallback((cambios = []) => {
+    if (!cambios.length) return;
+    const porId = new Map(cambios.map((c) => [c.id, c]));
+    // Si ya hay una lista de la nube en camino, manda su meta (la de ella).
+    if (!metaSiguienteRef.current) metaSiguienteRef.current = leerMeta();
+    setItems(prev => prev.map(i => {
+      const c = porId.get(i.id);
+      return c ? { ...i, price: c.price, basePrice: c.price, regularPrice: c.regularPrice ?? null } : i;
+    }));
+  }, []);
+
   // Selecciona TODOS los items del carrito (para "Comprar todo el carrito").
   const selectAllItems = React.useCallback(() => {
     setItems(prev => prev.map(i => (i.selected === false ? { ...i, selected: true } : i)));
@@ -748,6 +765,7 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     clearCart,
     toggleItemSelected,
+    actualizarPrecios,
     selectAllItems,
     setAllItemsSelected,
     removeSelectedItems,
@@ -755,7 +773,7 @@ export const CartProvider = ({ children }) => {
     getTotalItems,
     getTotalPrice,
     isEmpty: items.length === 0
-  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
+  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, actualizarPrecios, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

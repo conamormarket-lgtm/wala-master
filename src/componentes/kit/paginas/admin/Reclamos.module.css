@@ -1,0 +1,84 @@
+/* ── D3c · Libro de reclamaciones ──────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.corto {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.plazo {
+  display: grid;
+  justify-items: start;
+  gap: 0.15rem;
+}
+
+.datos {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.dato {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr);
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.dato dt {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.dato dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dato a {
+  color: var(--primary-color);
+}
+
+.largo {
+  white-space: pre-line;
+}
+
+.respuesta {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+}
+
+.respuesta p {
+  margin: 0;
+  font-size: 0.9rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+:global([data-theme='dark']) .respuesta {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* La hoja va fuera del panel (portal): aquí manda el ancho de la pantalla. */
+@media (max-width: 480px) {
+  .dato {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+}

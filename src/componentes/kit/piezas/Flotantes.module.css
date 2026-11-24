@@ -1,7 +1,7 @@
 /* ── Capa y pila ───────────────────────────────────────── */
 .capa {
   --flotante-abajo: calc(18px + var(--safe-bottom, 0px));
-  /* Un solo tamaño para todos los flotantes (Kapi un poco más ancho: su cara
+  /* Un solo tamaño para todos los flotantes (Walito un poco más ancho: su cara
      no es un círculo y así pesa lo mismo a la vista). */
   --flotante-tam: 56px;
 
@@ -63,6 +63,10 @@
 }
 
 .izquierda {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 10px;
   margin-right: auto;
   pointer-events: auto;
 }
@@ -150,8 +154,8 @@
   }
 }
 
-/* ── Kapi ──────────────────────────────────────────────── */
-/* Kapi suelto, como sticker (su imagen ya es transparente): sin círculo. */
+/* ── Walito ──────────────────────────────────────────────── */
+/* Walito suelto, como sticker (su imagen ya es transparente): sin círculo. */
 .kapi {
   width: calc(var(--flotante-tam, 56px) + 4px);
   height: auto;
@@ -220,6 +224,16 @@
   border-radius: inherit;
   color: #fff;
   text-decoration: none;
+}
+
+/* La píldora que abre algo (un botón): sin el aspecto de botón del navegador. */
+.pildoraBoton {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .pildoraEnlace:focus-visible {

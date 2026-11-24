@@ -36,8 +36,8 @@ const redDe = (url) => REDES.find(([re]) => re.test(url || '')) || [null, null, 
  * La tarjeta del pie: garabatos, el logo con "Hecho con amor en Perú" (en
  * texto: la etiqueta colgante es solo para productos), los bloques y la
  * franja legal.
- *  - kapi: Kapi asomado por el borde (la tienda lo apaga cuando ya flota el
- *    de la esquina o la página termina con otro Kapi)
+ *  - kapi: Walito asomado por el borde (la tienda lo apaga cuando ya flota el
+ *    de la esquina o la página termina con otro Walito)
  *  - pieLegal: <PieLegal> · children: los bloques
  */
 export function MarcoPie({ kapi = true, pieLegal, children, className }) {

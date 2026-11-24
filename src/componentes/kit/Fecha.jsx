@@ -272,3 +272,22 @@ export function CampoFecha({
     </>
   );
 }
+
+/**
+ * Campo de hora sin el reloj del navegador: la lista del kit con las horas
+ * del día cada `paso` minutos (por defecto 30). Si el valor guardado no cae en
+ * el paso (08:45 con paso 30), también está en la lista.
+ *  - etiqueta, ayuda, error, id, disabled
+ *  - valor ('HH:MM') · onCambiar('HH:MM') · paso (minutos)
+ */
+export function CampoHora({ etiqueta, ayuda, error, id, disabled = false, valor = '', onCambiar, paso = 30 }) {
+  const opciones = useMemo(() => {
+    const lista = [];
+    for (let m = 0; m < 24 * 60; m += paso) lista.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+    if (valor && !lista.includes(valor)) lista.push(valor);
+    return lista.sort().map((h) => ({ valor: h, texto: h }));
+  }, [paso, valor]);
+  return (
+    <Campo id={id} etiqueta={etiqueta} ayuda={ayuda} error={error} disabled={disabled} opciones={opciones} value={valor} onChange={(e) => onCambiar?.(e.target.value)} />
+  );
+}

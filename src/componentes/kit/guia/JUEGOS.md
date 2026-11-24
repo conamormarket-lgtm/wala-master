@@ -616,3 +616,231 @@ mundo con la marca, el reto patrocinado, el cupón y los productos en el
 resultado, y `/admin/bolitas` con datos. **No probado:** guardar desde los
 formularios del admin (usan `alert`), la tarea del lunes ejecutándose sola,
 el checkout de punta a punta con un cupón de marca (solo validar), inglés.
+
+## La Pichanga de Kapi: fase 1 (2026-11-09)
+
+Fútbol de chapas para jugar solo, en `/pichanga` (a pantalla completa en el
+celular, como los otros juegos). La portada está en
+`/assets/kapi/banners/pichanga*.webp` (`BANNERS_ARCADE.pichanga`). La fase 2
+(monedas, reto, rankings y la tarjeta en la Zona Arcade) está más abajo.
+
+**El motor** (`piezas/pichangaMotor.mjs`, puro; `npm run test:pichanga`): una
+cancha de 600 × 900 con el arco arriba, chapas (tapitas), pelota, conos, barro,
+hielo y Kapi de arquero (va y vuelve solo mientras algo rueda). Un tiro es
+`[chapa, dx, dy]` en enteros; la física va a paso fijo, redondea a 1/1024 y solo
+usa operaciones exactas, así que el mismo tiro da lo mismo en cualquier lado: el
+servidor podrá repetir una partida (`comprobarPartida`). También trae las reglas
+de los penales (el jefe), el partido por turnos y la jugada de Kapi
+(`jugadaDeKapi`: prueba tiros, simula y elige; fácil se equivoca a propósito).
+
+**Los niveles** (`piezas/pichangaNiveles.mjs`): 40 en dos mundos. Rivales desde
+el 5, conos desde el 8, Kapi de arquero desde el 12, penales en el 20; barro
+desde el 21, hielo desde el 26, arco chico desde el 31 y penales más difíciles
+en el 40. `npm run gen:pichanga` busca una solución "holgada" de cada uno (los
+tiros parecidos también entran) y la guarda en `pichangaSoluciones.mjs`: de ahí
+salen el par (3 estrellas) y los toques (par + 2). La prueba falla si un cambio
+de física o de nivel deja una solución sin gol.
+
+**La página** (`paginas/Pichanga.jsx`, la cancha en `piezas/Pichanga.jsx`, un
+canvas que solo se redibuja cuando algo rueda): se arrastra desde una chapa
+hacia atrás, como una resortera. Pestañas Niveles / Contra Kapi, mapa del mundo,
+estrellas, racha de 3 que abre un cofre, ayudas por nivel (2 "Ver el tiro" que
+dibujan la trayectoria de la pelota, 2 "Repetir tiro", 1 "Un toque más"),
+"¡GOL!" con confeti, repetición del gol en cámara lenta, sonidos y vibración
+(`piezas/efectosPichanga.js`). El partido es a 3 goles, con dificultad fácil,
+normal o difícil.
+
+**El vestuario** (`piezas/pichangaProgreso.mjs`): equipos, pelotas y canchas del
+partido. Nada se compra; se abren con estrellas, jefes, goles o partidos
+ganados, y el resultado avisa lo que se acaba de abrir.
+
+**En la tienda** (`components/minijuegos/PichangaDeTienda.jsx`): el progreso se
+guarda en el aparato (`wala_pichanga_progreso`) y `trackMinigame` manda el inicio
+y cada nivel o partido terminado (con los tiros).
+
+## La Pichanga de Kapi: fase 2 (2026-11-09)
+
+Monedas, reto del día, rankings y la tarjeta en la Zona Arcade (quinta
+tarjeta, "Nuevo"; `?pichanga=completado` en el modo diseño).
+
+- **Reto del día** (`retoPichanga(fecha)` en `pichangaNiveles.mjs`): 12 jugadas
+  armadas a mano más sus espejos (24); el del día sale de la fecha, el mismo
+  para todos. Sus soluciones van en `pichangaSoluciones.mjs` (`r1`…`r24`;
+  `npm run gen:pichanga retos`). Toques: par + 2. No cuenta para la racha.
+- **Todo pasa por funciones** (`functions/index.js`, lógica pura en
+  `functions/pichangaLogic.js`): el celular no lee ni escribe las colecciones
+  del juego, así que jugar no depende de las reglas.
+  - `registrarPartidaPichangaSecure`: repite los tiros con el mismo motor
+    (copias en `functions/`, `npm run gen:motor-pichanga`; la prueba avisa si
+    quedaron viejas). Si mete gol: +2 una vez al día de Lima
+    (`lastPichangaReward`, fuente `pichanga_daily` en el libro mayor), la misión
+    (`pichanga_nivel` / `pichanga_reto`, activas desde el 2026-11-09: +2 y +3; se ajustan en
+    `/admin/misiones`), el reto (`pichangaRetos`, `pichangaSemanas`), el top de
+    niveles (`pichangaJugadores`) y los goles del mes (`pichangaMeses`: cada
+    nivel y el reto cuentan una vez por día).
+  - `getRankingPichangaSecure({ tabla })`: `reto` (hoy por menos toques y la
+    semana por retos hechos), `niveles` (el nivel más alto que pasó) y
+    `goleadores` (goles del mes). Los 20 primeros con el nombre corto.
+  - `progresoPichangaSecure`: lee o guarda `pichangaProgreso/{uid}`, uniendo
+    con lo guardado (lo ganado no se pierde). La tienda lo sube 2,5 s después
+    del último cambio.
+- **La página**: pestañas Niveles / Reto del día / Contra Kapi; la línea del
+  premio en el panel y en el resultado (no se cierra mientras se acredita);
+  "Los mejores" (top de niveles y goleadores del mes) bajo la racha y el
+  ranking del reto en su pestaña (`TablaPichanga`). El partido contra Kapi no
+  da monedas (no se puede comprobar: Kapi juega al azar).
+- **Reglas**: las cinco colecciones (`pichangaProgreso`, `pichangaRetos`,
+  `pichangaSemanas`, `pichangaJugadores`, `pichangaMeses`) están en
+  `esSoloWala` en `firebase/firestore.rules` y sin `match` (solo el servidor).
+  **No están desplegadas**: van con la fusión de reglas pendiente (la copia del
+  ERP ya no es igual a la de Walá). Mientras, con las reglas vivas, alguien con
+  sesión podría escribir esas colecciones a mano y falsear un ranking (como
+  pasó con las de Bolitas); el premio no se puede falsear.
+
+**Probado** con los emuladores: el nivel 1 cobra +2 (50 → 52) y repetirlo no
+vuelve a pagar; los penales del 20 y el reto de hoy se comprueban; una partida
+sin gol y un tiro hecho con la pelota se rechazan; los tres rankings con
+"Cliente D."; el progreso se une (nivel 5 se queda aunque llegue uno viejo);
+con las reglas del repo el celular no puede leer `pichangaRetos`. En el
+navegador: el progreso de la cuenta al entrar, el reto ganado con
+"+2 acreditadas" y el saldo de la barra, y la tarjeta en la Zona Arcade
+("Completado — jugar igual" con la cuenta regresiva). **No probado:** en un
+teléfono real, la misión activada, la versión en inglés.
+
+## La Pichanga de Kapi: el diseño (2026-11-09)
+
+- **Proporción**: chapas de radio 38, pelota 21, conos 17, Kapi 40 y arco de
+  210 (antes 26, 15, 13, 34 y 180); los arcos chicos, 150-180. Todos los
+  niveles y retos se volvieron a resolver (`npm run gen:pichanga`, que también
+  regenera las copias del servidor) y una prueba revisa que nada empiece
+  encimado ni fuera de la cancha (`problemasDeCancha`). Cambiar la física
+  obliga a volver a desplegar las tres funciones antes de publicar la web.
+- **La mesita** (`piezas/Pichanga.jsx`): la bandeja violeta de la portada
+  (borde con relieve, sombra y piso), pasto con textura (escarcha en
+  invierno), arcos con postes, travesaño y red con profundidad. Las chapas son
+  tapitas con canto y la pelota tiene parches que giran al rodar. El canvas
+  entra entero en el lugar que tiene (`marcoCancha`): en el celular, lo que
+  sobra entre la cabecera compacta y los botones.
+- **Efectos**, solo cuando se juega: anillo de fuerza y guía al apuntar, aro
+  de impulso al soltar, estela de la pelota, destellos donde choca (dorado en
+  el poste, naranja en Kapi), la red que se estira con el gol, Kapi arquero
+  feliz o triste, cinta "¡GOOOL!" con el degradado del logo y la cara de Kapi,
+  confeti desde el arco y un sacudón corto de la mesita.
+- **Escenarios** (`piezas/FondoPichanga.jsx`, SVG quietos como los de
+  Bolitas): el barrio (mundo 1), el potrero en invierno (mundo 2), el estadio
+  del reto y, en el partido, la cancha del vestuario (barrio, invierno, noche o
+  Walá). Atardecer en los penales del jefe.
+- **Barra del juego** (kit, `piezas/Juegos.module.css`): en pantallas de hasta
+  480 px el título queda solo para lectores de pantalla; antes se montaban los
+  botones encima (pasaba en todos los juegos).
+
+## La Pichanga de Kapi: como se juega en Plato (2026-11-09)
+
+- **Dos equipos con personaje**: el tuyo es Kapi y el rival es Michi, el gato
+  (`/assets/kapi/pichanga/{kapi,michi}-{feliz,triste}.webp`, 256 px). El polo es
+  transparente: la chapa pone el color y el dibujo del equipo debajo
+  (`dibujarChapa`). Después de un gol, el que lo recibió pone cara triste.
+  Michi también es el arquero que va de lado a lado en los niveles.
+- **Pases** (`PASES_MAX` = 3, `huboPase`): si después de tu tiro la pelota toca
+  otra de tus chapas, ese tiro no gasta toque (hasta 3 por nivel; el par y las
+  estrellas cuentan los toques gastados, `toquesUsados`). En el partido, el
+  mismo equipo vuelve a tirar, hasta 3 seguidos.
+- **Tu arco y tu portero**: todos los niveles tienen arco abajo y un portero
+  tuyo (con guantes; se tira como cualquier chapa). Un autogol devuelve la
+  jugada y gasta el toque.
+- **Partido de 6 contra 6**, con arquero en cada lado; después de un gol saca
+  quien lo recibió. Michi prueba tiros con sus 3 chapas más cerca de la pelota
+  (130-200 ms) y valora un poco más los pases.
+- **Arrastre más suave**: la fuerza completa pide 235 unidades de arrastre (antes
+  125) y sube en curva (`CURVA_FUERZA`), así los tiros suaves se controlan.
+- **La pelota rueda en 3D**: 12 parches en los vértices de un icosaedro y una
+  orientación que gira sobre el eje perpendicular al camino (`rodar`); las
+  chapas que corren dejan una estela blanca.
+- Todos los niveles y retos se resolvieron otra vez con estas reglas (hay
+  soluciones con pase: niveles 5, 8, 18 y 34) y las funciones se desplegaron
+  antes de publicar la web.
+
+**El pase con imán (2026-11-09)**: con pases disponibles, la primera vez que la
+pelota toca a un compañero de la chapa que tiró, se queda pegada a él en el
+punto del toque y viaja con él (`pegarPelota`); cuando él se detiene, la
+pelota queda quieta y él la rodea hasta quedar detrás, mirando al arco que
+ataca, empujando a quien esté en el camino (`pasoDeOrbita`, 0,12 rad por paso,
+sin trigonometría para que el servidor lo repita igual). Opción `iman` de
+`simular`, `sim.receptor`. El próximo tiro es con esa chapa
+(`partida.receptor` / `partido.receptor`; `tiroValido` lo exige y la cancha
+solo deja arrastrar esa, marcada en dorado). Michi hace lo mismo
+(`jugadaDeKapi` con `receptor`). Las áreas de la cancha se corrigieron: punto
+penal adentro del área grande y la medialuna pegada a su borde.
+
+**Los arcos (2026-11-09)**: la red es más honda (`FONDO_ARCO` 72) y solo la
+pelota puede entrar: para las chapas, la línea del arco es pared. Con gol, la
+pelota se dibuja al fondo de la red (también después de la animación). Los
+porteros van más adentro (830 en el partido, 832 en los niveles) y las chapas
+del centro de abajo bajaron a 752 para no encimarse.
+
+**Michi ya no se queda parado (2026-11-09)**: en los niveles y el reto del día,
+después de cada toque tuyo que no fue gol, autogol ni pase (y si te quedan
+toques), Michi responde con un tiro (`respuestaRival`): con sus dos chapas
+más cerca de la pelota prueba despejarla a tu arco o a la banda
+(`tiroDirigido`, que le pega a la pelota del lado justo para mandarla a un
+punto) y elige la que la deja más lejos de su arco. Sin azar ni trigonometría:
+el servidor la repite igual dentro de `jugarTiro`. Si Michi te mete gol, la
+jugada vuelve atrás y el toque se gasta (como un autogol); si se hace autogol,
+el gol es tuyo. En la cancha se marca su chapa, sale "Responde Michi…" y se ve
+su tiro. En el partido, `jugadaDeKapi` ahora apunta con `tiroDirigido` (a tu
+arco, a las esquinas, de pase y de despeje) además de los tiros directos, y
+castiga los que no tocan la pelota: nunca tira al aire. Fácil elige entre los
+4 mejores con algo de mala puntería; difícil, siempre el mejor. Todos los
+niveles y retos se resolvieron otra vez con Michi respondiendo.
+
+**La órbita contra los bordes (2026-11-09)**: el receptor se quedaba girando en
+el mismo sitio (hasta 20 s) cuando el pase lo dejaba pegado a una banda o en
+una esquina: la dirección se recalculaba desde donde había quedado la chapa, y
+el borde la devolvía al mismo ángulo. Ahora la órbita lleva su propia dirección
+(`planDeOrbita` en el control del pase): si detrás de la pelota no cabe la
+chapa, elige la posición más parecida que sí cabe; gira hacia el lado que
+menos choca con los bordes, y nunca da más de 60 pasos de vuelta
+(`ORBITA_MAX`). Prueba: "el pase contra un borde o una esquina…".
+
+**El gol se cuenta con el centro de la pelota (2026-11-09)**: antes valía solo
+cuando la pelota cruzaba la línea entera, y podía quedarse quieta medio
+adentro: no era gol, pero la cancha la dibujaba al fondo de la red. Ahora es
+gol cuando el centro cruza la línea (en `paso`), así lo que se ve y lo que
+cuenta coinciden. La pelota que está dentro del arco se dibuja antes que la
+red (los hilos y el travesaño quedan por delante) y un poco más adelante del
+fondo. Niveles y retos resueltos otra vez con esta regla.
+
+## La Pichanga de Kapi: el admin (2026-11-09)
+
+`/admin/pichanga` (Premios y juegos, permiso `premios`), todo por
+`adminPichangaSecure`:
+- **Cifras**: por día desde `pichangaStats/{fecha}` (cada partida comprobada
+  suma partidas, niveles o retos, goles, monedas, nuevos y `porNivel`; empieza
+  el 2026-11-09), jugadores como en las Bolitas (`metricasJugadores`: vuelven,
+  siguen, dónde se traban), hasta dónde llegan por mundo, el equipo puesto y
+  los partidos contra Michi (de `pichangaProgreso`, solo cuentas con progreso
+  guardado), y los goleadores del mes y el top de niveles.
+- **Premios del mes**: `pichangaConfig/premios` con los mismos puestos y
+  cupones que los premios semanales de las Bolitas (la pieza `Premios` ahora
+  recibe sus textos). `premiarGoleadoresPichanga` premia el día 1 a las 00:20
+  el mes que terminó (cupón `pichanga_mes_{mes}_{uid}`, marca
+  `pichangaPremios/{mes}`); a mano, solo meses ya terminados. El talón del
+  cupón dice "Goleadores de La Pichanga".
+
+### La Pichanga de Kapi: el reto patrocinado
+
+- Como en las Bolitas: `/admin/pichanga` → **Retos** pone una marca en el reto de un día (`pichangaPatrocinios/{fecha}`) con un cupón y un cupo. La lista del admin es la misma pieza que la de las Bolitas (`RetosPatrocinados` en `paginas/admin/Juegos.jsx`).
+- Quien gana el reto con sesión recibe el cupón (`userCoupons/pichanga_reto_{fecha}_{uid}`, origen `pichanga_reto`), uno por persona y día y hasta llenar el cupo. Lo da `registrarPartidaPichangaSecure` en la misma transacción de la partida.
+- El celular no lee las colecciones de la Pichanga: el patrocinio de hoy llega por `patrocinioPichangaSecure` (`{ marcaId, marcaNombre, texto, quedan, ganado }`). En el juego sale como una franja sobre la cancha (`PatrocinioPichanga`), porque la cancha necesita el alto, y el cupón sale arriba en el resultado (`CuponGanado`).
+
+### La Pichanga de Kapi: las camisetas con habilidad
+
+- Cada camiseta trae una habilidad (`HABILIDADES_PICHANGA` en `pichangaProgreso.mjs`; las que se abren jugando traen dos o tres): Toque de más (4 pases), Ojo de Kapi (ves la ruta al apuntar), Cañonazo (tiros ×1.12), Muralla (arquero de radio 48), Candado (tu arco de 176), Despiste (Michi apunta peor) y Viento frío (tiros de Michi ×0.9).
+- **Solo valen contra Michi.** Antes del partido sale la hoja «Arma tu equipo» (camiseta, pelota, cancha y dificultad). Las ventajas (`ventajasDe`) quedan guardadas en el partido (`partidoNuevo(ventajas)`) y no cambian hasta el próximo, aunque cambies de camiseta en el vestuario.
+- En los niveles y el reto todas las camisetas juegan igual: lo que comprueba el servidor y los rankings no cambian. El motor recibe `potencia` (1 por defecto: los niveles dan exactamente lo mismo), `radioPortero` en la cancha y `potencia`/`ruidoExtra` en `jugadaDeKapi`.
+
+### Los nombres: Walito y Happy (2026-11-09)
+
+- La mascota **Kapi ahora se llama Walito**, y el gato (Michi en la Pichanga, «Adicto» en los stickers) **ahora se llama Happy**. Los juegos son «Las Bolitas de Walito», «La Ruleta de Walito» y «La Pichanga de Walito».
+- Solo cambió lo que se ve. Los nombres internos siguen igual para no romper nada: `kapi` en minúscula, `CARAS_KAPI`, `feedKapiSecure`, `Kapi.jsx`/`VentanaKapi`, `/assets/kapi/`, el pack `kapi`/`adicto` de stickers y `PERSONAJES.michi`. Las guías de más arriba usan los nombres viejos.
+- Los polos «Adicto a las…» son productos: no cambian.

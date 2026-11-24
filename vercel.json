@@ -21,6 +21,10 @@
   },
   "rewrites": [
     {
+      "source": "/__kapi/:path*",
+      "destination": "https://us-central1-sistema-gestion-3b225.cloudfunctions.net/kapiAssistant/:path*"
+    },
+    {
       "source": "/__/auth/:path*",
       "destination": "https://sistema-gestion-3b225.firebaseapp.com/__/auth/:path*"
     },

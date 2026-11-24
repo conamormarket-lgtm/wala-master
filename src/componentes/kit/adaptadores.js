@@ -71,8 +71,16 @@ const esDeCrear = (p) => p?.esPrendaBase === true || p?.esComboCrear === true;
 /** Una prenda de Crear que también se vende sin personalizar ("Agregar al carrito" y "Personalízalo"). */
 const seVendeTalCual = (p) => p?.esPrendaBase === true && p.seVendeTalCual === true;
 
-/** Agotado: en Crear solo con un stock cargado en 0; en la tienda, sin stock. */
-const agotadoDe = (p) => (esDeCrear(p) ? typeof p.inStock === 'number' && p.inStock <= 0 : !p?.inStock);
+/**
+ * Agotado: solo con un stock cargado en 0 (o menos). Sin stock cargado es sin
+ * límite, en Crear y en la tienda: así lo leen la lista del admin y el servidor
+ * (cartValidation). Antes un producto sin el campo salía "Agotado" y se vendía.
+ */
+const agotadoDe = (p) => {
+  const v = p?.inStock;
+  if (v === undefined || v === null || v === '') return false;
+  return !(Number(v) > 0);
+};
 
 /** Adónde lleva "Personalízalo": el estudio de la prenda (en ese color) o el combo. */
 export function rutaPersonalizar(p, colorId) {
@@ -481,10 +489,10 @@ export function grillaDesdeConfiguracion(layout = {}) {
 // juegosDelArcade vive en adaptadoresArcade.js: solo la usa la Zona Arcade
 // y aquí habría ido al archivo principal de la tienda.
 
-/* ── Kapi, la mascota ───────────────────────────────────── */
+/* ── Walito, la mascota ───────────────────────────────────── */
 
 /**
- * Cómo está Kapi hoy, desde el perfil (misma regla que KapiPet y que
+ * Cómo está Walito hoy, desde el perfil (misma regla que KapiPet y que
  * feedKapiSecure): props de KapiFlotante y VentanaKapi.
  *  - alimentado: lastKapiClaimDate es hoy (hora de Lima)
  *  - felicidad: la guardada con el mismo decaimiento que aplicará el servidor
@@ -521,7 +529,7 @@ export function retoDesdePerfil(reto, perfil = {}) {
   return {
     titulo: reto.title,
     descripcion: reto.description,
-    recompensa: reto.rewardType === 'main' ? `${reto.rewardCoins} monedas` : 'Doble monedas al alimentar a Kapi',
+    recompensa: reto.rewardType === 'main' ? `${reto.rewardCoins} monedas` : 'Doble monedas al alimentar a Walito',
     progreso: esEste ? Number(avance.progress) || 0 : 0,
     meta: Number(reto.goal) || 1,
     completado: (esEste && Boolean(avance.completed)) || Boolean(perfil?.challengeEvidencesApproved?.includes(reto.challengeId)),
@@ -764,15 +772,23 @@ const diaLegible = (iso) => {
 /**
  * Recompensa de rewardsCatalog → TarjetaRecompensa.
  *  - beneficio: el texto del premio (textoPremio de utils/ruletaModel, como
- *    CatalogReward); sin él, reward.value
+ *    CatalogReward); sin él, nada. reward.value es la nota interna del admin
+ *    ("solo la ve el admin"): antes salía aquí en las recompensas a mano.
  */
 export const recompensaDesdeFirestore = (r = {}, beneficio) => ({
   id: r.id,
   titulo: r.title,
   descripcion: r.description,
   imagen: r.imageUrl || null,
-  beneficio: beneficio || r.value || '',
+  beneficio: beneficio || '',
   costo: Number(r.cost) || 0,
+  // Stickers de WhatsApp: se añaden desde la app (el aviso del canje lo dice).
+  stickers: r.tipo === 'stickers_whatsapp',
+  // Los packs de stickers son de una sola vez por persona (redeemRewardSecure
+  // no deja canjear el mismo dos veces); los cupones se canjean las veces que sea.
+  packId: r.tipo === 'stickers_whatsapp' ? r.packId || '' : '',
+  // Las demás, solo si el admin las marcó «Una vez por persona».
+  unaVez: r.tipo === 'stickers_whatsapp' || r.unaVezPorPersona === true,
 });
 
 /**
@@ -784,6 +800,8 @@ export const cuponDesdeFirestore = (c = {}, estado = 'activo') => ({
   codigo: c.code,
   texto: c.texto || c.titulo || c.title || 'Cupón de descuento',
   origen: c.origen,
+  // De una marca (Las Bolitas, la ruleta o el catálogo): solo descuenta sus productos.
+  marca: c.brandId ? c.marcaNombre || '' : '',
   estado,
   vence: diaLegible(c.expiraEn),
   // Los cupones viejos del catálogo (sin tipo) los aplica un asesor.
@@ -813,7 +831,7 @@ export const misionDesdeServidor = (m = {}, acciones = {}) => {
 };
 
 /** TIERS de constants/tiers.js → niveles de NivelCuenta (sin el emoji: cada uno lleva su sello). */
-export const nivelesDesdeTiers = (tiers = []) => tiers.map((t) => ({ clave: t.key, nombre: t.name, min: Number(t.min) || 0 }));
+export const nivelesDesdeTiers = (tiers = []) => tiers.map((t) => ({ clave: t.key, nombre: t.name, min: Number(t.min) || 0, regalo: t.regalo || '' }));
 
 /**
  * Milisegundos del último guardado de un diseño, o null. `updatedAt` llega
@@ -1116,7 +1134,7 @@ const esRelleno = (u) => !u || String(u).includes('placeholder');
  * Mismos enlaces que CartItem: el combo de Crear a /combo/:id?mio=, una
  * creación a /creacion/:designId, lo demás a /producto/:id.
  */
-export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}) {
+export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta, noDisponible } = {}) {
   const custom = item.customization || null;
   const piezasCrear = custom?.tipo === 'comboCrear' ? custom.piezas || [] : null;
   // Un cuadro, mousepad o tomatodo hecho con el personalizador anterior (oct.
@@ -1173,6 +1191,7 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
     seleccionado: item.selected !== false,
     url,
     avisoPersonalizacion: editorAnterior ? 'Este diseño se hizo con el editor anterior. Quítalo y vuelve a crearlo en Crear para poder pagarlo.' : undefined,
+    noDisponible: noDisponible || undefined,
     detalles,
     combo: Boolean(item.isComboProduct || piezasCrear),
     piezas,

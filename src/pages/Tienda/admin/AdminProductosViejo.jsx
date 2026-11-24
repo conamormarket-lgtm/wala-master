@@ -1,0 +1,977 @@
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getProducts, getProduct, getCategories, deleteProduct, updateProduct, updateProductField, createProduct } from '../../../services/products';
+import { getBrands } from '../../../services/brands';
+import { deleteFile } from '../../../services/firebase/storage';
+import { createReferenceProducts } from '../../../scripts/createReferenceProducts';
+import { exportProducts } from '../../../utils/exportProducts';
+import { useToast } from '../../../hooks/useToast';
+import Button from '../../../components/common/Button';
+import Toggle from '../../../components/common/Toggle/Toggle';
+import ProductTable from '../../../components/admin/ProductTable/ProductTable';
+import BulkActions from '../../../components/admin/BulkActions/BulkActions';
+import ToastContainer from '../../../components/common/Toast/ToastContainer';
+import { EyeIcon, EyeOffIcon, EditIcon, TrashIcon, GridIcon, TableIcon, CopyIcon } from '../../../components/common/Icons/Icons';
+import { Clock, Edit2, Trash2 } from 'lucide-react';
+import { toDirectImageUrl, toThumbnailImageUrl } from '../../../utils/imageUrl';
+import ComboProductImage from '../components/ComboProductImage/ComboProductImage';
+import { tienePersonalizacionVieja, esEsclava, quitarPersonalizacionVieja, NOTA_ESCLAVA } from '../../../services/personalizacionVieja';
+import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
+import styles from './AdminProductos.module.css';
+
+// Los personalizables y los packs de Crear: sus listas de siempre, dentro de
+// Productos (bajan al abrir su chip).
+const AdminPrendasCrear = lazy(() => import('../../admin/AdminPrendasCrear'));
+const AdminCombosCrear = lazy(() => import('../../admin/AdminCombosCrear'));
+
+const VISTAS = ['tienda', 'crear', 'packs', 'todos'];
+
+/** "Todos": el catálogo entero en una lista corta, con dónde se ve cada uno y su ficha. */
+const ListaTodos = ({ productos }) => {
+  const [busqueda, setBusqueda] = useState('');
+  const q = busqueda.trim().toLowerCase();
+  const filas = productos
+    .filter((p) => p.deleted !== true && (!q || String(p.name || '').toLowerCase().includes(q)))
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  const etiquetas = (p) => {
+    if (p.esComboCrear) {
+      const pub = p.comboCrear?.publicado === true;
+      return [['Pack de Crear', 'crear'], [pub ? 'En Crear' : 'Borrador', pub ? 'ok' : 'apagado'], pub && p.enTienda && ['En la tienda', 'ok']];
+    }
+    if (p.esPrendaBase) {
+      const pub = p.visible !== false;
+      return [['Personalizable', 'crear'], [pub ? 'En Crear' : 'Borrador', pub ? 'ok' : 'apagado'], pub && p.enTienda && ['En la tienda', 'ok']];
+    }
+    // Reemplazado por su personalizable: la web ya no lo muestra (la app y los combos sí).
+    if (p.reemplazadoPor) return [p.isComboProduct && ['Combo', 'crear'], ['Reemplazado por su personalizable', 'apagado']];
+    return [p.isComboProduct && ['Combo', 'crear'], [p.visible !== false ? 'En la tienda' : 'Oculto', p.visible !== false ? 'ok' : 'apagado']];
+  };
+  const ficha = (p) => (p.esComboCrear ? '/admin/productos?ver=packs' : p.esPrendaBase ? `/admin/prendas-crear/${p.id}` : `/admin/productos/${p.id}`);
+  return (
+    <div className={styles.todos}>
+      <input
+        type="search"
+        className={styles.searchInput}
+        placeholder="Buscar en todo el catálogo…"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+      />
+      <ul className={styles.todosLista}>
+        {filas.map((p) => (
+          <li key={p.id}>
+            <Link to={ficha(p)} className={styles.todosFila}>
+              <strong>{p.name || 'Sin nombre'}</strong>
+              <span className={styles.todosEtiquetas}>
+                {etiquetas(p).filter(Boolean).map(([texto, tono]) => (
+                  <span key={texto} className={`${styles.etiquetaVista} ${styles[`etiqueta_${tono}`]}`}>{texto}</span>
+                ))}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {!filas.length && <p className={styles.subtitle}>No hay productos con ese nombre.</p>}
+    </div>
+  );
+};
+
+const AdminProductosViejo = () => {
+  const queryClient = useQueryClient();
+  // Qué se ve: la tienda (por defecto), los personalizables, los packs de Crear o todo.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const ver = VISTAS.includes(searchParams.get('ver')) ? searchParams.get('ver') : 'tienda';
+  const cambiarVista = (v) => setSearchParams(v === 'tienda' ? {} : { ver: v }, { replace: true });
+  const [menuNuevo, setMenuNuevo] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [creatingReference, setCreatingReference] = useState(false);
+  const [createResult, setCreateResult] = useState(null);
+  const [optimisticVisibility, setOptimisticVisibility] = useState({});
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('admin-products-view-mode');
+    return saved === 'table' ? 'table' : 'cards';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  // Filtro por estado. Por defecto se muestran solo los productos ACTIVOS
+  // (visibles en la tienda); 'hidden' = ocultos/archivados; 'all' = todos.
+  const [statusFilter, setStatusFilter] = useState('active');
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const { toasts, removeToast, success, error: showError } = useToast();
+
+  const [drafts, setDrafts] = useState([]);
+
+  useEffect(() => {
+    const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
+    setDrafts(savedDrafts);
+  }, []);
+
+  const handleDiscardDraft = async (draftId) => {
+    if (!window.confirm('¿Seguro que deseas descartar este borrador? Si es de un producto nuevo, sus fotos temporales también se eliminarán de la nube.')) return;
+
+    const draft = drafts.find(d => d.draftId === draftId);
+    if (!draft) return;
+
+    // ── Protección de historial (P0) ─────────────────────────────────────
+    // Al EDITAR un producto existente, el formulario usa draftId = id del
+    // producto, así que las URLs del borrador apuntan a las imágenes VIVAS
+    // del producto publicado (posiblemente congeladas en pedidos/wishlists/
+    // listas de regalos). Solo se borran archivos de Storage cuando el
+    // borrador es de un producto NUEVO nunca publicado.
+    let esProductoPublicado = (productsData || []).some(p => p.id === draftId);
+    if (!esProductoPublicado) {
+      // Doble verificación contra Firestore (por si la lista aún no cargó).
+      // Ante un error de red se asume publicado: mejor dejar un archivo
+      // huérfano que romper las miniaturas del historial.
+      try {
+        const { data } = await getProduct(draftId);
+        esProductoPublicado = Boolean(data);
+      } catch (e) {
+        esProductoPublicado = true;
+      }
+    }
+
+    if (!esProductoPublicado) {
+      const urlsToDelete = [];
+      if (draft.form?.variants) {
+        draft.form.variants.forEach(v => {
+          if (v.imageUrl) urlsToDelete.push(v.imageUrl);
+          if (v.images && v.images.length > 0) urlsToDelete.push(...v.images);
+        });
+      }
+
+      if (urlsToDelete.length > 0) {
+        success('Borrando archivos temporales...', { duration: 3000 });
+        try {
+          await Promise.all(urlsToDelete.map(url => deleteFile(url)));
+        } catch (e) {
+          console.error("Error al borrar archivos de Firebase", e);
+        }
+      }
+    }
+
+    // El doc del borrador (localStorage) se elimina siempre; el Storage solo
+    // se toca en el caso de producto nuevo (bloque de arriba).
+    const newDrafts = drafts.filter(d => d.draftId !== draftId);
+    setDrafts(newDrafts);
+    localStorage.setItem('wala_drafts', JSON.stringify(newDrafts));
+
+    success('Borrador descartado exitosamente');
+  };
+
+  const { data: productsData, isLoading, error } = useQuery({
+    queryKey: ['admin-products'],
+    queryFn: async () => {
+      const { data, error: err } = await getProducts([], null, null, { includeHidden: true });
+      if (err) throw new Error(err);
+      return data;
+    }
+  });
+
+  const { data: categoriesData = [] } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: async () => {
+      const { data, error: err } = await getCategories();
+      if (err) throw new Error(err);
+      return data;
+    }
+  });
+
+  const { data: brandsData = [] } = useQuery({
+    queryKey: ['admin-brands'],
+    queryFn: async () => {
+      const { data, error: err } = await getBrands();
+      if (err) throw new Error(err);
+      return data;
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      setDeleteConfirm(null);
+      // Soft-delete: el producto queda archivado/oculto, no se borra físicamente.
+      success('Producto archivado: ya no se muestra en la tienda');
+    },
+    onError: () => {
+      showError('Error al eliminar el producto');
+    }
+  });
+
+  const toggleVisibleMutation = useMutation({
+    mutationFn: async ({ id, product, visible }) => {
+      const result = await updateProduct(id, { ...product, visible });
+      // Anti-"zombi": normalizeProductPayload NO incluye `deleted`, así que al
+      // reactivar un producto archivado quedaría visible:true + deleted:true
+      // (aparece en catálogo pero ProductPage lo bloquea). Escritura PARCIAL
+      // (updateDoc) para limpiar el tombstone al volver a mostrarlo.
+      if (visible === true && product?.deleted === true) {
+        await updateProductField(id, { visible: true, deleted: false });
+      }
+      return result;
+    },
+    onMutate: async ({ id, visible }) => {
+      // Cancelar queries en curso
+      await queryClient.cancelQueries({ queryKey: ['admin-products'] });
+
+      // Snapshot del valor anterior
+      const previousProducts = queryClient.getQueryData(['admin-products']);
+
+      // Optimistic update
+      queryClient.setQueryData(['admin-products'], (old) => {
+        if (!old) return old;
+        return old.map((p) => (p.id === id ? { ...p, visible } : p));
+      });
+
+      // Guardar estado optimista
+      setOptimisticVisibility((prev) => ({ ...prev, [id]: visible }));
+
+      return { previousProducts };
+    },
+    onError: (err, variables, context) => {
+      // Revertir en caso de error
+      if (context?.previousProducts) {
+        queryClient.setQueryData(['admin-products'], context.previousProducts);
+      }
+      setOptimisticVisibility((prev) => {
+        const newState = { ...prev };
+        delete newState[variables.id];
+        return newState;
+      });
+      showError('Error al cambiar visibilidad del producto');
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      // Limpiar estado optimista después de éxito
+      setOptimisticVisibility({});
+      success(variables.visible ? 'Producto mostrado exitosamente' : 'Producto ocultado exitosamente');
+    },
+    onSettled: () => {
+      // Limpiar estado optimista después de completar
+      setTimeout(() => {
+        setOptimisticVisibility({});
+      }, 500);
+    }
+  });
+
+  // Guardar preferencia de vista
+  useEffect(() => {
+    localStorage.setItem('admin-products-view-mode', viewMode);
+  }, [viewMode]);
+
+  const categoryName = (p) => {
+    const ids = p.categories ?? (p.category ? [p.category] : []);
+    if (!ids.length) return '—';
+    return ids.map((id) => categoriesData.find((c) => c.id === id)?.name || id).join(', ');
+  };
+
+  // IDs de productos que alguna vez fueron usados como pieza de un combo
+  // (comboItems[].productId de cualquier producto combo). Estas piezas suelen
+  // guardarse con visible:false a propósito — no se venden sueltas, solo
+  // alimentan el combo — y antes se veían igual que un producto archivado en
+  // la pestaña "Ocultos", sin forma de distinguirlos sin abrir cada uno.
+  // Las prendas y los combos de Crear tienen su propia sección (Prendas de
+  // Crear, Combos de Crear): aquí solo lo que se vende en la tienda.
+  const deCrear = useMemo(() => ({
+    prendas: (productsData || []).filter((p) => p.esPrendaBase === true && p.deleted !== true).length,
+    combos: (productsData || []).filter((p) => p.esComboCrear === true && p.deleted !== true).length,
+  }), [productsData]);
+  // La tienda: lo de siempre, más los personalizables que salen en ella (su
+  // ficha tiene todo); sin los reemplazados por uno de esos (siguen en Todos).
+  const catalogo = useMemo(
+    () => (productsData || []).filter((p) => !p.reemplazadoPor && p.esComboCrear !== true
+      && (p.esPrendaBase !== true || p.enTienda === true)),
+    [productsData],
+  );
+
+  // Los que aún tienen la personalización de antes (editor viejo o Yoryo):
+  // desde el 2026-10-20 la tienda no la ofrece; con un botón pasan a normales.
+  const conPersonalizacion = useMemo(() => catalogo.filter(tienePersonalizacionVieja), [catalogo]);
+  const [quitandoPersonalizacion, setQuitandoPersonalizacion] = useState(false);
+  const quitarPersonalizacion = async () => {
+    const esclavas = conPersonalizacion.filter(esEsclava);
+    const nombres = conPersonalizacion.slice(0, 15).map((p) => `• ${p.name}${esEsclava(p) ? ' (esclava)' : ''}`).join('\n');
+    const mas = conPersonalizacion.length > 15 ? `\n… y ${conPersonalizacion.length - 15} más` : '';
+    if (!window.confirm(`¿Pasar estos ${conPersonalizacion.length} productos a normales (sin personalizar)?\n\n${nombres}${mas}`
+      + (esclavas.length ? `\n\nA las esclavas (${esclavas.length}) se les agrega a la descripción: "${NOTA_ESCLAVA}"` : ''))) return;
+    setQuitandoPersonalizacion(true);
+    let fallos = 0;
+    for (const p of conPersonalizacion) {
+      const { error } = await quitarPersonalizacionVieja(p);
+      if (error) fallos += 1;
+    }
+    setQuitandoPersonalizacion(false);
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    if (fallos) showError(`${fallos} no se pudieron cambiar. Vuelve a intentarlo.`);
+    else success('Listo: ya no queda ningún producto con la personalización de antes.');
+  };
+
+  const comboItemProductIds = useMemo(() => {
+    const ids = new Set();
+    catalogo.forEach((p) => {
+      if (p.isComboProduct && Array.isArray(p.comboItems)) {
+        p.comboItems.forEach((item) => { if (item?.productId) ids.add(item.productId); });
+      }
+    });
+    return ids;
+  }, [catalogo]);
+
+  const products = useMemo(() => {
+    if (!productsData) return [];
+    let filtered = catalogo.map((p) => {
+      const withComboFlag = { ...p, isComboPiece: comboItemProductIds.has(p.id) };
+      // Aplicar estado optimista si existe
+      if (optimisticVisibility[p.id] !== undefined) {
+        return { ...withComboFlag, visible: optimisticVisibility[p.id] };
+      }
+      return withComboFlag;
+    });
+
+    // Filtrar por estado (activo = visible en la tienda). "Ocultos" excluye
+    // las piezas de combo a propósito — antes se mezclaban en la misma lista
+    // que lo archivado/oculto manualmente, y se veían igual de "perdidas"
+    // aunque estar ocultas es su estado normal y esperado. Tienen su propia
+    // pestaña ("Piezas de combo") para revisarlas sin ese ruido.
+    if (statusFilter === 'active') {
+      filtered = filtered.filter((p) => p.visible !== false);
+    } else if (statusFilter === 'hidden') {
+      filtered = filtered.filter((p) => p.visible === false && !p.isComboPiece);
+    } else if (statusFilter === 'comboPiece') {
+      filtered = filtered.filter((p) => p.isComboPiece);
+    }
+
+    // Filtrar por búsqueda
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((p) => {
+        const nameMatch = p.name?.toLowerCase().includes(query);
+        const categoryMatch = categoryName(p).toLowerCase().includes(query);
+        const priceMatch = String(p.price || '').includes(query);
+        return nameMatch || categoryMatch || priceMatch;
+      });
+    }
+
+    return filtered;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsData, catalogo, comboItemProductIds, optimisticVisibility, searchQuery, statusFilter]);
+
+  // Conteos por estado para las etiquetas del filtro (sobre el total, sin filtrar).
+  // "Pieza de combo" es una etiqueta transversal (como "Destacado"): un producto
+  // puede ser pieza de un combo y a la vez seguir visible/vendible por su cuenta
+  // (ej. las casacas de Universitario/Alianza Lima/Dragon Ball/Naruto/Black
+  // Clover, que están en un combo Y en el catálogo normal) — por eso "Activos"
+  // los sigue contando y "Piezas de combo" los cuenta también, sin importar
+  // si están ocultos o no. Antes "comboPiece" solo contaba los ocultos, así
+  // que estas 7 casacas visibles quedaban en la lista de la pestaña pero sin
+  // la etiqueta, una inconsistencia entre el filtro y el badge.
+  const statusCounts = useMemo(() => {
+    const base = catalogo.map((p) =>
+      optimisticVisibility[p.id] !== undefined ? { ...p, visible: optimisticVisibility[p.id] } : p
+    );
+    const active = base.filter((p) => p.visible !== false).length;
+    const comboPiece = base.filter((p) => comboItemProductIds.has(p.id)).length;
+    const hidden = base.filter((p) => p.visible === false && !comboItemProductIds.has(p.id)).length;
+    return { all: base.length, active, hidden, comboPiece };
+  }, [catalogo, comboItemProductIds, optimisticVisibility]);
+
+  const handleToggleVisibility = (product) => {
+    const newVisible = !(product.visible !== false);
+    toggleVisibleMutation.mutate({
+      id: product.id,
+      product,
+      visible: newVisible
+    });
+  };
+
+  const handleDelete = (product) => {
+    setDeleteConfirm(product);
+  };
+
+  const handleBulkShow = async () => {
+    if (selectedProductIds.length === 0) return;
+    if (!window.confirm(`¿Mostrar ${selectedProductIds.length} producto(s) seleccionado(s)?`)) return;
+
+    setBulkProcessing(true);
+    try {
+      const updates = products
+        .filter(p => selectedProductIds.includes(p.id))
+        .map(p => ({
+          id: p.id,
+          product: p,
+          visible: true
+        }));
+
+      await Promise.all(updates.map(async (update) => {
+        await updateProduct(update.id, { ...update.product, visible: true });
+        // Anti-"zombi": limpiar el tombstone (deleted:true) al reactivar en masa
+        // (normalizeProductPayload no incluye `deleted`, ver toggleVisibleMutation).
+        if (update.product?.deleted === true) {
+          await updateProductField(update.id, { visible: true, deleted: false });
+        }
+      }));
+
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      setSelectedProductIds([]);
+      success(`${selectedProductIds.length} producto(s) mostrado(s) exitosamente`);
+    } catch (error) {
+      console.error('Error al mostrar productos:', error);
+      showError('Error al mostrar algunos productos');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleBulkHide = async () => {
+    if (selectedProductIds.length === 0) return;
+    if (!window.confirm(`¿Ocultar ${selectedProductIds.length} producto(s) seleccionado(s)?`)) return;
+
+    setBulkProcessing(true);
+    try {
+      const updates = products
+        .filter(p => selectedProductIds.includes(p.id))
+        .map(p => ({
+          id: p.id,
+          product: p,
+          visible: false
+        }));
+
+      await Promise.all(updates.map(update =>
+        updateProduct(update.id, { ...update.product, visible: false })
+      ));
+
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      setSelectedProductIds([]);
+      success(`${selectedProductIds.length} producto(s) ocultado(s) exitosamente`);
+    } catch (error) {
+      console.error('Error al ocultar productos:', error);
+      showError('Error al ocultar algunos productos');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+    // Soft-delete: se archivan/ocultan, no se borran físicamente (historial a salvo).
+    if (!window.confirm(`¿Eliminar ${selectedProductIds.length} producto(s) seleccionado(s)? Quedarán archivados y ocultos de la tienda; sus datos se conservan para el historial de compras.`)) return;
+
+    setBulkProcessing(true);
+    try {
+      await Promise.all(selectedProductIds.map(id => deleteProduct(id)));
+
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      const count = selectedProductIds.length;
+      setSelectedProductIds([]);
+      success(`${count} producto(s) archivado(s): ya no se muestran en la tienda`);
+    } catch (error) {
+      console.error('Error al eliminar productos:', error);
+      showError('Error al eliminar algunos productos');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleExport = () => {
+    try {
+      const count = exportProducts(products, categoriesData, selectedProductIds.length > 0 ? selectedProductIds : null);
+      success(`Se exportaron ${count} producto(s) exitosamente`);
+    } catch (err) {
+      console.error('Error al exportar:', err);
+      showError('Error al exportar productos: ' + err.message);
+    }
+  };
+
+  const handleDuplicate = async (product) => {
+    try {
+      // Crear copia del producto sin el ID
+      const { id, createdAt, ...productData } = product;
+      const duplicateData = {
+        ...productData,
+        name: `${productData.name} (Copia)`,
+        visible: false, // Oculto por defecto para que el admin lo revise
+      };
+
+      const result = await createProduct(duplicateData);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      success('Producto duplicado exitosamente');
+
+      // Navegar al producto duplicado para editarlo
+      if (result.data?.id) {
+        setTimeout(() => {
+          window.location.href = `/admin/productos/${result.data.id}`;
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Error al duplicar producto:', err);
+      showError('Error al duplicar producto: ' + (err.message || 'Error desconocido'));
+    }
+  };
+
+  const handleCreateReferenceProducts = async () => {
+    if (!window.confirm('¿Crear 5 productos de referencia (Poleras, Polos, Joggers, Gorros, Joyas)?\n\nEsto creará productos con datos de ejemplo.')) {
+      return;
+    }
+
+    setCreatingReference(true);
+    setCreateResult(null);
+
+    try {
+      const result = await createReferenceProducts();
+      setCreateResult(result);
+
+      // Invalidar queries para refrescar la lista
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (error) {
+      console.error('Error al crear productos de referencia:', error);
+      setCreateResult({
+        success: false,
+        error: error.message || 'Error desconocido'
+      });
+    } finally {
+      setCreatingReference(false);
+    }
+  };
+
+  return (
+    <div className={styles.wrapper}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Productos</h1>
+          <p className={styles.subtitle}>Todo el catálogo: lo que se vende tal cual, lo que el cliente personaliza en Crear y sus packs.</p>
+          {conPersonalizacion.length > 0 && (
+            <div className={styles.avisoPersonalizacion} role="status">
+              <span>
+                {conPersonalizacion.length === 1 ? 'Un producto tiene' : `${conPersonalizacion.length} productos tienen`} la personalización de antes
+                (editor viejo o Yoryo). La tienda ya no la ofrece: pásalos a normales.
+              </span>
+              <button type="button" onClick={quitarPersonalizacion} disabled={quitandoPersonalizacion}>
+                {quitandoPersonalizacion ? 'Cambiando…' : 'Quitar la personalización vieja'}
+              </button>
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            variant="secondary"
+            onClick={handleExport}
+            disabled={products.length === 0}
+            title="Exportar productos a CSV"
+          >
+            Exportar CSV
+          </Button>
+          <div className={styles.nuevo}>
+            <Button onClick={() => setMenuNuevo((x) => !x)} aria-expanded={menuNuevo}>Nuevo</Button>
+            {menuNuevo && (
+              <div className={styles.nuevoMenu} role="menu">
+                <Link role="menuitem" to="/admin/productos/nuevo">
+                  <strong>Producto de la tienda</strong>
+                  <small>Se vende tal cual (puede llevar a Crear para personalizarlo).</small>
+                </Link>
+                <Link role="menuitem" to="/admin/prendas-crear/nueva">
+                  <strong>Personalizable</strong>
+                  <small>El cliente lo diseña en Crear (prenda, cuadro, tomatodo…).</small>
+                </Link>
+                <Link role="menuitem" to="/admin/productos?ver=packs&nuevo=1" onClick={() => setMenuNuevo(false)}>
+                  <strong>Pack de Crear</strong>
+                  <small>Varios personalizables a un precio de paquete.</small>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.vistas} role="tablist" aria-label="Qué productos ver">
+        {[
+          ['tienda', `Tienda (${catalogo.filter((p) => p.deleted !== true).length})`],
+          ['crear', `Personalizables (${deCrear.prendas})`],
+          ['packs', `Packs de Crear (${deCrear.combos})`],
+          ['todos', 'Todos'],
+        ].map(([clave, texto]) => (
+          <button
+            key={clave}
+            type="button"
+            role="tab"
+            aria-selected={ver === clave}
+            className={`${styles.vista} ${ver === clave ? styles.vistaActiva : ''}`}
+            onClick={() => cambiarVista(clave)}
+          >
+            {texto}
+          </button>
+        ))}
+      </div>
+
+      {ver !== 'tienda' && (
+        <Suspense fallback={<p className={styles.subtitle}>Cargando…</p>}>
+          {ver === 'crear' && <AdminPrendasCrear embebido />}
+          {ver === 'packs' && <AdminCombosCrear embebido nuevoInicial={searchParams.get('nuevo') === '1'} />}
+          {ver === 'todos' && <ListaTodos productos={productsData || []} />}
+        </Suspense>
+      )}
+
+      {ver === 'tienda' && (<>
+
+      {/* SECCIÓN BORRADORES PENDIENTES */}
+      {drafts.length > 0 && (
+        <div style={{ background: '#fafafa', border: '1px solid #eaeaea', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          <h2 style={{ color: '#111', margin: '0 0 0.5rem 0', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Clock size={18} color="#666" /> Borradores Pendientes ({drafts.length})
+          </h2>
+          <p style={{ color: '#666', margin: '0 0 1rem 0', fontSize: '0.9rem' }}>
+            Productos con ediciones sin finalizar. Las imágenes asociadas ocupan espacio temporal.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {drafts.map(draft => (
+              <div key={draft.draftId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '0.75rem', borderRadius: '6px', border: '1px solid #eaeaea' }}>
+                <div>
+                  <strong style={{ color: '#333' }}>{draft.form?.name || 'Producto sin nombre'}</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#888', marginLeft: '0.5rem' }}>
+                    Modificado: {new Date(draft.updatedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <Link to={`/admin/productos/nuevo?draftId=${draft.draftId}`}>
+                    <Button variant="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Edit2 size={14} /> Continuar
+                    </Button>
+                  </Link>
+                  <Button variant="secondary" onClick={() => handleDiscardDraft(draft.draftId)} style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#e03131', borderColor: '#ffc9c9', background: '#fff5f5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Trash2 size={14} /> Descartar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {createResult && (
+        <div style={{
+          padding: '12px',
+          marginBottom: '20px',
+          borderRadius: '4px',
+          backgroundColor: createResult.success ? '#d4edda' : '#f8d7da',
+          color: createResult.success ? '#155724' : '#721c24',
+          border: `1px solid ${createResult.success ? '#c3e6cb' : '#f5c6cb'}`
+        }}>
+          {createResult.success ? (
+            <div>
+              <strong>✅ Productos creados exitosamente!</strong>
+              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+                Se crearon {createResult.successful} de {createResult.total} productos de referencia.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <strong>❌ Error al crear productos</strong>
+              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+                {createResult.error || 'Error desconocido'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Barra de búsqueda y vista */}
+      <div className={styles.toolbar}>
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Buscar productos por nombre, categoría o precio..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className={styles.clearSearch}
+              aria-label="Limpiar búsqueda"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div className={styles.statusFilter} role="group" aria-label="Filtrar productos por estado">
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'active' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('active')}
+            aria-pressed={statusFilter === 'active'}
+          >
+            Activos ({statusCounts.active})
+          </button>
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'hidden' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('hidden')}
+            aria-pressed={statusFilter === 'hidden'}
+          >
+            Ocultos ({statusCounts.hidden})
+          </button>
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'comboPiece' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('comboPiece')}
+            aria-pressed={statusFilter === 'comboPiece'}
+            title="Prendas ocultas a propósito porque alimentan un producto combo — no son archivados"
+          >
+            Piezas de combo ({statusCounts.comboPiece})
+          </button>
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'all' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('all')}
+            aria-pressed={statusFilter === 'all'}
+          >
+            Todos ({statusCounts.all})
+          </button>
+        </div>
+        <div className={styles.viewToggle}>
+          <button
+            type="button"
+            className={`${styles.viewToggleBtn} ${viewMode === 'cards' ? styles.active : ''}`}
+            onClick={() => setViewMode('cards')}
+            title="Vista de tarjetas"
+            aria-label="Vista de tarjetas"
+          >
+            <GridIcon size={18} />
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewToggleBtn} ${viewMode === 'table' ? styles.active : ''}`}
+            onClick={() => setViewMode('table')}
+            title="Vista de tabla"
+            aria-label="Vista de tabla"
+          >
+            <TableIcon size={18} />
+          </button>
+        </div>
+      </div>
+
+      {isLoading && <p className={styles.loading}>Cargando productos...</p>}
+      {error && <p className={styles.error}>{error.message}</p>}
+
+      {/* Barra de acciones en masa */}
+      {viewMode === 'table' && selectedProductIds.length > 0 && (
+        <BulkActions
+          selectedCount={selectedProductIds.length}
+          onShowAll={handleBulkShow}
+          onHideAll={handleBulkHide}
+          onDeleteAll={handleBulkDelete}
+          onExport={() => {
+            try {
+              const count = exportProducts(products, categoriesData, selectedProductIds);
+              success(`Se exportaron ${count} producto(s) exitosamente`);
+            } catch (err) {
+              showError('Error al exportar: ' + err.message);
+            }
+          }}
+          onClearSelection={() => setSelectedProductIds([])}
+          isProcessing={bulkProcessing}
+        />
+      )}
+
+      {viewMode === 'table' ? (
+        <div className={styles.tableCard}>
+          <ProductTable
+            products={products}
+            categories={categoriesData}
+            onToggleVisibility={handleToggleVisibility}
+            onDelete={handleDelete}
+            onDuplicate={handleDuplicate}
+            optimisticVisibility={optimisticVisibility}
+            isToggling={toggleVisibleMutation.isPending}
+            isLoading={isLoading}
+            selectedIds={selectedProductIds}
+            onSelectProduct={setSelectedProductIds}
+            onSelectAll={setSelectedProductIds}
+          />
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {products.map((p) => {
+            const isVisible = p.visible !== false;
+            const isToggling = optimisticVisibility[p.id] !== undefined;
+
+            return (
+              <div key={p.id} className={styles.card}>
+                {/* Toggle de visibilidad en esquina superior derecha */}
+                <div className={styles.cardToggle}>
+                  <Toggle
+                    checked={isVisible}
+                    onChange={() => handleToggleVisibility(p)}
+                    disabled={toggleVisibleMutation.isPending && !isToggling}
+                    size="small"
+                    aria-label={isVisible ? 'Producto visible - Click para ocultar' : 'Producto oculto - Click para mostrar'}
+                  />
+                  <span className={styles.toggleIcon}>
+                    {isVisible ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
+                  </span>
+                </div>
+
+                <div className={styles.cardImage}>
+                  {p.isComboProduct ? (
+                    <ComboProductImage
+                      comboProduct={p}
+                      variantSelections={{}}
+                      className={styles.cardImageCombo}
+                    />
+                  ) : (() => {
+                    const principalVariant = p.variants?.find(v => v.id === p.defaultVariantId) || p.variants?.[0];
+                    const adminImageStr = p.thumbnailImageUrl || principalVariant?.imageUrl || p.mainImage || p.images?.[0] || '';
+                    const displayUrl = adminImageStr || '/images/placeholder.svg';
+                    const adminCrop = principalVariant?.thumbnailCrop?.percentages;
+
+                    const brand = brandsData.find(b => b.id === p.brandId);
+                    const brandBgStyle = brand ? {
+                      backgroundColor: brand.bgType === 'color' ? brand.bgColor : 'transparent',
+                      backgroundImage: brand.bgType === 'image' && brand.bgImage ? `url(${brand.bgImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    } : {};
+
+                    return (
+                      <div style={{ width: '100%', height: '100%', ...brandBgStyle }}>
+                        <OptimizedImage
+                          src={toThumbnailImageUrl(displayUrl)}
+                          fallbackSrc={toDirectImageUrl(displayUrl)}
+                          alt={p.name}
+                          containerClassName={styles.cardImageContainer}
+                          cropData={adminCrop}
+                          showSkeleton={true}
+                        />
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className={styles.cardBody}>
+                  <h3 className={styles.cardName}>{p.name}</h3>
+                  <p className={styles.cardMeta}>
+                    {categoryName(p)} · S/ {Number(p.price || 0).toFixed(2)} · Stock: {p.inStock ?? 0}
+                  </p>
+                  <div className={styles.badges}>
+                    {p.featured && <span className={styles.badge}>Destacado</span>}
+                    {/* "Pieza de combo" es transversal a la visibilidad: hay piezas
+                        que SOLO existen para el combo (ocultas) y otras que además
+                        se venden sueltas (ej. las casacas de Universitario/Alianza
+                        Lima/Dragon Ball/Naruto/Black Clover, visibles). Antes esta
+                        etiqueta solo se pintaba si estaba oculta, así que las
+                        visibles aparecían en la pestaña "Piezas de combo" pero sin
+                        ninguna marca que lo explicara. */}
+                    {p.isComboPiece && (
+                      <span className={styles.badgeCombo}>Pieza de combo</span>
+                    )}
+                    {/* Un personalizable que sale en la tienda: su ficha tiene el diseño y las plantillas. */}
+                    {p.esPrendaBase === true && (
+                      <span className={styles.badgeCombo}>{p.seVendeTalCual ? 'Tal cual y personalizable' : 'Personalizable'}</span>
+                    )}
+                    {p.esComboCrear === true && (
+                      <span className={styles.badgeCombo}>Combo de Crear</span>
+                    )}
+                    {!isVisible && !p.isComboPiece && !p.esComboCrear && (
+                      <span className={styles.badgeOculto}>{p.deleted === true ? 'Archivado' : 'Oculto'}</span>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.cardActions}>
+                  <Link
+                    to={p.esComboCrear === true ? '/admin/combos-crear' : `/admin/productos/${p.id}`}
+                    className={styles.btnEdit}
+                    title="Editar producto"
+                  >
+                    <EditIcon size={16} />
+                    <span>Editar</span>
+                  </Link>
+                  <button
+                    type="button"
+                    className={styles.btnDuplicate}
+                    onClick={() => handleDuplicate(p)}
+                    title="Duplicar producto"
+                  >
+                    <CopyIcon size={16} />
+                    <span>Duplicar</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btnDelete}
+                    onClick={() => setDeleteConfirm(p)}
+                    title="Eliminar producto"
+                  >
+                    <TrashIcon size={16} />
+                    <span>Eliminar</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {products.length === 0 && !isLoading && (
+        <p className={styles.empty}>No hay productos. <Link to="/admin/productos/nuevo">Crear uno</Link>.</p>
+      )}
+
+      {deleteConfirm && (
+        <div className={styles.modalBackdrop} onClick={() => setDeleteConfirm(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p>¿Eliminar el producto &quot;{deleteConfirm.name}&quot;?</p>
+            {/* Soft-delete: se informa al admin que es un archivado, no un borrado físico */}
+            <p style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>
+              El producto quedará archivado y oculto de la tienda. Sus fotos y datos se
+              conservan para el historial de compras y las listas de regalos.
+            </p>
+            <div className={styles.modalActions}>
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => deleteMutation.mutate(deleteConfirm.id)}
+                disabled={deleteMutation.isPending}
+                style={{ backgroundColor: '#ff4757', borderColor: '#ff4757' }}
+              >
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      </>)}
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </div>
+  );
+};
+
+export default AdminProductosViejo;

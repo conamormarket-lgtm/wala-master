@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import { dailyCheckIn, getDailyMissions, completeMission } from '../../services/loyalty';
 import { TIERS } from '../../constants/tiers';
 import { MISSION_ACTIONS } from '../../constants/missionActions';
 import { trackMissionComplete } from '../../services/analytics/tracker';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { PaginaMisiones } from '../../componentes/kit/paginas/CuentaRecompensas';
-import { misionDesdeServidor, nivelesDesdeTiers } from '../../componentes/kit/adaptadores';
+import { misionDesdeServidor, nivelesDesdeTiers, retoDesdePerfil } from '../../componentes/kit/adaptadores';
+import { marcarRetoVisto } from '../../utils/retoVisto';
 
 /*
  * Misiones diarias (/cuenta/misiones), paso 6 de la migración: PaginaMisiones
@@ -33,7 +36,13 @@ const fechaLegible = (iso) => {
 };
 
 export default function MisionesDeCuenta() {
-  const { user, userProfile, reloadProfile } = useAuth();
+  const { user, userProfile, reloadProfile, activeWeeklyChallenge } = useAuth();
+  const { addToast } = useGlobalToast();
+  // El servidor dice si con esta XP llegó a un nivel nuevo: su regalo ya está en Mis cupones.
+  const avisarNivel = useCallback((subio) => {
+    const ultimo = Array.isArray(subio) && subio.length ? subio[subio.length - 1] : null;
+    if (ultimo) addToast(`¡Llegaste a Nivel ${ultimo.nombre}! Tu regalo está en «Mis cupones».`, 'success');
+  }, [addToast]);
   const [misiones, setMisiones] = useState([]);
   const [fecha, setFecha] = useState(null);
   const [checkIn, setCheckIn] = useState(null); // { streak, reward }
@@ -63,6 +72,7 @@ export default function MisionesDeCuenta() {
       const [{ error: errCheck, data: datosCheck }] = await Promise.all([dailyCheckIn(), leerMisiones()]);
       if (activo && !errCheck && datosCheck) {
         setCheckIn(datosCheck);
+        avisarNivel(datosCheck.subioDeNivel);
         volarMonedasGanadas(null, Number(datosCheck.reward) || 0);
       }
       if (activo) setCargando(false);
@@ -78,6 +88,7 @@ export default function MisionesDeCuenta() {
       throw new Error(err);
     }
     if (data?.reward) volarMonedasGanadas(null, Number(data.reward) || 0);
+    avisarNivel(data?.subioDeNivel);
     const hecha = misiones.find((m) => m.missionId === id);
     trackMissionComplete(
       { missionId: id, missionName: hecha?.title, coins: data?.reward ?? hecha?.rewardPoints },
@@ -88,10 +99,25 @@ export default function MisionesDeCuenta() {
   };
 
   const tarjetas = useMemo(() => misiones.map((m) => misionDesdeServidor(m, MISSION_ACTIONS)), [misiones]);
+
+  // El reto de la semana, el mismo de la ventana de Walito; verlo aquí apaga su aviso.
+  const retoBase = retoDesdePerfil(activeWeeklyChallenge, userProfile);
+  useEffect(() => {
+    if (retoBase && user?.uid) marcarRetoVisto(user.uid, activeWeeklyChallenge.challengeId);
+  }, [Boolean(retoBase), user?.uid, activeWeeklyChallenge?.challengeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reto = retoBase && {
+    ...retoBase,
+    onEnviar: (url) => httpsCallable(getFunctions(), 'submitChallengeEvidence')({
+      evidenceUrl: url,
+      challengeId: activeWeeklyChallenge.challengeId,
+      evidenceType: 'link',
+    }),
+  };
   const reward = Number(checkIn?.reward) || 0;
 
   return (
     <PaginaMisiones
+      reto={reto || undefined}
       monedas={Number(userProfile?.monedas) || 0}
       xp={Number(userProfile?.xp) || 0}
       niveles={NIVELES}

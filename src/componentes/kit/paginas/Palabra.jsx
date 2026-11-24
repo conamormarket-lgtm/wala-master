@@ -5,7 +5,7 @@ import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import CuentaRegresiva from '../CuentaRegresiva';
 import { CARAS_KAPI } from '../piezas/Flotantes';
-import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
+import { MarcoJuego, BotonIrAlPanel, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
 import {
   TableroPalabra, TecladoPalabra, RankingPalabra, LeyendaPalabra, evaluarIntento, estadosDeTeclas, normalizarPalabra, INTENTOS_PALABRA,
 } from '../piezas/Palabra';
@@ -32,11 +32,12 @@ import s from './Juegos.module.css';
  *    Error con el mensaje para el cliente (con sesión se ve, gane o pierda)
  *  - ayudaVista: false la primera vez (la ayuda se abre sola) · onAyudaVista
  *  - estado: 'cargando'
+ *  - monedas: { saldo, cargando } para la barra del juego en el celular (MarcoJuego)
  * Los textos pasan por la traducción.
  */
 export function PaginaPalabra({
   objetivo = '', esValida, inicial = {}, sesion = false, estadisticas, ranking = {}, cargandoRanking = false, hasta,
-  onIntento, onTerminar, ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
+  onIntento, onTerminar, ayudaVista = true, onAyudaVista, urlLogin = '/login', estado, monedas,
 }) {
   const obj = normalizarPalabra(objetivo);
   const largo = [...obj].length || 5;
@@ -56,6 +57,8 @@ export function PaginaPalabra({
   const [pestana, setPestana] = useState('hoy');
   const inicio = useRef(inicial.inicio || null);
   const tiempos = useRef([]);
+  // El ranking: en el celular va bajo el teclado y la barra baja hasta él.
+  const panelRef = useRef(null);
   useEffect(() => () => tiempos.current.forEach(clearTimeout), []);
   const despues = (ms, fn) => { tiempos.current.push(setTimeout(fn, ms)); };
   const t = {
@@ -149,8 +152,10 @@ export function PaginaPalabra({
 
   return (
     <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="La Palabra del Día" onAyuda={() => setAyuda(true)}>
+      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }} className={s.seccionJuego}>
+        <MarcoJuego titulo="La Palabra del Día" onAyuda={() => setAyuda(true)} monedas={monedas}
+          acciones={<BotonIrAlPanel destino={panelRef} etiqueta="Ver el ranking" icono={<Trophy aria-hidden="true" />} />}
+        >
           <div className={s.palabra} data-componente="PaginaPalabra">
             <div className={s.juego}>
               <div className={s.mensajeZona} aria-live="polite">
@@ -167,7 +172,7 @@ export function PaginaPalabra({
                 </div>
               )}
             </div>
-            <aside className={s.lado}>
+            <aside ref={panelRef} className={s.lado}>
               <RankingPalabra hoy={ranking.hoy} global={ranking.global} pestana={pestana} onPestana={setPestana} cargando={cargandoRanking} />
             </aside>
           </div>

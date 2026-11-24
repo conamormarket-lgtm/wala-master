@@ -40,7 +40,7 @@ export const diasEntreFechasLima = (desde, hasta) => {
   return Math.round((b - a) / (24 * 60 * 60 * 1000));
 };
 
-// Felicidad de Kapi HOY: baja 10 por cada día sin comer (sin contar el primero).
+// Felicidad de Walito HOY: baja 10 por cada día sin comer (sin contar el primero).
 // Copia exacta de felicidadKapiHoy en functions/economyLogic.js — el servidor la
 // persiste al alimentarlo y el cliente la usa para pintar la barra mientras tanto.
 export const KAPI_HAPPINESS_STEP = 10;

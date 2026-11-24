@@ -1,0 +1,254 @@
+{
+ "generado": "2026-11-06",
+ "fuente": "LUMI_Base_Productos_margenes.xlsx (columna PRECIO LIVE)",
+ "productos": [
+  {
+   "id": "mussa-abib-quick-sunstick-protection-bar",
+   "codigo": "P5",
+   "precio": 79
+  },
+  {
+   "id": "mussa-anua-azelaic-acid-serum",
+   "codigo": "S10",
+   "precio": 97
+  },
+  {
+   "id": "mussa-anua-niacinamide-txa4-serum",
+   "codigo": "S7",
+   "precio": 119
+  },
+  {
+   "id": "mussa-anua-pdrn-hyaluron-capsule-100-serum",
+   "codigo": "S13",
+   "precio": 99
+  },
+  {
+   "id": "mussa-beautyofjoseon-relief-sun-rice",
+   "codigo": "P2",
+   "precio": 94
+  },
+  {
+   "id": "mussa-celimax-jojoba-cleansing-oil",
+   "codigo": "L4",
+   "precio": 75
+  },
+  {
+   "id": "mussa-celimax-noni-toner",
+   "codigo": "T1",
+   "precio": 80
+  },
+  {
+   "id": "mussa-centellian24-360-shot-eye-cream",
+   "codigo": "C3",
+   "precio": 99
+  },
+  {
+   "id": "mussa-cosrx-advanced-snail-96-mucin-essence",
+   "codigo": "T3",
+   "precio": 89
+  },
+  {
+   "id": "mussa-dralthea-147-barrier-cream",
+   "codigo": "H3",
+   "precio": 88
+  },
+  {
+   "id": "mussa-dralthea-345-relief-cream",
+   "codigo": "H1",
+   "precio": 88
+  },
+  {
+   "id": "mussa-dralthea-aqua-marine-deep-serum",
+   "codigo": "S6",
+   "precio": 89
+  },
+  {
+   "id": "mussa-dralthea-aqua-marine-watery-cream",
+   "codigo": "H2",
+   "precio": 88
+  },
+  {
+   "id": "mussa-dralthea-gentle-vitamin-c-serum",
+   "codigo": "S5",
+   "precio": 85
+  },
+  {
+   "id": "mussa-dralthea-pore-refresh-grinding-cleansing-balm",
+   "codigo": "L8",
+   "precio": 79
+  },
+  {
+   "id": "mussa-dralthea-pure-grinding-cleansing-balm",
+   "codigo": "L1",
+   "precio": 79
+  },
+  {
+   "id": "mussa-jumiso-niacinamide-20-serum",
+   "codigo": "S11",
+   "precio": 109
+  },
+  {
+   "id": "mussa-kseoul1988-eye-cream-retinal-liposome",
+   "codigo": "C2",
+   "precio": 99
+  },
+  {
+   "id": "mussa-kseoul1988-serum-retinal-liposome",
+   "codigo": "S1",
+   "precio": 99
+  },
+  {
+   "id": "mussa-medicube-collagen-glow-booster-serum",
+   "codigo": "S2",
+   "precio": 89
+  },
+  {
+   "id": "mussa-medicube-pdrn-pink-collagen-gel-mask",
+   "codigo": "TP2",
+   "precio": 23
+  },
+  {
+   "id": "mussa-medicube-pdrn-pink-peptide-serum",
+   "codigo": "S8",
+   "precio": 94
+  },
+  {
+   "id": "mussa-mixsoon-centella-cleansing-foam",
+   "codigo": "L5",
+   "precio": 69
+  },
+  {
+   "id": "mussa-mixsoon-collagen-glass-skin-mask",
+   "codigo": "H4",
+   "precio": 99
+  },
+  {
+   "id": "mussa-mixsoon-soondy-centella-essence",
+   "codigo": "T2",
+   "precio": 89
+  },
+  {
+   "id": "mussa-numbuzin-no9-eye-cream",
+   "codigo": "C1",
+   "precio": 98
+  },
+  {
+   "id": "mussa-skin1004-centella-ampoule",
+   "codigo": "S3",
+   "precio": 89
+  },
+  {
+   "id": "mussa-skin1004-hyalucica-sun-serum-spf50",
+   "codigo": "P4",
+   "precio": 79
+  },
+  {
+   "id": "mussa-skin1004-poremizing-ampoule",
+   "codigo": "S4",
+   "precio": 89
+  },
+  {
+   "id": "mussa-skin1004-centella-soothing-cream",
+   "codigo": "H6",
+   "precio": 89
+  },
+  {
+   "id": "mussa-skin1004-teatrica-bha-foam",
+   "codigo": "L2",
+   "precio": 67
+  },
+  {
+   "id": "mussa-skin1004-teatrica-sun-milk-spf50",
+   "codigo": "P3",
+   "precio": 85
+  },
+  {
+   "id": "mussa-skin1004-tone-brightening-cleansing-foam",
+   "codigo": "L7",
+   "precio": 67
+  },
+  {
+   "id": "lumi-sk1004-deepfoam",
+   "codigo": "L9",
+   "precio": 67
+  },
+  {
+   "id": "lumi-celimax-retinal",
+   "codigo": "S9",
+   "precio": 79
+  },
+  {
+   "id": "lumi-celimax-retinol",
+   "codigo": "S12",
+   "precio": 89
+  },
+  {
+   "id": "lumi-cent24-madeca",
+   "codigo": "H5",
+   "precio": 89
+  },
+  {
+   "id": "lumi-medicube-pdrncream",
+   "codigo": "H8",
+   "precio": 95
+  },
+  {
+   "id": "lumi-celimax-oilcream",
+   "codigo": "H9",
+   "precio": 99
+  },
+  {
+   "id": "lumi-sk1004-gelcream",
+   "codigo": "H10",
+   "precio": 89
+  },
+  {
+   "id": "lumi-sk1004-b5cream",
+   "codigo": "H11",
+   "precio": 89
+  },
+  {
+   "id": "lumi-medicube-txacream",
+   "codigo": "H12",
+   "precio": 95,
+   "descripcion": "<p>Crema antimanchas de doble textura: gel rojo + cápsulas rojas que se mezclan antes de aplicar. Con niacinamida al 5% (50.000 ppm, tercer ingrediente) + alfa-arbutina + 3-O-etil ascórbico + glutatión — cuatro activos que atacan el pigmento por vías distintas. Suma ceramida NP, ácido hialurónico, pantenol, bisabolol y ácido ferúlico para reparar barrera mientras aclara. Para manchas, marcas de acné y tono desigual, en todo tipo de piel.</p><h3>Cómo usarlo</h3><p>Mezcla el gel con las cápsulas en el dorso de la mano hasta integrarlas. Aplica tamaño garbanzo con toquecitos, mañana y noche, después de los sérums (también en el cuello). De día, sigue con protector solar.</p><p><strong>Contenido:</strong> 55 g</p>"
+  },
+  {
+   "id": "lumi-boj-aquafresh",
+   "codigo": "P1",
+   "precio": 94
+  },
+  {
+   "id": "lumi-celimax-sunstick",
+   "codigo": "P7",
+   "precio": 79
+  },
+  {
+   "id": "lumi-celimax-sunscreen",
+   "codigo": "P8",
+   "precio": 99
+  },
+  {
+   "id": "lumi-sk1004-spotpatch",
+   "codigo": "TP1",
+   "precio": 17
+  },
+  {
+   "id": "lumi-sk1004-claystick",
+   "codigo": "TP3",
+   "precio": 83
+  },
+  {
+   "id": "lumi-celimax-darkspotsun",
+   "codigo": "P9",
+   "precio": 94,
+   "descripcion": "<p>Protector solar SPF50+ PA++++ con filtros químicos de última generación (Uvinul A Plus + Tinosorb M + Uvinul T150 + Uvasorb HEB), fotoestables y de alta cobertura UVA. Suma niacinamida (posición 4) y ácido tranexámico (posición 14), así que protege y trabaja la mancha al mismo tiempo. Con polvo soft-focus que difumina el poro. Sin fragancia. Para piel grasa y mixta con manchas o marcas de acné.</p><h3>Cómo usarlo</h3><p>Último paso de la mañana. Aplica 2 líneas de dedo en toda la cara, 15-20 min antes de exponerte. Reaplica cada 2-3 horas si hay exposición solar.</p><p><strong>Contenido:</strong> 50 ml</p>"
+  },
+  {
+   "id": "lumi-medicube-txa15",
+   "codigo": "S14",
+   "precio": 97,
+   "descripcion": "<p>Sérum antimanchas con niacinamida 10% + ácido tranexámico 5% — el “15” del nombre es la suma de los dos. El tranexámico frena la producción de melanina y la niacinamida impide que esa melanina suba a la superficie: atacan la mancha por dos vías distintas. Es el sérum con más TXA de todo el catálogo. Para manchas solares, melasma y marcas post-acné.</p><h3>Cómo usarlo</h3><p>3–4 gotas por la noche después del tónico, antes de la crema. También puede usarse de día, siempre con protector solar encima. Palmaditas hasta absorber, evitando el borde del ojo.</p><p><strong>Contenido:</strong> 30 ml</p>"
+  }
+ ]
+}

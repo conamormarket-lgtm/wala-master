@@ -53,6 +53,7 @@ import FlotantesDeLaTienda from './components/marco/FlotantesDeLaTienda';
 import CabeceraDeTienda from './components/marco/CabeceraDeTienda';
 // Barra inferior con el kit (paso 7); con barraVieja, BottomNav.
 import BarraInferiorDeTienda from './components/marco/BarraInferiorDeTienda';
+import { esRutaDeJuego } from './components/marco/modoJuego';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
@@ -63,6 +64,8 @@ const Footer = lazy(() => import('./components/common/Footer'));
 const AnuncioDeCampana = lazy(() => import('./components/marco/AnuncioDeCampana'));
 // El aviso de una invitación (el del kit; con campanasViejo, el de antes).
 const AvisoInvitacion = lazy(() => import('./components/marco/AvisoInvitacionDeTienda'));
+const BienvenidaDeTienda = lazy(() => import('./components/marco/BienvenidaDeTienda'));
+const BienvenidaPage = lazy(() => import('./pages/BienvenidaPage'));
 const FirebaseWarning = lazy(() => import('./components/common/FirebaseWarning'));
 const RastreoCalor = lazy(() => import('./components/analytics/RastreoCalor'));
 
@@ -131,6 +134,7 @@ const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
+const EliminarCuentaPage = lazy(() => import('./pages/EliminarCuentaPage'));
 const LibroReclamacionesPage = lazy(() => import('./pages/LibroReclamacionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
@@ -145,6 +149,7 @@ const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const WordlePage = lazy(() => import('./pages/Tienda/WordlePage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
+const PichangaPage = lazy(() => import('./components/minijuegos/PichangaDeTienda'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 
 // MussaPage retirado: /MUSSA ahora es la página de la marca vía DynamicLandingPage (/:slug).
@@ -180,17 +185,15 @@ const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion')
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
-const AdminInventario = lazy(() => import('./pages/Tienda/admin/AdminInventario'));
 const RutasPrendasCrear = lazy(() => import('./pages/admin/RutasPrendasCrear'));
-const ImportarPlantillasYoryo = lazy(() => import('./pages/admin/plantillasYoryo/ImportarPlantillasYoryo'));
 const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
+const AdminPrimeraCompra = lazy(() => import('./pages/admin/AdminPrimeraCompra'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
 const AdminCategorias = lazy(() => import('./pages/admin/AdminCategorias'));
 const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
 const AdminCatalogAttributes = lazy(() => import('./pages/admin/AdminCatalogAttributes'));
 const AdminRecompensas = lazy(() => import('./pages/admin/AdminRecompensas'));
 const AdminEnviosZonas = lazy(() => import('./pages/admin/AdminEnviosZonas'));
-const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
 const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
 
@@ -200,11 +203,10 @@ const AdminSuscripcionDetalle = lazy(() => import('./pages/admin/AdminSuscripcio
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
-const AdminCliparts = lazy(() => import('./pages/admin/AdminCliparts'));
-const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
-const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
+const AdminPaginasBloqueadas = lazy(() => import('./pages/admin/AdminPaginasBloqueadas'));
+const AdminHistorialStock = lazy(() => import('./pages/admin/AdminHistorialStock'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminMisiones = lazy(() => import('./pages/admin/AdminMisiones'));
 const AdminPublicoProductos = lazy(() => import('./pages/admin/AdminPublicoProductos'));
@@ -222,14 +224,15 @@ const EditorVisual = lazy(() => import('./components/constructor/EditorVisual'))
 // se usa en /admin/notificaciones. lazy() lo devuelve a su propio chunk.
 const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications/AdminNotifications'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
+const AdminMarcaProductosRuta = lazy(() => import('./pages/admin/AdminMarcaProductosRuta'));
 
 // Enlaces útiles (constructor tipo Linktree / link-in-bio).
 const AdminEnlaces = lazy(() => import('./pages/admin/AdminEnlaces'));
 const AdminEnlaceEditor = lazy(() => import('./pages/admin/AdminEnlaceEditor'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
-const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminBolitasPage = lazy(() => import('./pages/admin/AdminBolitasPage'));
+const AdminPichangaPage = lazy(() => import('./pages/admin/AdminPichangaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminPopups = lazy(() => import('./pages/admin/AdminPopups'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
@@ -319,8 +322,9 @@ const GlobalLayout = ({ children }) => {
     );
   }
 
+  // Los minijuegos, a pantalla completa en el celular (marco/modoJuego.js).
   return (
-    <div className="App">
+    <div className={esRutaDeJuego(location.pathname) ? 'App modo-juego' : 'App'}>
       {rastreoCalor}
       <AvisoDelSistema />
       <NavProgressBar />
@@ -330,6 +334,7 @@ const GlobalLayout = ({ children }) => {
       {/* En la vista previa del mapa de calor no van avisos ni popups: la
           página tiene que verse como la vio el visitante, sin nada encima. */}
       {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AvisoInvitacion /></Suspense>}
+      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><BienvenidaDeTienda /></Suspense>}
       <ScrollTracker />
       <BarraDeAdmin />
       {isEditModeActive && (
@@ -517,8 +522,8 @@ function App() {
                                       {/* Los packs de Crear viven ahora en Productos (chip "Packs de Crear"). */}
                                       <Route path="combos-crear" element={<Navigate to="/admin/productos?ver=packs" replace />} />
                                       <Route path="prendas-crear/*" element={<RutasPrendasCrear />} />
-                                      <Route path="inventario" element={<AdminInventario />} />
-                                      <Route path="plantillas-yoryo" element={<ImportarPlantillasYoryo />} />
+                                      <Route path="inventario" element={<Navigate to="/admin/productos?ver=todos" replace />} />
+                                      <Route path="plantillas-yoryo" element={<Navigate to="/admin/productos?ver=crear" replace />} />
                                       <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
                                       <Route path="productos/:id" element={<AdminProductoFormV2 />} />
                                       <Route path="categorias" element={<AdminCategorias />} />
@@ -526,10 +531,10 @@ function App() {
                                       <Route path="atributos-catalogo" element={<AdminCatalogAttributes />} />
                                       <Route path="recompensas" element={<AdminRecompensas />} />
                                       <Route path="envios" element={<AdminEnviosZonas />} />
-                                      <Route path="blueprints" element={<AdminBlueprints />} />
 
                                       <Route path="whatsapp" element={<AdminWhatsApp />} />
                                       <Route path="referidos" element={<AdminReferidos />} />
+                                      <Route path="primera-compra" element={<AdminPrimeraCompra />} />
 
                                       {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
                                       <Route path="gestion-pagos" element={<AdminGestionPagos />} />
@@ -551,20 +556,24 @@ function App() {
 
                                       <Route path="destacados" element={<AdminDestacados />} />
                                       <Route path="zonas" element={<Navigate to="/admin" replace />} />
-                                      <Route path="cliparts" element={<AdminCliparts />} />
-                                      <Route path="mascota" element={<AdminMascota />} />
-                                      <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
+                                      {/* La imagen de Walito se quitó: ninguna página la mostraba. */}
+                                      <Route path="mascota" element={<Navigate to="/admin" replace />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
                                       <Route path="marcas" element={<AdminMarcas />} />
+                                      <Route path="marcas/:id/productos" element={<AdminMarcaProductosRuta />} />
                                       {/* "Elementos con diseño" solo editaba las burbujas de categorías: ahora van en el editor de cada página. */}
                                       <Route path="elementos-diseno/*" element={<Navigate to="/admin/landing-pages" replace />} />
                                       <Route path="landing-pages" element={<AdminLandingPages />} />
-                                      <Route path="temas" element={<AdminThemes />} />
+                                      {/* Los temas (CSS por landing) se quitaron: nadie los usaba. */}
+                                      <Route path="temas" element={<Navigate to="/admin/landing-pages" replace />} />
                                       <Route path="ruleta" element={<AdminRuletaPage />} />
               <Route path="bolitas" element={<AdminBolitasPage />} />
+              <Route path="pichanga" element={<AdminPichangaPage />} />
                                       <Route path="backups" element={<AdminBackups />} />
+                                      <Route path="historial-stock" element={<AdminHistorialStock />} />
+                                      <Route path="paginas-bloqueadas" element={<AdminPaginasBloqueadas />} />
                                       <Route path="configuracion" element={<AdminConfiguracion />} />
                                       <Route path="encuestas" element={<AdminEncuestas />} />
                                       <Route path="popups" element={<AdminPopups />} />
@@ -580,9 +589,13 @@ function App() {
                                   <Route path="/minijuegos" element={<MinijuegosPage />} />
                                   <Route path="/ruleta" element={<RuletaPage />} />
                                   <Route path="/ball-sort" element={<BallSortPage />} />
+                                  <Route path="/pichanga" element={<PichangaPage />} />
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                                  <Route path="/bienvenida" element={<BienvenidaPage />} />
+                                  {/* Pública: cómo borrar la cuenta (el enlace de Google Play). */}
+                                  <Route path="/eliminar-cuenta" element={<EliminarCuentaPage />} />
                                   {/* El registro enlazaba aquí y daba página no encontrada. */}
                                   <Route path="/terminos-condiciones" element={<Navigate to="/terminos-y-condiciones" replace />} />
                                   <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />

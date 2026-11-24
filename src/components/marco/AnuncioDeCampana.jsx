@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { tomarTurno, soltarTurno, useTurnoVentanas } from '../../utils/turnoVentanas';
+import { useEsperaBienvenida } from './BienvenidaDeTienda';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
@@ -66,6 +68,9 @@ export default function AnuncioDeCampana() {
   const [popup, setPopup] = useState(null);
   const [abierto, setAbierto] = useState(false);
   const inicioRef = useRef(Date.now());
+  // Una sola ventana grande a la vez: después de la bienvenida y de Walito.
+  const turno = useTurnoVentanas();
+  const esperaBienvenida = useEsperaBienvenida();
 
   const usuario = {
     uid: user?.uid || null,
@@ -87,7 +92,7 @@ export default function AnuncioDeCampana() {
   });
 
   useEffect(() => {
-    if (!popups?.length || abierto || loading || isEditModeActive) return undefined;
+    if (!popups?.length || abierto || loading || isEditModeActive || turno || esperaBienvenida) return undefined;
     if (yaHuboPopupEnSesion() || avisoIdiomaPendiente()) return undefined;
 
     const contexto = () => ({
@@ -110,6 +115,7 @@ export default function AnuncioDeCampana() {
       if (cancelado || yaHuboPopupEnSesion()) return;
       const p = elegirPopup(popups, contexto());
       if (!p || p.id !== candidato.id) return;
+      if (!tomarTurno('campana')) return;
       registrarMostrado(p);
       trackVista(p, usuarioRef.current);
       setPopup(p);
@@ -148,7 +154,13 @@ export default function AnuncioDeCampana() {
       cancelado = true;
       clearTimeout(t);
     };
-  }, [popups, pathname, user, userProfile, loading, isEditModeActive, abierto]);
+  }, [popups, pathname, user, userProfile, loading, isEditModeActive, abierto, turno, esperaBienvenida]);
+
+  // Al cerrarse (o desmontarse), suelta el turno.
+  useEffect(() => {
+    if (!abierto) soltarTurno('campana');
+  }, [abierto]);
+  useEffect(() => () => soltarTurno('campana'), []);
 
   const cerrar = useCallback(() => {
     if (abierto && popup) trackCierre(popup, usuarioRef.current);

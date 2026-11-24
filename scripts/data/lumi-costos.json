@@ -1,0 +1,251 @@
+{
+ "generado": "2026-11-11",
+ "fuente": "LUMI_Base_Productos_margenes.xlsx, hoja Lista de productos, columna Costo (por CODIGO)",
+ "productos": [
+  {
+   "id": "mussa-abib-quick-sunstick-protection-bar",
+   "codigo": "P5",
+   "costo": 50
+  },
+  {
+   "id": "mussa-anua-azelaic-acid-serum",
+   "codigo": "S10",
+   "costo": 68
+  },
+  {
+   "id": "mussa-anua-niacinamide-txa4-serum",
+   "codigo": "S7",
+   "costo": 68
+  },
+  {
+   "id": "mussa-anua-pdrn-hyaluron-capsule-100-serum",
+   "codigo": "S13",
+   "costo": 85
+  },
+  {
+   "id": "mussa-beautyofjoseon-relief-sun-rice",
+   "codigo": "P2",
+   "costo": 65.75
+  },
+  {
+   "id": "mussa-celimax-jojoba-cleansing-oil",
+   "codigo": "L4",
+   "costo": 41
+  },
+  {
+   "id": "mussa-celimax-noni-toner",
+   "codigo": "T1",
+   "costo": 60
+  },
+  {
+   "id": "mussa-centellian24-360-shot-eye-cream",
+   "codigo": "C3",
+   "costo": 81
+  },
+  {
+   "id": "mussa-cosrx-advanced-snail-96-mucin-essence",
+   "codigo": "T3",
+   "costo": 60
+  },
+  {
+   "id": "mussa-dralthea-147-barrier-cream",
+   "codigo": "H3",
+   "costo": 55
+  },
+  {
+   "id": "mussa-dralthea-345-relief-cream",
+   "codigo": "H1",
+   "costo": 55
+  },
+  {
+   "id": "mussa-dralthea-aqua-marine-deep-serum",
+   "codigo": "S6",
+   "costo": 50
+  },
+  {
+   "id": "mussa-dralthea-aqua-marine-watery-cream",
+   "codigo": "H2",
+   "costo": 45
+  },
+  {
+   "id": "mussa-dralthea-gentle-vitamin-c-serum",
+   "codigo": "S5",
+   "costo": 55
+  },
+  {
+   "id": "mussa-dralthea-pore-refresh-grinding-cleansing-balm",
+   "codigo": "L8",
+   "costo": 45
+  },
+  {
+   "id": "mussa-dralthea-pure-grinding-cleansing-balm",
+   "codigo": "L1",
+   "costo": 45
+  },
+  {
+   "id": "mussa-jumiso-niacinamide-20-serum",
+   "codigo": "S11",
+   "costo": 67
+  },
+  {
+   "id": "mussa-kseoul1988-eye-cream-retinal-liposome",
+   "codigo": "C2",
+   "costo": 70
+  },
+  {
+   "id": "mussa-kseoul1988-serum-retinal-liposome",
+   "codigo": "S1",
+   "costo": 70
+  },
+  {
+   "id": "mussa-medicube-collagen-glow-booster-serum",
+   "codigo": "S2",
+   "costo": 60
+  },
+  {
+   "id": "mussa-medicube-pdrn-pink-collagen-gel-mask",
+   "codigo": "TP2",
+   "costo": 12.5
+  },
+  {
+   "id": "mussa-medicube-pdrn-pink-peptide-serum",
+   "codigo": "S8",
+   "costo": 50
+  },
+  {
+   "id": "mussa-mixsoon-centella-cleansing-foam",
+   "codigo": "L5",
+   "costo": 39
+  },
+  {
+   "id": "mussa-mixsoon-collagen-glass-skin-mask",
+   "codigo": "H4",
+   "costo": 60
+  },
+  {
+   "id": "mussa-mixsoon-soondy-centella-essence",
+   "codigo": "T2",
+   "costo": 65
+  },
+  {
+   "id": "mussa-numbuzin-no9-eye-cream",
+   "codigo": "C1",
+   "costo": 70
+  },
+  {
+   "id": "mussa-skin1004-centella-ampoule",
+   "codigo": "S3",
+   "costo": 55
+  },
+  {
+   "id": "mussa-skin1004-hyalucica-sun-serum-spf50",
+   "codigo": "P4",
+   "costo": 42
+  },
+  {
+   "id": "mussa-skin1004-poremizing-ampoule",
+   "codigo": "S4",
+   "costo": 49
+  },
+  {
+   "id": "mussa-skin1004-centella-soothing-cream",
+   "codigo": "H6",
+   "costo": 61
+  },
+  {
+   "id": "mussa-skin1004-teatrica-bha-foam",
+   "codigo": "L2",
+   "costo": 41.2
+  },
+  {
+   "id": "mussa-skin1004-teatrica-sun-milk-spf50",
+   "codigo": "P3",
+   "costo": 48
+  },
+  {
+   "id": "mussa-skin1004-tone-brightening-cleansing-foam",
+   "codigo": "L7",
+   "costo": 41.2
+  },
+  {
+   "id": "lumi-sk1004-deepfoam",
+   "codigo": "L9",
+   "costo": 43.1
+  },
+  {
+   "id": "lumi-celimax-retinal",
+   "codigo": "S9",
+   "costo": 48
+  },
+  {
+   "id": "lumi-celimax-retinol",
+   "codigo": "S12",
+   "costo": 48
+  },
+  {
+   "id": "lumi-cent24-madeca",
+   "codigo": "H5",
+   "costo": 57.4
+  },
+  {
+   "id": "lumi-medicube-pdrncream",
+   "codigo": "H8",
+   "costo": 63
+  },
+  {
+   "id": "lumi-celimax-oilcream",
+   "codigo": "H9",
+   "costo": 48
+  },
+  {
+   "id": "lumi-sk1004-gelcream",
+   "codigo": "H10",
+   "costo": 46
+  },
+  {
+   "id": "lumi-sk1004-b5cream",
+   "codigo": "H11",
+   "costo": 55
+  },
+  {
+   "id": "lumi-medicube-txacream",
+   "codigo": "H12",
+   "costo": 53
+  },
+  {
+   "id": "lumi-boj-aquafresh",
+   "codigo": "P1",
+   "costo": 66
+  },
+  {
+   "id": "lumi-celimax-sunstick",
+   "codigo": "P7",
+   "costo": 49
+  },
+  {
+   "id": "lumi-celimax-sunscreen",
+   "codigo": "P8",
+   "costo": 47.5
+  },
+  {
+   "id": "lumi-sk1004-spotpatch",
+   "codigo": "TP1",
+   "costo": 13
+  },
+  {
+   "id": "lumi-sk1004-claystick",
+   "codigo": "TP3",
+   "costo": 54
+  },
+  {
+   "id": "lumi-celimax-darkspotsun",
+   "codigo": "P9",
+   "costo": 55
+  },
+  {
+   "id": "lumi-medicube-txa15",
+   "codigo": "S14",
+   "costo": 60
+  }
+ ]
+}

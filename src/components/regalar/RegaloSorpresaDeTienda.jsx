@@ -12,7 +12,7 @@ import { PaginaRegaloSorpresa } from '../../componentes/kit/paginas/Regalar';
  * La abre quien recibe el regalo, con o sin cuenta: obtenerRegaloSecure
  * devuelve solo para quién es, el mensaje y el sticker. En la app (Capacitor)
  * invita a la tienda; en la web, a descargar Walá (/descargar, sin recargar).
- * El Kapi flotante no sale aquí: el del sobre es el único a la vista.
+ * El Walito flotante no sale aquí: el del sobre es el único a la vista.
  */
 
 const enLaApp = () => Boolean(window.Capacitor?.isNativePlatform?.());

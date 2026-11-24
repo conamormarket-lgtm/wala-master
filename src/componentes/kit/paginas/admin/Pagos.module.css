@@ -1,0 +1,90 @@
+/* ── D3b · Gestión de pagos ────────────────────────────────── */
+.pagina,
+.bloques {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.fechas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+  max-width: 32rem;
+}
+
+.angosto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  max-width: 720px;
+}
+
+.tarjeta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+}
+
+.enlace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.enlaceTexto {
+  flex: 1 1 16rem;
+  min-width: 0;
+  height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.muestra {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  background: var(--violet-50);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.muestra span {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .muestra {
+  background: rgba(139, 92, 246, 0.12);
+}

@@ -5,6 +5,7 @@ import useLoViejo from '../../hooks/useLoViejo';
 import { tieneCuenta } from '../../utils/rutaPrivada';
 import PageLoading from '../common/PageLoading/PageLoading';
 import { EsqueletoPagina } from '../../componentes/kit/Esqueletos';
+import { CargandoPanel } from '../../componentes/kit/piezas/admin/CargandoPanel';
 import { formaDeRuta } from './formaDeRuta';
 
 /*
@@ -15,15 +16,18 @@ import { formaDeRuta } from './formaDeRuta';
  *
  * El esqueleto sigue a quien mira (con o sin sesión); mientras la sesión aún
  * carga se asume que la hay (lo común, y lo que hace el marco de la cuenta):
- * sin eso, quien sí entró veía un instante la invitación a entrar. El admin no es del kit:
- * ahí sigue el de antes. El interruptor cargaVieja (useLoViejo('carga')) vuelve
- * a PageLoading en todas.
+ * sin eso, quien sí entró veía un instante la invitación a entrar. En el
+ * admin, la silueta del panel (CargandoPanel; con adminViejo, PageLoading). El
+ * interruptor cargaVieja (useLoViejo('carga')) vuelve a PageLoading en todas.
  */
 export default function CargandoRuta({ ruta }) {
   const { pathname } = useLocation();
   const { user, loading } = useAuth();
   const cargaVieja = useLoViejo('carga');
-  const forma = formaDeRuta(ruta || pathname);
+  const adminViejo = useLoViejo('admin');
+  const donde = ruta || pathname;
+  if (!cargaVieja && !adminViejo && /^\/admin(\/|$)/.test(donde)) return <CargandoPanel />;
+  const forma = formaDeRuta(donde);
   if (cargaVieja || !forma) return <PageLoading />;
   return <EsqueletoPagina forma={forma.forma} modulo={forma.modulo} sesion={loading || tieneCuenta(user)} />;
 }

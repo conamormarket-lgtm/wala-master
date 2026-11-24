@@ -6,7 +6,7 @@ import { useTexto } from '../Traduccion';
 import s from './Flotantes.module.css';
 
 /*
- * Lo que flota sobre la página: WhatsApp, Kapi y la píldora de
+ * Lo que flota sobre la página: WhatsApp, Walito y la píldora de
  * recompensa. Todo por props: quién lo ve (sesión, rutas) y qué
  * pasa al tocar lo decide la tienda. Los textos pasan por la traducción.
  */
@@ -14,7 +14,8 @@ import s from './Flotantes.module.css';
 /**
  * Pila de flotantes: abajo a la derecha, uno sobre otro (el primer hijo queda
  * abajo), por encima de la barra inferior en el celular. `izquierda` va
- * abajo a la izquierda (la píldora de recompensa).
+ * abajo a la izquierda (las píldoras de recompensa; varias, una sobre otra,
+ * la primera abajo).
  *  - contenida: dentro de un marco con su propio scroll (demo, editor) en vez
  *    de fija a la ventana.
  *  - ocultarEnCelular: en páginas que ya tienen su botón fijo abajo (la ficha
@@ -68,9 +69,9 @@ export function BotonWhatsApp({ numero, mensaje, etiqueta = '¿Te ayudamos?' }) 
 }
 
 /**
- * Caras de Kapi por estado, en 3D (public/assets/kapi/3d: 512px, con el borde
+ * Caras de Walito por estado, en 3D (public/assets/kapi/3d: 512px, con el borde
  * limpio). Es la fuente única del kit: estados vacíos, el acceso, la encuesta,
- * la ventana de Kapi… CARAS_KAPI_MINI (256px) para donde va chico (el botón
+ * la ventana de Walito… CARAS_KAPI_MINI (256px) para donde va chico (el botón
  * flotante). Las de antes (/assets/kapi/kapi-*.webp) siguen en la tienda real.
  */
 export const CARAS_KAPI = {
@@ -85,12 +86,12 @@ export const CARAS_KAPI_MINI = {
 };
 
 /**
- * Kapi, la mascota, flotando. Su cara cambia con el estado; el "!" avisa que
- * hay algo pendiente (comida del día, tutorial). La ventana de Kapi la abre
+ * Walito, la mascota, flotando. Su cara cambia con el estado; el "!" avisa que
+ * hay algo pendiente (comida del día, tutorial). La ventana de Walito la abre
  * quien recibe onAbrir.
  *  - estado: 'feliz' | 'hambre' | 'triste'
  */
-export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiqueta = 'Tu mascota Kapi' }) {
+export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiqueta = 'Tu mascota Walito' }) {
   const nombre = useTexto(etiqueta);
   const algo = useTexto('tiene algo para ti');
   return (
@@ -106,13 +107,17 @@ export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiquet
  * Va con la moneda en un sello blanco de aro dorado. En el celular se
  * recoge en ese sello con "+15".
  *  - to: adónde lleva  · onIr: además de ir (cerrar menús…)
+ *  - onAbrir: sin `to`, la píldora es un botón que abre algo (la semana de
+ *    bienvenida abre su aviso grande)
  *  - onCerrar: la X (la tienda decide cuánto se oculta)
  */
-export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, icono = 'moneda' }) {
+export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, onAbrir, icono = 'moneda' }) {
   const t = { titulo: useTexto(titulo), texto: useTexto(texto), ocultar: useTexto('Ocultar') };
+  const Contenedor = !to && onAbrir ? 'button' : Enlace;
+  const props = !to && onAbrir ? { type: 'button', onClick: onAbrir } : { to, onClick: onIr };
   return (
     <div className={s.pildora}>
-      <Enlace to={to} onClick={onIr} className={s.pildoraEnlace} aria-label={[t.titulo, t.texto].filter(Boolean).join('. ')}>
+      <Contenedor {...props} className={[s.pildoraEnlace, !to && onAbrir && s.pildoraBoton].filter(Boolean).join(' ')} aria-label={[t.titulo, t.texto].filter(Boolean).join('. ')}>
         <span className={s.pildoraSello}>
           <IconoWala nombre={icono} tamano={36} sticker={false} />
           {monedas ? <span className={s.pildoraMonedas} aria-hidden="true">+{monedas}</span> : null}
@@ -121,7 +126,7 @@ export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, 
           <strong>{t.titulo}</strong>
           {t.texto && <span>{t.texto}</span>}
         </span>
-      </Enlace>
+      </Contenedor>
       {onCerrar && (
         <button type="button" className={s.pildoraCerrar} onClick={onCerrar} aria-label={t.ocultar}>
           <X aria-hidden="true" />

@@ -31,6 +31,7 @@ const EXACTAS = {
   'politicas-privacidad': 'legal',
   'terminos-y-condiciones': 'legal',
   'terminos-condiciones': 'legal',
+  'eliminar-cuenta': 'legal',
   'libro-de-reclamaciones': 'reclamaciones',
   app: 'aviso',
   descargar: 'aviso',

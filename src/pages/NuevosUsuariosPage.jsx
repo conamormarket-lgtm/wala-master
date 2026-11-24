@@ -951,7 +951,7 @@ const NuevosUsuariosPage = () => {
               width: '85%', /* 👈 TAMAÑO DE LA IMAGEN */
               zIndex: 1    /* 👈 ORDEN DE CAPAS (1 está más al fondo) */
             }}>
-              {renderMedia(`${process.env.PUBLIC_URL}/diseno/kapi.png`, 'Kapi', { width: '100%', objectFit: 'contain' })}
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/kapi.png`, 'Walito', { width: '100%', objectFit: 'contain' })}
             </div>
 
             {/* 2. Componente: Texto (Frente Superior Centro) */}
@@ -987,7 +987,7 @@ const NuevosUsuariosPage = () => {
               width: '24%',
               zIndex: 2    /* 👈 ORDEN DE CAPAS (2 está en el medio de los 3) */
             }}>
-              {renderMedia(`${process.env.PUBLIC_URL}/diseno/15 kapi.png`, '15 Kapi', { width: '100%', objectFit: 'contain' })}
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/15 kapi.png`, '15 Walito', { width: '100%', objectFit: 'contain' })}
             </div>
 
           </div>
@@ -1234,9 +1234,9 @@ const NuevosUsuariosPage = () => {
 
               </div>
 
-              {/* Imagen de Kapi */}
+              {/* Imagen de Walito */}
               <div className="enc-kapi-container">
-                {renderMedia(`${process.env.PUBLIC_URL}/diseno/ya.png`, 'Kapi mascot', {}, 'enc-kapi-img')}
+                {renderMedia(`${process.env.PUBLIC_URL}/diseno/ya.png`, 'Walito mascot', {}, 'enc-kapi-img')}
               </div>
             </div>
           </div>
