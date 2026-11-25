@@ -129,7 +129,6 @@ export function PaginaResumenResultados({
         </Aviso>
       )}
       {otros && <p className={s.nota}><strong>Otros cobros: {otros.montos}</strong> ({otros.detalle}). No son pedidos de la tienda, por eso van aparte.</p>}
-      {embudoLanding}
       <BloqueMetrica titulo="De la ficha al pedido pagado">
         {datos.productFunnelDays ? <>
           <FilaCifras etiqueta="Actividad de las fichas">
@@ -191,6 +190,7 @@ export function PaginaResumenResultados({
       </ColumnasMetricas>
 
       {rotosSinResolver > 0 && <div id="enlaces"><TarjetaEnlacesRotos {...enlacesRotos} /></div>}
+      {embudoLanding}
     </div>
   );
 }
