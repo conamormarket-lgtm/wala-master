@@ -87,10 +87,12 @@ test('consulta acotada por tipo y ambas fechas, índice existente y ningún esca
     ['where', 'type', '==', 'landing_funnel'], ['where', 'clientTsMs', '>=', 100], ['where', 'clientTsMs', '<=', 200],
   ]);
   assert.deepEqual(r.constraints.find(c => c[0] === 'orderBy'), ['orderBy', 'clientTsMs', 'desc']);
-  assert.deepEqual(r.constraints.find(c => c[0] === 'limit'), ['limit', 12001]);
+  const readLimit = r.constraints.find(c => c[0] === 'limit');
+  assert.deepEqual(readLimit, ['limit', 9001]);
+  assert.ok(readLimit[1] <= 10000, 'el servidor rechaza consultas con límite superior a 10 000');
 });
 
 test('el panel nunca presenta datos parciales ni un fallo de permisos como cero visitantes', async () => {
-  await assert.rejects((await reader({ count: 12001 })).getLandingFunnel({ startDateMs: 100, endDateMs: 200 }), /rango de fechas más corto/);
+  await assert.rejects((await reader({ count: 9001 })).getLandingFunnel({ startDateMs: 100, endDateMs: 200 }), /rango de fechas más corto/);
   await assert.rejects((await reader({ fail: true })).getLandingFunnel({ startDateMs: 100, endDateMs: 200 }), /permission-denied/);
 });

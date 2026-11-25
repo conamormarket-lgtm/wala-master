@@ -18,7 +18,7 @@ El recorrido dura como máximo 24 horas y vive en `sessionStorage` por landing. 
 
 La agregación une primero el recorrido y luego cuenta identificadores anónimos únicos en todo el periodo; no suma únicos diarios. La fecha de entrada debe estar dentro del rango y el avance debe ocurrir hasta su final. Una persona en varios productos cuenta una vez en el total y una vez en cada producto. Es una aproximación por navegador, sin unión de dispositivos ni de navegación privada. Las entradas anteriores a la publicación no se reconstruyen.
 
-La consulta usa el índice existente `type ASC, clientTsMs DESC` y las reglas existentes de analítica: ingesta anónima, lectura administrativa. No requiere nuevas funciones, reglas ni índices. Lee solo el tipo y periodo elegidos, con un máximo de 12 000 eventos; si se supera, muestra un error para acortar el periodo en lugar de mostrar totales parciales. El panel cachea un minuto y admite actualización manual.
+La consulta usa el índice existente `type ASC, clientTsMs DESC` y las reglas existentes de analítica: ingesta anónima, lectura administrativa. No requiere nuevas funciones, reglas ni índices. Lee solo el tipo y periodo elegidos, con un máximo de 9 000 eventos y un documento adicional para detectar truncación, siempre por debajo del límite de 10 000 de producción. Si se supera, muestra un error para acortar el periodo en lugar de mostrar totales parciales. El panel cachea un minuto y admite actualización manual.
 
 ## Validación local
 
