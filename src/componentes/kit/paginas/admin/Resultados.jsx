@@ -93,7 +93,7 @@ export function MarcoResultados({
  */
 export function PaginaResumenResultados({
   datos, anterior, comparar = false, periodo = {}, cargando = false, error, avisos = [], nombrePagina = (p) => p,
-  verCanales, enlacesRotos, ahora = Date.now(),
+  verCanales, enlacesRotos, embudoLanding, ahora = Date.now(),
 }) {
   const [canal, setCanal] = useState('');
   const canales = datos?.canales || [];
@@ -129,6 +129,7 @@ export function PaginaResumenResultados({
         </Aviso>
       )}
       {otros && <p className={s.nota}><strong>Otros cobros: {otros.montos}</strong> ({otros.detalle}). No son pedidos de la tienda, por eso van aparte.</p>}
+      {embudoLanding}
       <BloqueMetrica titulo="De la ficha al pedido pagado">
         {datos.productFunnelDays ? <>
           <FilaCifras etiqueta="Actividad de las fichas">

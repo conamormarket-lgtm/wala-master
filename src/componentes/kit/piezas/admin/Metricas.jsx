@@ -116,7 +116,7 @@ export const SinDatos = ({ children }) => <p className={s.sinDatos}>{children}</
  *    · numerada: el puesto a la izquierda · en la fila, `etiqueta` (un chip antes del nombre) y `nota`
  *    (un aviso corto debajo, en ámbar: "No está a la vista")
  */
-export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false, inicial, unidad, onElegir, elegida, numerada = false }) {
+export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false, inicial, unidad, onElegir, elegida, numerada = false, multilinea = false }) {
   const [abierta, setAbierta] = useState(false);
   const todas = filas.filter((f) => conCeros || Number(f.valor) > 0).slice(0, max);
   if (!todas.length || !todas.some((f) => Number(f.valor) > 0)) return <SinDatos>{vacio}</SinDatos>;
@@ -124,7 +124,7 @@ export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'S
   const visibles = inicial && !abierta ? todas.slice(0, inicial) : todas;
   return (
     <>
-    <ol className={`${s.barras} ${s[`barras_${tono}`] || ''}`} data-componente="ListaBarras">
+    <ol className={`${s.barras} ${s[`barras_${tono}`] || ''} ${multilinea ? s.barrasMultilinea : ''}`} data-componente="ListaBarras">
       {visibles.map((f, i) => {
         const cuerpo = (
           <>

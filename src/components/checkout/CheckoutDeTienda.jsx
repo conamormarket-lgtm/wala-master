@@ -20,6 +20,7 @@ import { getFx, penToUsd, penToLocal } from '../../services/fx';
 import { obtenerDirecciones, agregarDireccion, actualizarDireccion } from '../../services/direcciones';
 import { misTarjetas } from '../../services/tarjetasGuardadas';
 import { trackCheckoutStart, trackPurchaseComplete, trackOrderRequested } from '../../services/analytics/tracker';
+import { trackLandingFunnel } from '../../services/analytics/landingFunnel.js';
 import {
   armarPedidoWeb, armarWhatsapp, aplicarEfectosDeCompra, completarPerfilDesdeCheckout, formatDeliveryDate, businessDaysUntil,
 } from '../../services/pedidoCheckout';
@@ -490,6 +491,7 @@ export default function CheckoutDeTienda() {
   const alWhatsApp = async (marcaId) => {
     const datos = preparado;
     if (!datos) return;
+    trackLandingFunnel('whatsapp', { location });
     const grupos = datos.waGroups || [];
     const grupo = marcaId != null ? grupos[Number(marcaId)] : (grupos.length === 1 ? grupos[0] : null);
     const popup = window.open('', '_blank');
@@ -536,6 +538,7 @@ export default function CheckoutDeTienda() {
 
   // Al llegar al pago: despertar las funciones que se usan desde ahí.
   const alPaso = (n) => {
+    if (n === 0 || n === 1) trackLandingFunnel(n === 0 ? 'shipping' : 'payment', { location });
     if (n !== 1 || !preparado) return;
     precalentarFunciones(preparado.esPeru
       ? ['processCulqiPayment', 'crearSolicitudWhatsappSecure']
@@ -621,9 +624,9 @@ export default function CheckoutDeTienda() {
           <PagoTarjeta
             monto={Number(preparado.montoDeuda || 0)}
             procesando={procesando}
-            onPagar={abrir}
+            onPagar={() => { trackLandingFunnel('card', { location }); abrir(); }}
             tarjetas={tarjetas?.tarjetas || []}
-            onPagarGuardada={pagarConGuardada}
+            onPagarGuardada={(...args) => { trackLandingFunnel('card', { location }); return pagarConGuardada(...args); }}
             guardar={guardarTarjeta}
             onGuardar={tarjetas?.puede && (tarjetas.tarjetas.length < tarjetas.maximo) ? setGuardarTarjeta : undefined}
           />
@@ -634,6 +637,7 @@ export default function CheckoutDeTienda() {
       <Suspense fallback={null}>
         <PaypalCheckout
           soloBotones
+          onElegir={() => trackLandingFunnel('paypal', { location })}
           functionsClient={functionsRef.current}
           pedido={preparado}
           amountUsd={penToUsd(preparado.montoDeuda, fx)}

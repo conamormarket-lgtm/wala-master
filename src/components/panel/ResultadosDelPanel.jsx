@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { getCategories } from '../../services/products';
+import { getLandingFunnel } from '../../services/adminLandingFunnel';
+import EmbudoLanding from '../../componentes/kit/piezas/admin/EmbudoLanding';
 import { getPerfilesPorUid } from '../../services/adminProductInterest';
 import { getEnlacesRotos, redirigirALanding } from '../../services/adminEnlacesRotos';
 import {
@@ -104,6 +106,7 @@ export function useEnlacesRotos(filtros) {
 
 /** /admin/resultados y sus pestañas: el marco con las pestañas que este admin puede ver. */
 export default function ResultadosDelPanel() {
+  const queryClient = useQueryClient();
   const { adminPermissions } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -119,6 +122,7 @@ export default function ResultadosDelPanel() {
   return (
     <MarcoResultados
       {...marco}
+      onActualizar={() => { marco.onActualizar?.(); void queryClient.invalidateQueries({ queryKey: ['admin-landing-funnel'] }); }}
       // Comparar solo cambia el Resumen (sus cifras y la tabla): en las demás pestañas no sale.
       comparar={actual?.end ? marco.comparar : false}
       onComparar={actual?.end ? marco.onComparar : undefined}
@@ -135,6 +139,12 @@ export default function ResultadosDelPanel() {
 /** El Resumen: las cifras, la tendencia, cosas por mejorar, los canales y los enlaces rotos. */
 export function ResumenDelPanel() {
   const { filtros, analitica, periodo } = useOutletContext();
+  const embudoLanding = useQuery({
+    queryKey: ['admin-landing-funnel', filtros.dateRange.startDateMs, filtros.dateRange.endDateMs],
+    queryFn: () => getLandingFunnel(filtros.dateRange),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const { data, anterior, isLoading, error } = analitica;
   const { data: catalogo } = useProducts([], { includeHidden: true });
   const nombres = useMemo(() => new Map((catalogo || []).map((p) => [String(p.id), p.name])), [catalogo]);
@@ -156,6 +166,7 @@ export function ResumenDelPanel() {
 
   return (
     <PaginaResumenResultados
+      embudoLanding={<EmbudoLanding data={embudoLanding.data} cargando={embudoLanding.isFetching} error={embudoLanding.error?.message} onActualizar={() => embudoLanding.refetch()} />}
       datos={data}
       anterior={anterior}
       comparar={Boolean(filtros.compare)}

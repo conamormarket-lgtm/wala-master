@@ -63,6 +63,7 @@
     "test:functions": "node functions/test/economyLogic.test.js && node functions/test/internationalAdvanceLogic.test.js && node functions/test/ruletaLogic.test.js && node functions/test/catalogPricing.test.js && node functions/test/fechasLogic.test.js && node functions/test/ordersLogic.test.js && node functions/test/productViewLogic.test.js && node functions/test/comunidadLogic.test.js && node functions/test/referidosLogic.test.js && node functions/test/bolitasLogic.test.js",
     "test:meta-pixel": "node --test src/services/analytics/metaPixel.test.mjs",
     "test:product-interest": "node --test src/services/analytics/productInterest.test.mjs",
+    "test:landing-funnel": "node --test src/services/analytics/landingFunnel.test.mjs && node --experimental-vm-modules --test scripts/test/landingFunnelIntegration.test.mjs",
     "test:popups": "node --test src/services/popupsLogic.test.mjs",
     "test:admin": "node --test src/componentes/kit/adaptadoresAdmin.test.mjs",
     "test:bolitas": "node --test src/componentes/kit/piezas/bolitasMotor.test.mjs src/componentes/kit/piezas/bolitasProgreso.test.mjs && node functions/test/bolitasLogic.test.js",

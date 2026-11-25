@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { rutaCompra } from '../../utils/checkoutOrigin.mjs';
+import { trackLandingFunnel } from '../../services/analytics/landingFunnel.js';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,6 +32,7 @@ import { itemCarritoDesde } from '../../componentes/kit/adaptadores';
 export default function CarritoDeTienda() {
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => { trackLandingFunnel('cart', { location }); }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   const queryClient = useQueryClient();
   const {
     items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart, actualizarPrecios,

@@ -199,12 +199,14 @@ export function PaginaCheckout({
   onListoRef.current = onListo;
   const onPasoRef = useRef(onPaso);
   onPasoRef.current = onPaso;
+  const pasoMostrado = estado !== 'cargando' && (items.length > 0 || enListo);
   useEffect(() => {
+    if (!pasoMostrado) return;
     onPasoRef.current?.(pasoVisible);
     if (pasoVisible === 2) onListoRef.current?.(listo?.metodo || pedido?.metodo);
     // Al cambiar de paso, la vista vuelve al principio (las opciones de pago quedaban abajo).
     if (pasoVisible > 0) raiz.current?.scrollIntoView?.({ behavior: reducir ? 'auto' : 'smooth', block: 'start' });
-  }, [pasoVisible]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pasoVisible, pasoMostrado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (estado === 'cargando') return <EsqueletoPagina forma="checkout" sesion={sesion} />;
   if (!items.length && !enListo) {

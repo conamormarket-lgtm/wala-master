@@ -1,0 +1,2 @@
+.contenido { display: grid; gap: 1rem; min-width: 0; }
+.nota { margin: 0; font-size: 0.84rem; color: var(--color-text-muted); line-height: 1.5; }

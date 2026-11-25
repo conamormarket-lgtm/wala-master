@@ -442,6 +442,10 @@
   min-width: 0;
 }
 
+.barrasMultilinea .barraTexto { flex-wrap: wrap; }
+.barrasMultilinea .barraNombre { white-space: normal; overflow: visible; text-overflow: clip; }
+.barrasMultilinea .barraValor { margin-left: auto; }
+
 .barraTexto {
   display: flex;
   align-items: baseline;

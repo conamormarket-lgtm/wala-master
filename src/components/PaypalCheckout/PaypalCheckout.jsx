@@ -39,6 +39,7 @@ const PaypalCheckout = ({
   webOrderId,
   soloBotones = false,
   onProcesando,
+  onElegir,
   onError: onErrorPagina,
   functionsClient,
 }) => {
@@ -141,6 +142,7 @@ const PaypalCheckout = ({
     return (
       <PayPalScriptProvider options={initialOptions}>
         <PayPalButtons
+          onClick={() => onElegir?.()}
           createOrder={createOrder}
           onApprove={onApprove}
           onError={onError}
@@ -181,6 +183,7 @@ const PaypalCheckout = ({
         <div style={{ display: isProcessing ? 'none' : 'block' }}>
           <PayPalScriptProvider options={initialOptions}>
             <PayPalButtons
+              onClick={() => onElegir?.()}
               createOrder={createOrder}
               onApprove={onApprove}
               onError={onError}
