@@ -447,6 +447,7 @@
 .filtroDestacadoLista {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
 }
 
@@ -506,6 +507,7 @@
 
   .filtroDestacadoLista {
     flex-wrap: nowrap;
+    justify-content: flex-start;
     overflow-x: auto;
     padding: 0.25rem 0.25rem 0.65rem;
     scrollbar-width: thin;

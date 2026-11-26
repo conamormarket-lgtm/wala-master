@@ -6,7 +6,7 @@ import s from './BannerCatalogoMarca.module.css';
 /** Banner compacto del catálogo: la portada y el logo originales de la marca. */
 export function BannerCatalogoMarca({ nombre, logo, imagen }) {
   return (
-    <section className={s.banner} aria-label={nombre}>
+    <section className={s.banner} aria-label={nombre} data-banner-catalogo="">
       {imagen && (
         <img
           className={s.productos}

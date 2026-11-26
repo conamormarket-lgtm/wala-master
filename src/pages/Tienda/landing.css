@@ -14,6 +14,11 @@
   --tarjeta-nombre-tamano: 1.05rem;
 }
 
+/* El banner inicial llega al borde superior, sin el relleno inline del builder. */
+.catalog-landing-page [data-kit-seccion]:has([data-banner-catalogo]) {
+  padding-top: 0 !important;
+}
+
 .catalog-landing-page form[role="search"],
 .catalog-landing-page form[role="search"]:hover,
 .catalog-landing-page form[role="search"]:focus-within {
