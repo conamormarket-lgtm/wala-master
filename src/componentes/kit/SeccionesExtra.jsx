@@ -18,6 +18,7 @@ import { Beneficio } from "./piezas/Beneficio";
 import { FotoProducto } from "./piezas/FotoProducto";
 import { OpcionesFiltro } from "./piezas/OpcionesFiltro";
 import { PortadaMarca } from "./piezas/PortadaMarca";
+import { BannerCatalogoMarca } from './piezas/BannerCatalogoMarca';
 import { TemaMarca } from "./piezas/TemaMarca";
 import { Texto, useTexto } from './Traduccion';
 import s from './SeccionesExtra.module.css';
@@ -405,6 +406,7 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
  *    de la marca) y no solo al enviar. "Limpiar todo" también borra el texto.
  *  - sinTraducir: ids de grupos cuyos nombres no se traducen (['marca']).
  *  - filtroDestacado: { id, titulo } mueve un grupo a botones sobre el catálogo.
+ *  - bannerMarca: { nombre, logo, imagen } muestra una portada compacta arriba.
  *  - precio {min, max} / onPrecio: controlado. limitesPrecio {min, max}: lo
  *    que se ve de guía en los campos (sin él se calcula de los productos).
  *  - total: cuántos productos hay (con paginación en servidor); sin él se
@@ -418,7 +420,7 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
 export function CatalogoConFiltros({
   ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, filtrarAqui = !onFiltrar, conBuscador = true,
   busqueda, onBuscar, buscarAlEscribir = false, precio, onPrecio, limitesPrecio, total, unidad = ['producto', 'productos'], orden,
-  sinTraducir = ['marca'], filtroDestacado, ...grilla
+  sinTraducir = ['marca'], filtroDestacado, bannerMarca, ...grilla
 }) {
   const t = {
     filtros: useTexto('Filtros'),
@@ -538,6 +540,7 @@ export function CatalogoConFiltros({
 
   return (
     <>
+      {bannerMarca && <BannerCatalogoMarca {...bannerMarca} />}
       {destacado?.opciones.length > 0 && (
         <div className={s.filtroDestacado} role="group" aria-label={t.destacado}>
           <div className={s.filtroDestacadoCabeza}>

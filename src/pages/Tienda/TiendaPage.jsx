@@ -1307,12 +1307,21 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     }
     if (section.type === 'product_grid') Object.assign(datos, { productos: catalogProducts, ...paginacionKit });
     if (section.type === 'sidebar_catalog') {
+      const portada = catalogOnly ? allConfiguredSections.find((s) => s.type === 'brand_hero') : null;
       Object.assign(datos, {
         productos: usandoCatalogoCompleto ? productosCompletosKit : catalogProducts,
         ...(usandoCatalogoCompleto ? {} : paginacionKit),
         grupos: gruposKit,
         // En Lumi los fabricantes se guardan como etiquetas del producto.
-        ...(catalogOnly ? { filtroDestacado: { id: 'etiqueta', titulo: 'Marcas' }, sinTraducir: ['marca', 'etiqueta'] } : {}),
+        ...(catalogOnly ? {
+          bannerMarca: {
+            nombre: pageBrandData?.name || 'Lumi',
+            logo: pageBrandData?.logoUrl,
+            imagen: portada?.settings?.imagen || pageBrandData?.identidad?.imagen,
+          },
+          filtroDestacado: { id: 'etiqueta', titulo: 'Marcas' },
+          sinTraducir: ['marca', 'etiqueta'],
+        } : {}),
         seleccion: seleccionKit,
         onFiltrar: elegirFiltroKit,
         filtrarAqui: true,
