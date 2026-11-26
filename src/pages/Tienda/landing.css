@@ -10,6 +10,8 @@
 .catalog-landing-page {
   --altura-cabecera: 0px;
   --header-height: 0px;
+  --tarjeta-categoria-display: none;
+  --tarjeta-nombre-tamano: 1.05rem;
 }
 
 .catalog-landing-page form[role="search"],
