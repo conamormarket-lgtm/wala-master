@@ -538,7 +538,6 @@ export function CatalogoConFiltros({
 
   return (
     <>
-      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
       {destacado?.opciones.length > 0 && (
         <div className={s.filtroDestacado} role="group" aria-label={t.destacado}>
           <div className={s.filtroDestacadoCabeza}>
@@ -564,6 +563,7 @@ export function CatalogoConFiltros({
           </div>
         </div>
       )}
+      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
       <div className={s.catalogo}>
         <aside className={s.catalogoLado} aria-label={t.filtros}>{filtros}</aside>
         <div className={s.catalogoPrincipal}>
