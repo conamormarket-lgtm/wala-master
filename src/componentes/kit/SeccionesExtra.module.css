@@ -420,6 +420,99 @@
 }
 
 /* ── Catálogo ── */
+.filtroDestacado {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--violet-600, #7c3aed) 22%, var(--color-border));
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--violet-600, #7c3aed) 4%, var(--color-surface));
+}
+
+.filtroDestacadoCabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.filtroDestacadoAyuda {
+  display: none;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.filtroDestacadoLista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filtroDestacadoOpcion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 0.65rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--violet-600, #7c3aed) 32%, var(--color-surface));
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.filtroDestacadoOpcion:hover {
+  border-color: var(--violet-600, #7c3aed);
+  background: color-mix(in srgb, var(--violet-600, #7c3aed) 9%, var(--color-surface));
+}
+
+.filtroDestacadoOpcion[aria-pressed="true"] {
+  border-color: var(--violet-600, #7c3aed);
+  background: var(--violet-600, #7c3aed);
+  color: #fff;
+}
+
+.filtroDestacadoOpcion:focus-visible {
+  outline: 2px solid var(--violet-600, #7c3aed);
+  outline-offset: 3px;
+}
+
+.filtroDestacadoCuenta {
+  display: grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding-inline: 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+@container (max-width: 600px) {
+  .filtroDestacado {
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .filtroDestacadoAyuda { display: inline; }
+
+  .filtroDestacadoLista {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.25rem 0.25rem 0.65rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--violet-600, #7c3aed) transparent;
+  }
+}
+
 .catalogo {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);

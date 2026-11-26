@@ -404,6 +404,7 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
  *  - buscarAlEscribir: con onBuscar, avisa en cada tecla (como el buscador
  *    de la marca) y no solo al enviar. "Limpiar todo" también borra el texto.
  *  - sinTraducir: ids de grupos cuyos nombres no se traducen (['marca']).
+ *  - filtroDestacado: { id, titulo } mueve un grupo a botones sobre el catálogo.
  *  - precio {min, max} / onPrecio: controlado. limitesPrecio {min, max}: lo
  *    que se ve de guía en los campos (sin él se calcula de los productos).
  *  - total: cuántos productos hay (con paginación en servidor); sin él se
@@ -417,7 +418,7 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
 export function CatalogoConFiltros({
   ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, filtrarAqui = !onFiltrar, conBuscador = true,
   busqueda, onBuscar, buscarAlEscribir = false, precio, onPrecio, limitesPrecio, total, unidad = ['producto', 'productos'], orden,
-  sinTraducir = ['marca'], ...grilla
+  sinTraducir = ['marca'], filtroDestacado, ...grilla
 }) {
   const t = {
     filtros: useTexto('Filtros'),
@@ -426,6 +427,8 @@ export function CatalogoConFiltros({
     unidad: [useTexto(unidad[0]), useTexto(unidad[1])],
     min: useTexto('Precio mínimo'),
     max: useTexto('Precio máximo'),
+    destacado: useTexto(filtroDestacado?.titulo || 'Marcas'),
+    todas: useTexto('Todas'),
   };
   // El buscador, el selector, la hoja y la grilla vacía traducen lo suyo: les llega tal cual.
   const [propia, setPropia] = useState({});
@@ -437,6 +440,7 @@ export function CatalogoConFiltros({
   const sel = seleccion ?? propia;
   const texto = busqueda ?? textoPropio;
   const rango = precio ?? precioPropio;
+  const destacado = grupos.find((g) => g.id === filtroDestacado?.id);
 
   const elegir = (grupo, valor) => {
     if (onFiltrar) onFiltrar(grupo, valor);
@@ -500,7 +504,7 @@ export function CatalogoConFiltros({
         multiple
         abiertoInicial={abiertos}
         items={[
-          ...grupos.filter((g) => g.opciones?.length).map((g) => ({
+          ...grupos.filter((g) => g.opciones?.length && g.id !== destacado?.id).map((g) => ({
             id: g.id,
             question: <Texto>{g.titulo}</Texto>,
             extra: elegidoEn(g.id) && <span className={s.filtroElegido}>{sinTraducir.includes(g.id) ? elegidoEn(g.id) : <Texto>{elegidoEn(g.id)}</Texto>}</span>,
@@ -535,6 +539,31 @@ export function CatalogoConFiltros({
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      {destacado?.opciones.length > 0 && (
+        <div className={s.filtroDestacado} role="group" aria-label={t.destacado}>
+          <div className={s.filtroDestacadoCabeza}>
+            <strong>{t.destacado}</strong>
+            <span className={s.filtroDestacadoAyuda}><Texto>Desliza para ver todas</Texto> →</span>
+          </div>
+          <div className={s.filtroDestacadoLista}>
+            <button type="button" className={s.filtroDestacadoOpcion} aria-pressed={sel[destacado.id] == null} onClick={() => elegir(destacado.id, null)}>
+              {t.todas}
+            </button>
+            {destacado.opciones.map((op) => (
+              <button
+                key={op.valor}
+                type="button"
+                className={s.filtroDestacadoOpcion}
+                aria-pressed={sel[destacado.id] === op.valor}
+                onClick={() => elegir(destacado.id, op.valor)}
+              >
+                {sinTraducir.includes(destacado.id) ? op.nombre : <Texto>{op.nombre}</Texto>}
+                {op.cuenta != null && <span className={s.filtroDestacadoCuenta}>{op.cuenta}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className={s.catalogo}>
         <aside className={s.catalogoLado} aria-label={t.filtros}>{filtros}</aside>
         <div className={s.catalogoPrincipal}>

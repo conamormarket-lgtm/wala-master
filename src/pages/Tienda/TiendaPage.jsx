@@ -1098,9 +1098,16 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId, coleccionUrl, gruposKit]);
 
-  // Buscador de la marca: busca en TODOS sus productos (no solo en lo cargado)
-  // y, mientras hay texto, no hay "más" que cargar.
-  const buscandoEnMarca = Boolean(pageBrandId) && filtrosActuales.busqueda.trim() !== '' && Array.isArray(productosDeFiltros);
+  // La landing y el buscador de marca filtran TODOS sus productos. La lista
+  // ya se pide para construir los filtros; así ninguna marca queda incompleta
+  // por la paginación y no hace falta otra consulta al tocar sus botones.
+  const usandoCatalogoCompleto = Boolean(pageBrandId)
+    && (catalogOnly || filtrosActuales.busqueda.trim() !== '')
+    && productosDeFiltros?.length > 0;
+  const productosCompletosKit = useMemo(
+    () => catalogOnly ? ordenarEnMemoria(productosDeFiltros, sortBy) : productosDeFiltros,
+    [catalogOnly, productosDeFiltros, sortBy]
+  );
   const grillaKit = grillaDesdeConfiguracion(storeConfig?.layout);
   const paginacionKit = usePaginatedCatalog
     ? { hayMas: !!catalogHasMore, onCargarMas: catalogFetchNext, cargandoMas: catalogFetchingMore }
@@ -1301,9 +1308,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     if (section.type === 'product_grid') Object.assign(datos, { productos: catalogProducts, ...paginacionKit });
     if (section.type === 'sidebar_catalog') {
       Object.assign(datos, {
-        productos: buscandoEnMarca ? productosDeFiltros : catalogProducts,
-        ...(buscandoEnMarca ? {} : paginacionKit),
+        productos: usandoCatalogoCompleto ? productosCompletosKit : catalogProducts,
+        ...(usandoCatalogoCompleto ? {} : paginacionKit),
         grupos: gruposKit,
+        // En Lumi los fabricantes se guardan como etiquetas del producto.
+        ...(catalogOnly ? { filtroDestacado: { id: 'etiqueta', titulo: 'Marcas' }, sinTraducir: ['marca', 'etiqueta'] } : {}),
         seleccion: seleccionKit,
         onFiltrar: elegirFiltroKit,
         filtrarAqui: true,
