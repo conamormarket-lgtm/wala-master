@@ -7,6 +7,22 @@
   overflow-x: clip;
 }
 
+.catalog-landing-page {
+  --altura-cabecera: 0px;
+  --header-height: 0px;
+}
+
+.catalog-landing-page form[role="search"],
+.catalog-landing-page form[role="search"]:hover,
+.catalog-landing-page form[role="search"]:focus-within {
+  border: 2px solid var(--violet-600, #7c3aed);
+  max-width: none;
+}
+
+.catalog-landing-page form[role="search"]:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--violet-600, #7c3aed) 18%, transparent);
+}
+
 /* La invitación a descargar la app no va en una landing pública. */
 .landing-page-wrapper [class*="AppDownload"],
 .landing-page-wrapper [class*="appDownload"] {

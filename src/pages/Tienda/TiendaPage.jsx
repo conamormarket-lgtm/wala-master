@@ -69,6 +69,7 @@ import { getMessage } from '../../services/messages';
 import { SECTION_TYPES, getDefaultSettings } from './services/storefront';
 import { loadStorefrontPage, preloadHero } from './services/startup.js';
 import { firstHeroUrl, criticalQueryNames, initialSectionCount, resolveCatalogFacet } from './services/startup.mjs';
+import { sectionsFromCatalog } from '../../utils/catalogLanding.mjs';
 import DeferredSection from './components/DeferredSection';
 import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import useIsMobile from '../../hooks/useIsMobile';
@@ -292,7 +293,7 @@ const renderBotonSeccion = (s) => {
   );
 };
 
-const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null }) => {
+const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null, catalogOnly = false }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -334,9 +335,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     refetchOnMount: isPreview ? 'always' : false,
   });
 
-  const configuredSections = useMemo(() =>
+  const allConfiguredSections = useMemo(() =>
     [...(borradorDeEsta?.sections || storefrontConfig?.sections || [])]
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), [borradorDeEsta, storefrontConfig]);
+  const configuredSections = useMemo(() => catalogOnly
+    ? sectionsFromCatalog(allConfiguredSections)
+    : allConfiguredSections, [allConfiguredSections, catalogOnly]);
   const [visibleSections, setVisibleSections] = useState({ pageId, ids: new Set() });
   const markSectionVisible = useCallback((id) => {
     setVisibleSections((previous) => {
@@ -922,7 +926,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ── MANEJO DEL ARRAY DE SECCIONES (DEFAULT FALLBACKS) ────────────────
   // La configuración de secciones ahora proviene 100% de la BD o del borrador,
   // y storefront.js se encarga de inyectar defaults si la BD está vacía.
-  let displaySections = borradorDeEsta?.sections || storefrontConfig?.sections || [];
+  const displaySections = configuredSections;
 
   // ¿Hay una sección 'categories_nav' (con marca) en la página? Solo entonces el
   // sidebar_catalog deja que TiendaPage controle su categoría (estado compartido
@@ -1215,7 +1219,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         productos: featuredProducts,
         tarjeta: TarjetaDeTienda,
         ...(vacia ? { vacio: vacioKit } : {}),
-        sinKapi: Boolean(userProfile),
+        sinKapi: catalogOnly || Boolean(userProfile),
       });
     }
     if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
@@ -1290,8 +1294,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         columnas: grillaKit.columnas,
         segundaFoto: grillaKit.segundaFoto,
         ...(catalogIsEmpty ? { vacio: vacioKit } : {}),
-        // Un solo Walito a la vista: con sesión ya está el flotante.
-        sinKapi: Boolean(userProfile),
+        // La landing de catálogo también omite la mascota de los estados vacíos.
+        sinKapi: catalogOnly || Boolean(userProfile),
       });
     }
     if (section.type === 'product_grid') Object.assign(datos, { productos: catalogProducts, ...paginacionKit });
@@ -1840,7 +1844,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return () => clearTimeout(timeout);
   }, [pageReady, pageId, contenidoRenderizando, queriesEnVuelo, queryClient, esConsultaDePantalla]);
 
-  const portadaDeLaMarca = pageBrandId ? sorted.find((x) => x.type === 'brand_hero') : null;
+  const portadaDeLaMarca = pageBrandId ? allConfiguredSections.find((x) => x.type === 'brand_hero') : null;
   const identidadDeLaPagina = pageBrandId && pageBrandData ? identidadDeMarca(pageBrandData) : null;
   const temaDeLaPagina = identidadDeLaPagina ? {
     color: portadaDeLaMarca?.settings?.color || identidadDeLaPagina.color,

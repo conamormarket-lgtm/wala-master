@@ -1,4 +1,5 @@
 import { isProductLandingPath } from '../../utils/productRoute.mjs';
+import { isLumiCatalogLandingPath } from '../../utils/catalogLanding.mjs';
 
 /*
  * Dónde NO flota Walito (el botón de la esquina, components/marco/Walito.jsx).
@@ -7,6 +8,7 @@ import { isProductLandingPath } from '../../utils/productRoute.mjs';
  */
 export const sinKapiFlotante = (pathname) =>
   isProductLandingPath(pathname)
+  || isLumiCatalogLandingPath(pathname)
   // El estudio es una herramienta: sin flotantes.
   || pathname.startsWith('/crear/')
   // Al abrir un regalo, el Walito del sobre es el único a la vista.

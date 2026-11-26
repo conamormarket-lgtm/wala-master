@@ -18,13 +18,14 @@ const LANDINGS_RETIRADAS = new Set([
   'reloj-kchero-2026', 'reloj-matador-pro-2026', 'billetera-kchero-2026', 'combo-reloj-billetera-2026',
 ]);
 
-const DynamicLandingPage = () => {
-  const { slug } = useParams();
+const DynamicLandingPage = ({ slugOverride = null, catalogOnly = false }) => {
+  const { slug: routeSlug } = useParams();
+  const slug = slugOverride || routeSlug;
   if (LANDINGS_RETIRADAS.has(String(slug || '').toLowerCase())) return <Navigate to="/tienda" replace />;
-  return <LandingDinamica slug={slug} />;
+  return <LandingDinamica slug={slug} catalogOnly={catalogOnly} />;
 };
 
-const LandingDinamica = ({ slug }) => {
+const LandingDinamica = ({ slug, catalogOnly }) => {
   const location = useLocation();
   const { setHeaderVisible, setFooterVisible } = useLayoutContext();
   const { setPaginaDelBuilder } = useVisualEditor();
@@ -57,7 +58,7 @@ const LandingDinamica = ({ slug }) => {
         if (mounted) {
           if (page) {
             setLandingPage(page);
-            setHeaderVisible(!page.hideHeader);
+            setHeaderVisible(!catalogOnly && !page.hideHeader);
             setFooterVisible(!page.hideFooter);
 
           } else {
@@ -88,7 +89,7 @@ const LandingDinamica = ({ slug }) => {
       setFooterVisible(true);
       setPaginaDelBuilder(null);
     };
-  }, [slug, setHeaderVisible, setFooterVisible, setPaginaDelBuilder]);
+  }, [slug, catalogOnly, setHeaderVisible, setFooterVisible, setPaginaDelBuilder]);
 
   // Solo bloquear por auth al resolver el redirect cuando la LP no existe.
   // Si ya tenemos landing, NO remountar a PageLoading cuando authLoading
@@ -116,11 +117,11 @@ const LandingDinamica = ({ slug }) => {
 
   // URL vieja de una landing renombrada (ej. /mussa → /lumi).
   if (landingPage.redirigirA) {
-    return <Navigate to={`/${landingPage.redirigirA}${location.search}`} replace />;
+    return <Navigate to={`/${landingPage.redirigirA}${catalogOnly ? '/landing' : ''}${location.search}${location.hash}`} replace />;
   }
 
   return (
-    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''}`} id="landing-theme-wrapper" translate="no">
+    <div className={`landing-page-wrapper ${catalogOnly || landingPage.hideHeader ? 'no-header' : ''} ${catalogOnly ? 'catalog-landing-page' : ''}`} id="landing-theme-wrapper" translate="no">
       {/* 
         TiendaPage internamente usa la ruta para definir el pageId,
         así que ya renderizará las secciones correctas para esta landing.
@@ -132,6 +133,7 @@ const LandingDinamica = ({ slug }) => {
         isLandingPage={true}
         pageIdOverride={landingPage.slug || landingPage.id}
         pageBrandIdOverride={landingPage.brandId || null}
+        catalogOnly={catalogOnly}
       />
     </div>
   );

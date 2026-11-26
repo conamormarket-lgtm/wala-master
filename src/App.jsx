@@ -57,6 +57,7 @@ import { esRutaDeJuego } from './components/marco/modoJuego';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 import { PRODUCT_ROUTE, PRODUCT_LANDING_ROUTE, isProductLandingPath } from './utils/productRoute.mjs';
 import { isLandingCheckout } from './utils/checkoutOrigin.mjs';
+import { LUMI_CATALOG_LANDING_ROUTE, isLumiCatalogLandingPath } from './utils/catalogLanding.mjs';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
 // Se montan en el mismo sitio de siempre, pero su código llega en paralelo
@@ -297,7 +298,8 @@ const GlobalLayout = ({ children }) => {
   const location = useLocation();
   const landingProducto = isProductLandingPath(location.pathname);
   const checkoutLanding = isLandingCheckout(location);
-  const sinNavegacion = landingProducto || checkoutLanding;
+  const landingCatalogo = isLumiCatalogLandingPath(location.pathname);
+  const sinNavegacion = landingProducto || checkoutLanding || landingCatalogo;
   const { isEditModeActive } = useVisualEditor();
   // Páginas que van solas, sin la cabecera, el pie ni los flotantes: la landing
   // de Regalos con amor y el Link en bio (/l/:slug, la página de la bio de las
@@ -365,7 +367,7 @@ const GlobalLayout = ({ children }) => {
       <Suspense fallback={null}><Footer /></Suspense>
       {!sinNavegacion && <BarraInferiorDeTienda />}
 
-      {!checkoutLanding && <FlotantesDeLaTienda />}
+      {!checkoutLanding && !landingCatalogo && <FlotantesDeLaTienda />}
 
       <Suspense fallback={null}><FirebaseWarning /></Suspense>
 
@@ -639,6 +641,7 @@ function App() {
                                   <Route path="/l/:slug" element={<LinkInBioPage />} />
 
                                   {/* Dynamic Landing Pages Interceptor */}
+                                  <Route path={LUMI_CATALOG_LANDING_ROUTE} element={<DynamicLandingPage slugOverride="lumi" catalogOnly />} />
                                   <Route path="/:slug" element={<DynamicLandingPage />} />
 
                                   <Route path="*" element={<NoEncontradaPage antes="/cuenta" />} />
