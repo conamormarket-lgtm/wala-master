@@ -16,6 +16,7 @@ import TarjetaDeProducto from '../../components/producto/TarjetaDeProducto';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { trackBannerClick, trackCollectionView, trackCategoryView } from '../../services/analytics/tracker';
+import { trackLumiFunnel } from '../../services/analytics/lumiFunnel.js';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueries, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
@@ -961,6 +962,14 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     : {};
   // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
+  const lumiCatalogTracked = useRef(false);
+  useEffect(() => {
+    if (!catalogOnly) { lumiCatalogTracked.current = false; return; }
+    if (!catalogLoadingResolved && !catalogErrorResolved && !lumiCatalogTracked.current) {
+      lumiCatalogTracked.current = true;
+      trackLumiFunnel('catalog');
+    }
+  }, [catalogOnly, catalogLoadingResolved, catalogErrorResolved]);
 
   // ── Secciones con el kit (TIPOS_DEL_KIT): el inicio, /tienda y todas las
   // landings; con el interruptor seccionesViejo, lo de antes (paginaConKit
@@ -993,11 +1002,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         product={producto}
         categories={categoriesData || []}
         currentBrandId={pageBrandId}
+        catalogoLumi={catalogOnly}
         isAboveFold={indice != null && indice < 4}
         {...(segundaFoto != null ? { showHoverSecondaryMedia: segundaFoto } : {})}
       />
     );
-  }, [categoriesData, pageBrandId]);
+  }, [categoriesData, pageBrandId, catalogOnly]);
 
   // ── Catálogo con filtros (sidebar_catalog) con el kit ──
   // Lo que antes guardaba y pedía SidebarCatalogLayout vive aquí: las listas
@@ -1040,6 +1050,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return params;
   }, { replace: true });
   const elegirFiltroKit = (grupo, valor) => {
+    if (catalogOnly && grupo === 'etiqueta') {
+      trackLumiFunnel('brand', { brand: (etiquetasKit || []).find(t => t.id === valor)?.name || 'Todas' });
+    }
     if (valor && (grupo === 'coleccion' || grupo === 'temporada')) {
       const nombre = (coleccionesKit || []).find((c) => c.id === valor)?.name || null;
       trackCollectionView({ collectionId: valor, collectionName: nombre, grupo }, user || {}).catch(() => {});

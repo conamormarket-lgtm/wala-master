@@ -51,6 +51,7 @@ function TarjetaNueva({
   categories = [],
   isAboveFold = false,
   currentBrandId = null,
+  catalogoLumi = false,
   showNewBadge = true,
   showStockBadge = true,
   showQuickAdd = true,
@@ -113,6 +114,7 @@ function TarjetaNueva({
   });
 
   const deseado = isFavorite(product.id);
+  const productUrl = catalogoLumi ? `${base.url}?catalogo=lumi` : base.url;
   const alDesear = useCallback(async () => {
     const resultado = await toggleFavorite(product);
     if (resultado?.error) addToast(resultado.error, 'error');
@@ -125,7 +127,7 @@ function TarjetaNueva({
       return false;
     }
     if (necesitaElegir) {
-      if (fichaVieja) navigate(`/producto/${product.id}`);
+      if (fichaVieja) navigate(productUrl);
       else setHoja(true);
       return false;
     }
@@ -160,7 +162,7 @@ function TarjetaNueva({
       nuevo={showNewBadge && base.nuevo}
       stock={showStockBadge ? base.stock : undefined}
       accion={deCrear ? 'crear' : necesitaElegir ? 'elegir' : 'agregar'}
-      url={base.url}
+      url={productUrl}
       textoAccion={deCrear ? base.textoAccion : necesitaElegir ? textoElegir(product) : undefined}
       sinAccion={!showQuickAdd}
       onAgregar={alAgregar}

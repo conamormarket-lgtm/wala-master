@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { trackLumiFunnel } from '../../services/analytics/lumiFunnel.js';
 import { Check, Copy } from 'lucide-react';
 import { HojaInferior } from '../../componentes/kit/Feedback';
 import Boton from '../../componentes/kit/Boton';
@@ -8,9 +9,13 @@ import s from './PagoLumi.module.css';
 export default function PagoLumi({ resumen, onCerrar }) {
   const [copiado, setCopiado] = useState('');
   const [error, setError] = useState('');
+  useEffect(() => {
+    if (resumen) trackLumiFunnel('payment', { total: resumen.total });
+  }, [resumen]);
   const copiar = async (cuenta) => {
     try {
       await navigator.clipboard.writeText(cuenta.numero.replace(/-/g, ''));
+      trackLumiFunnel('copy_account', { method: cuenta.nombre });
       setCopiado(cuenta.nombre);
       setError('');
     } catch {
@@ -19,7 +24,7 @@ export default function PagoLumi({ resumen, onCerrar }) {
   };
   return <HojaInferior abierta={Boolean(resumen)} onCerrar={onCerrar} titulo="Medios de pago de Lumi" tamano="lg">
     {resumen && <div className={s.pago}>
-      <Boton bloque className={s.contacto} accion="whatsapp" to={whatsappComprobanteLumi(resumen)} target="_blank" rel="noopener noreferrer">Enviar comprobante por WhatsApp</Boton>
+      <Boton bloque className={s.contacto} accion="whatsapp" to={whatsappComprobanteLumi(resumen)} target="_blank" rel="noopener noreferrer" onClick={() => trackLumiFunnel('whatsapp', { total: resumen.total })}>Enviar comprobante por WhatsApp</Boton>
       <p>Después del depósito, abre WhatsApp y adjunta la foto de tu comprobante. Lumi confirmará el pago y coordinará la entrega contigo.</p>
       <div className={s.total}>
         <span>Total a depositar</span><strong>{solesLumi(resumen.total)}</strong>

@@ -5,6 +5,7 @@ import { isLumiCart, LUMI_CATALOG_LANDING_ROUTE } from '../../utils/catalogLandi
 import { revisarPagoLumi } from '../../utils/lumiPayment.mjs';
 import PagoLumi from './PagoLumi';
 import { trackLandingFunnel } from '../../services/analytics/landingFunnel.js';
+import { trackLumiFunnel } from '../../services/analytics/lumiFunnel.js';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,6 +40,7 @@ export default function CarritoDeTienda() {
   const [pagoLumi, setPagoLumi] = useState(null);
   const [revisandoPago, setRevisandoPago] = useState(false);
   useEffect(() => { trackLandingFunnel('cart', { location }); }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { trackLumiFunnel('cart', { location }); }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   const queryClient = useQueryClient();
   const {
     items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart, actualizarPrecios,
@@ -159,18 +161,21 @@ export default function CarritoDeTienda() {
         return [id, data];
       })));
       if (itemsActuales.current !== items) {
+        trackLumiFunnel('payment_error', { reason: 'El carrito cambió durante la revisión' });
         toast.info('El carrito cambió. Revisa los productos y vuelve a pagar.');
         return;
       }
       if (idsDeItemsIncompletos(elegidos, productos).size) {
+        trackLumiFunnel('payment_error', { reason: 'Faltan opciones de producto' });
         toast.error('Completa las opciones de tus productos antes de pagar.');
         return;
       }
       const resultado = revisarPagoLumi(elegidos, productos, { metaEnvio: ENVIO_GRATIS_DESDE, costoEnvio: ENVIO_ESTANDAR });
       if (resultado.cambios) actualizarPrecios(resultado.cambios);
-      if (resultado.error) { toast.error(resultado.error); return; }
+      if (resultado.error) { trackLumiFunnel('payment_error', { reason: resultado.error }); toast.error(resultado.error); return; }
       setPagoLumi(resultado.resumen);
     } catch (error) {
+      trackLumiFunnel('payment_error', { reason: 'No se pudo verificar el catálogo' });
       toast.error(error.message || 'No pudimos verificar tu carrito. Inténtalo de nuevo.');
     } finally {
       setRevisandoPago(false);
@@ -205,7 +210,7 @@ export default function CarritoDeTienda() {
       catalogo={{ marcas, categorias }}
       onVerAbajo={esLumi ? undefined : verAbajo}
     />
-    {esLumi && <PagoLumi resumen={pagoLumi} onCerrar={() => setPagoLumi(null)} />}
+    {esLumi && <PagoLumi resumen={pagoLumi} onCerrar={() => { trackLumiFunnel('payment_close'); setPagoLumi(null); }} />}
     </>
   );
 }

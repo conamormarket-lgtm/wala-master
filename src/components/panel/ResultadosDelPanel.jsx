@@ -6,6 +6,8 @@ import { useProducts } from '../../hooks/useProducts';
 import { getCategories } from '../../services/products';
 import { getLandingFunnel } from '../../services/adminLandingFunnel';
 import EmbudoLanding from '../../componentes/kit/piezas/admin/EmbudoLanding';
+import EmbudoLumi from '../../componentes/kit/piezas/admin/EmbudoLumi';
+import { getLumiFunnel } from '../../services/adminLumiFunnel';
 import { getPerfilesPorUid } from '../../services/adminProductInterest';
 import { getEnlacesRotos, redirigirALanding } from '../../services/adminEnlacesRotos';
 import {
@@ -122,7 +124,7 @@ export default function ResultadosDelPanel() {
   return (
     <MarcoResultados
       {...marco}
-      onActualizar={() => { marco.onActualizar?.(); void queryClient.invalidateQueries({ queryKey: ['admin-landing-funnel'] }); }}
+      onActualizar={() => { marco.onActualizar?.(); void queryClient.invalidateQueries({ queryKey: ['admin-landing-funnel'] }); void queryClient.invalidateQueries({ queryKey: ['admin-lumi-funnel'] }); }}
       // Comparar solo cambia el Resumen (sus cifras y la tabla): en las demás pestañas no sale.
       comparar={actual?.end ? marco.comparar : false}
       onComparar={actual?.end ? marco.onComparar : undefined}
@@ -139,6 +141,12 @@ export default function ResultadosDelPanel() {
 /** El Resumen: las cifras, la tendencia, cosas por mejorar, los canales y los enlaces rotos. */
 export function ResumenDelPanel() {
   const { filtros, analitica, periodo } = useOutletContext();
+  const lumi = useQuery({
+    queryKey: ['admin-lumi-funnel', filtros.dateRange.startDateMs, filtros.dateRange.endDateMs],
+    queryFn: () => getLumiFunnel(filtros.dateRange),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const embudoLanding = useQuery({
     queryKey: ['admin-landing-funnel', filtros.dateRange.startDateMs, filtros.dateRange.endDateMs],
     queryFn: () => getLandingFunnel(filtros.dateRange),
@@ -165,6 +173,8 @@ export function ResumenDelPanel() {
   }).map((a) => ({ ...a, to: conFiltros(DESTINOS[a.destino]) })), [data, sinResolver, nombres]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <>
+    <EmbudoLumi data={lumi.data} cargando={lumi.isFetching} error={lumi.error?.message} onActualizar={() => lumi.refetch()} />
     <PaginaResumenResultados
       embudoLanding={<EmbudoLanding data={embudoLanding.data} cargando={embudoLanding.isFetching} error={embudoLanding.error?.message} onActualizar={() => embudoLanding.refetch()} />}
       datos={data}
@@ -178,6 +188,7 @@ export function ResumenDelPanel() {
       verCanales={conFiltros(DESTINOS.visitantes)}
       enlacesRotos={enlacesRotos}
     />
+    </>
   );
 }
 

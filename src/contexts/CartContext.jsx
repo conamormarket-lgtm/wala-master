@@ -7,6 +7,7 @@ import { erpDb } from '../services/erp/firebase';
 import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
+import { trackLumiFunnel } from '../services/analytics/lumiFunnel.js';
 import { nombreConCreacion } from '../utils/nombreCreacion';
 import { fotosGenerales } from '../utils/fotosDeColor';
 
@@ -596,6 +597,7 @@ export const CartProvider = ({ children }) => {
       })
     };
 
+    trackLumiFunnel('add', { productId: product.id, productName: product.name, quantity });
     // ── Analytics: emitir evento add_to_cart (embudo) ─────────────────────
     // No bloquea ni rompe el flujo del carrito: cualquier error se ignora.
     // Enviamos datos REALES del producto (id, nombre, precio, cantidad) para

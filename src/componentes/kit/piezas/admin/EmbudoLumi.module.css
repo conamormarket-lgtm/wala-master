@@ -1,0 +1,16 @@
+.contenido { display: grid; gap: 1rem; min-width: 0; }
+.nota { margin: 0; font-size: .84rem; color: var(--color-text-muted); line-height: 1.5; }
+.tabla { overflow-x: auto; max-width: 100%; }
+.tabla table { width: 100%; border-collapse: collapse; font-size: .875rem; text-align: left; }
+.tabla th, .tabla td { padding: .8rem; border-bottom: 1px solid var(--color-border, #e5dbea); vertical-align: top; }
+.tabla th { color: #9b199d; white-space: nowrap; }
+.tabla small { display: block; margin-top: .3rem; max-width: 25rem; }
+.tabla summary { cursor: pointer; color: #9b199d; margin-top: .4rem; }
+.tabla ol { padding-left: 1rem; min-width: 15rem; line-height: 1.8; }
+.identificador { overflow-wrap: anywhere; font-size: .75rem; }
+.caption { text-align: left; font-weight: 700; padding-bottom: .6rem; }
+.paginacion { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .filtro.filtro { display: grid; justify-items: stretch; }
+  .filtro > span { width: 100%; }
+}

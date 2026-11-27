@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useEffect } from 'react';
 import { trackLandingFunnel } from '../services/analytics/landingFunnel.js';
+import { trackLumiFunnel } from '../services/analytics/lumiFunnel.js';
 import { useParams, useLocation, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useProduct } from '../hooks/useProducts';
@@ -39,7 +40,8 @@ const ProductPage = () => {
     if (!product || isLoading || error || noDisponible || product.reemplazadoPor || product.esComboCrear) return;
     if (product.esPrendaBase && (fichaVieja || !esProductoDeTienda(product))) return;
     trackLandingFunnel('landing', { location, productName: product.name });
-  }, [product, isLoading, error, noDisponible, fichaVieja, location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+    trackLumiFunnel('product', { location, productId: product.id, productName: product.name });
+  }, [product, isLoading, error, noDisponible, fichaVieja, location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   // Un producto que ya no está pero que se personaliza en Crear (el cuadro
   // de la tienda que pasó a su prenda de Crear): su link lleva allá.
   const reemplazo = noDisponible ? leerPersonalizarEn(product.personalizarEn) : null;
