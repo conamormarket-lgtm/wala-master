@@ -420,7 +420,7 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
 export function CatalogoConFiltros({
   ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, filtrarAqui = !onFiltrar, conBuscador = true,
   busqueda, onBuscar, buscarAlEscribir = false, precio, onPrecio, limitesPrecio, total, unidad = ['producto', 'productos'], orden,
-  sinTraducir = ['marca'], filtroDestacado, bannerMarca, ...grilla
+  sinTraducir = ['marca'], filtroDestacado, bannerMarca, accionCatalogo, ...grilla
 }) {
   const t = {
     filtros: useTexto('Filtros'),
@@ -592,6 +592,7 @@ export function CatalogoConFiltros({
             {orden?.opciones?.length > 0 && (
               <Selector className={s.catalogoOrden} etiqueta={orden.etiqueta ?? 'Ordenar por'} opciones={orden.opciones} valor={orden.valor} onCambiar={orden.onCambiar} />
             )}
+            {accionCatalogo}
             <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
               {t.filtros}{cuantos ? ` (${cuantos})` : ''}
             </Boton>

@@ -1,0 +1,12 @@
+.pago { display: grid; gap: 1rem; color: var(--color-text); }
+.pago p { margin: 0; line-height: 1.5; }
+.total { display: grid; gap: .35rem; padding: 1.2rem; border-radius: 1rem; color: #fff; background: linear-gradient(120deg, #7c3aed, #9b199d); }
+.total strong { font-size: 2rem; }
+.total small { line-height: 1.5; }
+.cuentas { display: grid; gap: .65rem; }
+.cuenta { display: flex; gap: .6rem; align-items: center; justify-content: space-between; padding: .8rem 1rem; border: 1px solid #c4b5fd; border-radius: .9rem; }
+.cuenta > div { display: grid; gap: .25rem; min-width: 0; }
+.cuenta strong { font-size: .9rem; }
+.cuenta span { font-size: clamp(.95rem, 4vw, 1.2rem); font-weight: 700; overflow-wrap: anywhere; user-select: all; font-variant-numeric: tabular-nums; }
+.cuenta > a, .cuenta > button { flex-shrink: 0; }
+.estado { min-height: 1.2em; font-size: .85rem; }

@@ -1,6 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { rutaCompra } from '../../utils/checkoutOrigin.mjs';
+import { isLumiCart, LUMI_CATALOG_LANDING_ROUTE } from '../../utils/catalogLanding.mjs';
+import { revisarPagoLumi } from '../../utils/lumiPayment.mjs';
+import PagoLumi from './PagoLumi';
 import { trackLandingFunnel } from '../../services/analytics/landingFunnel.js';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
@@ -32,15 +35,21 @@ import { itemCarritoDesde } from '../../componentes/kit/adaptadores';
 export default function CarritoDeTienda() {
   const navigate = useNavigate();
   const location = useLocation();
+  const esLumi = isLumiCart(location);
+  const [pagoLumi, setPagoLumi] = useState(null);
+  const [revisandoPago, setRevisandoPago] = useState(false);
   useEffect(() => { trackLandingFunnel('cart', { location }); }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   const queryClient = useQueryClient();
   const {
     items, updateQuantity, removeFromCart, toggleItemSelected, setAllItemsSelected, removeSelectedItems, clearCart, actualizarPrecios,
   } = useCart();
+  const itemsActuales = useRef(items);
+  itemsActuales.current = items;
   const toast = useGlobalToast();
   const { user, userProfile } = useAuth();
   const [abajo, setAbajo] = useState(false);
   const verAbajo = useCallback(() => setAbajo(true), []);
+  useEffect(() => { setPagoLumi(null); }, [items, esLumi]);
 
   // Una sola lectura del catálogo (localStorage) por cambio del carrito.
   const catalogo = useMemo(() => catalogoPorId(), [items]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -137,9 +146,43 @@ export default function CarritoDeTienda() {
     return <TarjetaDeProducto product={producto} categories={categorias} />;
   }, [categorias]);
 
+  const pagar = async () => {
+    if (!esLumi) { navigate(rutaCompra(location)); return; }
+    if (revisandoPago) return;
+    setRevisandoPago(true);
+    try {
+      const elegidos = items.filter((it) => it.selected !== false);
+      const productos = new Map(await Promise.all(idsParaRevisar(elegidos).map(async (id) => {
+        const { data, error } = await getProduct(id);
+        if (error || !data) throw new Error('No pudimos verificar el catálogo. Inténtalo de nuevo.');
+        queryClient.setQueryData(['product', id], data);
+        return [id, data];
+      })));
+      if (itemsActuales.current !== items) {
+        toast.info('El carrito cambió. Revisa los productos y vuelve a pagar.');
+        return;
+      }
+      if (idsDeItemsIncompletos(elegidos, productos).size) {
+        toast.error('Completa las opciones de tus productos antes de pagar.');
+        return;
+      }
+      const resultado = revisarPagoLumi(elegidos, productos, { metaEnvio: ENVIO_GRATIS_DESDE, costoEnvio: ENVIO_ESTANDAR });
+      if (resultado.cambios) actualizarPrecios(resultado.cambios);
+      if (resultado.error) { toast.error(resultado.error); return; }
+      setPagoLumi(resultado.resumen);
+    } catch (error) {
+      toast.error(error.message || 'No pudimos verificar tu carrito. Inténtalo de nuevo.');
+    } finally {
+      setRevisandoPago(false);
+    }
+  };
+
   return (
+    <>
     <PaginaCarrito
-      bienvenida={cargandoBienvenida ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true, saldo: bienvenida.saldo } : undefined}
+      titulo={esLumi ? 'Tu carrito Lumi' : undefined}
+      sinMascota={esLumi}
+      bienvenida={!esLumi && (cargandoBienvenida ? { cargando: true } : bienvenida?.enPausa ? { enPausa: true, saldo: bienvenida.saldo } : undefined)}
       items={filas}
       onCantidad={updateQuantity}
       onQuitar={removeFromCart}
@@ -148,16 +191,21 @@ export default function CarritoDeTienda() {
       onSeleccionarTodo={setAllItemsSelected}
       onQuitarSeleccionados={removeSelectedItems}
       onVaciar={clearCart}
-      onPagar={() => navigate(rutaCompra(location))}
-      onSeguirComprando={() => navigate('/tienda')}
+      onPagar={pagar}
+      textoPagar={esLumi ? 'Pagar por depósito' : undefined}
+      revisandoPago={revisandoPago}
+      notaPago={esLumi ? 'Yape, Plin o transferencia. Envía el comprobante al WhatsApp de Lumi.' : undefined}
+      onSeguirComprando={() => navigate(esLumi ? LUMI_CATALOG_LANDING_ROUTE : '/tienda')}
       pendiente={pendiente}
       metaEnvio={ENVIO_GRATIS_DESDE}
       costoEnvio={ENVIO_ESTANDAR}
-      saldoMonedas={tieneCuenta(user) ? userProfile?.monedas || 0 : 0}
-      recomendados={recomendados}
+      saldoMonedas={!esLumi && tieneCuenta(user) ? userProfile?.monedas || 0 : 0}
+      recomendados={esLumi ? [] : recomendados}
       tarjeta={Tarjeta}
       catalogo={{ marcas, categorias }}
-      onVerAbajo={verAbajo}
+      onVerAbajo={esLumi ? undefined : verAbajo}
     />
+    {esLumi && <PagoLumi resumen={pagoLumi} onCerrar={() => setPagoLumi(null)} />}
+    </>
   );
 }

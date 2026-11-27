@@ -70,6 +70,7 @@ import { SECTION_TYPES, getDefaultSettings } from './services/storefront';
 import { loadStorefrontPage, preloadHero } from './services/startup.js';
 import { firstHeroUrl, criticalQueryNames, initialSectionCount, resolveCatalogFacet } from './services/startup.mjs';
 import { sectionsFromCatalog } from '../../utils/catalogLanding.mjs';
+import AccesoCarritoLumi from '../../components/carrito/AccesoCarritoLumi';
 import DeferredSection from './components/DeferredSection';
 import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import useIsMobile from '../../hooks/useIsMobile';
@@ -1314,6 +1315,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         grupos: gruposKit,
         // En Lumi los fabricantes se guardan como etiquetas del producto.
         ...(catalogOnly ? {
+          accionCatalogo: <AccesoCarritoLumi />,
           bannerMarca: {
             nombre: pageBrandData?.name || 'Lumi',
             logo: pageBrandData?.logoUrl,

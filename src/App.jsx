@@ -57,7 +57,7 @@ import { esRutaDeJuego } from './components/marco/modoJuego';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 import { PRODUCT_ROUTE, PRODUCT_LANDING_ROUTE, isProductLandingPath } from './utils/productRoute.mjs';
 import { isLandingCheckout } from './utils/checkoutOrigin.mjs';
-import { LUMI_CATALOG_LANDING_ROUTE, isLumiCatalogLandingPath } from './utils/catalogLanding.mjs';
+import { LUMI_CATALOG_LANDING_ROUTE, isLumiCatalogLandingPath, isLumiCart } from './utils/catalogLanding.mjs';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
 // Se montan en el mismo sitio de siempre, pero su código llega en paralelo
@@ -299,7 +299,8 @@ const GlobalLayout = ({ children }) => {
   const landingProducto = isProductLandingPath(location.pathname);
   const checkoutLanding = isLandingCheckout(location);
   const landingCatalogo = isLumiCatalogLandingPath(location.pathname);
-  const sinNavegacion = landingProducto || checkoutLanding || landingCatalogo;
+  const carritoLumi = isLumiCart(location);
+  const sinNavegacion = landingProducto || checkoutLanding || landingCatalogo || carritoLumi;
   const { isEditModeActive } = useVisualEditor();
   // Páginas que van solas, sin la cabecera, el pie ni los flotantes: la landing
   // de Regalos con amor y el Link en bio (/l/:slug, la página de la bio de las
@@ -340,10 +341,10 @@ const GlobalLayout = ({ children }) => {
       <ReferralTracker />
       {/* En la vista previa del mapa de calor no van avisos ni popups: la
           página tiene que verse como la vio el visitante, sin nada encima. */}
-      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AvisoInvitacion /></Suspense>}
-      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><BienvenidaDeTienda /></Suspense>}
+      {!EN_VISTA_PREVIA_CALOR && !carritoLumi && <Suspense fallback={null}><AvisoInvitacion /></Suspense>}
+      {!EN_VISTA_PREVIA_CALOR && !carritoLumi && <Suspense fallback={null}><BienvenidaDeTienda /></Suspense>}
       <ScrollTracker />
-      <BarraDeAdmin />
+      {!carritoLumi && <BarraDeAdmin />}
       {isEditModeActive && (
         <Suspense fallback={null}>
           <EditorVisual />
@@ -364,18 +365,18 @@ const GlobalLayout = ({ children }) => {
         {children}
       </main>
 
-      <Suspense fallback={null}><Footer /></Suspense>
+      {!carritoLumi && <Suspense fallback={null}><Footer /></Suspense>}
       {!sinNavegacion && <BarraInferiorDeTienda />}
 
-      {!checkoutLanding && !landingCatalogo && <FlotantesDeLaTienda />}
+      {!checkoutLanding && !landingCatalogo && !carritoLumi && <FlotantesDeLaTienda />}
 
       <Suspense fallback={null}><FirebaseWarning /></Suspense>
 
       {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
-      {!EN_VISTA_PREVIA_CALOR && <AvisoDeIdioma />}
+      {!EN_VISTA_PREVIA_CALOR && !carritoLumi && <AvisoDeIdioma />}
 
       {/* Popups de campaña (encuesta, promos…) configurados en /admin/popups. */}
-      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AnuncioDeCampana /></Suspense>}
+      {!EN_VISTA_PREVIA_CALOR && !carritoLumi && <Suspense fallback={null}><AnuncioDeCampana /></Suspense>}
     </div>
   );
 };

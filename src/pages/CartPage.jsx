@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { productoLandingDeCompra } from '../utils/checkoutOrigin.mjs';
+import { isLumiCart } from '../utils/catalogLanding.mjs';
 import { useCart } from '../contexts/CartContext';
 import useLoViejo from '../hooks/useLoViejo';
 import CarritoDeTienda from '../components/carrito/CarritoDeTienda';
@@ -19,7 +20,7 @@ const CartPage = () => {
   const carritoViejo = useLoViejo('carrito');
   const location = useLocation();
 
-  if (!carritoViejo || productoLandingDeCompra(location)) return <CarritoDeTienda />;
+  if (!carritoViejo || productoLandingDeCompra(location) || isLumiCart(location)) return <CarritoDeTienda />;
 
   return (
     <div className={styles.container}>

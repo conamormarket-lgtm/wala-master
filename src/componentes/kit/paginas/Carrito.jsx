@@ -46,7 +46,7 @@ const sumar = (items, f) => items.reduce((a, it) => a + f(it), 0);
 export function PaginaCarrito({
   items = [], onCantidad, onQuitar, onSeleccionar, onSeleccionarTodo, onQuitarSeleccionados, onVaciar, onPagar, onSeguirComprando,
   pendiente, metaEnvio = 200, costoEnvio = 15, saldoMonedas = 0, cupones, bienvenida, recomendados = [], onAgregar, vacio,
-  tarjeta, catalogo, onVerAbajo, notaPago,
+  tarjeta, catalogo, onVerAbajo, notaPago, textoPagar = 'Revisar datos de envío', revisandoPago = false, titulo = 'Tu carrito', sinMascota = false,
 }) {
   const [confirmar, setConfirmar] = useState(null);
   // Lo de abajo (recomendados) se pide cuando se acerca a la vista.
@@ -78,7 +78,7 @@ export function PaginaCarrito({
   const noEstanElegidos = elegidos.filter((it) => it.noDisponible);
   const textoFalta = faltan.length ? (new Set(faltan.map((it) => it.incompleto)).size > 1 ? 'color o talla' : faltan[0].incompleto) : '';
   const conArticulo = { color: 'el color', talla: 'la talla', personalización: 'la personalización' }[textoFalta] || 'el color o la talla';
-  let textoBoton = 'Revisar datos de envío';
+  let textoBoton = revisandoPago ? 'Revisando tu carrito…' : textoPagar;
   if (pendiente) textoBoton = 'Esperando la confirmación…';
   else if (!elegidos.length) textoBoton = 'Elige algún producto';
   else if (noEstanElegidos.length) textoBoton = 'Quita lo que ya no está';
@@ -96,7 +96,7 @@ export function PaginaCarrito({
           {/* Cuántos productos: un dato de la página, en texto (no en etiqueta). */}
           <TituloSeccion
             nivel={1}
-            titulo="Tu carrito"
+            titulo={titulo}
             subtitulo={cuentas.unidades ? `${cuentas.unidades} ${cuentas.unidades === 1 ? 'producto' : 'productos'}` : undefined}
           />
           <span className={s.carritoAcciones}>
@@ -108,7 +108,7 @@ export function PaginaCarrito({
           </span>
         </div>
         {items.length === 0 ? (
-          <EstadoVacio titulo={<Texto>{vacio?.titulo || 'Tu carrito está vacío'}</Texto>} texto={<Texto>{vacio?.texto || 'Toca "Agregar" en lo que te guste y aparece aquí.'}</Texto>}>
+          <EstadoVacio imagen={sinMascota ? null : undefined} titulo={<Texto>{vacio?.titulo || 'Tu carrito está vacío'}</Texto>} texto={<Texto>{vacio?.texto || 'Toca "Agregar" en lo que te guste y aparece aquí.'}</Texto>}>
             {vacio?.accion || (onSeguirComprando && <Boton icono={<ShoppingBag aria-hidden="true" />} onClick={onSeguirComprando}><Texto>Ver la tienda</Texto></Boton>)}
           </EstadoVacio>
         ) : (
@@ -192,7 +192,7 @@ export function PaginaCarrito({
                 cupones={cupones}
                 onPagar={onPagar}
                 textoBoton={textoBoton}
-                deshabilitado={Boolean(pendiente) || !elegidos.length || faltan.length > 0 || noEstanElegidos.length > 0}
+                deshabilitado={revisandoPago || Boolean(pendiente) || !elegidos.length || faltan.length > 0 || noEstanElegidos.length > 0}
                 {...(notaPago ? { nota: notaPago } : {})}
               />
             </div>
