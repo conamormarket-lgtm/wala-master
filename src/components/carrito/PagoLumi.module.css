@@ -1,6 +1,7 @@
 .pago { display: grid; gap: 1rem; color: var(--color-text); }
 .pago p { margin: 0; line-height: 1.5; }
-.total { display: grid; gap: .35rem; padding: 1.2rem; border-radius: 1rem; color: #fff; background: linear-gradient(120deg, #7c3aed, #9b199d); }
+.contacto.contacto { min-width: 0; white-space: normal; text-align: center; line-height: 1.35; padding-block: .65rem; }
+.total { display: grid; gap: .35rem; padding: 1.2rem; border-radius: 1rem; color: #fff; background: #9b199d; }
 .total strong { font-size: 2rem; }
 .total small { line-height: 1.5; }
 .cuentas { display: grid; gap: .65rem; }

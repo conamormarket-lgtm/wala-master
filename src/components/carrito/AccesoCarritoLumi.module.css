@@ -1,0 +1,39 @@
+.flotante {
+  position: fixed;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 850;
+  width: 60px;
+  height: 60px;
+}
+
+.boton.boton {
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: 0 6px 24px rgb(109 40 217 / 32%);
+}
+
+.boton.boton svg {
+  width: 26px;
+  height: 26px;
+}
+
+.cantidad {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border: 2px solid var(--violet-700, #6d28d9);
+  border-radius: 20px;
+  background: #fff;
+  color: #6d28d9;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+}

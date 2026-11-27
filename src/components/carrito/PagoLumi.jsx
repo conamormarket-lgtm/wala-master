@@ -19,6 +19,8 @@ export default function PagoLumi({ resumen, onCerrar }) {
   };
   return <HojaInferior abierta={Boolean(resumen)} onCerrar={onCerrar} titulo="Medios de pago de Lumi" tamano="lg">
     {resumen && <div className={s.pago}>
+      <Boton bloque className={s.contacto} accion="whatsapp" to={whatsappComprobanteLumi(resumen)} target="_blank" rel="noopener noreferrer">Enviar comprobante por WhatsApp</Boton>
+      <p>Después del depósito, abre WhatsApp y adjunta la foto de tu comprobante. Lumi confirmará el pago y coordinará la entrega contigo.</p>
       <div className={s.total}>
         <span>Total a depositar</span><strong>{solesLumi(resumen.total)}</strong>
         <small>Productos: {solesLumi(resumen.subtotal)} · Envío: {solesLumi(resumen.envio)}</small>
@@ -31,8 +33,6 @@ export default function PagoLumi({ resumen, onCerrar }) {
         </div>)}
       </div>
       <span className={s.estado} role="status">{error || (copiado ? `${copiado}: número copiado` : '')}</span>
-      <p>Después del depósito, abre WhatsApp y adjunta la foto de tu comprobante. Lumi confirmará el pago y coordinará la entrega contigo.</p>
-      <Boton bloque accion="whatsapp" to={whatsappComprobanteLumi(resumen)} target="_blank" rel="noopener noreferrer">Enviar comprobante por WhatsApp</Boton>
     </div>}
   </HojaInferior>;
 }

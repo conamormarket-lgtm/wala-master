@@ -6,6 +6,7 @@ import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
 import { useAuth } from '../../contexts/AuthContext';
 import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
+import AccesoCarritoLumi from '../../components/carrito/AccesoCarritoLumi';
 import './landing.css';
 
 // Una landing que no existe (GENERALES.md P22): antes, al inicio sin avisar.
@@ -135,6 +136,7 @@ const LandingDinamica = ({ slug, catalogOnly }) => {
         pageBrandIdOverride={landingPage.brandId || null}
         catalogOnly={catalogOnly}
       />
+      {catalogOnly && <AccesoCarritoLumi />}
     </div>
   );
 };
