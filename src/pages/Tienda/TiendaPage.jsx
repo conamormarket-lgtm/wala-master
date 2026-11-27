@@ -17,6 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { trackBannerClick, trackCollectionView, trackCategoryView } from '../../services/analytics/tracker';
 import { trackLumiFunnel } from '../../services/analytics/lumiFunnel.js';
+import BlackFridayLumi from '../../components/carrito/BlackFridayLumi';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueries, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
@@ -1331,6 +1332,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             nombre: pageBrandData?.name || 'Lumi',
             logo: pageBrandData?.logoUrl,
             imagen: portada?.settings?.imagen || pageBrandData?.identidad?.imagen,
+            superpuesto: <BlackFridayLumi />,
           },
           filtroDestacado: { id: 'etiqueta', titulo: 'Marcas' },
           sinTraducir: ['marca', 'etiqueta'],

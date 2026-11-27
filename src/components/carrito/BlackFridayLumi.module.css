@@ -1,0 +1,24 @@
+.tarjeta {
+  display: grid;
+  justify-items: center;
+  gap: .2rem;
+  padding: .9rem 1.5rem;
+  border: 1px solid #ffffff9c;
+  border-radius: 20px;
+  background: #fff0fff0;
+  box-shadow: 0 8px 28px #67107026;
+  backdrop-filter: blur(8px);
+  color: #801483;
+  text-align: center;
+}
+.tarjeta p { margin: 0; font-size: .8rem; font-weight: 500; line-height: 1.4; }
+.tarjeta strong { display: block; color: #9b199d; font-family: var(--fuente-marca); font-size: 1.55rem; font-weight: 900; }
+.reloj { font-size: 1.8rem; line-height: 1.2; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.unidades { font-size: .56rem; letter-spacing: .15em; font-weight: 600; }
+.inicio { font-size: .9rem; font-weight: 600; }
+@media (max-width: 600px) {
+  .tarjeta { padding: .65rem 1rem; border-radius: 16px; }
+  .tarjeta p { font-size: .7rem; }
+  .tarjeta strong { font-size: 1.3rem; }
+  .reloj { font-size: 1.6rem; }
+}

@@ -4,9 +4,9 @@ import { toDirectImageUrl } from '../../../utils/imageUrl';
 import s from './BannerCatalogoMarca.module.css';
 
 /** Banner compacto del catálogo: la portada y el logo originales de la marca. */
-export function BannerCatalogoMarca({ nombre, logo, imagen }) {
+export function BannerCatalogoMarca({ nombre, logo, imagen, superpuesto }) {
   return (
-    <section className={s.banner} aria-label={nombre} data-banner-catalogo="">
+    <section className={[s.banner, superpuesto && s.conSuperpuesto].filter(Boolean).join(' ')} aria-label={nombre} data-banner-catalogo="">
       {imagen && (
         <img
           className={s.productos}
@@ -22,6 +22,7 @@ export function BannerCatalogoMarca({ nombre, logo, imagen }) {
           <img {...atributosDeFoto(toDirectImageUrl(logo), '(max-width: 600px) 120px, 240px')} alt={nombre} loading="eager" decoding="async" />
         ) : nombre}
       </h1>
+      {superpuesto && <div className={s.superpuesto}>{superpuesto}</div>}
     </section>
   );
 }

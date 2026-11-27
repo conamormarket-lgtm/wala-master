@@ -24,6 +24,7 @@ import AdminRoute from './components/AdminRoute/AdminRoute';
 // /cuenta lo decide CuentaLayout, /admin AdminRoute y /ruleta su página.
 import RutaPrivada from './components/RutaPrivada/RutaPrivada';
 import RouteTracker from './components/analytics/RouteTracker';
+import LumiBlackFridaySync from './components/carrito/LumiBlackFridaySync';
 import ReferralTracker from './components/analytics/ReferralTracker';
 import PushLinkHandler from './components/common/PushLinkHandler/PushLinkHandler';
 import ErrorBoundary from './components/common/ErrorBoundary/ErrorBoundary';
@@ -337,6 +338,7 @@ const GlobalLayout = ({ children }) => {
       <AvisoDelSistema />
       <NavProgressBar />
       <RouteTracker />
+      <LumiBlackFridaySync />
       <PushLinkHandler />
       <ReferralTracker />
       {/* En la vista previa del mapa de calor no van avisos ni popups: la

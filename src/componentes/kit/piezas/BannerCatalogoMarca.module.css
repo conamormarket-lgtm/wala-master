@@ -46,6 +46,16 @@
   object-fit: contain;
 }
 
+.superpuesto {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: .75rem;
+  pointer-events: none;
+}
+
 @container (max-width: 600px) {
   .banner {
     height: clamp(150px, 46cqi, 220px);
@@ -57,5 +67,9 @@
 
   .logo {
     width: clamp(96px, 29cqi, 150px);
+  }
+
+  .conSuperpuesto .logo {
+    width: clamp(56px, 20cqi, 100px);
   }
 }
