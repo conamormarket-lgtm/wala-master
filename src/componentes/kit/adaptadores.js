@@ -596,7 +596,7 @@ export function avisoDesdeEstadoApp(estado) {
 export function numeroWhatsApp(crudo) {
   const limpio = String(crudo || '').replace(/[\s\-()]/g, '');
   if (!limpio) return '';
-  return limpio.startsWith('+') ? limpio : `+51${limpio}`;
+  return limpio.startsWith('+') ? limpio : /^51\d{9}$/.test(limpio) ? `+${limpio}` : `+51${limpio}`;
 }
 
 /**

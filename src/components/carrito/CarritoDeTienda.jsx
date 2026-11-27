@@ -96,8 +96,9 @@ export default function CarritoDeTienda() {
     const fila = itemCarritoDesde(item, { catalogo, falta: incompletos.has(item.id) ? queLeFalta(item, catalogo) : undefined, noDisponible: motivoNoDisponible(item, productosRevisados) });
     // La foto en su tamaño (la fila mide 84px): las copias que guardó el carrito.
     const { src, srcSet } = fuentesDeImagen(toDirectImageUrl(fila.imagen), { variantes: fila.imagen === item.productImage ? item.productImageVariantes : undefined, sizes: '96px' });
-    return { ...fila, imagen: src || fila.imagen, srcSet };
-  }), [items, catalogo, incompletos, productosRevisados]);
+    const url = esLumi && /^\/producto\/[^/?]+$/.test(fila.url) ? `${fila.url}?catalogo=lumi` : fila.url;
+    return { ...fila, url, imagen: src || fila.imagen, srcSet };
+  }), [items, catalogo, incompletos, productosRevisados, esLumi]);
 
   // Todas las líneas esperando la confirmación del pago por WhatsApp.
   const pendiente = items.length > 0 && items.every((i) => i.status === 'pending_confirmation')
